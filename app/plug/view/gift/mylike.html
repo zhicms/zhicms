@@ -1,0 +1,127 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>{if !$_GET['id']}我的喜欢{else}{$ret['name']}{/if}_{obj('base/Base')->GiftSEO('findgift_title')}</title>
+<meta name="keywords" content="{obj('base/Base')->GiftSEO('findgift_keywords')}" />
+<meta name="description" content="{obj('base/Base')->GiftSEO('findgift_dec')}" />
+<link href="{__PUBLIC__}umaijie/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="{__PUBLIC__}umaijie/css/iconfont/iconfont.css?v=2" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="{__PUBLIC__}umaijie/js/jquery.min.js"></script>
+<link rel="stylesheet/less" type="text/css" href="{__PUBLIC__}umaijie/css/index.less">
+<script src="{__PUBLIC__}umaijie/js/less.min.js" type="text/javascript"></script>
+<script src="{__PUBLIC__}umaijie/bootstrap/js/bootstrap.min.js"></script>
+<script src="{__PUBLIC__}umaijie/js/jquery.scrollBanner.js" type="text/javascript"></script>
+</head>
+
+<body>
+<style>.topbarleft{margin-left:135px;} .itemslist-nav-left-big-title{color:#333}</style>
+{include file="app/plug/view/gift/topbar"}
+{include file="app/plug/view/gift/global_header"}
+<div class="mianbaoxiebox">
+<ol class="breadcrumb mianbaoxie">
+  <li><a href="/">首页</a></li>
+  <li><a href="{url($route='plug/gift/mylike', $params=array())}">我的喜欢</a></li>
+  {if $_GET['id']}
+  <li><a href="{url($route='plug/gift/mylike/id=<id>', $params=array('id'=>$_GET['id']))}" class="gray9">{$ret['name']}</a></li>
+{/if}
+</ol>
+</div>
+
+<!--宝贝列表组件-->
+<div class="itemslistbox">
+  <div class="itemslist-nav">
+   <div class="itemslist-nav-left">
+    <div class="itemslist-nav-left-big-title">{if !$_GET['id']}我的喜欢{else}{$ret['name']}{/if}</div>
+    <div class="itemslist-nav-left-li">
+   
+          <li><a {if !$_GET['price'] && !$_GET['like']}style="color:#ff3b7f"{/if} href="{url($route='plug/gift/mylike', $params=array())}"><span>综合</span></a></li>
+     {if $_GET['id']}
+     {if !$_GET['price']}
+     <li><a href="{url($route='plug/gift/mylike/id=<id>', $params=array('id'=>$_GET['id']))}?price=up"><span class="price_auto">价格</span></a></li>
+     {/if}
+     {if $_GET['price']=="up"}
+     <li><a href="{url($route='plug/gift/mylike/id=<id>', $params=array('id'=>$_GET['id']))}?price=down"><span class="price_up">价格</span></a></li>
+     {/if}
+     {if $_GET['price']=="down"}
+     <li><a href="{url($route='plug/gift/mylike/id=<id>', $params=array('id'=>$_GET['id']))}?price=up"><span class="price_down">价格</span></a></li>
+     {/if}
+     {/if}
+     
+     {if !$_GET['id']}
+    
+      {if !$_GET['price']}
+     <li><a href="{url($route='plug/gift/mylike', $params=array())}?price=up"><span class="price_auto">价格</span></a></li>
+     {/if}
+     {if $_GET['price']=="up"}
+     <li><a href="{url($route='plug/gift/mylike', $params=array())}?price=down"><span class="price_up">价格</span></a></li>
+     {/if}
+     {if $_GET['price']=="down"}
+     <li><a href="{url($route='plug/gift/mylike', $params=array())}?price=up"><span class="price_down">价格</span></a></li>
+     {/if}
+     
+     {/if}
+     
+      {if $_GET['id']}
+     <li><a  {if $_GET['like']=='o'}style="color:#ff3b7f"{/if} href="{url($route='plug/gift/mylike/id=<id>', $params=array('id'=>$_GET['id']))}?like=o"><span>喜欢</span></a></li>
+     {/if}
+     
+       {if !$_GET['id']}
+     <li><a  {if $_GET['like']=='o'}style="color:#ff3b7f"{/if} href="{url($route='plug/gift/mylike', $params=array())}?like=o"><span>喜欢</span></a></li>
+     {/if}
+     
+     
+     
+       
+    </div>
+    
+   
+   </div>
+   <div class="itemslist-nav-rightmore">共 <strong class="hover">{$count}</strong> 件礼物</div>
+   <!--ens-s-->
+   </div>
+   
+   <!--列表开始-->
+   <div class="itemslist">
+    {foreach $items_arr as $vo}
+  
+    <li  class="u-items-li" data="{$vo['id']}" {if $key=="3" || $key=="7"  || $key=="11" || $key=="15" || $key=="19"} style="margin-right:0px;"{/if}>
+    <div class="poplike popid_{$vo['id']}" itemsid="{$vo['id']}" ></div>
+     <a href="{url($route='plug/gift/view/id=<id>', $params=array('id'=>$vo['id']))}"  target="_blank"><div class="itemslist-pic"><img src="{$vo['pic']}" /></div>
+    <div class="itemslist-itemstitle">{$vo['itemstitle']}</div></a>
+    <div class="itemslist-itemspbox">
+       <div class="itemslist-itemsprice">￥{obj('api/Api')->moneytype($vo['price'])}
+        <div class="itemslist-itemsbz">
+        {if $vo['diy']!='0'}
+        <div class="itemslist-arrow"><img src="{__PUBLIC__}umaijie/images/umaijie_arrow_rate.jpg" /></div>
+        {if $vo['diy']=='1'}
+        <div class="itemslist-arrow-bz">星座</div>
+        {/if}
+         {if $vo['diy']=='2'}
+        <div class="itemslist-arrow-bz">定制</div>
+        {/if}
+         {if $vo['diy']=='3'}
+        <div class="itemslist-arrow-bz">刻字</div>
+        {/if}
+         {if $vo['diy']=='4'}
+        <div class="itemslist-arrow-bz">正品</div>
+        {/if}
+        {/if}
+        
+       </div>
+       </div>
+       <div class="itemslikenum"><i class="iconfont icon-xihuan "></i><span class="umaijie_xihuan_{$vo['id']}">{$vo['like']}</span></div>
+    </div>
+    </li>
+    </a>
+    {/foreach}
+   
+   </div>
+   
+  
+</div>
+
+{include file="app/plug/view/gift/js"}
+<body>
+</body>
+</html>

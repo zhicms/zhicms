@@ -1,0 +1,117 @@
+﻿body{
+    background:#f5f5f5;
+}
+.container{
+    font-family:Arial,"Microsoft YaHei"; 
+}
+.album_top{
+    padding:15px 0 10px 0; 
+}
+.album_top .album_tit{
+    float:left;
+    font-size:22px;
+    color:#444;
+}
+.album_top .album_top_add{
+    float:right;
+    color:#a3a3a3;
+}
+.album_top .add_show{
+    width:105px;
+    height:32px;
+    margin-left:5px;
+    text-align:center;
+    line-height:32px;
+    -moz-border-radius:2px;
+    -webkit-border-radius:2px;
+    border-radius:2px;
+}
+
+/* 精品列表
+------------------------------------*/
+.album_item{
+    height:220px;
+    margin-bottom:15px;
+    background:#fff;    
+}
+.album_item .album_pic{
+    float:left;
+}
+.album_pic a img{
+    width:440px;
+    height:220px;
+}
+
+.album_pro{
+    width:480px;
+    padding:25px 0 0 40px;
+}
+.album_pro .pro_tit a{
+    color:#333;
+    font-weight:700;
+    font-size:16px;
+}
+.album_pro .pro_tit a:hover{
+    color:#f95c68;
+}
+.album_pro .pro_txt{
+    height:80px;
+    margin-top:10px;
+    margin-bottom:20px;
+    line-height:26px;
+    overflow:hidden;
+    color:#888;
+}
+
+.album_pro .pro_bot{
+    line-height:28px;
+}
+.pro_bot span{
+    color:#999;
+}
+.album_pro .detail_btn{
+    float:right;
+    display:inline-block;
+    width:118px;
+    height:28px;    
+    text-align:center;
+    line-height:28px;
+    border:1px solid #f95c68;
+    color:#f95c68;
+    font-size:14px;
+}
+.album_pro .detail_btn:hover{
+    background-color:#f95c68;
+    color:#fff;
+}
+.album_pic  a{
+    position:relative;
+    display:block;
+    overflow:hidden;
+    background:#fff;
+    width:440px;
+    height:220px;
+}
+.album_pic .qd_txt{
+    width:100%;
+    height:100%;
+    display:block;
+    position:absolute;
+    bottom:0px;
+    line-height:40px;
+    text-align:center;
+    overflow:hidden;
+    font-size:22px;
+    color:#fff;
+    /*text-shadow:1px 0px 1px #444;*/
+    background:url(../images/black_a35.png) repeat;
+}
+.album_pic .qd_txt span{
+    display:block;
+}
+.album_pic .qd_txt1{
+    padding-top:70px;
+    font-size:31px;
+    font-weight:700;
+}
+ 

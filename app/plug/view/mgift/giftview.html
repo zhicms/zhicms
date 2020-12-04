@@ -1,0 +1,195 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>{$ret['itemstitle']}_{obj('base/Base')->GiftSEO('index_title')}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui2.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui3.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/swiper/dist/css/swiper.min.css">
+<link href="{__PUBLIC__}h5/css/index.css" rel="stylesheet" type="text/css">
+<script src="{__PUBLIC__}h5/wui/zepto.min.js"></script>
+ <script type="application/ld+json">
+        {
+            "@context": "https://ziyuan.baidu.com/contexts/cambrian.jsonld",
+            "@id": "{url($route='plug/mgift/giftview/id=<id>', $params=array('id'=>$ret['id']))}",
+            "appid": "1603216653013288",
+            "title": "{$ret['itemstitle']}_{obj('base/Base')->GiftSEO('index_title')}",
+            "images": [
+                "{$ret['pic']}"{if $ret['pic2']!=''},{/if}
+				
+                {if $ret['pic2']!=''}"{$ret['pic2']}",{/if}
+				
+                {if $ret['pic3']!=''}"{$ret['pic3']}"{/if}
+				
+            ], //请在此处添加希望在搜索结果中展示图片的url，可以添加1个或3个url
+            "pubDate": "<?=date("Y-m-d",time())?>T<?=date("d:m:s",time())?>" // 需按照yyyy-mm-ddThh:mm:ss格式编写时间，字母T不能省去
+        }
+    </script>
+</head>
+
+<body>
+
+
+
+<style>
+   .swiper-slide img{width:100%; height:auto}
+   .placeholder{background:none;}
+	</style>
+
+
+<div style="max-width:640px; background:#fff; height:auto; margin:0 auto ">
+
+<div class="global_btn_co_left" onClick="javascript :history.back(-1);"><i class="icon icon-109"></i></div>
+<div class="global_btn_co_right"  onClick="toshare()"><i class="icon icon-3"></i></div>
+
+
+<div class="huan" style=" width:100%; height:auto; margin-top:0px;">
+<div class="swiper-container swiper-container-huan">
+    <div class="swiper-wrapper ">
+ 
+      <div class="swiper-slide"><img src="{$ret['pic']}" /></div>
+      {if $ret['pic2']!=''}
+      <div class="swiper-slide"><img src="{$ret['pic2']}" /></div>
+      {/if}
+      {if $ret['pic3']!=''}
+      <div class="swiper-slide"><img src="{$ret['pic3']}" /></div>
+      {/if}
+      {if $ret['pic4']!=''}
+      <div class="swiper-slide"><img src="{$ret['pic4']}" /></div>
+      {/if}
+
+    </div>
+    <!-- Add Pagination -->
+    <div class="swiper-pagination swiper-pagination-wd"></div>
+  </div>
+
+</div>
+
+
+<div  class="itemstitle-box">
+   <div class="items-view-title">{$ret['itemstitle']}
+   
+  
+   {if $ret['diy']=='1'}
+        
+          <span class="weui-badge" style="margin-left: 5px;">星座</span>
+        {/if}
+         {if $ret['diy']=='2'}
+       
+         <span class="weui-badge" style="margin-left: 5px;">定制</span>
+        {/if}
+         {if $ret['diy']=='3'}
+   
+         <span class="weui-badge" style="margin-left: 5px;">刻字</span>
+        {/if}
+         {if $ret['diy']=='4'}
+
+          <span class="weui-badge" style="margin-left: 5px;">正品</span>
+        {/if}
+   </div>
+   
+   <div  class="items-price">￥{obj('api/Api')->moneytype($ret['price'])}</div>
+   <div class="items-dec">{$ret['body']}</div>
+   <div class="weui-flex">
+            <div class="weui-flex-item"><div class="placeholder viewlike" itemsid="{$ret['id']}" ><i class="icon icon-96"></i> <span id="xihuan_num">{$ret['like']}</span></div></div>
+            <div class="weui-flex-item"><div class="placeholder" onClick="toshare()"><i class="icon icon-3"></i> 分享</div></div>
+            <div class="weui-flex-item" ><div class="placeholder"><a href="{url($route='go/tb/itemiid/id=<id>', $params=array('id'=>$ret['itemiid']))}" class="weui_btn weui_btn_warn" style="font-size:16px; border-radius:20px;">去{$gobtntxt}购买</a></div></div>
+        </div>
+</div>
+</div>
+
+<div class="aboutitems">
+<div style="width:100%; height:10px"></div>
+  <div class="aboutline"><div class="weui-loadmore weui-loadmore-line">
+            <span class="weui-loadmore-tips" style="background:#fff">相关推荐</span>
+        </div>
+        
+        </div>
+        <div class="abouttag"><a href="{url($route='plug/mgift/findgift/id=<id>', $params=array('id'=>$type['id']))}"><label class="weui-label">{$type['name']}</label></a></div>
+   <div class="itemslist" style="width:95%; margin-top:10px">
+   
+     {foreach $likeret as $vo}
+     <li class="bs">
+     <a href="{url($route='plug/mgift/giftview/id=<id>', $params=array('id'=>$vo['id']))}"><div class="itemslist_img"><img src="{$vo['pic']}" /></div>
+     <div class="items_list_title">{$vo['itemstitle']}</div>
+     <div class="items_list_btn"><div class="items_list_price"><em>￥</em>{obj('api/Api')->moneytype($vo['price'])}</div>  <div class="items_list_like"><i class="icon icon-96"></i>{$vo['like']}  </div></a>
+     </li>
+     {/foreach}
+  
+   
+   </div>
+
+</div>
+
+
+
+
+{include file="app/plug/view/mgift/share"}
+
+<script src="{__PUBLIC__}h5/swiper/dist/js/swiper.min.js"></script>
+
+ <script>
+
+
+
+     var swipershuan = new Swiper('.swiper-container-huan', {
+      pagination: {
+        el: '.swiper-pagination-wd',
+        clickable: true,
+        renderBullet: function (index, className) {
+          return '<span class="' + className + '"></span>';
+        },
+      },
+    });
+ 
+   
+	/*礼物详情喜欢*/
+$(".viewlike").click(function(){
+	var itemsid=$(this).attr("itemsid");
+	var xihuan_num=$("#xihuan_num").html();
+	if(!$(this).hasClass("xihuan")){
+		$(this).addClass("xihuan");
+		addlike(itemsid);
+		$("#xihuan_num").html(parseInt(xihuan_num)+1);
+		var f_like=gotoplike();
+		$(this).css("color","#ff4e50");
+		$(".f_like").html(parseInt(f_like)+1);
+		
+	}else{
+		$(this).removeClass("xihuan");
+		removelike(itemsid);
+		$("#xihuan_num").html(parseInt(xihuan_num)-1);
+		var f_like=gotoplike();
+		$(this).css("color","#cfcfcf");
+		$(".f_like").html(parseInt(f_like)-1);
+	}
+	
+});
+
+function addlike(itemsid){
+  $.post('index.php?r=plug/gift/like', {
+            ac: 'add',
+            id: itemsid
+        }, function (data) {
+		   return data;
+        });
+}
+function removelike(itemsid){
+	 $.post('index.php?r=plug/gift/like', {
+            ac: 'remove',
+            id: itemsid
+        }, function (data) {
+		   return data;
+        });
+}
+
+function gotoplike(){
+  var f_like=$(".f_like").html();
+  return f_like;
+  
+}
+  </script>
+</body>
+</html>

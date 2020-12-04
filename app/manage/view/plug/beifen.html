@@ -1,0 +1,158 @@
+
+
+			  {include file="app/manage/view/index/nav"}
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=index/agent/channel">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                     
+					<!--s-->
+                    <div class="col-xs-12 col-sm-12">
+													
+<div class="row">
+														<div class="search-area well col-xs-12">
+															<div class="pull-left">
+																<b class="text-primary"></b>
+
+																&nbsp;
+																<div class="btn-group btn-overlap">
+																	<div class="btn btn-lg btn-white btn-success active">
+																		我的插件
+																	</div>
+
+																	<div  class="btn btn-lg btn-white btn-grey">
+																		<a href="index.php?r=manage/plug/lists">云端插件</a>
+																	</div>
+
+																	
+																</div>
+															</div>
+
+															
+														</div>
+													</div>
+                                                    
+													<div class="row">
+                                                    
+                                                    {foreach $ret as $vo}
+														<div class="col-xs-6 col-sm-4 col-md-3">
+															<div class="thumbnail search-thumbnail">
+																<span class="search-promotion label label-success arrowed-in arrowed-in-right">{$vo['author']}</span>
+
+																 <a href="index.php?r=plug/{$vo['biaoshi']}{$vo['manage']}/index" target="_blank"><img class="media-object" data-src="holder.js/100px200?theme=gray" alt="100%x200" style="height: 200px; width: 100%; display: block;" src="{$vo['pic']}" data-holder-rendered="true"></a>
+																<div class="caption">
+																	<div class="clearfix">
+																		
+                                                                       <a href="index.php?r=plug/{$vo['biaoshi']}{$vo['manage']}/index" target="_blank"> <button class="pull-right btn btn-minier btn-yellow">V{$vo['version']}</button></a>
+
+																		<div class="pull-left bigger-110">
+                                                                        <?php
+                                                                        for($i="1";$i<=$vo['level'];$i++){
+                                                                        ?>
+                                                                     		
+																			<i class="ace-icon fa fa-star orange2 "></i>
+                                                                            <?php
+                                                                            }
+                                                                            ?>
+																		</div>
+																	</div>
+
+																	<h3 class="search-title">
+																		<a href="index.php?r=plug/{$vo['biaoshi']}{$vo['manage']}/index" target="_blank" class="blue">{$vo['title']}</a>
+																	</h3>
+																	<p> <a href="index.php?r=plug/{$vo['biaoshi']}{$vo['manage']}/index" target="_blank">{$vo['info']}</a></p>
+																</div>
+															</div>
+														</div>
+
+														{/foreach}
+                                                        
+                                                        
+                                                        
+													</div>
+
+											
+                                            
+                                            
+													</div>
+												</div>
+                    
+                    <!--s-->
+                    
+                                                        </div>
+								
+
+			
+
+		<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.sparkline.index.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.pie.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.resize.min.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+         <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+        <script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+        <script src="{__PUBLIC__}global/js/index.js"></script>
+
+		
+	</body>
+</html>

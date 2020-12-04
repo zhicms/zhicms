@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>{$ret['title']}_{obj('base/Base')->GiftSEO('gl_title')}</title>
+<meta name="keywords" content="{obj('base/Base')->GiftSEO('topic_keywords')}" />
+<meta name="description" content="{obj('base/Base')->GiftSEO('topic_dec')}" />
+<link href="{__PUBLIC__}umaijie/bootstrap/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+<link href="{__PUBLIC__}umaijie/css/iconfont/iconfont.css?v=4" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="{__PUBLIC__}umaijie/js/jquery.min.js"></script>
+<link rel="stylesheet/less" type="text/css" href="{__PUBLIC__}umaijie/css/index.less">
+<script src="{__PUBLIC__}umaijie/js/less.min.js" type="text/javascript"></script>
+<script src="{__PUBLIC__}umaijie/bootstrap/js/bootstrap.min.js"></script>
+<script src="{__PUBLIC__}umaijie/js/jquery.scrollBanner.js" type="text/javascript"></script>
+<script src="{__PUBLIC__}umaijie/js/h5.js" type="text/javascript"></script>
+<script>browserRedirect('{url($route='plug/mgift/strategyview/id=<id>', $params=array('id'=>$_GET['id']))}');</script>
+</head>
+
+<body>
+<style>.topbarleft{margin-left:135px;}.zanbox img:hover{opacity:0.9;filter(alpha=90)}</style>
+{include file="app/plug/view/gift/topbar"}
+{include file="app/plug/view/gift/global_header"}
+
+<div class="mianbaoxiebox">
+<ol class="breadcrumb mianbaoxie">
+  <li><a href="/">首页</a></li>
+  <li><a href="{url($route='plug/gift/strategy', $params=array())}">礼物攻略</a></li>
+  <li>{$ret['title']}</li>
+
+</ol>
+</div>
+
+
+<div class="global_view_box">
+   <div class="global_view_box_left">
+   	<div class="global_view_box_left_box">
+      <div class="global_view_box_title">{$ret['title']}</div>
+      <div class="global_view_box_time"><i class="glyphicon glyphicon-time"></i> {$ret['date']}</div>
+      <div class="global_view_box_dec"> {$ret['wa']}</div>
+      
+      {$newbody}
+   
+   
+     <div class="zanbox">
+        <div><img src="{__PUBLIC__}umaijie/images/zan1.png" onclick="gongLike('{$ret['id']}',this)" /></div>
+        <div class="zantxt"><span class="num"  id="liked_{$ret['id']}" class="n g">{$ret['like']}</span>人觉得很赞</div>
+     
+     </div>
+     <div class="shareicon">   <div class="baidushare"><div class="bdsharebuttonbox bdshare-button-style0-16" data-bd-bind="1529575192257"><span class="share-icon">分享：</span><a data-cmd="sqq" class="bds_sqq" title="分享到QQ好友"></a><a data-cmd="qzone" class="bds_qzone" title="分享到QQ空间"></a><a data-cmd="tsina" class="bds_tsina" title="分享到新浪微博"></a><a data-cmd="weixin" class="bds_weixin" title="分享到微信"></a><a class="bds_more" href="#" data-cmd="more"></a></div></div></div>
+   
+   </div>
+   </div>
+
+  <div class="global_right">
+  <!--global-->
+  <div class="global_right_title"><span>礼物喜欢排行榜</span></div>
+  <div class="global_right_items">
+  
+  <div class="itemslist" style="width:252px;">
+     
+    {foreach $likeret as $key=>$vo}
+  
+    <li  class="u-items-li" data="{$vo['id']}" >
+    <div class="poplike popid_{$vo['id']}" itemsid="{$vo['id']}" ></div>
+     <a href="{url($route='plug/gift/view/id=<id>', $params=array('id'=>$vo['id']))}"  target="_blank"><div class="itemslist-pic"><img src="{$vo['pic']}" /></div>
+    <div class="itemslist-itemstitle">{$vo['itemstitle']}</div></a>
+    <div class="itemslist-itemspbox">
+       <div class="itemslist-itemsprice">￥{obj('api/Api')->moneytype($vo['price'])}
+        <div class="itemslist-itemsbz">
+        {if $vo['diy']!='0'}
+        <div class="itemslist-arrow"><img src="{__PUBLIC__}umaijie/images/umaijie_arrow_rate.jpg" /></div>
+        {if $vo['diy']=='1'}
+        <div class="itemslist-arrow-bz">星座</div>
+        {/if}
+         {if $vo['diy']=='2'}
+        <div class="itemslist-arrow-bz">定制</div>
+        {/if}
+         {if $vo['diy']=='3'}
+        <div class="itemslist-arrow-bz">刻字</div>
+        {/if}
+         {if $vo['diy']=='4'}
+        <div class="itemslist-arrow-bz">正品</div>
+        {/if}
+        {/if}
+        
+       </div>
+       </div>
+       <div class="itemslikenum"><i class="iconfont icon-xihuan "></i><span class="umaijie_xihuan_{$vo['id']}">{$vo['like']}</span></div>
+    </div>
+    </li>
+    </a>
+    {/foreach}
+    
+  
+    
+       
+   </div>
+  </div>
+  
+  <!--global-->
+  </div>
+
+</div>
+
+{include file="app/plug/view/gift/js"}
+
+</body>
+</html>

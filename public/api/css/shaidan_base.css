@@ -1,0 +1,359 @@
+﻿.sdico,.choice_ico,.like_ico,.pro_review_marks,.info_follow a,.sex_ico,.item_review_marks,.layer_ico{
+    background-image:url("../images/miao_ico.png");
+    background-repeat:no-repeat;  
+}
+.info_piece{
+    margin-bottom:8px;
+    background-color:#fff;
+    border:1px solid #ebebeb;
+}
+
+/* 关注按钮
+------------------------------------*/
+.info_follow a{
+    display:inline-block;
+    width:74px;
+    height:22px;
+    line-height:22px;
+    color:#fff;
+}
+
+.info_follow .btn_follow{
+    text-indent:22px;
+    background-position:0 -69px;
+}
+.info_follow a.btn_follow:hover{
+    background-position:-84px -69px;
+}
+.info_follow .add_follow{
+    text-indent:25px;
+    background-position:0 -101px;
+}
+.info_follow .addtwo_follow{
+    text-indent:20px;
+    background-position:-84px -101px;
+}
+.info_follow a.add_follow:hover,.info_follow a.add_follow:hover{
+    text-indent:20px;
+    background-position:-168px -101px;
+}
+
+/* 发布晒单
+------------------------------------*/
+#show_addsun_pop{
+    display:block; 
+    width:640px; 
+    height:440px; 
+    margin-left:-320px; 
+    margin-top:-220px;
+}
+.addsun_header{
+    height:45px;
+    line-height:45px;
+    padding-left:20px;
+    font-size:18px;
+    font-weight:700;
+    color:#4c4c4c;
+    border-bottom:1px solid #f0f0f0;
+}
+.show_addsun_cot{
+    padding:0 50px;
+}
+.show_addsun_cot .addsun_pic{
+    margin:20px 0 20px 0; 
+}
+.addsun_pic_list{
+    width:550px;
+}
+.addsun_pic_list li{
+    position:relative;
+    top:0;
+    left:0;
+    float:left;
+    width:100px;
+    height:100px;
+    margin-right:10px;
+    text-align:center;
+    overflow:hidden;
+}
+.addsun_pic_list .btn_upload{
+    width:96px;
+    height:96px;
+    border:2px dashed #ccc;
+    background:none;    
+}
+.addsun_pic_list .btn_upload a{
+    display:block;
+    position:relative;
+    width:96px;
+    height:96px;
+    overflow:hidden;
+}
+.addsun_pic_list .btn_upload .loading_upload{
+    display:none;
+    width:96px;
+    height:96px;
+    text-align:center;    
+}
+.addsun_pic_list .btn_upload .loading_upload img{
+    margin-top:20px;
+    margin-bottom:5px;
+}
+.addsun_pic_list .btn_upload .loading_upload .add_txt{
+    color:#999;
+    display:block;
+}
+.addsun_pic_list .btn_upload .add_icon{
+    display:block;
+    font-size:40px;
+    font-weight:500;
+    color:#ccc;
+    margin-top:11px;
+    font-family:-webkit-pictograph Arial,"Microsoft YaHei";
+    height:55px;
+}
+.addsun_pic_list .btn_upload .add_txt{
+    color:#999;
+}
+.addsun_pic_list .addupload{
+    display:block;
+    height:96px;
+    position:absolute;
+    bottom:0;
+    right:0;
+    cursor:pointer;
+    filter:alpha(opacity=0);
+    opacity:0;
+}
+.addsun_pic_list li.itempic:hover .picbg{
+    display:block;
+    width:100%;
+    height:100%;
+    position:absolute;
+    top:0;
+    background:rgba(74,74,74,0.6);
+}
+.addsun_pic_list .facepic{
+    display:block;
+    position:absolute;
+    top:0;
+    left:0;
+    z-index:10;
+    width:34px;
+    height:20px;
+    text-align:center;
+    line-height:20px;
+    color:#fff;
+    background:rgba(74,74,74,0.9);
+}
+.addsun_pic_list li:hover a{
+    display:block;
+}
+.addsun_pic_list .btn_delpic{
+    display:none;
+    position:absolute;
+    top:0;
+    right:0;
+    width:20px;
+    height:20px;    
+    text-align:center;
+    line-height:20px;
+    font-size:18px;
+    font-weight:500;
+    color:#fff;
+    font-family: "SimSun";    
+}
+.addsun_pic_list .btn_delpic:hover{
+    background-color:#333;
+}
+.addsun_pic_list .btn_setface{
+    display:none;
+    position:absolute;
+    top:50%;
+    left:50%;    
+    margin:-13px 0 0 -30px;    
+    width:60px;
+    height:24px;
+    color:#666;
+    font-size:12px;
+    text-align:center;
+    line-height:26px;
+    background:rgba(255,255,255,0.9);
+}
+
+.show_addsun_cot .addsun_text{
+    position:relative;
+    border-width:1px;
+    border-style:solid;
+    height:68px;
+    padding:5px;
+    box-shadow:0px 0px 2px 0px rgba(0,0,0,0.15) inset;
+    border-color:#cccccc;    
+ }
+.addsun_text .addsun_textarea{
+    width:100%;
+    height:68px;
+    margin:0px;
+    padding:0px;
+    border-style:none;
+    border-width:0px;
+    font-size:14px;
+    color:#b0b0b0;
+    word-wrap:break-word;
+    line-height:18px;
+    overflow-y:auto;
+    overflow-x:hidden;
+    outline:none;
+}
+.show_addsun_cot .addsun_msg{
+    padding-top:5px;
+    height:20px;
+    color:#ff8300;
+    font-size:12px;  
+}
+.show_addsun_cot .addsun_msg1{
+    margin-left:20px;
+    height:20px;
+    color:#ff8300;
+    font-size:12px;    
+}
+.show_addsun_cot .addsun_active{
+    text-align:center;
+    padding-top:30px;
+}
+.addsun_active .btn_next,.addsun_active .btn_share{
+    width:120px;
+    height:40px;
+    text-align:center;
+    line-height:40px;
+}
+.scot2,.scot3{ display:none;}
+
+/* 发布晒单步骤二
+------------------------------------*/
+.scot2{
+    padding-top:20px;
+}
+.scot2 .item_l{
+    width:120px;
+    height:120px;
+    border:1px solid #e0e0e0;
+}
+.scot2 .item_r{
+    width:390px;
+    height:265px;
+}
+.item_r .form_group{
+    margin-bottom:15px;
+}
+.scot2 .group_tit{
+    height:24px;
+    font-size:14px;
+    font-weight:700;
+    color:#4c4c4c;    
+}
+.item_r .form_group .group_input{
+    height:16px;
+    padding:6px 10px;    
+    line-height:16px;    
+    color:#b0b0b0;
+    font-size:14px;
+    border:1px solid #ccc;
+}
+.show_addsun_cot .ftext {
+    color:#333;
+}
+.item_r .form_group .buy_url{
+    width:365px;
+}
+.item_r .form_group .buy_price{
+    width:100px;
+    margin-right:10px;
+}
+
+.form_group select{
+    border:1px solid #ccc;
+    color:#666;
+    padding:4px;
+    width:122px;
+    font-size:14px;
+    font-family:Arial,"Microsoft YaHei"; 
+}
+.form_group select option{
+    color:#333;
+    padding:3px 0;
+}
+.item_tab{
+    visibility:hidden;    
+
+}
+.item_tab .tab_li li{
+    float:left;
+    margin:0 10px 5px 0;
+}
+.item_tab .tab_li li a{
+    display:inline-block;
+    padding:0 10px;
+    height:22px;
+    line-height:22px;
+    border:1px solid #d1d1d1;
+    color:#808080;
+}
+.item_tab .tab_li li .select_tab{
+    border-color:#f95c68;
+    color:#f95c68;
+}
+
+.item_r .addsun_active{
+    text-align:left;
+    padding-top:10px;
+}
+.scot2 .addsun_active{
+    text-align:left;
+    padding-top:15px;
+    padding-left:150px;
+}
+
+
+/* 发布晒单步骤三
+------------------------------------*/
+.scot3 .scot3_tit{
+    padding-top:120px;
+    height:28px;
+    line-height:28px;
+    font-weight:700;
+    font-size:20px;
+    color:#4c4c4c;
+    text-align:center;
+}
+.scot3_tit i{
+    vertical-align:-8px;
+     display:inline-block;
+     margin-right:10px;
+     width:28px;
+     height:28px;
+     background:url("../images/pop_msg_ico.png") no-repeat;
+}
+.scot3_tit .result_ico1{
+    background-position:0 0;
+}
+.scot3_tit .result_ico2{
+    background-position:0 -40px;
+}
+.scot3_tit .result_ico3{
+    background-position:0 -80px;
+}
+.scot3 .scot3_active{
+    padding-top:30px;
+    text-align:center;
+}
+.scot3 .scot3_active .goandsee{
+    margin-right:50px;
+}
+.scot3 .scot3_active a{
+    font-size:14px;
+    color:#3366cc;
+}
+.scot3 .scot3_active a:hover{
+    text-decoration:underline;
+}

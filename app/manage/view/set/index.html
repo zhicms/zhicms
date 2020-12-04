@@ -1,0 +1,256 @@
+
+
+			  {include file="app/manage/view/index/nav"}
+              <link rel="stylesheet" href="{__PUBLIC__}assets/css/jquery-ui.min.css" />
+
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=index/agent/channel">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                   
+					
+                    
+                    
+                    
+                    <!--s-->
+                 
+
+										<div id="tabs" class="ui-tabs ui-widget ui-widget-content ui-corner-all">
+											{include file="app/manage/view/set/setglobal"}
+											<div id="tabs-1" aria-labelledby="ui-id-29" class="ui-tabs-panel ui-widget-content ui-corner-bottom" role="tabpanel" aria-hidden="false" style="display: block; padding:0px">
+										<!--d-->
+                                       
+                   <div class="widget-box" style="border-top:0px; margin-top:-0px;">
+												
+												<div class="widget-body">
+													<div class="widget-main">
+												
+											</div>
+                  <form class="form-horizontal"  id="form" action="" method="post">
+									<div class="widget-body">
+													<div class="widget-main">
+														
+														<div style=" margin-top:1px; color:#F30">ZhiCms安装和使用文档请查看<a href="http://wiki.zhicms.cc" target="_blank">文档中心</a></div>
+														
+                                                        <div>
+															<label  class="formtitle" for="form-field-8">网站名称</label>
+
+														<input type="text" name="sitename" id="form-field-1" value="{$ret['sitename']}" placeholder="网站名称" class="form-control">
+														</div>
+
+
+														<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">网站域名</label>
+
+														<input type="text" name="hosturl" id="form-field-1" value="{$ret['hosturl']}" placeholder="网站域名" class="form-control">
+														</div>
+
+
+														<hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">网站LOGO</label>
+
+														<input type="text" name="logo" id="form-field-1" value="{$ret['logo']}" placeholder="网站logo" class="form-control">
+														</div>
+														<hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">网站底部二维码</label>
+
+														<input type="text" name="ewm" id="form-field-1" value="{$ret['ewm']}" placeholder="网站底部二维" class="form-control">
+														</div>
+
+														<hr>
+
+
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">淘宝联盟appkey</label>
+
+														<input type="text" name="appkey" id="form-field-998" value="{$ret['appkey']}" placeholder="淘宝联盟appkey" class="form-control">
+														</div>
+														
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">淘宝联盟secretKey</label>
+
+														<input type="text" name="secretKey" id="form-field-999" value="{$ret['secretKey']}" placeholder="淘宝联盟secretKey" class="form-control">
+														</div>
+														
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">阿里妈妈PID(全站默认使用此PID转链，请到官网做好授权)</label>
+
+														<input type="text" name="pid" id="form-field-1" value="{$ret['pid']}" placeholder="阿里妈妈pid" class="form-control">
+													<div style=" margin-top:8px; color:#F30">  输入授权码后，可在此更新授权  &nbsp;&nbsp;现在：<a href="{$ret['apiurl']}?s=App.Totaobao.gotb&code={$ret['code']}" target="_blank">点击更新授权</a></div>
+														</div>
+
+														<hr>
+														
+														<div>
+															<label  class="formtitle"  for="form-field-9">官网API地址</label>
+
+														<select name="apiurl" class="form-control" style="height:34px;">
+                                            <option value="https://open.push.red/" {if $ret['apiurl']=='https://open.push.red/'}selected="selected"{/if}>https://open.push.red/</option>
+											 <option value="https://open.zhicms.vip/" {if $ret['apiurl']=='https://open.zhicms.vip/'}selected="selected"{/if}>https://open.zhicms.vip/</option>
+                                            </select>
+                                              <div style=" margin-top:8px; color:#F30">官网API地址由ZhiCms官网提供，默认使用https://api.push.red/记得带/结尾，如有问题，请到QQ群或官网查看最新api接口地址!填写下列授权码即可<a href="{$ret['apiurl']}?s=App.Totaobao.dologin&code={$ret['code']}" target="_blank">一键登录官网</a></div>
+														</div>
+														<hr>
+                                                        <div>
+															<label  class="formtitle" for="form-field-8">授权码(ZhiCms网站使用授权码)</label>
+
+														<input type="text" name="code" id="form-field-999" value="{$ret['code']}" placeholder="网站授权码免费，请放心申请" class="form-control">
+														<div style=" margin-top:8px; color:#F30">免费授权码请到http://www.zhicms.vip登陆用户后，在用户中心申请(进去即可看到授权码)!</div>
+														</div>
+														<hr>
+
+                                                        	<div>
+															<label  class="formtitle"  for="form-field-9">高佣转链接口</label>
+
+														<select name="zhuan" class="form-control" style="height:34px;">
+                                            <option value="0" {if $ret['zhuan']=='0'}selected="selected"{/if}>ZhiCms</option>
+                                            </select>
+                                               <div style=" margin-top:8px; color:#F30">此接口必填必选，默认使用ZhiCms转链接口，请到http://www.zhicms.vip登陆用户后，点击授权设置-淘宝授权</div>
+														</div>
+                                            <hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle"  for="form-field-9">客户端下载</label>
+
+														<input type="text" name="download" id="form-field-999" value="{$ret['download']}" placeholder="客户端下载地址" class="form-control">
+                                               <div style=" margin-top:8px; color:#F30">最好填写应用宝下载地址，可关联苹果应用市场，并且提供在微信端下载渠道！</div>
+														</div>
+                                                    
+                                                      
+
+														</div></div>
+
+                                              
+
+													
+
+								{$html}
+                                
+                                <div class="clearfix form-actions"  style="margin-bottom:-0px;" >
+										<div class="col-md-offset-1 col-md-9">
+											<input type="submit"  class="btn btn-info " id="save"  value="保存" />
+
+											
+										
+										</div>
+									</div>
+                                    
+                                                   </div>
+								
+                                </form>     
+
+                                        <!--d-->
+											</div>
+
+										
+									
+                    <!--s-->
+                                                        </div>
+								
+
+			
+
+			<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+        <script src="{__PUBLIC__}assets/js/ace-extra.min.js"></script>
+	<!-- ace scripts -->
+	<!--[if !IE]> -->
+		<script src="assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/bootbox.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.gritter.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/spin.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+
+
+
+
+		<!-- inline scripts related to this page -->
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+		<script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+        <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <script src="{__PUBLIC__}assets/js/chosen.jquery.min.js"></script>
+        <script src="{__PUBLIC__}global/js/Validform_v5.3.2_min.js"></script>
+        <script src="{__PUBLIC__}global/js/ajaxfileupload.js"></script>
+        <script src="{__PUBLIC__}global/js/index.js"></script>
+        
+        <script>
+		ZhiForm("#form","index.php?r=manage/set/index","保存中","保存","null");
+		</script>
+
+		
+	</body>
+</html>

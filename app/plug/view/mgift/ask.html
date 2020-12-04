@@ -1,0 +1,108 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>{obj('base/Base')->SET('giftseo','q_title')}</title>
+<meta name="keywords" content="{obj('base/Base')->SET('giftseo','q_keywords')}" />
+<meta name="description" content="{obj('base/Base')->SET('giftseo','q_dec')}" />
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui2.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui3.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/swiper/dist/css/swiper.min.css">
+<link href="{__PUBLIC__}h5/css/index.css?v=<?=time()?>" rel="stylesheet" type="text/css">
+<script src="{__PUBLIC__}h5/wui/zepto.min.js"></script>
+
+</head>
+<style>
+body{background:#f8f8f8}
+</style>
+<body>
+
+
+<div class="weui_btn_warn weui-header " style="background:#f84e4e"> 
+  <div class="weui-header-left" onClick="javascript :history.back(-1);"> <a class="icon icon-109 f-white dhicon"></a>  </div>
+   <h1 class="weui-header-title">礼物问答</h1>
+     <div class="weui-header-right"><a class="icon icon-3 f-white dhicon" onClick="toshare()"></a></div> 
+    </div>
+    
+ <div class="asklistitle"><strong>生日问答</strong></div>
+        
+        <div class="weui_grids grids-small" style="background:#fff">
+         {foreach obj("index/global","controller")->getlist('plug_gift_wendatype','y',1) as $vs}
+            <a href="{url($route='plug/mgift/asklist/id=<id>', $params=array('id'=>$vs['id']))}" class="grid" style="padding:18px 8px">
+               
+                <p class="weui_grid_label" style="color:#666">
+                  {$vs['name']}
+                </p>
+            </a>
+            {/foreach}
+        </div>
+        
+        
+         <div class="asklistitle jieriwenda"><strong>节日问答</strong></div>
+         
+          <div class="weui_grids grids-small" style="background:#fff">
+         {foreach obj("index/global","controller")->getlist('plug_gift_wendatype','y',19) as $vs}
+            <a href="{url($route='plug/mgift/asklist/id=<id>', $params=array('id'=>$vs['id']))}" class="grid" style="padding:18px 8px">
+               
+                <p class="weui_grid_label" style="color:#666">
+                  {$vs['name']}
+                </p>
+            </a>
+            {/foreach}
+        </div>
+        
+          <div class="asklistitle jiehunwenda"><strong>结婚问答</strong></div>
+         
+          <div class="weui_grids grids-small" style="background:#fff">
+        {foreach obj("index/global","controller")->getlist('plug_gift_wendatype','y',33) as $vs}
+            <a href="{url($route='plug/mgift/asklist/id=<id>', $params=array('id'=>$vs['id']))}" class="grid" style="padding:18px 8px">
+               
+                <p class="weui_grid_label" style="color:#666">
+                  {$vs['name']}
+                </p>
+            </a>
+            {/foreach}
+        </div>
+  
+  
+   <div class="asklistitle shenghuowenda"><strong>生活问答</strong></div>
+         
+          <div class="weui_grids grids-small" style="background:#fff">
+         {foreach obj("index/global","controller")->getlist('plug_gift_wendatype','y',39) as $vs}
+            <a href="{url($route='plug/mgift/asklist/id=<id>', $params=array('id'=>$vs['id']))}" class="grid" style="padding:18px 8px">
+               
+                <p class="weui_grid_label" style="color:#666">
+                  {$vs['name']}
+                </p>
+            </a>
+            {/foreach}
+        </div>
+        
+        
+        
+   <div class="asklistitle liyiwenda"><strong>礼仪问答</strong></div>
+         
+          <div class="weui_grids grids-small" style="background:#fff">
+        {foreach obj("index/global","controller")->getlist('plug_gift_wendatype','y',46) as $vs}
+            <a href="{url($route='plug/mgift/asklist/id=<id>', $params=array('id'=>$vs['id']))}" class="grid" style="padding:18px 8px">
+               
+                <p class="weui_grid_label" style="color:#666">
+                  {$vs['name']}
+                </p>
+            </a>
+            {/foreach}
+        </div>
+        
+        
+  <div style="width:100%; height:100px;"></div>
+  
+  {include file="app/plug/view/mgift/footer"}
+{include file="app/plug/view/mgift/share"}
+
+
+  
+ 
+</body>
+</html>

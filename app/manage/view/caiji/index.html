@@ -1,0 +1,233 @@
+
+
+			 {include file="app/manage/view/index/nav"}
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=index/agent/channel">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                        <div style="float:left; margin-bottom:15px;">
+                  <button class="btn btn-primary" onclick="LayerFrame('<strong>云站采集</strong>','500','318','index.php?r=manage/caiji/dtk','1')">一键采集</button>&nbsp&nbsp
+                  <!--button class="btn btn-primary" onclick="LayerFrame('<strong>云站更新</strong>','500','318','index.php?r=manage/caiji/dtkup','1')">一键更新</button-->
+                  
+<a class="btn  "{if !$_GET['cid']}green{else}grey-cascade{/if}" href="index.php?r=manage/caiji/index">
+			<i class="fa fa-folder"></i>全部</span>
+		</a>
+
+    <?php
+for($i=1;$i<=14;$i++){
+$navlist=obj("manage/caiji","controller")->lists($i,"y");
+$nlist= explode(",", $navlist);
+?>
+		<a class="btn  {if $_GET['cid']==$nlist['1']}green <? }else{ ?>grey-cascade <?php } ?>" href="index.php?r=manage/caiji/index&cid=<?=$nlist['1']?>">
+			<i class="fa fa-folder"></i><?=$nlist['0']?>
+		</a>
+        
+<?php        
+}
+?>
+
+
+                      </div>
+                       
+                     
+                        <table class="table table-striped table-bordered">
+															<thead>
+																<tr>
+																	<th style="width:80px;" class="center">宝贝ID</th>
+                                                                    <th>图片</th>
+																	<th style="width:180px"  >商品名称</th>
+                                                                    <th>平台</th>
+																	<th >分类</th>
+																	<th >价格(元)</th>
+                                                                    <th >券后价(元)</th>
+                                                                    <th >销量</th>
+                                                                    <th >佣金(元)</th>
+                                                                    <th style=" width:60px;" >优惠券</th>
+                                                                    <th >优惠券结束时间</th>
+                                                                    <th >优惠券使用条件</th>
+																	<th >来源</th>
+																	<th  style="width:80px;">操作</th>
+																</tr>
+															</thead>
+
+															<tbody>
+                                                            {foreach $Page['list'] as $vo}
+																<tr>
+																	<td class="center">{$vo['goodsId']}</td>
+                                                                     <td><img src="{$vo['mainPic']}_50x50" style="width:60px; height:60px; border:1px solid #CCC"  /></td>
+																	<td valign="middle">
+																		
+                                                                        {$vo['title']}
+																	</td>
+                                                                    <Td style="text-align:center; vertical-align:middle">
+                                                                    {if $vo['shopType']==1}
+                                                                    <span class="badge badge-danger">天猫</span>
+                                                                    {elseif $vo['shopType']==0}
+                                                                     <span class="badge badge-yellow">淘宝</span>
+                                                                    {/if}
+                                                                    </Td>
+																	<td style="text-align:center; vertical-align:middle" >
+																		{obj("manage/caiji","controller")->Cid($vo['cid'])}
+																	</td>
+																	<td style="text-align:center; vertical-align:middle">
+																	{$vo['originalPrice']}￥
+																	</td>
+                                                                    <td style="text-align:center; vertical-align:middle">{$vo['actualPrice']}￥</td>
+                                                                    <td style="text-align:center; vertical-align:middle">
+																		{$vo['monthSales']}件
+																	</td><td style="text-align:center; vertical-align:middle">
+                                                                    {if $vo['commissionType']==0}
+                                                                     <span class="badge badge-success">通用：{$vo['commissionRate']}%</span>
+                                                                   {elseif $vo['commissionType']==1}
+																    <span class="badge badge-success">定向：{$vo['commissionRate']}%</span>
+																	 {elseif $vo['commissionType']==2}
+																    <span class="badge badge-success">高佣：{$vo['commissionRate']}%</span>
+                                                                    {elseif $vo['commissionType']==3}
+																    <span class="badge badge-success">营销：{$vo['commissionRate']}%</span>
+                                                                    {/if}
+																		
+																	</td >
+                                                                    <td style="text-align:center; vertical-align:middle"> 
+																		{$vo['couponPrice']}￥
+																	</td>
+                                                                    <td style="text-align:center; vertical-align:middle">
+																		{$vo['couponEndTime']}
+																	</td>
+                                                                    <td style="text-align:center; vertical-align:middle">
+																		单笔满{$vo['couponConditions']}可用
+																	</td>
+																	
+																	<td style="text-align:center; vertical-align:middle">
+																	{if $vo['laiyuan']=="" || $vo['laiyuan']==null}
+                                                                     <span class="badge badge-success">大淘客</span>
+                                                                   {elseif $vo['laiyuan']==0}
+																    <span class="badge badge-success">云源库</span>
+                                                                    {/if}
+																	</td >
+																	
+																	<td style="text-align:center; vertical-align:middle">
+                                                             
+															
+															
+															 <!--button class="btn btn-xs btn-success"  onclick="ZhiCmsConfirm('确定要直接上架吗？','是的','取消','index.php?r=manage/caiji/shangjia&id={$vo['id']}&lock=1','上架中...')">
+																上架
+															</button-->
+                                                           
+															<a href="index.php?r=manage/items/additems&goodsid={$vo['goodsId']}" class="btn btn-xs btn-danger"  >
+																编辑上架
+															</a>
+                                                            </td>
+																</tr>
+                                                                {/foreach}
+
+															</tbody>
+														</table>
+                                                        
+                                                        <div style="float:right">
+                                                       
+                                                   <ul class="pagination">
+												{$Page['pages']}
+											</ul>
+                                            
+                                            </div>
+                                            <div style="width:100%; height:80px;"></div>
+                                            
+                                            
+                        </div>
+
+			
+
+			<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+        <script src="{__PUBLIC__}assets/js/ace-extra.min.js"></script>
+	<!-- ace scripts -->
+	<!--[if !IE]> -->
+		<script src="assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/bootbox.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.gritter.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/spin.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+
+
+
+
+		<!-- inline scripts related to this page -->
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+		<script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+        <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <script src="{__PUBLIC__}global/js/Validform_v5.3.2_min.js"></script>
+        <script src="{__PUBLIC__}global/js/index.js"></script>
+		<script>
+		ZhiForm("#form","index.php?r=index/agent/channel","保存中","保存","null");
+			$('[data-rel=popover]').popover({container:'body'});
+
+		</script>
+		
+	</body>
+</html>
