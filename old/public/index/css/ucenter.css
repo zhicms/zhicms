@@ -1,0 +1,13 @@
+.utopbox{width:100%; height:189px; margin-top:92px;}
+.utopboxpic{width:100$; height:auto; text-align:center}
+.utopboxpic img{width:120px; height:120px; border-radius:120px; cursor:pointer}
+.utopboxtext{width:100%; height:auto; font-size:26px;  text-align:center; margin-top:15px; font-family:'微软雅黑'}
+.unav{width:670px; height:auto; margin:0 auto}
+.uweget{width:100%; height:auto; text-align:center; color:#999; margin-top:10px; margin-bottom:20px; vertical-align:middle;}
+.uweget i{ margin-right:5px; vertical-align:middle}
+.layui-tab-brief>.layui-tab-title .layui-this{font-size:16px; color:#2D2D2F; font-weight:bold; }
+.layui-tab-title li{min-width:0px;font-size:16px;font-weight:bold; color:rgba(0,0,0,0.6); margin-right:30px; padding:0px 5px;}
+.layui-tab-brief>.layui-tab-more li.layui-this:after, .layui-tab-brief>.layui-tab-title .layui-this:after {
+    border-bottom: 4px solid #333;
+}
+.layuphoto{width:120px; height:120px; text-align:center; color:#FFF; line-height:120px; cursor:pointer; display:none;background-color: rgba(0,0,0,0.5); position:absolute; margin-top:-120px; border-radius:120px;}

@@ -1,0 +1,318 @@
+<div class="index-global-gotop">
+  <div class="index-global-gotop-btn">
+   <a  href="{url($route='plug/gift/mylike', $params=array())}" target="_blank" > <div class="index-global-gotop-btn-like"  ><i class="icon iconfont icon-xihuan1"></i><span class="badge f_like" style="position:absolute; margin-left:-40px;" >{obj('plug/gift','controller')->globallike()}</span></div></a>
+   <div class="index-global-gotop-btn-like u-gotop" style="display:none"><i class="icon iconfont icon-dingbu" style="font-size:30px;"></i></div>
+  </div>
+</div>
+
+{htmlspecialchars_decode(obj('base/Base')->SiteConfig('tongji'))}
+
+<div style="width:100%; height:30px; clear:both;"></div>
+<div class="footer">
+  <div class="footer-div-box">
+     <div class="footer-left">
+      <div class="footer-div-box-umaijie">
+       <a href="{url($route='plug/gift/page/id=<id>', $params=array('id'=>1))}" target="_blank">关于我们</a>
+    <a href="{url($route='plug/gift/page/id=<id>', $params=array('id'=>3))}" target="_blank">如何购买</a>
+    <a href="{url($route='plug/gift/page/id=<id>', $params=array('id'=>2))}" target="_blank">商家合作</a>
+    <a href="{url($route='plug/gift/page/id=<id>', $params=array('id'=>4))}" target="_blank">版权声明</a>
+      
+      </div>
+      <div class="footer-div-box-link">
+        <div class="footer-div-box-link-title">友情链接</div>
+        <div class="footer-div-box-link-links">
+        {foreach obj('plug/gift','controller')->ulink() as $vo}
+        <a href="{$vo['link']}" target="_blank">{$vo['title']}</a>
+        {/foreach}
+        </div>
+      </div>
+      <div class="footer-div-banquan">{obj('base/Base')->GiftSEO('banquan')}
+</div>
+      
+      
+      
+      </div>
+          
+          <div class="footer-right">
+             <div class="footer-right-ewm"><img src="{__PUBLIC__}umaijie/images/ewm.png" /></div>
+             <div class="footer-right-btn">
+               <dt><a href="#"><img src="{__PUBLIC__}umaijie/images/ios.png" /></a></dt>
+                <dt><a href="#"><img src="{__PUBLIC__}umaijie/images/android.png" /></a></dt>
+             </div>
+          
+          </div> 
+  </div>
+
+</div>
+
+
+<script>
+$(document).ready(function(){ 
+ //获取分页宽度
+ var pagewidth=$(".pagination").width();
+  $(".pagewidth").css("width",pagewidth+1+"px");
+ }); 
+  /*搜索*/
+  
+$('#search').bind('keypress', function (event) { 
+   if (event.keyCode == "13") { 
+    $(".sbtn").click();
+	 gosbtn();
+   }
+  })
+  function gosbtn(){
+	 var keywords=$("#search").val();
+	if(!keywords){
+		//layer.msg('请输入关键字', function(){});
+		return false;
+	}
+	
+	
+	 var url='search-'+keywords+'.html';
+	
+	  location.href=url;
+
+  }
+ 
+ /*攻略导航*/
+ $(".send_who_click").on('mouseenter',function(e){
+	 $(".senddom").css("display","none");
+	 $(".send_who").css("display","block");
+ });
+
+   $(".send_why_click").on('mouseenter',function(e){
+	 $(".senddom").css("display","none");
+	 $(".send_why").css("display","block");
+ });
+
+$(".send_jr_click").on('mouseenter',function(e){
+	 $(".senddom").css("display","none");
+	 $(".send_jr").css("display","block");
+ });
+  $(".itemslistbox").on('mouseleave',function(e){
+	 $(".send_who").css("display","none");
+	  $(".send_why").css("display","none");
+    $(".send_jr").css("display","none");
+  });
+ /*导航菜单打开*/
+ $(".send-u").on('mouseenter',function(e){
+	 $(".lay1").css("display","block")
+ });
+ $(".send-more").on('mouseenter',function(e){
+	 $(".lay2").css("display","block")
+ });
+ $(".umaijie-nav-box li").on('mouseleave',function(e){
+	 $(".lay-link-s").css("display","none");
+	 $(".lay1").css("display","none");
+	 $(".lay2").css("display","none");
+ });
+ 
+  $(".header_common_nav li").on('mouseleave',function(e){
+	 $(".lay-link-s").css("display","none");
+	 $(".lay1").css("display","none");
+	 $(".lay2").css("display","none");
+ });
+ 
+ 
+ 
+/*顶部菜单*/
+$(".big-menu").on('mouseenter',function(e){
+	var data=$(this).attr("data");
+	$(".lay-link-s").css("display","none");
+	$(".small-menu-"+data).css("display","block");
+	$(".big-menu").removeClass("menulink-acitve");
+	$(".big-menu").css("border-left","4px solid #34343e");
+	$(this).addClass("menulink-acitve");
+	$(this).css("border-left","4px solid #f84e4e");
+});
+ 
+ $(".lay1").on('mouseleave',function(e){
+	
+	$(".lay-link-s").css("display","none");
+	$(".lay1").css("display","none");
+
+ });
+  $(".lay2").on('mouseleave',function(e){
+	
+	$(".lay-link-s").css("display","none");
+	$(".lay2").css("display","none");
+
+ });
+ 
+/*返回顶部*/
+ $(window).scroll(function () {
+        if ($(window).scrollTop() >= 50) {
+            $('.u-gotop').fadeIn();
+        }
+        else {
+            $('.u-gotop').fadeOut();
+        }
+    });
+ $('.u-gotop').click(function () {
+    $('html,body').animate({ scrollTop: 0 }, 500);
+});
+ 
+/*首页说明特效*/
+$(".grayimghover").mousemove(function(){
+	var data=$(this).attr("data");
+	$(".zp-img_"+data).removeClass("grayimg");
+	$(".big-title_"+data).addClass("u-d2-big-title-color");
+});
+
+$(".grayimghover").mouseout(function(){
+	var data=$(this).attr("data");
+	$(".zp-img_"+data).addClass("grayimg");
+	$(".big-title_"+data).removeClass("u-d2-big-title-color");
+});
+
+/*喜欢按钮显示*/
+$(".u-items-li").mousemove(function(){
+	$(".popid_"+$(this).attr("data")).css("display","block");
+});
+$(".u-items-li").mouseout(function(){
+	$(".popid_"+$(this).attr("data")).css("display","none");
+});
+
+/*礼物喜欢*/
+$(".poplike").click(function(){
+	var itemsid=$(this).attr("itemsid");
+	var xihuan_num=$(".umaijie_xihuan_"+itemsid).html();
+	 
+	 if(!$(this).hasClass("poplike-xihuan")){
+		$(this).addClass("poplike-xihuan");
+		$(this).css("background-image","url({__PUBLIC__}umaijie/images/like2.png)");
+	    addlike(itemsid);
+		$('.umaijie_xihuan_' + itemsid).html(parseInt(xihuan_num)+1)
+		var f_like=gotoplike();
+		$(".f_like").html(parseInt(f_like)+1);
+	 }else{
+		//移除喜欢
+		$(this).removeClass("poplike-xihuan");
+		$(this).css("background-image","url({__PUBLIC__}umaijie/images/like1.png)");
+	    removelike(itemsid);
+		 $('.umaijie_xihuan_' + itemsid).html(parseInt(xihuan_num)-1)
+		 var f_like=gotoplike();
+		 $(".f_like").html(parseInt(f_like)-1);
+	 }
+});
+
+/*礼物详情喜欢*/
+$(".viewlike").click(function(){
+	var itemsid=$(this).attr("itemsid");
+	var xihuan_num=$("#xihuan_num").html();
+	if(!$(this).hasClass("xihuan")){
+		$(this).addClass("xihuan");
+		addlike(itemsid);
+		$("#xihuan_num").html(parseInt(xihuan_num)+1);
+		var f_like=gotoplike();
+		$(".f_like").html(parseInt(f_like)+1);
+		
+	}else{
+		$(this).removeClass("xihuan");
+		removelike(itemsid);
+		$("#xihuan_num").html(parseInt(xihuan_num)-1);
+		var f_like=gotoplike();
+		$(".f_like").html(parseInt(f_like)-1);
+	}
+	
+});
+
+function addlike(itemsid){
+  $.post('index.php?r=plug/gift/like', {
+            ac: 'add',
+            id: itemsid
+        }, function (data) {
+		   return data;
+        });
+}
+function removelike(itemsid){
+	 $.post('index.php?r=plug/gift/like', {
+            ac: 'remove',
+            id: itemsid
+        }, function (data) {
+		   return data;
+        });
+}
+
+function gotoplike(){
+  var f_like=$(".f_like").html();
+  return f_like;
+  
+}
+
+
+/*分类选择*/
+$(".giftfenlei").on('mouseenter',function(e){
+	$(".giftlistlay").css("display","block");		
+});
+$(".itemslistbox").on('mouseleave',function(e){
+	$(".giftlistlay").css("display","none");		
+});
+
+
+/*攻略赞*/
+function gongLike(gong_id, me) {
+    $.ajax({
+        type: 'POST',
+        url: 'index.php?r=plug/gift/gongluelike',
+        data: {"gonglue_id": gong_id},
+        dataType: "text",
+        cache: false,
+        success: function (jdata) {
+            $('#liked_' + gong_id).html(jdata);
+        },
+        error: function (jdata) {
+            alert(jdata);
+			console.log(jdata);
+        }
+    });
+}
+
+/*问答赞*/
+function askLike(ask_id,me){
+ $.ajax({
+            type: 'POST',
+            url: 'index.php?r=plug/gift/asklike',
+            data: {"ask_id": ask_id},
+            dataType: "json",
+            cache: false,
+            success: function (jdata) {
+                $('#ask_' + ask_id).html(jdata);
+				console.log(jdata);
+            },
+            error: function (jdata) {
+                alert(jdata.info);
+            }
+        });	
+}
+
+/*添加到收藏夹*/
+$("#addcollect").click(function() {
+        var ctrl = (navigator.userAgent.toLowerCase()).indexOf('mac') != -1 ? 'Command/Cmd': 'CTRL';
+        if (document.all) {
+            window.external.addFavorite('{obj('base/Base')->SiteConfig('hosturl')}', '{obj('base/Base')->GiftSEO('index_title')}')
+        } else if (window.sidebar) {
+            window.sidebar.addPanel('{obj('base/Base')->GiftSEO('index_title')}', '{obj('base/Base')->SiteConfig('hosturl')}', "")
+        } else {
+            alert('您可以尝试通过快捷键' + ctrl + ' + D 加入到收藏夹~')
+        }
+    })
+	
+/*问答导航切换*/
+$(".q_nav_click").mouseenter(function(){
+	var data=$(this).attr("data");
+	$(".q_nav_click").css("border-top","3px solid #fff");
+	$(this).css("border-top","3px solid #333");
+	$(".q_nav_box").css("display","none");
+	$(".q_nav_"+data).css("display","block");
+	
+	
+});
+
+
+
+
+ //以下为js加载部分
+    with (document)0[(getElementsByTagName('head')[0] || body).appendChild(createElement('script')).src =
+        'http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion=' + ~(-new Date() / 36e5)];
+</script>

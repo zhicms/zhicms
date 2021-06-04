@@ -1,0 +1,150 @@
+
+
+			  {include file="app/manage/view/index/nav"}
+              <style>
+			  .commentcss img{margin-left:5px;}
+			  </style>
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=index/agent/channel">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                     
+					<table class="table table-striped table-bordered">
+															<thead >
+																<tr  >
+																	<th style="width:80px;" class="center" >ID</th>
+																	<th class="center">用户</th>
+														
+																	<th class="center">标题</th>
+                                                                    <th class="center">模型</th>
+                                                                    <th class="center">内容</th>
+                                                                    <th class="center">评论日期</th>
+                                                                  
+																	<th  class="center" style="width:140px;">操作</th>
+																</tr>
+															</thead>
+
+															<tbody  style="text-align:center">
+                                                            {foreach $Page['list'] as $vo}
+																<tr>
+																	<td style="vertical-align:middle" class="center">{$vo['id']}</td>
+
+																	<td style="vertical-align:middle">
+																		<?
+                                                                   $u=obj("index/global","controller")->finduser("y",$vo['uid']);
+                                                                   echo $u['username'];
+                                                                   ?>
+																	</td>
+																	
+																	<td style="vertical-align:middle" class="hidden-480">
+                                                                    {if $vo['model']=='1'}
+                                                                    {obj('manage/user','controller')->commenttitle($vo['aid'],'1')}
+                                                                    {/if}
+                                                                      {if $vo['model']=='2'}
+                                                                    {obj('manage/user','controller')->commenttitle($vo['aid'],'2')}
+                                                                    {/if}
+                                                                    
+                                                                    </td>
+                                                                    <td style="vertical-align:middle">
+                                                                   {if $vo['model']=='1'}
+                                                                   <span class="badge badge-yellow">攻略</span>
+                                                                   {/if}
+                                                                   {if $vo['model']=='2'}
+                                                                   <span class="badge badge-danger">文章</span>
+                                                                   {/if}
+                                                                    </td>
+                                                                    <td style="vertical-align:middle" class="commentcss">
+                                                                  {$vo['body']}
+                                                                    </td>
+                                                                     <td style="vertical-align:middle">
+                                                                  {$vo['date']}
+                                                                    
+                                                                    </td>
+																	<td>
+                                                               
+                                                            
+                                                            <button class="btn btn-xs btn-danger"  onclick="ZhiCmsConfirm('确定要删除吗？','是的','取消','index.php?r=manage/user/deletecomment&id={$vo['id']}','正在删除')">
+																<i class="ace-icon fa fa-trash-o bigger-120"></i>
+															</button>
+                                                            </td>
+																</tr>
+                                                                {/foreach}
+
+															</tbody>
+														</table>
+                                                        </div>
+								
+
+			
+
+		<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.sparkline.index.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.pie.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.resize.min.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+        <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+        <script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+        <script src="{__PUBLIC__}global/js/index.js"></script>
+		
+	</body>
+</html>

@@ -1,0 +1,14 @@
+<IfModule mod_rewrite.c>
+RewriteEngine on
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . index.php
+
+      # 设置不能执行php权限的目录
+	  RewriteRule ZhiCms/(.*).(php)$ – [F]	 
+	  RewriteRule public/(.*).(php)$ – [F] 
+	  RewriteRule upload/(.*).(php)$ – [F] 
+</IfModule>
+
+

@@ -1,0 +1,190 @@
+﻿body{background:#f5f5f5;}
+.container{
+    min-height:800px;
+    padding-top:20px;
+    background:#fff;
+    font-family:Arial,"Microsoft YaHei";
+}
+.single_head{
+    position:relative;
+    margin:0 35px;
+    padding:5px;
+    background:#f4eeeb;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    border-radius:10px;
+}
+.single_head .single_tips{
+    position:absolute;
+    right:35px;
+    top:0;
+    display:block;
+    width:70px;
+    height:42px;
+    background-position:-180px -41px;
+}
+.single_head .head_content{
+    min-height:200px;
+    padding:0 30px;
+    border:1px dashed #ddd6d3;
+    -moz-border-radius:10px;
+    -webkit-border-radius:10px;
+    border-radius:10px;
+}
+.head_content .head_tit{
+    padding:10px 0 10px 0;
+    text-align:center;
+    font-size:24px;
+    color:#4d4545;
+    font-weight:500;
+}
+.head_content .head_des{
+    min-height:80px;
+    line-height:26px;
+    text-align:justify;
+    font-size:14px;
+    color:#807373;
+}
+.head_content .head_bot{
+    margin-top:20px;
+}
+.head_bot .single_pro{
+    height:30px;
+    line-height:30px;
+    width:500px;
+}
+.head_pro span{
+    color:#999;
+}
+.head_pro .pro_time{
+    padding:0 10px;
+    margin:0 10px;
+    border-left:1px solid #e0e0e0;
+    border-right:1px solid #e0e0e0;
+}
+.single_share{
+    display:inline-block;
+    width:70px;
+    height:24px;
+    line-height:24px;
+    border:1px solid #ff9c33;
+    color:#ff9c33;
+    border-radius:2px;
+}
+.single_share i{
+    float:left;
+    display:inline-block;
+    width:24px;
+    height:24px;
+    margin-left:8px;
+    vertical-align:middle;
+    background-position:-127px -31px;
+}
+.single_share:hover{
+    background-color:#ff9c33;
+    color:#fff;
+}
+.single_share:hover i{
+    background-position:-100px -31px;
+}
+
+
+/* 晒单列表
+--------------------*/
+.single_content{
+    padding-bottom:80px;
+}
+.item_single{
+    margin:35px 35px 0 35px;
+    padding:0 0 40px 30px;
+    border-bottom:1px dashed #e0e0e0;
+}
+.single_content .item_single:last-child{
+    border-bottom:0px;
+}
+.item_single .single_pic{
+    float:left;
+    margin-right:50px;
+}
+.single_pic a{
+    display:inline-block;
+    padding:5px;
+    border:1px solid #ededed;
+}
+.single_pic a img{
+    width:200px;
+    height:200px;
+}
+
+.item_single .single_pro{
+    float:left;
+    width:602px;
+}
+.pro_author .author_portrait{
+    float:left;
+    margin-right:15px;
+}
+.pro_author .author_portrait img{
+    display:inline-block;
+    width:56px;
+    height:56px;
+    border:1px solid #e6e6e6;
+    -moz-border-radius:28px;
+    -webkit-border-radius:28px;
+    border-radius:28px;
+}
+.pro_author .author_info{
+    float:left;
+    width:520px;
+    overflow:hidden;
+    word-break:keep-all;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+.pro_author .author_info .single_tit{
+    display:inline-block;
+    line-height:36px;
+    font-size:20px;
+    color:#333;
+}
+.pro_author .author_info .single_tit:hover{
+    color:#f95c68;
+}
+.pro_author .author_info .author_nickname{
+    font-size:14px;
+    color:#999;
+}
+.pro_author .author_info .author_nickname:hover{
+    color:#8a4545;
+}
+.single_pro .single_text{
+    margin-top:20px;
+    min-height:95px;
+    _height:95px;
+    line-height:26px;
+    font-size:14px;
+    color:#666;    
+}
+.single_active .reference{
+    line-height:36px;
+    font-size:14px;
+    color:#333;
+}
+.single_active .reference span{
+    color:#f95c68;
+}
+.single_active .look_btn{
+    float:right;
+    display:inline-block;
+    width:118px;
+    height:34px;
+    text-align:center;
+    line-height:34px;
+    font-size:14px;
+    color:#f95c68;
+    border:1px solid #f95c68;
+}
+.single_active .look_btn:hover{  
+    background:#f95c68;
+    color:#fff;
+}

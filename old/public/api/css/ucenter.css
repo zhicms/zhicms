@@ -1,0 +1,70 @@
+
+/* CSS Document */
+li{list-style:none}
+.ucentertop{width:100%; height:90px; background:#ffffff; border-bottom:1px solid #dddddd}
+.ucentertopbox{width:1000px; margin:0 auto; height:auto}
+.ucenterbox{width:1000px; height:auto;  margin:0 auto;margin-top:15px;}
+.ucenterleft{width:210px; height:449px;background:#FFF; float:left; border:1px solid #dddddd; border-right:0px;}
+.ucenterleftitle{width:100%; height:45px;border-bottom:1px solid #f3f3f3; font-size:16px; font-family:'微软雅黑'; line-height:45px;color:#000;}
+.ucenterleftbox{width:210px; height:auto;}
+.ucenterleftbox li{width:210px; height:40px; border-bottom:1px solid #f3f3f3; font-size:14px; font-family:'微软雅黑'; line-height:40px;color:#000; }
+.uencer-fa{float:right; margin-top:13px; margin-right:10px; color: #dddddd;}
+.ucenterleftbox li:hover{ font-weight:bold}
+.uactive{ border-left:3px solid #f95c68; }
+.ucenterboxleft{float:left}
+.userinfo{width:210px; height:150px; background:#FFF;border:1px solid #dddddd; border-bottom:0px;border-right:0px;}
+.upic{width:100%; height:auto; text-align:center;margin-top:10px;}
+.upic img{width:80px; height:80px;border-radius:80px; border:1px solid #f3f3f3; }
+.username{width:100%; height:auto; margin-top:10px; text-align:center; font-size:16px; font-weight:bold; font-family:'微软雅黑'; }
+.eitpic{width:80px; height:80px; position:absolute; background:#000;border-radius:80px; margin-top:-81px; margin-left:65px; line-height:80px; color:#FFF; font-size:12px; cursor:pointer; background-color:rgba(0,0,0,0.5); display:none}
+
+
+
+.ucenterright{ width:788px; height:auto; float:right;}
+.ucenterindex{width:100%; margin:0 auto; height:600px;background:#FFF; border:1px solid #dddddd;}
+.ucenterindextitle{font-size:16px; font-family:'微软雅黑'; margin-top:20px;}
+.ucenterindextitle span{}
+.ucenterindexjifen{ font-size:16px; font-weight:bold; font-family:'微软雅黑'; margin-top:15px; margin-bottom:15px;}
+.ucenterindexjifen span{ color:#ff4800; }
+.jf{ color:#333333; margin-left:5px;}
+.ubox{width:735px; margin:0 auto; height:auto; border-bottom:1px solid #f3f3f3}
+.qiandaojf{ padding-left:10px; padding-right:10px; padding-top:5px; cursor:pointer; padding-bottom:5px; background:#ff5555;  text-align:center; font-size:12px; font-weight:normal; margin-left:10px;border-radius:2px;}
+.jfinfo{margin-bottom:20px; font-size:12px; color:#9f9f9f; font-family:'微软雅黑';}
+
+.tishi{width:735px; height:35px; background:#ceface;border-radius:3px; margin:0 auto; margin-top:20px; font-size:14px; color:#44a042;font-family:'微软雅黑'; text-align:left; line-height:35px;}
+.tishi span{ margin-left:15px;}
+
+
+.baoliaoucenter{width:735px; margin:0 auto}
+.baoliaonv{margin-top:20px;width:735px; height:41px; border-bottom:1px solid #cccccc}
+.baoliaonv li {float:left}
+.baoliaonv li a:link,.baoliaonv li a:visited,.baoliaonv li a:hover{font-size:14px;   color:#999999; font-family:'微软雅黑';width:110px; height:40px; display:block; text-align:center; background:#ffffff; line-height:40px; border:1px solid #cccccc; border-bottom:0px}
+
+.baoliaobox{width:735px; height:200px; clear:both; padding-top:15px; }
+
+table{    border-collapse: collapse; font-size:12px; border-spacing: 0;
+}
+
+.score_record,.experi_record {margin-top:10px;}
+.record_table {border-left:1px solid #ccc;border-right:1px solid #ccc;width:100%;border-bottom:1px solid #ccc;}
+.record_table th,.record_table td{text-align:center;color:#666;height:40px;line-height:16px;min-width:80px;}
+.record_table td {padding:0 30px;border-bottom:1px dashed #dcdcdc;}
+.record_table th {border-bottom:1px solid #ccc;border-top:1px solid #ccc;background:#eee;}
+.score_page_outer {padding:20px 0;text-align:right;}
+.record_table td.page_td {border-bottom:1px solid #ccc;}
+.record_table tbody tr:hover {background:#f5f5f5;}
+
+
+.yahoo2 {text-align:right;padding-top:15px;}
+.yahoo2 a,.yahoo2 span{padding:3px 6px;border:1px solid #ccc;border-radius:2px; font-size:12px;}
+.yahoo2 span {color:#999;}
+ .yahoo2 a:hover{color:#fff;background:#5183c0;border-radius:2px;}
+ .prevpagestatic{margin-right:8px;}
+ .pageNum,.prevpagestatic,.nextpagestatic {color:#06F;}
+ .page_cur{color:#999999}
+ 
+ 
+ /*  爆料 */
+ .selecttypes {position:absolute; float:left}
+.selecttype{ width:100px; height:36px; color:#666666; font-size:14px;text-align:center; background:url(../images/baoliaonv.png); display:block; float:left; line-height:36px; margin-right:10px; cursor:pointer; font-family:'微软雅黑'}
+.selecttypeon{background:url(../images/baoliaonv.png); background-position:0px 36px;}

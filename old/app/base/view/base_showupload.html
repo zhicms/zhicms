@@ -1,0 +1,19 @@
+{include file="app/main/view/globatop"}
+    <style>
+    body{overflow-x:hidden; }
+    </style>
+	
+
+
+<div style="margin-top:10px; margin-left:15px;">
+<form action="{$URL}" method="post" enctype="multipart/form-data">
+<div  style="width:280px">
+   <div style=" float:left">
+<input type="file" name="file" style="width:200px" class="form-control">
+<input type="hidden" value="{$add}" name="add" > 
+   </div>
+   <div style=" float:right"><input type="submit" value="上传" class="btn btn-success"   ></div>
+
+</div>
+</form>
+</div>

@@ -1,0 +1,148 @@
+<div class="topbar">
+    <div class="topbarbox">
+       <div class="topbarleft">
+        <a href="index.php?r=plug/saveweb/index" target="_blank"> <span><i class="iconfont icon-zhuomian"></i>保存到桌面</span></a>
+        <a href="javascript:;" id="addcollect"><span><i class="iconfont icon-zhuomian1"></i>添加到收藏夹</span></a>
+       </div>
+         <div class="topbarright">
+        <a href="index.html"> <span><i class="iconfont icon-newhand helpicon"></i>返回首页</span></a>
+        <a href="javascript:;"><span><i class="iconfont  icon-249 wechaticon"></i>关注微信</span></a>
+        <a href="javascript:;"><span><i class="iconfont icon-5app"></i>APP下载</span></a>
+       </div>
+    </div>
+</div>
+<!--logo+搜索组件-->
+<div class="indextopbox">
+<div class="topcss">
+    <div class="topleft">
+     <!--logo-->
+      <div class="leftlogo"><a href="gift.html"><img src="{__PUBLIC__}umaijie/images/logo.png"   alt="{obj('base/Base')->GiftSEO('index_title')}" title="{obj('base/Base')->GiftSEO('index_title')}"/></a></div>
+     <!--logo-->
+     <!--s-->
+     <div class="serach">
+      <input type="text" placeholder="请输入礼物关键字"  id="search" class="s-input" />
+      <input type="button" value="搜索礼物" class="s-btn" onclick="gosbtn()"/>
+     </div>
+     <!--s-->
+    </div>
+</div>
+</div>
+
+<!--导航组件-->
+<div class="umaijie-nav">
+    <div class="umaijie-nav-box">
+     <li><a href="#"  id="umaijie-nav-active">首页</a></li>
+     <li><a href="javascript:;"  class="send-u">送给谁</a>
+     <!--lay-->
+     <div class="lay lay1">
+       <div class="lay-link">
+       <a href="javascript:;" id="menulink" class="big-menu" data="1"><i class="icon iconfont icon-xihuan"  style="margin-left:-10px;"></i> 亲爱的TA <span class="glyphicon glyphicon-menu-right"></span></a> </div>
+       <!--small-->
+       <div class="lay-link-s small-menu-1" style="margin-top:-65px; display:none">
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>2,'type'=>'send'))}">女朋友</a>
+          <a  id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>3,'type'=>'send'))}">男朋友</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>20,'type'=>'send'))}">老婆</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>21,'type'=>'send'))}">老公</a>
+          <a  id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>10,'type'=>'send'))}">闺蜜</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>14,'type'=>'send'))}">兄弟</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>30,'type'=>'goal'))}">情侣礼物</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>5,'type'=>'special'))}">浪漫礼物</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>24,'type'=>'goal'))}">恋爱纪念</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>19,'type'=>'goal'))}">结婚纪念</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>25,'type'=>'goal'))}">约会礼物</a>
+          <a  id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>4,'type'=>'special'))}">创意礼物</a>
+       </div>
+       <!--small-->
+       
+       <div class="lay-link"><a href="javascript:;" id="menulink" class="big-menu" data="2"><i class="icon iconfont icon-zhuomian1"></i> 朋友同学<span class="glyphicon glyphicon-menu-right"></span></a>
+       </div>
+        <!--small-->
+       <div class="lay-link-s small-menu-2" style="margin-top:-65px; display:none; height:64px;">
+          <a  id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>6,'type'=>'send'))}">女生</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>11,'type'=>'send'))}">男生</a>
+          <a id="lay-link-s-link"  href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>7,'type'=>'send'))}">女同学</a>
+          <a  id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>12,'type'=>'send'))}">男同学</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>4,'type'=>'send'))}">女性朋友</a>
+          <a  id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>5,'type'=>'send'))}">男性朋友</a>
+              
+       </div>
+       <!--small-->
+       
+       
+       <div class="lay-link"><a href="javascript:;" id="menulink" class="big-menu" data="3"><i class="icon iconfont icon-jiating"></i> 家人师长<span class="glyphicon glyphicon-menu-right"></span></a></div>
+         <!--small-->
+       <div class="lay-link-s small-menu-3" style="margin-top:-65px; display:none; ">
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>22,'type'=>'send'))}">妈妈</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>23,'type'=>'send'))}">爸爸</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>51,'type'=>'send'))}">孩子</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>29,'type'=>'send'))}">老人</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>306,'type'=>'send'))}">女儿</a>
+          <a id="lay-link-s-link"  href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>31,'type'=>'send'))}">儿子</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>8,'type'=>'send'))}">女老师</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>13,'type'=>'send'))}">男老师</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>50,'type'=>'send'))}">长辈</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>52,'type'=>'send'))}">婴儿</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>12,'type'=>'special'))}">健康礼品</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>10,'type'=>'special'))}">实用礼物</a>
+              
+       </div>
+       <!--small-->
+       
+       
+       <div class="lay-link"><a href="javascript:;" id="menulink" class="big-menu" data="4"><i class="icon iconfont icon-shangwu"></i> 商务办公<span class="glyphicon glyphicon-menu-right"></span></a></div>
+         <!--small-->
+       <div class="lay-link-s small-menu-4" style="margin-top:-65px; display:none; height:64px; ">
+         <a  id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>42,'type'=>'send'))}">领导</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>41,'type'=>'send'))}">客户</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>43,'type'=>'send'))}">同事</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>49,'type'=>'send'))}">员工</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>18,'type'=>'send'))}">外国人</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>33,'type'=>'goal'))}">商务礼品</a>
+        
+       </div>
+       <!--small-->
+       
+       <div class="lay-link"><a href="javascript:;" id="menulink"  class="big-menu" data="5"><i class="icon iconfont icon-liwu-copy-copy"></i> 为啥送礼<span class="glyphicon glyphicon-menu-right"></span></a></div>
+         <!--small-->
+       <div class="lay-link-s small-menu-5" style="margin-top:-65px; display:none; ">
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>18,'type'=>'goal'))}">结婚</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>26,'type'=>'goal'))}">表白</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>2,'type'=>'goal'))}">生日</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>39,'type'=>'goal'))}">毕业</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>3,'type'=>'goal'))}">生子</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>7,'type'=>'goal'))}">祝寿</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>34,'type'=>'goal'))}">开业</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>37,'type'=>'goal'))}">年会</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>9,'type'=>'goal'))}">本命年</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>20,'type'=>'sendtime'))}">情人节</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>11,'type'=>'sendtime'))}">圣诞节</a>
+          <a id="lay-link-s-link" href="{url($route='plug/gift/topic', $params=array())}">更多</a>
+        
+       </div>
+       <!--small-->
+       
+     </div>
+     <!--lay-->
+     
+     </li>
+      <li><a href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>2,'type'=>'send'))}" >女友礼物</a>
+       <li><a href="{url($route='plug/gift/topiclist/id=<id>/type=<type>', $params=array('id'=>3,'type'=>'send'))}" >男友礼物</a>
+        <li><a href="{url($route='plug/gift/findgift', $params=array())}" >发现礼物</a>
+         <li><a href="javascript:;"  class="send-more">更多</a>
+          <!--lay-->
+     <div class="lay lay2" style="width:175px; text-align:center">
+       <div class="lay-link">
+       <a href="{url($route='plug/gift/strategy', $params=array())}" id="menulink" style="text-align:center; padding-left:0px;">礼物攻略</a> </div>
+       <div class="lay-link">
+       <a href="{url($route='plug/gift/topic', $params=array())}" id="menulink" style="text-align:center; padding-left:0px;">送礼导航</a> </div>
+       <div class="lay-link">
+       <a href="{url($route='plug/gift/question', $params=array())}" id="menulink" style="text-align:center; padding-left:0px;">礼物问答</a> </div>
+     
+     </div>
+     <!--lay-->
+    
+    
+    </div>
+
+
+</div>

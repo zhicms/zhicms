@@ -1,0 +1,23 @@
+	
+
+    <div class="dealheadfix" style="display:none">
+	<div class="dealheadholder">
+		<div class="dealhead">
+			<a class="dealheaditem <? if(CONTROLLER_NAME=='index' || CONTROLLER_NAME=='Index'){ ?>darkbk<?php }else{ ?>normalbk<? }?>" href="{url($route='index/index/index', $params=array())}" onmousedown="_hmt.push(['_trackEvent', 'dealnavfix', 'dealnavfix-cn']);"><span class="dealheadicon dhicon1"></span><span class="dealheaditemword">热门推荐</span><span class="dealheadnotifydot" style="display:none">●</span></a>
+			<a class="dealheaditem <? if(CONTROLLER_NAME=='banner'){ ?>darkbk<?php }else{ ?>normalbk<? }?>" href="{url($route='index/banner/index', $params=array())}" onmousedown="_hmt.push(['_trackEvent', 'dealnavfix', 'dealnavfix-us']);"><span class="dealheadicon dhicon2"></span><span class="dealheaditemword">大牌风尚</span></a>
+				<a class="dealheaditem <? if(CONTROLLER_NAME=='cheaps'){ ?>darkbk<?php }else{ ?>normalbk<? }?>" href="{url($route='index/cheaps/index', $params=array())}" onmousedown="_hmt.push(['_trackEvent', 'dealnavfix', 'dealnavfix-99']);"><span class="dealheadicon dhicon4"></span><span class="dealheaditemword">优惠券</span></a>
+			<a class="dealheaditem <? if(CONTROLLER_NAME=='rank'){ ?>darkbk<?php }else{ ?>normalbk<? }?>" href="{url($route='index/rank/index', $params=array())}" onmousedown="_hmt.push(['_trackEvent', 'dealnavfix', 'dealnavfix-rank']);"><span class="dealheadicon dhicon3"></span><span class="dealheaditemword">风云榜</span></a>
+		
+						
+					</div>
+		<div class="fixsearch">
+		<div class="dealheadtype">
+				<? if(CONTROLLER_NAME=='search'){ ?><span class="feedcount">查询词【{$key}】&nbsp;/第{if !$_GET['page']}1{else}{$_GET['page']}{/if}页</span><?php } ?>
+			</div>
+		</div>
+    
+		<span class="fixsearchtip" id="searchtip"></span>
+		<div class="clear"></div>
+       
+	</div>
+</div>		</div>

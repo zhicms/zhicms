@@ -1,0 +1,518 @@
+
+
+			  {include file="app/plug/view/giftmanage/nav"}
+              
+  <style>
+  .closebtn{width:30px; height:30px; position:absolute; background:#F00; border-radius:30px; cursor:pointer; margin-top:-20px; margin-left:80px; text-align:center}
+  .closebtn i{color:#FFF; font-size:14px; margin-top:7px;}
+  </style>
+  <link rel="stylesheet" type="text/css" href="{__PUBLIC__}gift/select/css/multi-select.css">
+  
+  
+<link rel="stylesheet" href="{__PUBLIC__}assets/css/chosen.min.css" />
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=manage/index/index">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                        <div class="widget-box">
+												<div class="widget-header">
+													<h4 class="widget-title">{$pagetext['1']}</h4>
+												</div>
+
+												<div class="widget-body">
+													<div class="widget-main">
+												
+											</div>
+                  <form class="form-horizontal"  id="form" action="" method="post">
+									<div class="widget-body">
+													<div class="widget-main">
+                                                    
+                                                    <div>
+															<label  class="formtitle" for="form-field-8">宝贝链接</label>
+
+														<input type="text" name="link"   id="url"  value="{$ret['link']}" placeholder="宝贝链接" class="form-control" style="width:calc(100% - 85px)"><button class="btn btn-sm" type="button" id="clickthis" style="float:right; margin-top:-34px; height:34px">立即转链</button>
+														</div>
+                                                        <hr />
+                                                    	<div>
+															<label  class="formtitle" for="form-field-8">转链链接</label>
+
+														<input type="text" name="alink" id="itemsurl" value="{$ret['alink']}" placeholder="转链链接" class="form-control">
+														</div>
+
+<hr />
+														<div>
+															<label  class="formtitle" for="form-field-8">宝贝名称</label>
+
+														<input type="text" name="itemstitle" id="title" value="{$ret['itemstitle']}" placeholder="宝贝名称" class="form-control">
+														</div>
+														<input type="hidden" name="itemiid" value="{$ret['itemiid']}" />
+                                                        
+                                                        <hr />
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">价格</label>
+
+														<input type="text" name="price" id="price" value="{$ret['price']}" placeholder="宝贝价格" class="form-control">
+														</div>
+					<hr />
+                    <div>
+															<label  class="formtitle" for="form-field-8">分类</label>
+
+														<select class="chosen-select form-control" id="form-field-select-3" data-placeholder="Choose a State..." name="type">
+																<option value="0">请选择分类</option>
+                                                                {foreach $plug_gift_type as $vs}
+                                                                  {if $vs['pid']=='0'}
+                                                                 <option value="{$vs['id']}" style="font-size:14px; font-weight:bold; color:#F00" disabled="disabled">{$vs['name']}</option>
+                                                                 {else}
+																<option {if $ret['type']==$vs['id']} selected="selected" {/if} value="{$vs['id']}">{$vs['name']}</option>
+                                                                {/if}
+                                                                {/foreach}
+														
+															</select>
+
+														</div>
+
+													
+														
+														<hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle"  for="form-field-11">图1</label>
+
+                                          <div class="closebtn" tupian="tupian"><i class="ace-icon glyphicon glyphicon-trash"></i></div>
+											<div class="uploadimg tupian" onClick="upthis()">
+                                              
+                                              {if !$ret['pic']}
+                                              <i class="ace-icon fa fa-cloud-upload"></i>
+                                              <dt>450*450</dt>
+                                              {else}
+                                              <img src="{$ret['pic']}" />
+                                              {/if}
+                                              
+                                            </div>
+										</div>
+                                        <input type="text" class="form-control" name="pic" id="tupian"   value="{$ret['pic']}" style="display:none" >
+                                                 <input type="file"  name="file"  id="up_tupian"  onChange="Uploadthis('tupian','up_tupian')" style="display:none"  >
+                                                 
+                                                 
+                                                 
+                                                 <div style="position:absolute; margin-top:-122px; margin-left:130px;">
+															<label  class="formtitle"  for="form-field-11">图2</label>
+
+															 <div class="closebtn" tupian="tupian2"><i class="ace-icon glyphicon glyphicon-trash"></i></div>
+											<div class="uploadimg tupian2" onClick="upthis2()">
+                                              {if !$ret['pic2']}
+                                              <i class="ace-icon fa fa-cloud-upload"></i>
+                                              <dt>450*450</dt>
+                                              {else}
+                                              <img src="{$ret['pic2']}" />
+                                              {/if}
+                                              
+                                            </div>
+										</div>
+                                        <input type="text" class="form-control" name="pic2" id="tupian2"   value="{$ret['pic2']}" style="display:none" >
+                                                 <input type="file"  name="file"  id="up_tupian2"  onChange="Uploadthis('tupian2','up_tupian2')" style="display:none"  >
+                                                 
+                                                 <div style="position:absolute; margin-top:-122px; margin-left:260px;">
+															<label  class="formtitle"  for="form-field-11">图3</label>
+
+ <div class="closebtn" tupian="tupian3"><i class="ace-icon glyphicon glyphicon-trash"></i></div>
+											<div class="uploadimg tupian3" onClick="upthis3()">
+                                              {if !$ret['pic3']}
+                                              <i class="ace-icon fa fa-cloud-upload"></i>
+                                              <dt>450*450</dt>
+                                              {else}
+                                              <img src="{$ret['pic3']}" />
+                                              {/if}
+                                              
+                                            </div>
+										</div>
+                                        <input type="text" class="form-control" name="pic3" id="tupian3"   value="{$ret['pic3']}" style="display:none" >
+                                                 <input type="file"  name="file"  id="up_tupian3"  onChange="Uploadthis('tupian3','up_tupian3')" style="display:none"  >
+                                                 
+                                                 
+                                                 
+                                                   <div style="position:absolute; margin-top:-122px; margin-left:390px;">
+															<label  class="formtitle"  for="form-field-11">图4</label>
+
+ <div class="closebtn" tupian="tupian4"><i class="ace-icon glyphicon glyphicon-trash"></i></div>
+											<div class="uploadimg tupian4" onClick="upthis4()">
+                                              {if !$ret['pic4']}
+                                              <i class="ace-icon fa fa-cloud-upload"></i>
+                                              <dt>450*450</dt>
+                                              {else}
+                                              <img src="{$ret['pic4']}" />
+                                              {/if}
+                                              
+                                            </div>
+										</div>
+                                        <input type="text" class="form-control" name="pic4" id="tupian4"   value="{$ret['pic4']}" style="display:none" >
+                                                 <input type="file"  name="file"  id="up_tupian4"  onChange="Uploadthis('tupian4','up_tupian4')" style="display:none"  >
+                                                 
+                                                 
+                                                
+                                                <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送给谁</label>
+															
+                                                                {if ACTION_NAME=='editorgift'}
+                                                                <?php
+                                                                $vo_send=json_decode($ret['send']);
+                                                                ?>
+                                                                {/if}
+                                                            <select id='pre-selected-options'  name="send[]" multiple='multiple'>
+   {foreach $plug_gift_send as $vo}
+                                                                {if $vo['pid']=='0'}
+                                                                 <option value="{$vo['id']}" style="font-size:14px; font-weight:bold; color:#F00" disabled="disabled">{$vo['name']}</option>
+                                                                 {else}
+                                                                 
+                
+                                                                 
+                                                                  <option value="{$vo['id']}"  {if ACTION_NAME=='editorgift'} <?php if(in_array($vo['id'],$vo_send)){?>  selected="selected" <?php }?> {/if} >{$vo['name']}</option>
+                                                                  {/if}
+                                                                
+                                                                {/foreach}
+  </select>
+
+												</div>
+                                                
+                                                
+                                                <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送礼的目的</label>
+<select multiple=""  id="form-field-select-mudi" data-placeholder="请选择赠送目的" name="mudi[]">
+                                                         {if ACTION_NAME=='editorgift'}
+																 <?php
+                                                                $vo_mudi=json_decode($ret['mudi']);
+                                                                ?>
+                                                                {/if}
+                                                                {foreach $plug_gift_mudi as $vo}
+                                                                {if $vo['pid']=='0'}
+                                                                 <option value="{$vo['id']}" style="font-size:14px; font-weight:bold; color:#F00" disabled="disabled">{$vo['name']}</option>
+                                                                 {else}
+                                                                  <option value="{$vo['id']}"  {if ACTION_NAME=='editorgift'} <?php if(in_array($vo['id'],$vo_mudi)){?>  selected="selected" <?php }?> {/if} >{$vo['name']}</option>
+                                                                  {/if}
+                                                                
+                                                                {/foreach}
+														
+															</select>
+
+
+												</div>
+                                                
+                                                
+                                                
+                                                   <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送礼的时间</label>
+<select multiple=""  id="form-field-select-time" data-placeholder="请选择送礼的时间" name="sendtime[]">
+{if ACTION_NAME=='editorgift'}
+																 <?php
+                                                                $vo_sendtime=json_decode($ret['sendtime']);
+                                                                ?>
+                                                                {/if}
+                                                                {foreach $plug_gift_sendtime as $vo}
+                                                                {if $vo['pid']=='0'}
+                                                                 <option value="{$vo['id']}" style="font-size:14px; font-weight:bold; color:#F00" disabled="disabled">{$vo['name']}</option>
+                                                                 {else}
+                                                                  <option value="{$vo['id']}" {if ACTION_NAME=='editorgift'}  <?php if(in_array($vo['id'],$vo_sendtime)){?>  selected="selected" <?php }?> {/if} >{$vo['name']}</option>
+                                                                  {/if}
+                                                                
+                                                                {/foreach}
+														
+															</select>
+
+
+												</div>
+                                                
+                                                
+                                                
+                                                
+                                                   <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送礼的专题</label>
+<select multiple=""   id="form-field-select-special" data-placeholder="请选择送礼的专题" name="special[]">
+{if ACTION_NAME=='editorgift'}
+																 <?php
+                                                                $vo_special=json_decode($ret['special']);
+                                                                ?>
+                                                                {/if}
+                                                                {foreach $plug_gift_special as $vo}
+                                                                {if $vo['pid']=='0'}
+                                                                 <option value="{$vo['id']}" style="font-size:14px; font-weight:bold; color:#F00" disabled="disabled">{$vo['name']}</option>
+                                                                 {else}
+                                                                  <option value="{$vo['id']}"  {if ACTION_NAME=='editorgift'} <?php if(in_array($vo['id'],$vo_special)){?>  selected="selected" <?php }?> {/if} >{$vo['name']}</option>
+                                                                  {/if}
+                                                                
+                                                                {/foreach}
+														
+															</select>
+
+
+												</div>
+                                                
+                                                <hr />
+                                                	<div>
+															<label  class="formtitle" for="form-field-8">特殊选项</label>
+
+														<select class="form-control" id="form-field-select-2" name="diy" multiple="multiple">													<option value="0" {if $ret['diy']==0} selected="selected" {/if}>无</option>
+                                                                <option value="1" {if $ret['diy']==1} selected="selected" {/if}>星座</option>
+																<option value="2" {if $ret['diy']==2} selected="selected" {/if}>定制</option>
+																<option value="3" {if $ret['diy']==3} selected="selected" {/if}>刻字</option>
+																<option value="4" {if $ret['diy']==4} selected="selected" {/if}>正品</option>
+
+															</select>
+
+														</div>
+
+													<hr />
+                                                	<div>
+															<label  class="formtitle" for="form-field-8">首页推荐</label>
+
+														<select class="form-control" id="form-field-select-2" name="f" multiple="multiple">													<option value="0" {if $ret['f']==0} selected="selected" {/if}>不推荐</option>
+                                                                <option value="1" {if $ret['f']==1} selected="selected" {/if}>1F</option>
+																<option value="2" {if $ret['f']==2} selected="selected" {/if}>2F</option>
+																<option value="3" {if $ret['f']==3} selected="selected" {/if}>3F</option>
+																<option value="4" {if $ret['f']==4} selected="selected" {/if}>4F</option>
+
+	<option value="5" {if $ret['f']==5} selected="selected" {/if}>5F</option>
+    	<option value="6" {if $ret['f']==6} selected="selected" {/if}>6F</option>
+															</select>
+
+														</div>
+														
+														<hr>
+                                                
+                                                
+                                                 	<div>
+															<label  class="formtitle" for="form-field-8">文案说明</label>
+
+												<textarea class="form-control"   name="body" style="height:150px;">{$ret['body']}</textarea>
+														</div>
+                                                
+                                              
+                                                
+                                                
+                                                 </div>
+													
+
+								{$html}
+                                
+                                <div class="clearfix form-actions"  style="margin-bottom:-0px;" >
+										<div class="col-md-offset-1 col-md-9">
+											<input type="submit"  class="btn btn-info " id="save"  value="保存" />
+
+											&nbsp; &nbsp; &nbsp;
+											<a href="index.php?r=manage/find/type"><button class="btn"  type="button">
+												
+												返回列表
+											</button></a>
+										</div>
+									</div>
+                                    
+                                                   </div>
+								
+                                </form>     
+
+			
+
+			<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+        <script src="{__PUBLIC__}assets/js/ace-extra.min.js"></script>
+	<!-- ace scripts -->
+	<!--[if !IE]> -->
+		<script src="assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/bootbox.js"></script>
+        <script src="{__PUBLIC__}assets/js/chosen.jquery.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.gritter.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/spin.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+
+
+
+
+		<!-- inline scripts related to this page -->
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+		<script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+        <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <script src="{__PUBLIC__}assets/js/chosen.jquery.min.js"></script>
+        <script src="{__PUBLIC__}global/js/Validform_v5.3.2_min.js"></script>
+        <script src="{__PUBLIC__}global/js/ajaxfileupload.js"></script>
+        <script src="{__PUBLIC__}global/js/index.js"></script>
+        
+        
+        <script src="{__PUBLIC__}gift/select/js/jquery.multi-select.js"></script>
+  <script type="text/javascript">
+  // run pre selected options
+  $('#pre-selected-options').multiSelect();
+  $('#form-field-select-time').multiSelect();
+  $('#form-field-select-mudi').multiSelect();
+  $('#form-field-select-special').multiSelect();
+  
+  
+  </script>
+		<script>
+
+
+
+		ZhiForm("#form","index.php?r=plug/giftmanage/giftlist","保存中","保存","null");
+		//ajax上传
+	Uploadthis=function(obj,thisid){
+	  layer.load(2);
+		$.ajaxFileUpload({  
+				url:'index.php?r=manage/File/gift',  
+				secureuri:false,  
+				fileElementId:thisid,//file标签的id  
+				dataType: 'json',//返回数据的类型    
+				success: function (data, status) {  
+				   $("#"+obj).val(data.url);
+				   $('.'+obj).html('<img src="'+data.url+'">');
+				   layer.closeAll('loading');
+				}
+			});  	
+		
+		}
+	function upthis(){
+	document.getElementById("up_tupian").click(); 	
+     }
+	 function upthis2(){
+	document.getElementById("up_tupian2").click(); 	
+     }
+	 
+	  function upthis3(){
+	document.getElementById("up_tupian3").click(); 	
+     }
+	 
+	  function upthis4(){
+	document.getElementById("up_tupian4").click(); 	
+     }
+if(!ace.vars['touch']) {
+					$('.chosen-select').chosen({allow_single_deselect:true}); 
+					//resize the chosen on window resize
+			
+					$(window)
+					.off('resize.chosen')
+					.on('resize.chosen', function() {
+						$('.chosen-select').each(function() {
+							 var $this = $(this);
+							 $this.next().css({'width': $this.parent().width()});
+						})
+					}).trigger('resize.chosen');
+					//resize chosen on sidebar collapse/expand
+			
+			
+			
+				
+				}
+
+
+ $("#clickthis").click(function(){
+		var loading= layer.msg('正在执行您的请求', {icon: 16});
+		 var url=$("#url").val();
+		 $.ajax({
+		 url:'index.php?r=manage/items/ItemsGetInfo',
+         type: 'post',
+		 data:{url:url},  
+         dataType: 'json',
+         success: function(data){
+			
+			if(!data.title){
+			//layer.msg('', function(){});
+			layer.close(loading);
+			error('无法获取数据');
+			return false;
+			}
+			
+			var items=eval(data);
+			 console.log(data);
+			$("#title").val(data.title);
+			$("#itemsurl").val(data.itemsurl);
+			$(".tupian").html('<img src='+data.pic +'>');
+			$("#tupian").val(data.pic);
+			
+			
+			
+			$("#price").val(data.zkPrice);
+			message.add("已完成", "success");
+			layer.close(loading);
+		 }
+   });	
+
+	 });
+	 
+	 $(".closebtn").click(function(){
+		 
+		  var obj=$(this).attr("tupian");
+		  
+		  $("."+obj).html('<i class="ace-icon fa fa-cloud-upload"></i><dt>450*450</dt>');
+		  $("#"+obj).val('');
+	 });
+		</script>
+		
+	</body>
+</html>

@@ -1,0 +1,10 @@
+body{font-family:'Î¢ÈíÑÅºÚ'}
+.uploadimg{width: 100px;
+    height: 100px;
+    background: #e3e3e3;
+    border-radius: 5px;
+    cursor: pointer; text-align:center}
+.uploadimg  i{font-size:30px;margin-top:25px;}
+.uploadimg img{width:100px; height:100px; border-radius:5px;}
+
+.formtitle{font-size:13px; font-weight:bold; color:#676a6c; margin-bottom:3px}

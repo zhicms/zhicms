@@ -1,0 +1,48 @@
+	<?php
+    if(CONTROLLER_NAME=="haitao"){
+     $type="us";
+    }else{
+     $type="cn";
+    }
+    $tj=obj("index/index","controller")->estimate($type);
+    
+    ?>
+    
+    <div class="sideproduct">
+	<div class="sideprogress">
+		<div class="sideprogressbar">
+			<div class="calihave" id="calihave" style="width: {$tj['bfb']}px;"></div>
+			<div class="calipred"></div>
+		</div>
+		<div class="clear"></div>
+		<div class="sideprogresstext">
+		    <? if(CONTROLLER_NAME=='index'){ ?><div class="progtxthave">今日发布：{$todaysenddata}条</div>
+			<div class="progtxtpred">预计：{$tj['count']}条</div><?php }else{ ?>
+				<div class="progtxthave">天天有更新</div>
+			<div class="progtxtpred">点分类查看更多</div>
+			<?php } ?>
+			
+		</div>
+	</div>
+	<div class="clear"></div>
+<a class="sideproductitem" href="{url($route='index/page/app', $params=array())}" target="_blank">
+		<div class="prodicon prodiconm"></div>
+		<div class="prodtexts">
+			<div class="prodtexttitle">手机APP</div><span class="newsign">Hot!</span>
+			<div class="clear"></div>
+			<div class="prodtextsubtitle">iPhone &amp; Android</div>
+		</div>
+	</a>
+	<div class="clear"></div>
+	<a class="sideproductitem" href="{url($route='index/page/side', $params=array())}" target="_blank">
+		<div class="prodicon prodiconchrome"></div>
+		<div class="prodtexts">
+			<div class="prodtexttitle">浏览器插件</div>
+			<div class="clear"></div>
+			<div class="prodtextsubtitle">时时提醒好折扣</div>
+		</div>
+	</a>
+	
+</div>
+<div class="clear"></div>
+<div class="clear"></div>

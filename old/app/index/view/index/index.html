@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html style="overflow-x: hidden; overflow-y: scroll;" xmlns="http://www.w3.org/1999/xhtml"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="keywords" content="{obj('base/Base')->SEO('index_keywords')}" />
+<meta name="description" content="{obj('base/Base')->SEO('index_dec')}" />
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Cache-Control" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<link rel="stylesheet" href="{__PUBLIC__}web/css/jquery-ui.css">
+<link media="all" rel="stylesheet" type="text/css" href="{__PUBLIC__}web/css/style.css">		
+<title>{if $_GET['list']}
+<?php
+for($i=1;$i<=14;$i++){
+$navlist=obj("index/index","controller")->lists($i,"y");
+
+$nlist= explode(",", $navlist);
+
+?>
+{if $_GET['list']==$nlist['1']}<?=$nlist['0']?>{/if}
+<?php        
+}
+?>
+-
+{/if}{obj('base/Base')->SEO('index_title')}</title>
+
+{include file="app/index/view/index/devjs"}	
+<script>browserRedirect('{url($route='index/m/index', $params=array())}');</script>
+
+	</head>
+	<body>
+		<div id="wrapper">
+			<div id="popuplayer"></div>
+					{include file="app/index/view/index/topheader"}				
+				<div class="mainleft" id="mainleft">
+															
+
+
+
+
+{include file="app/index/view/index/nav"}					
+<div class="choicearea">
+		<div class="choicerow">
+    <a class="{if !$_GET['list']}curcateitem{else}cateitem{/if}" href="{url($route='index/index/index', $params=array())}">
+			<span class="{if !$_GET['list']}curcateitemword{else}cateitemword{/if}">全部</span>
+		</a>
+    <?php
+for($i=1;$i<=14;$i++){
+$navlist=obj("index/index","controller")->lists($i,"y");
+
+$nlist= explode(",", $navlist);
+
+?>
+		<a class="{if $_GET['list']==$nlist['1']}curcateitem{else}cateitem{/if}" href="{url($route='index/index/index/list=<list>', $params=array('list'=>$nlist['1']))}">
+			<span class="{if $_GET['list']==$nlist['1']}curcateitemword{else}cateitemword{/if}"><?=$nlist['0']?></span>
+		</a>
+        
+<?php        
+}
+?>
+     
+
+	</div>
+
+</div>					<div class="clear"></div>
+										<div class="innerhdbar">
+	<div class="hdbarimg">
+		<a href="{url($route='index/hot/index', $params=array())}" target="_blank" class="hdbargotohotshref">
+			<img class="top9img" style="height:140px;width:140px;" src="{__PUBLIC__}web/images/halfhourhotr2.png">
+		</a>
+	</div>
+	<div class="innerhdbarcontent">
+	{foreach $minute as $vo}
+    <?$key=$key+1;?>
+	<a class="hotdealbaritem" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" target="_blank" onmousedown="_hmt.push(['_trackEvent', 'newhotbar', 'newhotbar-{obj('api/Api')->moneytype($vo['mobilePriceOri'])} {$vo['productName']}'])" title="￥{obj('api/Api')->moneytype($vo['mobilePriceOri'])} {$vo['productName']}">
+		<div class="hotdealbarimg">
+			<img src="{$vo['mainPic']}" alt="{$vo['title']}" style="margin-right:1px;margin-left:1px;margin-top:1px;margin-bottom:1px" width="30" height="30">
+		</div>
+		<div class="hotdealbaritemword">
+		<span style="color:#333;font-weight:bold">{$key}.&nbsp;</span> {$vo['title']}	</div>
+	</a>
+	{/foreach}
+	
+	
+
+		</div>
+</div>
+					<div class="clear"></div>
+					<a class="feednotify" id="feednotify" style="display:none" href="#" onmousedown="_hmt.push(['_trackEvent', 'feednotify', 'feednotify']);">
+	<span class="feednotifyreddot">●</span>
+	<span class="feednotifyword" id="feednotifyword">有新发布条目，点此刷新...</span>
+</a>					<div class="clear"></div>
+					
+<div class="clear"></div>
+
+<div class="zkcontent">
+{foreach $Page['list'] as $vo}
+<div class="gooditem withborder">
+<div class="imgandbtn">
+	<div class="showpic">
+	<a href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" target="_blank" onmousedown="xlog('{$vo['id']}','pic')">
+		<div class="imgmask" style="height:140px;width:140px;top:15px;left:10px"></div>
+		<img src="{$vo['mainPic']}" alt="{$vo['title']}" style="margin-left:0px;margin-top:0px;margin-bottom:0px" width="140" height="140">
+	</a>
+	</div><!-- div.showpic -->
+	<div class="clear"></div>
+</div>
+
+<div class="iteminfoarea">
+
+	<h2 class="mallandname">
+				<a class="goodname" title="{$vo['title']}" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" target="_blank" onmousedown="xlog('{$vo['id']}','name')">
+		{$vo['title']}
+         	</a>
+	</h2><!-- div.mallandname -->
+	<div class="clear"></div>
+		<div class="shortabstract">
+		
+	{$vo['dec']}	...&nbsp; <a class="gotodetail" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" target="_blank" onmousedown="xlog('{$vo['id']}','detail')">完整阅读&gt;</a>
+				
+	</div><!-- a.shortabstract -->
+	<div class="timeandfrom">
+		<div class="infotime"><span class="latesttime">{obj("api/Api")->mdate($vo['date'])}</span></div>
+		<div class="infofrom">&nbsp;有效期至{$vo['couponEndTime']}</div>
+	</div><!-- div.timeandfrom -->
+	</div><!-- div.iteminfoarea -->
+<div class="rightlinks ">
+
+
+		<a class="innergototobuybtn" isconvert="1" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" target="_blank" onmousedown="xlog('{$vo['id']}','ingobuy')">
+		<span class="innergototobuyword">直达链接&nbsp;&gt;</span>
+        
+	</a>
+		<div class="clear"></div>
+
+<div class="rightmall">
+
+				分类：{obj("index/global","controller")->Cid($vo['cid'])}
+
+
+				
+                    
+ 
+				</div>
+		
+        </div>
+
+		</div>
+</div>
+		
+					<div class="clear">{/foreach}</div>	
+                    
+				
+				</div>
+				
+				<div class="mainright" id="mainright">
+				{include file="app/index/view/index/right"}
+				{include file="app/index/view/index/list"}
+{include file="app/index/view/index/mall"}
+
+
+</div><!-- end of mainright -->
+				<div class="clear"></div>
+<div class="page">
+{$Page['page']}<!-- div.page -->
+			</div><!-- end of main -->
+
+
+</div>	</div>
+
+				   <script type='text/javascript'>
+var maxid={$maxid};
+var cnt=0;
+var sh=setInterval(function(){
+	$.get("index.php?r=index/index/checknum&maxid="+maxid, function(data){
+		if(data>5)
+		{
+			var hrefhtml="有"+data+"条新发布条目，点此查看 >";
+			var hrefattrheadbar="{url($route='index/index/index', $params=array())}&lid="+maxid;
+			var hrefattrtip="{url($route='index/index/index', $params=array())}&lid="+maxid;
+			$("#feednotifyword").html(hrefhtml);
+			$("#feednotify").attr("href",hrefattrheadbar);
+			$("#feednotify").show();
+			$("#dealheadnotifydiv").html(hrefhtml);
+			$("#dealheadnotifydiv").attr("href",hrefattrtip);
+			$("#dealheadnotifydiv").show();
+			$("#dealheadnotifyclose").show();
+			var curtitle="{obj('base/Base')->SEO('index_title')}";
+			var notifytitle='('+data+'条更新) '+curtitle;
+   			$(document).attr("title",notifytitle);
+   			$(".dealheadnotifydot").show();
+			if(data>200)
+   			{
+   				clearInterval(sh);
+   			}
+		}
+		//console.log(data);
+	});
+	cnt++;
+	if(cnt>60)
+	{
+		clearInterval(sh);
+	}
+},120000);
+</script>
+            {include file="app/index/view/index/popnav"}
+            {include file="app/index/view/index/footerjs"}
+	{include file="app/index/view/index/footer"}
+   
+    
+    
+  
+

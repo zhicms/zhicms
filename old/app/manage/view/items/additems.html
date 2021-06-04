@@ -1,0 +1,256 @@
+
+
+			  {include file="app/manage/view/index/nav"}
+<link rel="stylesheet" href="{__PUBLIC__}assets/css/chosen.min.css" />
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=manage/index/index">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                        <div class="widget-box">
+												<div class="widget-header">
+													<h4 class="widget-title">{$pagetext['1']}</h4>
+												</div>
+
+												<div class="widget-body">
+													<div class="widget-main">
+												
+											</div>
+                  <form class="form-horizontal"  id="form" action="" method="post">
+									<div class="widget-body">
+													<div class="widget-main">
+													    <div style=" margin-top:1px; color:#F30">填写天猫淘宝的链接，可以获取产品信息，链接如https://detail.tmall.com/item.htm?id=563685072391</div>
+													      <div>
+													          
+															<label  class="formtitle" for="form-field-8">宝贝链接</label>
+
+														<input type="text" name="link"   id="url"  value="{$ret['itemLink']}" placeholder="宝贝链接，类似https://detail.tmall.com/item.htm?id=563685072391" class="form-control" style="width:calc(100% - 85px)"><button class="btn btn-sm" type="button" id="clickthis" style="float:right; margin-top:-34px; height:34px">立即转链</button>
+														</div>
+                                                        <hr />
+                                                        	<div style=" margin-top:1px; color:#F30">如果觉得标题不适合，可以自修改编辑标题</div>
+														<div>
+															<label  class="formtitle" for="form-field-8">宝贝标题</label>
+
+														<input type="text" name="title" id="title" value="{$ret['title']}" placeholder="宝贝标题" class="form-control">
+														</div>
+
+														<hr>
+														<div style=" margin-top:1px; color:#F30">请选择分类显示，有些产品默认没有分类，手动选择</div>
+														
+                                                        <div>
+
+														<div>
+															<label  class="formtitle"  for="form-field-9">分类</label>
+
+														<select name="cid" class="form-control" style="height:34px;">
+														    
+<option {if $ret['cid']==-1} selected="selected" {/if} value="0">请选择分类</option>
+                                                 <?php
+for($i=1;$i<=14;$i++){
+$navlist=obj("manage/caiji","controller")->lists($i,"y");
+$nlist= explode(",", $navlist);
+?>
+	<option {if $ret['cid']==$nlist['1']} selected="selected" {/if} value="{$nlist['1']}"><?=$nlist['0']?></option>
+
+<?php        
+}
+?>
+
+
+
+                                          
+                                            </select>
+														</div>
+
+														<hr>
+
+													
+
+															<div style=" margin-top:1px; color:#F30">如果有更好的营销图可以替换显示主图！PS:点击主图即可上传替换</div>
+
+														<div>
+															<label  class="formtitle"  for="form-field-11">主图替换</label>
+											<div class="uploadimg tupian" onClick="upthis()">
+                                              {if !$ret['mainPic']}
+                                              <i class="ace-icon fa fa-cloud-upload"></i>
+                                              <dt>600*330</dt>
+                                              {else}
+                                              <img src="{$ret['mainPic']}" />
+                                              {/if}
+                                              
+                                            </div>
+										</div>
+                                        <input type="text" class="form-control" name="mainPic" id="tupian"   value="{$ret['mainPic']}" style="display:none" >
+                                                 <input type="file"  name="file"  id="up_tupian"  onChange="Uploadthis('tupian','up_tupian')" style="display:none"  >
+                                    <hr>
+                                    	<div style=" margin-top:1px; color:#F30">默认文案都是简单文案或为空，可以自行编辑推荐文案</div>
+                                    <div>
+                                        <label  class="formtitle" for="form-field-8">文案说明</label>
+														<textarea class="form-control"   id="content" name="content" style="height:150px;">{if $ret['desc']!=""}{$ret['desc']} {else}{$ret['content']}{/if}</textarea>
+									</div>
+										</div>
+								{$html}
+                                
+                                <div class="clearfix form-actions"  style="margin-bottom:-0px;" >
+										<div class="col-md-offset-1 col-md-9">
+											<input type="submit"  class="btn btn-info " id="save"  value="保存" />
+
+											&nbsp; &nbsp; &nbsp;
+											<a href="index.php?r=manage/items/index"><button class="btn"  type="button">
+												
+												返回列表
+											</button></a>
+										</div>
+									</div>
+                                    
+                                                   </div>
+								
+                                </form>     
+
+			
+
+			<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+        <script src="{__PUBLIC__}assets/js/ace-extra.min.js"></script>
+	<!-- ace scripts -->
+	<!--[if !IE]> -->
+		<script src="assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/bootbox.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.gritter.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/spin.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+
+
+
+
+		<!-- inline scripts related to this page -->
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+		<script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+        <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <script src="{__PUBLIC__}assets/js/chosen.jquery.min.js"></script>
+        <script src="{__PUBLIC__}global/js/Validform_v5.3.2_min.js"></script>
+        <script src="{__PUBLIC__}global/js/ajaxfileupload.js"></script>
+        <script src="{__PUBLIC__}global/js/index.js"></script>
+		<script>
+		$('.chosen-select').chosen({allow_single_deselect:true}); 
+
+		ZhiForm("#form","index.php?r=manage/items/index","保存中","保存","null");
+		//ajax上传
+	Uploadthis=function(obj,thisid){
+	  layer.load(2);
+		$.ajaxFileUpload({  
+				url:'index.php?r=manage/File/items',  
+				secureuri:false,  
+				fileElementId:thisid,//file标签的id  
+				dataType: 'json',//返回数据的类型    
+				success: function (data, status) {  
+				   $("#"+obj).val(data.url);
+				   $('.'+obj).html('<img src="'+data.url+'">');
+				   layer.closeAll('loading');
+				}
+			});  	
+		
+		}
+	function upthis(){
+	document.getElementById("up_tupian").click(); 	
+     }
+     
+      $("#clickthis").click(function(){
+		var loading= layer.msg('正在执行您的请求', {icon: 16});
+		 var url=$("#url").val();
+		 $.ajax({
+		 url:'index.php?r=manage/items/ItemsGetInfo',
+         type: 'post',
+		 data:{url:url},  
+         dataType: 'json',
+         success: function(data){
+			
+			if(!data.title){
+			//layer.msg('', function(){});
+			layer.close(loading);
+			error('无法获取数据(非推广产品或产品已下架)');
+			return false;
+			}
+			
+			var items=eval(data);
+			 console.log(data);
+			$("#title").val(data.title);
+			$("#content").val(data.content);
+			$(".tupian").html('<img src='+data.mainPic +'>');
+			$("#tupian").val(data.mainPic);
+			message.add("已完成", "success");
+			layer.close(loading);
+		 }
+   });	
+
+	 });
+
+		</script>
+		
+	</body>
+</html>

@@ -1,0 +1,47 @@
+   <style>
+   .bdshare-button-style0-16 a, .bdshare-button-style0-16 .bds_more{float: left; */
+     font-size: 14px; 
+     padding-left: 0px;
+    line-height: 0px; 
+    height:auto; 
+     background-image:none;
+     background-repeat: no-repeat;
+     cursor: pointer;
+     margin: 10px 10px 10px 10px;}
+	 </style>
+    <div class="share">
+     <div class="baidushare">
+  <div class="am-share bdsharebuttonbox bdshare-button-style0-16" >
+  <h3 class="am-share-title">分享到</h3>
+  <ul class="am-share-sns "   data-bd-bind="1529575192257">
+    <li  ><a   class="bds_sqq" data-cmd="sqq" style=" background: url('{__PUBLIC__}h5/images/qq.png'); background-repeat:no-repeat; background-size:50px 50px; display:block; width:60px; height:50px; background-position:center"> </a> </li>
+    <li><a data-cmd="weixin" class="bds_weixin" style=" background: url('{__PUBLIC__}h5/images/wx.png'); background-repeat:no-repeat; background-size:50px 50px; display:block; width:60px; height:50px; background-position:center"> </a> </li>
+    <li><a data-cmd="qzone" class="bds_qzone" style=" background: url('{__PUBLIC__}h5/images/pyq.png'); background-repeat:no-repeat; background-size:50px 50px; display:block; width:60px; height:50px; background-position:center"> </a> </li>
+    <li><a data-cmd="tsina" class="bds_tsina" style=" background: url('{__PUBLIC__}h5/images/wb.png'); background-repeat:no-repeat; background-size:50px 50px; display:block; width:60px; height:50px; background-position:center"> </a> </li>
+  </ul>
+  <div class="am-share-footer"><button class="share_btn">取消</button></div>
+</div>
+</div>
+</div>
+<script>
+function toshare(){
+		$(".am-share").addClass("am-modal-active");	
+		if($(".sharebg").length>0){
+			$(".sharebg").addClass("sharebg-active");
+		}else{
+			$("body").append('<div class="sharebg"></div>');
+			$(".sharebg").addClass("sharebg-active");
+		}
+		$(".sharebg-active,.share_btn").click(function(){
+			$(".am-share").removeClass("am-modal-active");	
+			setTimeout(function(){
+				$(".sharebg-active").removeClass("sharebg-active");	
+				$(".sharebg").remove();	
+			},300);
+		})
+	}	
+	
+	  with (document)0[(getElementsByTagName('head')[0] || body).appendChild(createElement('script')).src =
+        'http://bdimg.share.baidu.com/static/api/js/share.js?v=89860593.js?cdnversion=' + ~(-new Date() / 36e5)];
+
+	</script>

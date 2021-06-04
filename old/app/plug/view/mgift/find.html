@@ -1,0 +1,65 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>{if $_GET['id']}{$idret['name']}_{/if}发现礼物_{obj{obj('base/Base')->SET('giftseo','findgift_title')}</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0">
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui2.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/wui/style/weui3.css"/>
+<link rel="stylesheet" href="{__PUBLIC__}h5/swiper/dist/css/swiper.min.css">
+<link href="{__PUBLIC__}h5/css/index.css?v=2" rel="stylesheet" type="text/css">
+<script src="{__PUBLIC__}h5/wui/zepto.min.js"></script>
+
+
+</head>
+
+<body>
+<div style="max-width:640px; background:#fff; height:100%; margin:0 auto ">
+
+<div class="weui_btn_warn weui-header " style="background:#f84e4e"> 
+  <div class="weui-header-left" onClick="javascript :history.back(-1);"> <a class="icon icon-109 f-white dhicon"></a>  </div>
+   <h1 class="weui-header-title">发现</h1>
+    <div class="weui-header-right"><a  href="{url($route='plug/mgift/searchindex/', $params=array())}" class="icon icon-4 f-white dhicon"></a></div> 
+    </div>
+    
+<div class="listbox">
+  <div class="listboxleftnav">
+  <!-- <li><a href="{url($route='index/h5/find', $params=array())}" {if !$_GET['id']} class="listboxleftnav_acivie" {/if}>热门</a></li>
+   <li><a href="{url($route='index/h5/find/id=<id>', $params=array('id'=>1))}" {if $_GET['id']==1}class="listboxleftnav_acivie"{/if}>数码</a></li>-->
+   {foreach $giftret as $vo}
+   {if $vo['pid']==0}
+   <li><a href="{url($route='plug/mgift/find/id=<id>', $params=array('id'=>$vo['id']))}" {if $_GET['id']==$vo['id']}class="listboxleftnav_acivie"{/if}>{$vo['name']}</a></li>
+   {/if}
+   {/foreach}
+  </div>
+
+  <div class="listboxrightnav">
+   <div style="width:88%; height:auto; margin:0 auto; padding:20px 6px">
+   {foreach $pidret as $vo}
+    
+    <li>
+    <a href="{url($route='plug/mgift/findgift/id=<id>', $params=array('id'=>$vo['id']))}">
+     <div class="listboxrightimg"><img src="{$vo['pic']}" /></div>
+     <div class="listboxrighttitle">{$vo['name']}</div>
+     </a>
+    </li>
+   
+    {/foreach}
+   
+ 	<div style="width:100%; height:100px; background:#fff; clear:both"></div>
+  
+     </div>
+   
+  
+  </div>
+
+</div>
+
+
+</div>
+
+
+  {include file="app/plug/view/mgift/footer"}
+</body>
+</html>

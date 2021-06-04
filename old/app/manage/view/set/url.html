@@ -1,0 +1,388 @@
+
+
+			  {include file="app/manage/view/index/nav"}
+              <link rel="stylesheet" href="{__PUBLIC__}assets/css/jquery-ui.min.css" />
+
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=index/agent/channel">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                   
+					
+                    
+                    
+                    
+                    <!--s-->
+                 
+
+										<div id="tabs" class="ui-tabs ui-widget ui-widget-content ui-corner-all">
+											{include file="app/manage/view/set/setglobal"}
+											<div id="tabs-1" aria-labelledby="ui-id-29" class="ui-tabs-panel ui-widget-content ui-corner-bottom" role="tabpanel" aria-hidden="false" style="display: block; padding:0px">
+										<!--d-->
+                                       
+                   <div class="widget-box" style="border-top:0px; margin-top:-0px;">
+												
+												<div class="widget-body">
+													<div class="widget-main">
+												
+											</div>
+                  <form class="form-horizontal"  id="form" action="" method="post">
+									<div class="widget-body">
+													<div class="widget-main">
+														
+                                                        
+                                                        	<div>
+															<label  class="formtitle"  for="form-field-9">网站模式</label>
+
+														<select name="DEBUG" class="form-control" style="height:34px;">
+             
+                                            <option value="false" {if $DEBUG=='0'} selected="selected"{/if}>安全模式</option>
+                                            <option value="true" {if $DEBUG=='1'} selected="selected"{/if}>调试模式</option>
+                                            </select>
+                                               <div style=" margin-top:8px; color:#F30">默认为安全模式，如果您的网站出现了问题 可开启调试模式查找问题。</div>
+														</div>
+                                                        <hr />
+														<div>
+															<label  class="formtitle"  for="form-field-9">首页默认访问</label>
+
+														<select name="moren" class="form-control" style="height:34px;">
+             
+                                            <option value="index" {if $moren=='index'} selected="selected"{/if}>国内折扣</option>
+                                            <option value="haitao" {if $moren=='haitao'} selected="selected"{/if}>海淘折扣</option>
+											<option value="cheaps" {if $moren=='cheaps'} selected="selected"{/if}>优惠券</option>
+											<option value="rank" {if $moren=='rank'} selected="selected"{/if}>排行版</option>
+                                            </select>
+                                               <div style=" margin-top:8px; color:#F30">默认为安全模式，如果您的网站出现了问题 可开启调试模式查找问题。</div>
+														</div>
+                                                        <hr />
+                                                        	<div>
+															<label  class="formtitle"  for="form-field-9">是否开启URL重写</label>
+
+														<select name="REWRITE_ON" class="form-control" style="height:34px;">
+                          
+                                            <option value="true" {if $REWRITE_ON=='1'}selected="selected"{/if}>开启</option>
+                                            <option value="false" {if $REWRITE_ON=='0'}selected="selected"{/if}>关闭</option>
+                                            </select>
+                                           
+														</div>
+                                                        <!--hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">礼物详情页面</label>
+
+														<input type="text" name="1" id="form-field-1" value="{$ret['1']}" placeholder="礼物详情页页面伪静态规则" class="form-control">
+														</div>
+
+
+														<hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">搜索页面</label>
+
+														<input type="text" name="2" id="form-field-1" value="{$ret['2']}" placeholder="搜索页面伪静态规则" class="form-control">
+														</div>
+
+														<hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">单页页面</label>
+
+														<input type="text" name="3" id="form-field-1" value="{$ret['3']}" placeholder="单页页面页面伪静态规则" class="form-control">
+                                                        
+														</div>
+
+														<hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送礼导航列表【分类选择】</label>
+
+														<input type="text" name="4" id="form-field-1" value="{$ret['4']}" placeholder="送礼导航列表【分类选择】页面伪静态规则" class="form-control">
+														</div>
+<hr />
+
+															<div>
+															<label  class="formtitle" for="form-field-8">送礼导航</label>
+
+														<input type="text" name="5" id="form-field-1" value="{$ret['5']}" placeholder="送礼导航页面伪静态规则" class="form-control">
+														</div>
+
+														<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">发现礼物页面</label>
+
+														<input type="text" name="6" id="form-field-1" value="{$ret['6']}" placeholder="发现礼物页面伪静态规则" class="form-control">
+														</div>
+                                                        
+                                                        <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">发现礼物页面 【分类选择】</label>
+
+														<input type="text" name="7" id="form-field-1" value="{$ret['7']}" placeholder="发现礼物分类选择页面伪静态规则" class="form-control">
+														</div>
+<hr>
+													
+                                                       	<div>
+															<label  class="formtitle" for="form-field-8">404页面</label>
+
+														<input type="text" name="8" id="form-field-1" value="{$ret['8']}" placeholder="404页面伪静态规则" class="form-control">
+														</div>
+                                                        	
+														<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">我的喜欢页面</label>
+
+														<input type="text" name="9" id="form-field-1" value="{$ret['9']}" placeholder="我的喜欢页面伪静态规则" class="form-control">
+														</div>
+
+														<hr>
+                                                        
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送礼攻略页面</label>
+
+														<input type="text" name="10" id="form-field-1" value="{$ret['10']}" placeholder="送礼攻略页面伪静态规则" class="form-control">
+														</div>
+
+														<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送礼攻略分类选择页面</label>
+
+														<input type="text" name="11"   value="{$ret['11']}" placeholder="送礼攻略分类选择页面页面静态规则" class="form-control">
+														</div>
+
+													<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">送礼攻略详情页面</label>
+
+														<input type="text" name="12"   value="{$ret['12']}" placeholder="送礼攻略详情页面伪静态规则" class="form-control">
+														</div>
+                                                        <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">问答列表页面</label>
+
+														<input type="text" name="13"   value="{$ret['13']}" placeholder="问答列表页面伪静态规则" class="form-control">
+														</div>
+                                                        <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">问答分类选择页面</label>
+
+														<input type="text" name="14"   value="{$ret['14']}" placeholder="问答分类选择页面伪静态规则" class="form-control">
+														</div>
+
+<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">问答详情页面</label>
+
+														<input type="text" name="15"   value="{$ret['15']}" placeholder="问答详情页面伪静态规则" class="form-control">
+														</div>
+
+
+<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版礼物首页</label>
+
+														<input type="text" name="16"   value="{$ret['16']}" placeholder="手机版首页伪静态规则" class="form-control">
+														</div>
+                                                        <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版攻略详情</label>
+
+														<input type="text" name="17"   value="{$ret['17']}" placeholder="手机版攻略详情伪静态规则" class="form-control">
+														</div>
+                                                          <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版分类</label>
+
+														<input type="text" name="18"   value="{$ret['18']}" placeholder="手机版分类伪静态规则" class="form-control">
+														</div>
+                                                          <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版分类切换</label>
+
+														<input type="text" name="19"   value="{$ret['19']}" placeholder="手机版分类切换伪静态规则" class="form-control">
+														</div>
+                                                           <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版分类切换</label>
+
+														<input type="text" name="20"   value="{$ret['20']}" placeholder="手机版分类切换伪静态规则" class="form-control">
+														</div>
+                                                        <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版礼物详情</label>
+
+														<input type="text" name="21"   value="{$ret['21']}" placeholder="手机版礼物详情伪静态规则" class="form-control">
+														</div>
+
+<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版攻略</label>
+
+														<input type="text" name="22"   value="{$ret['22']}" placeholder="手机版攻略伪静态规则" class="form-control">
+														</div>
+
+<hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版攻略分类选择</label>
+
+														<input type="text" name="23"   value="{$ret['23']}" placeholder="手机版攻略分类选择伪静态规则" class="form-control">
+														</div>
+                                                        <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版攻略详情</label>
+
+														<input type="text" name="24"   value="{$ret['24']}" placeholder="手机版攻略详情伪静态规则" class="form-control">
+														</div>
+                                                         <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版问答</label>
+
+														<input type="text" name="25"   value="{$ret['25']}" placeholder="手机版问答伪静态规则" class="form-control">
+														</div>
+                                                           <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版问答分类列表</label>
+
+														<input type="text" name="26"   value="{$ret['26']}" placeholder="手机版问答分类列表伪静态规则" class="form-control">
+														</div>
+                                                             <hr>
+                                                        	<div>
+															<label  class="formtitle" for="form-field-8">手机版问答详情</label>
+
+														<input type="text" name="27"   value="{$ret['27']}" placeholder="手机版问答详情伪静态规则" class="form-control">
+														</div-->
+
+
+
+
+
+                                                        
+                                                        
+                                                    
+                                                      
+
+														</div>
+
+                                              
+
+													
+
+								{$html}
+                                
+                                <div class="clearfix form-actions"  style="margin-bottom:-0px;" >
+										<div class="col-md-offset-1 col-md-9">
+											<input type="submit"  class="btn btn-info " id="save"  value="保存" />
+
+											
+										</div>
+									</div>
+                                    
+                                                   </div>
+								
+                                </form>     
+
+                                        <!--d-->
+											</div>
+
+										
+									
+                    <!--s-->
+                                                        </div>
+								
+
+			
+
+				<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+        <script src="{__PUBLIC__}assets/js/ace-extra.min.js"></script>
+	<!-- ace scripts -->
+	<!--[if !IE]> -->
+		<script src="assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/bootbox.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.gritter.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/spin.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+
+
+
+
+		<!-- inline scripts related to this page -->
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+		<script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+        <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <script src="{__PUBLIC__}assets/js/chosen.jquery.min.js"></script>
+        <script src="{__PUBLIC__}global/js/Validform_v5.3.2_min.js"></script>
+        <script src="{__PUBLIC__}global/js/ajaxfileupload.js"></script>
+        <script src="{__PUBLIC__}global/js/index.js"></script>
+        
+        <script>
+		ZhiForm("#form","index.php?r=manage/set/url","保存中","保存","null");
+		</script>
+
+		
+	</body>
+</html>

@@ -1,0 +1,129 @@
+
+
+			  {include file="app/manage/view/index/nav"}
+
+				<div class="sidebar-toggle sidebar-collapse" id="sidebar-collapse">
+					<i id="sidebar-toggle-icon" class="ace-icon fa fa-angle-double-left ace-save-state" data-icon1="ace-icon fa fa-angle-double-left" data-icon2="ace-icon fa fa-angle-double-right"></i>
+				</div>
+			</div>
+
+			<div class="main-content">
+				<div class="main-content-inner">
+					<div class="breadcrumbs ace-save-state" id="breadcrumbs">
+						<ul class="breadcrumb">
+							<li>
+								<i class="ace-icon fa fa-home home-icon"></i>
+								<a href="index.php?r=manage/index/index">首页</a>
+							</li>
+							<li class="active">{$pagetext['0']}</li>
+						</ul><!-- /.breadcrumb -->
+
+						<div class="nav-search" id="nav-search">
+							<form class="form-search">
+								<span class="input-icon">
+									<input type="text" placeholder="Search ..." class="nav-search-input" id="nav-search-input" autocomplete="off" />
+									<i class="ace-icon fa fa-search nav-search-icon"></i>
+								</span>
+							</form>
+						</div><!-- /.nav-search -->
+					</div>
+
+					<div class="page-content">
+                    <div class="page-header">
+							<h1>
+								{$pagetext['0']}
+								<small>
+									<i class="ace-icon fa fa-angle-double-right"></i>
+									{$pagetext['1']}
+								</small>
+							</h1>
+						</div>
+                         <div style="float:left; margin-bottom:15px;">
+                   <button class="btn btn-primary" onClick="LayerFrame('<strong>添加商品</strong>','500','618','index.php?r=manage/items/additemslist&id=<?=$_GET['id']?>&pid=<?=$_GET['id']?>','1')">添加商品</button>
+                      </div>
+                  <div class="row">
+							<div class="col-xs-12">
+								<!-- PAGE CONTENT BEGINS -->
+								<div>
+									<ul class="ace-thumbnails clearfix">
+										
+										{foreach $ret as $vo}
+										<li>
+											<a href="https://img.alicdn.com/imgextra/i2/2246916514/TB2z.vsqC3PL1JjSZFxXXcBBVXa_!!2246916514.jpg_230x230.jpg" data-rel="colorbox">
+												<img width="150" height="150" alt="150x150" src="{$vo['pic']}" />
+												<div class="text">
+													<div class="inner">{$vo['title']}</div>
+												</div>
+											</a>
+
+											<div class="tools tools-bottom">
+												<a href="#">
+													<i class="ace-icon fa fa-link"></i>
+												</a>
+
+												
+
+												<a href="javascript:;" onClick="LayerFrame('<strong>编辑商品</strong>','500','618','index.php?r=manage/items/editoritemslist&id={$vo['id']}&pid=<?=$_GET['id']?>','1')">
+													<i class="ace-icon fa fa-pencil"></i>
+												</a>
+
+												<a href="javascript:;" onclick="ZhiCmsConfirm('确定要删除吗？','是的','取消','index.php?r=manage/items/deleteitemslist&id={$vo['id']}','正在删除')">
+													<i class="ace-icon fa fa-times red"></i>
+												</a>
+											</div>
+										</li>
+										{/foreach}
+									</ul>
+								</div><!-- PAGE CONTENT ENDS -->
+							</div><!-- /.col -->
+						</div><!-- /.row -->
+					</div><!-- /.page-content -->
+
+                                                        </div>
+								
+
+			
+
+		<!-- basic scripts -->
+
+		<!--[if !IE]> -->
+		<script src="{__PUBLIC__}assets/js/jquery-2.1.4.min.js"></script>
+
+		<!-- <![endif]-->
+
+		<!--[if IE]>
+<script src="{__PUBLIC__}assets/js/jquery-1.11.3.min.js"></script>
+<![endif]-->
+		<script type="text/javascript">
+			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
+		</script>
+		<script src="{__PUBLIC__}assets/js/bootstrap.min.js"></script>
+
+		<!-- page specific plugin scripts -->
+
+		<!--[if lte IE 8]>
+		  <script src="{__PUBLIC__}assets/js/excanvas.min.js"></script>
+		<![endif]-->
+		<script src="{__PUBLIC__}assets/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.sparkline.index.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.pie.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/jquery.flot.resize.min.js"></script>
+
+		<!-- ace scripts -->
+		<script src="{__PUBLIC__}assets/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}assets/js/ace.min.js"></script>
+        <script src="{__PUBLIC__}global/layer/layer.js"></script>
+        <link rel="stylesheet" href="{__PUBLIC__}global/message/css/jquery.my-message.1.1.css" />
+       <script type="text/javascript" src="{__PUBLIC__}global/message/js/jquery.my-message.1.1.js"></script>
+         <script src="{__PUBLIC__}global/js/index.js"></script>
+
+		<script>
+		function resthispage(){
+			location.reload();
+		}
+		</script>
+	</body>
+</html>

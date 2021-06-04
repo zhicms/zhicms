@@ -1,0 +1,368 @@
+﻿body{background:#f5f5f5;}
+.search_container{
+    font-family:Arial,"Microsoft YaHei"; 
+}
+.search_mark{
+    padding:20px 0 20px 0;
+    font-size:14px;
+    color:#4c4c4c;
+}
+.search_mark strong{
+    padding:0 3px;
+    color:#333;
+}
+.search_type ul{
+    height:32px;
+    border-bottom:1px solid #dbdbdb;
+}
+.search_type li{
+    float:left;
+    margin-right:25px;
+}
+.search_type li a{
+    display:inline-block;
+    height:32px;
+    line-height:32px;
+    color:#666;
+    font-size:16px;
+}
+.search_type .current a{
+    height:31px;
+    line-height:31px;
+    color:#f95c68;
+    border-bottom:2px solid #f95c68;
+}
+
+.list_soldout,.ico_clock{
+    background-image:url("http://i.huim.com/content_new/images/home_ico.png");
+    background-repeat:no-repeat;  
+}
+/* 超值精选
+--------------------*/
+.search_result{
+    padding-top:20px;
+    width:1020px;
+}
+.search_type_zhi li{
+    position:relative;
+    float:left;
+    width:290px;
+    padding:15px;
+    margin-right:20px;
+    margin-bottom:20px;
+    background:#fff;
+    -moz-transition:box-shadow .5s;
+    -webkit-transition:box-shadow .5s;
+    -o-transition:box-shadow .5s;
+}
+.search_type_zhi li:hover{
+    box-shadow: 0 0 15px #aaa;
+}
+.zhi_grid .grid_pic{
+    position:relative;
+    width:290px;
+    height:290px;    
+}
+.zhi_grid .grid_pic img{
+    width:290px;
+    height:290px;
+}
+.zhi_grid .grid_pic .list_soldout{  
+    position:absolute;
+    display:inline-block;
+    z-index:6;
+    top:50%;
+    left:50%;
+    width:120px;
+    height:120px;
+    margin:-60px 0 0 -60px;
+    background-position:0 -241px;
+}
+.zhi_grid .grid_tit{
+    padding-top:10px;
+}
+.zhi_grid .grid_tit a{
+    display:block;
+    height:30px;
+    _width:290px;
+    line-height:32px;
+    overflow:hidden;
+    word-break: keep-all;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size:14px;
+    color:#333;
+    font-weight:400;
+}
+.zhi_grid .grid_tit a:hover{
+    color:#f95c68;
+}
+.zhi_grid .grid_price{
+    width:290px;  
+}
+.zhi_grid .price_current{
+    display:block;
+    height:30px;
+    overflow:hidden;
+    word-break:keep-all;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+.zhi_grid .price_current a{
+    font-size:20px;
+    color:#f95c68;
+}
+.zhi_grid .pub_time{
+    float:left;
+    margin:15px 0 20px 0;
+    display:inline-block;
+    color:#999;
+}
+.zhi_grid .author_name{
+    float:right;
+    margin:15px 0 20px 0;
+    display:inline-block;
+    width:105px;
+    text-align:right;
+    word-break:keep-all;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    overflow:hidden;
+    color: #999;
+}
+.zhi_grid .grid_page{
+    padding-bottom:5px;
+}
+.zhi_grid .grid_mall_tag{
+    display:inline-block;
+    float:left;
+    height:20px;
+    line-height:20px;
+    padding:0 10px;
+    border:1px solid #ccc;
+    color:#b3b3b3;
+	
+}
+.zhi_grid a.grid_mall_tag:hover{
+    border:1px solid #f95c68;
+    color:#f95c68;
+}
+.zhi_grid .grid_buy_btn{
+    position:relative;
+    float:right;
+    display:block;
+    width:120px;
+    height:34px;
+    margin-top:-12px;
+    line-height:34px;
+    text-align:center;
+    background:#f95c68;
+    font-size:16px;
+    color:#fff;
+    cursor:pointer;
+}
+.zhi_grid a.grid_buy_btn:hover{    
+    background:#ff6b77;
+    color:#fff;
+}
+.ico_clock{
+    display:inline-block;
+    width:14px;
+    height:14px;
+    vertical-align:-3px;
+    *vertical-align:0px;
+    margin-right:5px;
+    background-position:-50px -2px;
+}
+
+/* 全民爆料
+--------------------*/
+.search_type_bao{
+
+}
+.search_type_bao li{
+    position:relative;
+    float:left;
+    width:214px;
+    padding:15px;
+    margin-right:8px;
+    margin-bottom:10px;
+    background:#fff;
+    -moz-transition:box-shadow .5s;
+    -webkit-transition:box-shadow .5s;
+    -o-transition:box-shadow .5s;
+}
+.search_type_bao li:hover{
+    box-shadow: 0 0 8px #aaa;
+}
+.bao_grid .grid_pic{
+    position:relative;
+    width:214px;
+    height:214px;    
+}
+.bao_grid .grid_pic img{
+    width:214px;
+    height:214px;
+}
+.bao_grid .grid_pic .list_soldout{  
+    position:absolute;
+    display:inline-block;
+    z-index:6;
+    top:50%;
+    left:50%;
+    width:120px;
+    height:120px;
+    margin:-60px 0 0 -60px;
+    background-position:0 -241px;
+}
+.bao_grid .grid_tit{
+    padding-top:10px;
+}
+.bao_grid .grid_tit a{
+    display:block;
+    height:30px;
+    _width:214px;
+    line-height:32px;
+    overflow:hidden;
+    word-break: keep-all;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size:14px;
+    color:#333;
+    font-weight:400;
+}
+.bao_grid .grid_tit a:hover{
+    color:#f95c68;
+}
+.bao_grid .grid_price{
+    width:214px;  
+}
+.bao_grid .price_current{
+    display:block;
+    height:30px;
+    overflow:hidden;
+    word-break:keep-all;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+}
+.bao_grid .price_current a{
+    font-size:18px;
+    color:#f95c68;
+}
+.bao_grid .pub_time{
+    float:left;
+    margin:15px 0 20px 0;
+    display:inline-block;
+    color:#999;    
+}
+.bao_grid .author_name{
+    float:right;
+    margin: 15px 0 20px 0;
+    display:inline-block;
+    width: 92px;
+    text-align:right;
+    word-break:keep-all;
+    white-space:nowrap;
+    text-overflow:ellipsis;
+    overflow:hidden;
+    color: #999;
+}
+.bao_grid .grid_page{
+    padding-bottom:5px;
+}
+.bao_grid .grid_mall_tag{
+    display:inline-block;
+    float:left;
+    height:20px;
+    line-height:20px;
+    padding:0 10px;
+    border:1px solid #ccc;
+    color:#b3b3b3;
+
+}
+.bao_grid a.grid_mall_tag:hover{
+    border:1px solid #f95c68;
+    color:#f95c68;
+	
+}
+.bao_grid .grid_buy_btn{
+    position:relative;
+    float:right;
+    display:block;
+    width:100px;
+    height:28px;
+    margin-top:-4px;
+    line-height:28px;
+    text-align:center;
+    background:#f95c68;
+    font-size:14px;
+    color:#fff;
+    cursor:pointer;
+	
+}
+.bao_grid a.grid_buy_btn:hover{    
+    background:#ff6b77;
+    color:#fff;
+}
+
+/* 找不到搜索结果
+--------------------*/
+.search_noresult{
+    text-align:center;
+}
+.noresult_tit{
+    padding-top:70px;
+    text-align:center;
+    line-height:26px;
+    font-size:16px;
+    color:#4c4c4c;
+}
+.noresult_tit b{
+    font-weight:700;
+    color:#f95c68;
+}
+.search_noresult_box{
+    width:465px;
+    *width:500px;
+    margin:50px auto 150px auto;
+}
+.search_noresult_box .keywords{
+    display:inline-block;        
+    width:420px;
+    height:22px;
+    padding:4px 0;
+    *padding:3px 0;
+    border:solid #d4d4d4;
+    border-width:1px 0 1px 1px;
+    line-height:22px;
+    font-size:14px;
+    text-indent:8px;
+    color:#ccc;
+}
+.search_noresult .search_noresult_box .ftext{
+    color:#333;
+}
+.search_noresult_box input.keywords:focus {
+    border-color:#bbb;
+}
+.search_noresult_box .search_submit{
+    display:inline-block;
+    width:40px;
+    height:32px;
+    border:0;
+    background:url("http://i.huim.com/content_new/images/site_top.png") no-repeat;
+    background-position:-30px -72px;
+    cursor:pointer;
+}
+.search_noresult_box .search_submit:hover{
+    background-position:-30px -105px; 
+}
+.search_noresult .back_index{
+    text-align:center;
+    line-height:36px;
+    font-size:14px;
+    color:#3366cc;
+}
+.search_noresult .back_index:hover{
+    text-decoration:underline;
+}
