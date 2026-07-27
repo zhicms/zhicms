@@ -1,0 +1,116 @@
+/* =========================================================
+   设计系统 · 主题令牌（明 / 暗）
+   - 默认明色定义在 :root
+   - [data-theme="dark"] 覆盖为暗色
+   - 未手动选择时跟随系统 prefers-color-scheme
+   - 通过 <html data-theme> 切换，localStorage 持久化
+   - 主色：亮眼时尚的红橙渐变（仿 SMZDM 风格）
+   ========================================================= */
+
+:root {
+  /* 品牌色（亮眼红橙） */
+  --smz-accent: #ff4d4f;
+  --smz-accent-2: #ff7a45;
+  --smz-accent-weak: #fff0f2;
+  --smz-grad: linear-gradient(135deg, #ff7a45, #ff3b5c);
+
+  /* 表面 / 背景 */
+  --smz-bg: #f4f5f7;
+  --smz-bg-2: #eceef1;
+  --smz-surface: #ffffff;
+  --smz-surface-2: #f7f8fa;
+  --smz-surface-hover: #f3f4f6;
+
+  /* 文本 */
+  --smz-text: #1f2329;
+  --smz-text-2: #4e5969;
+  --smz-sub: #8a8a8a;
+
+  /* 线条 / 边框 */
+  --smz-line: #ececec;
+  --smz-line-2: #f0f0f0;
+
+  /* 价格 / 强调文本 */
+  --smz-price: #ff2b4e;
+
+  /* 圆角 */
+  --smz-radius-sm: 10px;
+  --smz-radius: 14px;
+  --smz-radius-lg: 18px;
+  --smz-radius-pill: 999px;
+
+  /* 阴影 */
+  --smz-shadow-sm: 0 2px 8px rgba(0, 0, 0, .05);
+  --smz-shadow: 0 2px 12px rgba(0, 0, 0, .07);
+  --smz-shadow-lg: 0 12px 30px rgba(0, 0, 0, .10);
+  --smz-shadow-pop: 0 12px 32px rgba(0, 0, 0, .14);
+
+  /* 间距 / 布局 */
+  --smz-gap: 14px;
+  --smz-gap-lg: 20px;
+  --smz-maxw: 1200px;
+  --smz-header-h: 66px;
+
+  /* 过渡 */
+  --smz-tr: background-color .3s ease, color .3s ease, border-color .3s ease;
+}
+
+/* 暗色主题：仅覆盖需要变化的令牌 */
+[data-theme="dark"] {
+  --smz-accent: #ff6a6e;
+  --smz-accent-2: #ff9a6a;
+  --smz-accent-weak: #2a1518;
+  --smz-grad: linear-gradient(135deg, #ff7a45, #ff4d6a);
+
+  --smz-bg: #0f1115;
+  --smz-bg-2: #15181e;
+  --smz-surface: #1a1d24;
+  --smz-surface-2: #20242c;
+  --smz-surface-hover: #23272f;
+
+  --smz-text: #e8eaed;
+  --smz-text-2: #b4b9c2;
+  --smz-sub: #828a96;
+
+  --smz-line: #2a2f38;
+  --smz-line-2: #23272f;
+
+  --smz-price: #ff6b6b;
+
+  --smz-shadow-sm: 0 2px 8px rgba(0, 0, 0, .4);
+  --smz-shadow: 0 2px 12px rgba(0, 0, 0, .5);
+  --smz-shadow-lg: 0 12px 30px rgba(0, 0, 0, .6);
+  --smz-shadow-pop: 0 12px 32px rgba(0, 0, 0, .6);
+}
+
+/* 跟随系统：用户未手动选择（无 data-theme 或显式 light 由 JS 控制）时，
+   系统为暗色则应用暗色令牌。手动选择后会被 [data-theme] 覆盖。 */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --smz-accent: #ff6a6e;
+    --smz-accent-2: #ff9a6a;
+    --smz-accent-weak: #2a1518;
+    --smz-grad: linear-gradient(135deg, #ff7a45, #ff4d6a);
+    --smz-bg: #0f1115;
+    --smz-bg-2: #15181e;
+    --smz-surface: #1a1d24;
+    --smz-surface-2: #20242c;
+    --smz-surface-hover: #23272f;
+    --smz-text: #e8eaed;
+    --smz-text-2: #b4b9c2;
+    --smz-sub: #828a96;
+    --smz-line: #2a2f38;
+    --smz-line-2: #23272f;
+    --smz-price: #ff6b6b;
+    --smz-shadow-sm: 0 2px 8px rgba(0, 0, 0, .4);
+    --smz-shadow: 0 2px 12px rgba(0, 0, 0, .5);
+    --smz-shadow-lg: 0 12px 30px rgba(0, 0, 0, .6);
+    --smz-shadow-pop: 0 12px 32px rgba(0, 0, 0, .6);
+  }
+}
+
+/* 全局背景兜底，避免滚动区闪白 */
+html,
+body {
+  background: var(--smz-bg);
+}

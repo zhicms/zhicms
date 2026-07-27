@@ -1,0 +1,271 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<div class="zc-user-edit">
+    <!-- 页头 -->
+    <div class="zc-user-edit__head">
+        <h1 class="zc-user-edit__title">
+            <i class="fas fa-user-edit"></i> {$pagetext['1']}
+        </h1>
+        <a href="index.php?r=manage/user/index" class="zc-btn zc-btn-ghost">
+            <i class="fas fa-arrow-left"></i> 返回列表
+        </a>
+    </div>
+
+    <!-- 卡片 -->
+    <div class="zc-card">
+        <!-- 用户概览 -->
+        <div class="zc-card__profile">
+            <div class="zc-avatar"><i class="fas fa-user"></i></div>
+            <div class="zc-profile__meta">
+                <div class="zc-profile__name">{$ret['username']}</div>
+                <div class="zc-profile__sub">
+                    {if $ret}ID #{$ret['id']} · 注册于 {$ret['date']}{else}新增一个站点用户{/if}
+                </div>
+            </div>
+            <span class="zc-tag">{if $ret}{if $ret['vest']=='2'}会员用户{else}普通用户{/if}{else}新建{/if}</span>
+        </div>
+
+        <form class="zc-form" id="form" action="" method="post">
+            {$html}
+
+            <div class="zc-form__row">
+                <label class="zc-form__label">用户名</label>
+                <input type="text" name="username" class="zc-input" placeholder="请输入用户名" value="{$ret['username']}">
+            </div>
+
+            <div class="zc-form__row">
+                <label class="zc-form__label">登录密码</label>
+                <input type="password" name="password" class="zc-input" autocomplete="new-password" placeholder="{if $ret}不修改请留空{else}请输入密码（至少 6 位）{/if}">
+                <p class="zc-form__hint">{if $ret}留空表示不修改当前密码{else}用于用户登录站点的密码{/if}</p>
+            </div>
+
+            <div class="zc-form__row">
+                <label class="zc-form__label">手机号</label>
+                <input type="text" name="mobile" class="zc-input" placeholder="请输入手机号" value="{$ret['mobile']}">
+            </div>
+
+            <div class="zc-form__row">
+                <label class="zc-form__label">用户身份</label>
+                <select name="vest" class="zc-input">
+                    <option {if $ret['vest']=='1'}selected="selected"{/if} value="1">普通用户</option>
+                    <option {if $ret['vest']=='2'}selected="selected"{/if} value="2">会员用户</option>
+                </select>
+            </div>
+
+            <div class="zc-form__actions">
+                <button type="button" class="zc-btn zc-btn-primary" id="save" onclick="submitUser()">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+                <a href="index.php?r=manage/user/index" class="zc-btn zc-btn-ghost">取消</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.zc-user-edit {
+    max-width: 780px;
+    margin: 30px auto;
+    padding: 0 24px;
+}
+.zc-user-edit__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+.zc-user-edit__title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2e3650;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.zc-user-edit__title .fas {
+    color: #1cc88a;
+    font-size: 22px;
+}
+
+.zc-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(30, 40, 70, 0.08);
+    padding: 30px 32px 34px;
+}
+
+.zc-card__profile {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding-bottom: 22px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid #eef0f5;
+}
+.zc-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #1cc88a, #20c997);
+    color: #fff;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 10px 20px rgba(28, 200, 138, 0.32);
+    flex-shrink: 0;
+}
+.zc-profile__meta {
+    flex: 1;
+    min-width: 0;
+}
+.zc-profile__name {
+    font-size: 20px;
+    font-weight: 700;
+    color: #2e3650;
+}
+.zc-profile__sub {
+    font-size: 13px;
+    color: #9aa0ac;
+    margin-top: 6px;
+}
+.zc-tag {
+    align-self: flex-start;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1cc88a;
+    background: #e8faf2;
+    padding: 6px 14px;
+    border-radius: 20px;
+    white-space: nowrap;
+}
+
+.zc-form__row {
+    margin-bottom: 22px;
+}
+.zc-form__label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4a5063;
+    margin-bottom: 9px;
+}
+.zc-input {
+    width: 100%;
+    height: 46px;
+    padding: 0 15px;
+    border: 1px solid #e3e6ef;
+    border-radius: 11px;
+    font-size: 14px;
+    color: #2e3650;
+    background: #fbfbfd;
+    box-sizing: border-box;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s, background .15s;
+}
+select.zc-input {
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%239aa0ac' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+}
+.zc-input:focus {
+    border-color: #1cc88a;
+    box-shadow: 0 0 0 3px rgba(28, 200, 138, 0.15);
+    background: #fff;
+}
+.zc-form__hint {
+    font-size: 12px;
+    color: #9aa0ac;
+    margin: 8px 0 0;
+}
+
+.zc-form__actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 30px;
+}
+.zc-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 46px;
+    padding: 0 30px;
+    border-radius: 11px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px solid transparent;
+    text-decoration: none;
+    transition: all .15s;
+    box-sizing: border-box;
+}
+.zc-btn .fas { font-size: 16px; }
+.zc-btn-primary {
+    background: linear-gradient(135deg, #1cc88a, #20c997);
+    color: #fff;
+    box-shadow: 0 10px 20px rgba(28, 200, 138, 0.3);
+}
+.zc-btn-primary:hover { filter: brightness(1.05); }
+.zc-btn-primary[disabled] { opacity: .65; cursor: not-allowed; }
+.zc-btn-ghost {
+    background: #fff;
+    color: #5a6072;
+    border-color: #e3e6ef;
+}
+.zc-btn-ghost:hover { background: #f6f7fb; }
+</style>
+
+<script>
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="fas fa-' + (type === 'success' ? 'check-circle' : 'exclamation-circle') + ' mr-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button></div>';
+    document.body.appendChild(toast);
+    setTimeout(function () {
+        toast.style.opacity = '0';
+        setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 3000);
+}
+
+function submitUser() {
+    var form = document.getElementById('form');
+    var data = {};
+    var inputs = form.querySelectorAll('input, select');
+    inputs.forEach(function (input) {
+        if (input.name) data[input.name] = input.value;
+    });
+
+    var url = 'index.php?r=manage/user/{if $ret}editoruser{else}adduser{/if}';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var result = JSON.parse(xhr.responseText);
+                if (result.status === 'y') {
+                    showToast(result.info || '保存成功', 'success');
+                    setTimeout(function () { location.href = 'index.php?r=manage/user/index'; }, 1200);
+                } else {
+                    showToast(result.info || '保存失败', 'danger');
+                }
+            } catch (e) {
+                showToast('保存失败', 'danger');
+            }
+        }
+    };
+    var params = Object.keys(data).map(function (k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
+    }).join('&');
+    xhr.send(params);
+}
+</script>
+
+{include file="app/manage/view/index/emlog_footer"}

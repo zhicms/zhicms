@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$pageText['0']} - ZhiCms</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.10/css/layui.css">
+    <link rel="stylesheet" href="/public/admin/layui/admin.css">
+    <?php zhi_hook('admin_head'); ?>
+</head>
+<body class="layui-layout-body">
+    <div class="layui-layout layui-layout-admin">
+        <div class="layui-header">
+            <div class="layui-logo" style="font-size:18px;">
+                <i class="layui-icon layui-icon-tree"></i> ZhiCms
+            </div>
+            <ul class="layui-nav layui-layout-right">
+                <li class="layui-nav-item">
+                    <a href="javascript:;">
+                        <img src="{$_SESSION['manage_pic']}" class="layui-nav-img">
+                        {$_SESSION['manage_system']}
+                    </a>
+                    <dl class="layui-nav-child">
+                        <dd><a onclick="ZhiCmsConfirm('确定要清除缓存吗？','是的','取消','index.php?r=manage/index/delcache','清除缓存中...')"><i class="layui-icon layui-icon-refresh"></i> 清除缓存</a></dd>
+                        <dd><a href="index.php?r=manage/login/loginout"><i class="layui-icon layui-icon-logout"></i> 退出账户</a></dd>
+                    </dl>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="layui-side layui-bg-black">
+            <div class="layui-side-scroll">
+                <ul class="layui-nav layui-nav-tree" lay-filter="test">
+                    <li class="layui-nav-item {if CONTROLLER_NAME=='index'}layui-this{/if}">
+                        <a href="index.php?r=manage/index/index"><i class="layui-icon layui-icon-home"></i> 控制台</a>
+                    </li>
+                    <li class="layui-nav-item {if CONTROLLER_NAME=='set'}layui-this{/if}">
+                        <a href="index.php?r=manage/set/index"><i class="layui-icon layui-icon-set"></i> 系统设置</a>
+                    </li>
+                    <li class="layui-nav-item {if CONTROLLER_NAME=='user'}layui-this{/if}">
+                        <a href="index.php?r=manage/user/index"><i class="layui-icon layui-icon-user"></i> 用户管理</a>
+                    </li>
+					<li class="layui-nav-item {if CONTROLLER_NAME=='items' || CONTROLLER_NAME=='union'}layui-nav-itemed{/if}">
+                        <a href="javascript:;"><i class="layui-icon layui-icon-template-1"></i> 电商宝库</a>
+                        <dl class="layui-nav-child">
+                            <dd {if CONTROLLER_NAME=='items'}class="layui-this"{/if}><a href="index.php?r=manage/items/index"><i class="layui-icon layui-icon-form"></i> 选品库</a></dd>
+                            <dd class="{if CONTROLLER_NAME=='union'}layui-nav-itemed layui-this{/if}">
+                                <a href="index.php?r=manage/union/index"><i class="layui-icon layui-icon-cloud"></i> 联盟库</a>
+                                <dl class="layui-nav-child">
+                                    <dd {if CONTROLLER_NAME=='union' && ACTION_NAME=='index'}class="layui-this"{/if}><a href="index.php?r=manage/union/index">API选品</a></dd>
+                                    <dd {if CONTROLLER_NAME=='union' && ACTION_NAME=='union'}class="layui-this"{/if}><a href="index.php?r=manage/union/union">联盟模型</a></dd>
+                                    <dd {if CONTROLLER_NAME=='union' && ACTION_NAME=='mall'}class="layui-this"{/if}><a href="index.php?r=manage/union/mall">商城管理</a></dd>
+                                    <dd {if CONTROLLER_NAME=='union' && ACTION_NAME=='type'}class="layui-this"{/if}><a href="index.php?r=manage/union/type">版块管理</a></dd>
+                                    <dd {if CONTROLLER_NAME=='union' && ACTION_NAME=='duoMai'}class="layui-this"{/if}><a href="index.php?r=manage/union/duoMai">多麦同步</a></dd>
+                                </dl>
+                            </dd>
+                        </dl>
+                    </li>
+					<li class="layui-nav-item {if CONTROLLER_NAME=='find'}layui-nav-itemed{/if}">
+                        <a href="javascript:;"><i class="layui-icon layui-icon-read"></i> 发现管理</a>
+                        <dl class="layui-nav-child">
+                            <dd {if CONTROLLER_NAME=='find' && ACTION_NAME=='index'}class="layui-this"{/if}><a href="index.php?r=manage/find/index">发现列表</a></dd>
+                            <dd {if CONTROLLER_NAME=='find' && ACTION_NAME=='addarticle'}class="layui-this"{/if}><a href="index.php?r=manage/find/addarticle">发布线索</a></dd>
+                        </dl>
+                    </li>
+                    <li class="layui-nav-item {if CONTROLLER_NAME=='page'}layui-this{/if}">
+                        <a href="index.php?r=manage/page/index"><i class="layui-icon layui-icon-file"></i> 页面管理</a>
+                    </li>
+                    <li class="layui-nav-item {if CONTROLLER_NAME=='ad'}layui-this{/if}">
+                        <a href="index.php?r=manage/ad/huan"><i class="layui-icon layui-icon-app"></i> 广告管理</a>
+                    </li>
+                    <li class="layui-nav-item {if strtolower(CONTROLLER_NAME)=='plugin'}layui-nav-itemed{/if}">
+                        <a href="javascript:;"><i class="layui-icon layui-icon-component"></i> 插件管理</a>
+                        <dl class="layui-nav-child">
+                            <dd {if strtolower(CONTROLLER_NAME)=='plugin' && ACTION_NAME=='index'}class="layui-this"{/if}><a href="index.php?r=manage/plugin/index"><i class="layui-icon layui-icon-cart-simple"></i> 插件市场</a></dd>
+                            <?php $pluginMenus = \ZhiCms\base\PluginManager::getAdminMenus(); foreach ($pluginMenus as $pm) { ?>
+                            <dd><a href="<?php echo htmlspecialchars($pm['url']); ?>"><?php echo htmlspecialchars($pm['title']); ?></a></dd>
+                            <?php } ?>
+                        </dl>
+                    </li>
+                    <li class="layui-nav-item {if CONTROLLER_NAME=='caiji'}layui-nav-itemed{/if}">
+                        <a href="javascript:;"><i class="layui-icon layui-icon-search"></i> 数据采集</a>
+                        <dl class="layui-nav-child">
+                            <dd {if CONTROLLER_NAME=='caiji' && ACTION_NAME=='index'}class="layui-this"{/if}><a href="index.php?r=manage/caiji/index">宝贝采集</a></dd>
+                            <dd {if CONTROLLER_NAME=='caiji' && ACTION_NAME=='find'}class="layui-this"{/if}><a href="index.php?r=manage/caiji/find">文案采集</a></dd>
+                        </dl>
+                    </li>
+                </ul>
+                <?php zhi_hook('admin_menu'); ?>
+            </div>
+        </div>
+        
+        <div class="layui-body">
+        <div class="layui-container">

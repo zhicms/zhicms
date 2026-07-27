@@ -1,0 +1,15 @@
+<article class="smz-card">
+  <a class="smz-card-img" href="{url($route='index/view/detail/id=<id>', $params=array('id'=>$vo['goodsId']))}" target="_blank" onmousedown="cplog('{$vo['id']}','pic')">
+    <img src="{$vo['mainPic']}" alt="{$vo['title']}">
+  </a>
+  <div class="smz-card-body">
+    <h2 class="smz-card-title">
+      <a href="{url($route='index/view/detail/id=<id>', $params=array('id'=>$vo['goodsId']))}" target="_blank" onmousedown="cplog('{$vo['id']}','name')">{$vo['title']}</a>
+    </h2>
+    <div class="smz-card-price">
+      <span class="smz-price"><small>券后 ¥</small>{$vo['actualPrice']}</span>
+      <span class="smz-coupon">领{$vo['couponPrice']}元券</span>
+    </div>
+    <a class="smz-card-btn" href="{url($route='index/view/detail/id=<id>', $params=array('id'=>$vo['goodsId']))}" target="_blank" onmousedown="cplog('{$vo['id']}','ingobuy')">去购买 &gt;</a>
+  </div>
+</article>

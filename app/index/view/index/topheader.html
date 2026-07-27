@@ -1,0 +1,111 @@
+<script>
+/* 防闪烁：在渲染前确定主题，优先级 localStorage > 系统偏好 */
+(function () {
+  try {
+    var t = localStorage.getItem('smz_theme');
+    if (!t || (t !== 'dark' && t !== 'light' && t !== 'system')) {
+      t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    }
+    if (t !== 'system') document.documentElement.setAttribute('data-theme', t);
+    else document.documentElement.removeAttribute('data-theme');
+  } catch (e) {}
+})();
+</script>
+<div class="smz-app">
+  <header class="smz-header">
+    <div class="smz-header-inner">
+      <a class="smz-logo" href="{url($route='index/index/index', $params=array())}" title="{obj('base/Base')->SiteConfig('sitename')}">
+        <img class="smz-logo-img" src="{obj('base/Base')->SiteConfig('logo')}" alt="{obj('base/Base')->SiteConfig('sitename')}">
+        <span class="smz-logo-text">{obj('base/Base')->SiteConfig('sitename')}</span>
+      </a>
+      <form class="smz-search" onsubmit="return false;">
+        <input id="headsearchfield" type="text" placeholder="搜索全网折扣、优惠券..." onkeydown="if(event.keyCode===13) gosbtn()">
+        <button type="button" onclick="gosbtn()">搜索</button>
+      </form>
+      <nav class="smz-topnav">
+        <a href="{url($route='index/index/index', $params=array())}">首页</a>
+        <a href="{url($route='index/brand/index', $params=array())}">大牌</a>
+        <a href="{url($route='index/cheaps/index', $params=array())}">优惠券</a>
+        <a href="{url($route='index/rank/index', $params=array())}">风云榜</a>
+        <a href="{url($route='index/hot/index', $params=array())}">线报</a>
+        <a href="{url($route='index/page/app', $params=array())}">APP</a>
+      </nav>
+      <div id="theme-switch"></div>
+    </div>
+    <nav class="smz-catebar">
+      <div class="smz-catebar-inner">
+        <a class="smz-cate {if CONTROLLER_NAME=='index' && !isset($_GET['list']) && !isset($_GET['id'])}active{/if}" href="{url($route='index/index/index', $params=array())}">全部</a>
+        <?php
+        for($i=1;$i<=14;$i++){
+        $navlist=obj("index/index","controller")->lists($i,"y");
+        $nlist= explode(",", $navlist);
+        ?>
+        <a class="smz-cate" href="{url($route='index/index/index/list=<list>', $params=array('list'=>$nlist['1']))}">{$nlist['0']}</a>
+        <?php
+        }
+        ?>
+      </div>
+    </nav>
+  </header>
+
+  <script>
+  (function(){
+    var ua=navigator.userAgent.toLowerCase();
+    var isMobile=/ipad|iphone os|midp|rv:1\.2\.3\.4|ucweb|android|windows ce|windows mobile/.test(ua);
+    var stay=/[?&](m|pc)=1\b/.test(location.search);
+    if(isMobile && !stay){
+      window.location.href='/m.html';
+    }
+  })();
+  </script>
+  <script src="{__PUBLIC__}vendor/vue.global.prod.js"></script>
+  <script>
+  (function () {
+    if (typeof Vue === 'undefined') return;
+    var KEY = 'smz_theme';
+    var ThemeSwitch = {
+      data: function () { return { open: false, mode: 'system' }; },
+      computed: {
+        icon: function () { return this.mode === 'dark' ? '☀️' : '🌙'; }
+      },
+      mounted: function () {
+        this.syncMode();
+        var self = this;
+        this._onDoc = function (e) {
+          if (self.open && !(e.target.closest && e.target.closest('#theme-switch'))) self.open = false;
+        };
+        document.addEventListener('click', this._onDoc);
+      },
+      beforeUnmount: function () { document.removeEventListener('click', this._onDoc); },
+      methods: {
+        syncMode: function () {
+          var dt = document.documentElement.getAttribute('data-theme');
+          this.mode = (dt === 'dark' || dt === 'light') ? dt : 'system';
+        },
+        toggle: function () { this.open = !this.open; },
+        set: function (m) {
+          this.mode = m;
+          if (m === 'system') document.documentElement.removeAttribute('data-theme');
+          else document.documentElement.setAttribute('data-theme', m);
+          try { localStorage.setItem(KEY, m); } catch (e) {}
+          this.open = false;
+        }
+      },
+      template:
+        '<div class="smz-theme-switch">' +
+        '  <button type="button" class="smz-theme-toggle" @click="toggle" title="外观模式">' +
+        '    <span class="theme-ico" v-text="icon"></span>' +
+        '  </button>' +
+        '  <transition name="tp">' +
+        '    <div class="smz-theme-panel" v-if="open" @click.stop>' +
+        '      <div class="tp-title">外观模式</div>' +
+        '      <label class="tp-opt" :class="{on: mode===\'light\'}"><input type="radio" name="tp" :checked="mode===\'light\'" @change="set(\'light\')"> 浅色</label>' +
+        '      <label class="tp-opt" :class="{on: mode===\'dark\'}"><input type="radio" name="tp" :checked="mode===\'dark\'" @change="set(\'dark\')"> 深色</label>' +
+        '      <label class="tp-opt" :class="{on: mode===\'system\'}"><input type="radio" name="tp" :checked="mode===\'system\'" @change="set(\'system\')"> 跟随系统</label>' +
+        '    </div>' +
+        '  </transition>' +
+        '</div>'
+    };
+    Vue.createApp(ThemeSwitch).mount('#theme-switch');
+  })();
+  </script>

@@ -1,0 +1,730 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-cloud-download-alt"></i>
+    联盟库(API接口)
+    <small class="text-muted ml-3">实时拉取联盟商品并采集入库，支持淘宝/拼多多/京东/唯品会</small>
+</h1>
+
+<!-- 操作栏 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="action-buttons">
+            <a href="index.php?r=manage/items/index" class="btn btn-outline-primary">
+                <i class="fas fa-database"></i> 本地库(选品库)
+            </a>
+        </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-success mr-2" onclick="oneKeyUpdate()">
+            <i class="fas fa-sync"></i> 一键更新
+        </button>
+    </div>
+</div>
+
+<!-- 当前状态提示 -->
+<div class="alert alert-info mb-4">
+    <i class="fas fa-info-circle"></i>
+    <?php if (!empty($isCompare)): ?>
+    当前展示：<strong>跨平台比价结果（淘宝 / 京东 / 拼多多）</strong>
+    <span class="text-muted ml-2">同款商品已按标题相似度聚合，按最低价升序排列，绿色"最低"为最划算平台</span>
+    <?php elseif($platform === 'taobao'): ?>
+    当前展示：<strong>大淘客全量商品列表（get-goods-list）</strong>
+    <span class="text-muted ml-2">（已入库商品显示为"已采集"，每页最多200条）</span>
+    <?php else: ?>
+    当前展示：<strong>API接口实时选品（大淘客/好单库）</strong>
+    <span class="text-muted ml-2">（已入库商品显示为"已采集"）</span>
+    <?php endif; ?>
+</div>
+
+<!-- 搜索筛选 -->
+<div class="filter-bar">
+    <div class="filter-title">
+        <i class="fas fa-filter"></i> 筛选搜索
+    </div>
+    <div class="row g-3 align-items-end">
+            <div class="col-md-2">
+                <label class="form-label font-weight-600 mb-2">
+                    <i class="fas fa-store mr-1"></i>平台
+                </label>
+                <select class="form-control" id="platform">
+                    <option value="taobao" <?php echo isset($platform) && $platform == 'taobao' ? 'selected' : ''; ?>>淘宝</option>
+                    <option value="pdd" <?php echo isset($platform) && $platform == 'pdd' ? 'selected' : ''; ?>>拼多多</option>
+                    <option value="jd" <?php echo isset($platform) && $platform == 'jd' ? 'selected' : ''; ?>>京东</option>
+                    <option value="vip" <?php echo isset($platform) && $platform == 'vip' ? 'selected' : ''; ?>>唯品会</option>
+                    <option value="compare" <?php echo isset($platform) && $platform == 'compare' ? 'selected' : ''; ?>>比价(淘宝/京东/拼多多)</option>
+                </select>
+            </div>
+
+            <div class="col-md-3">
+                <label class="form-label font-weight-600 mb-2">
+                    <i class="fas fa-search mr-1"></i>商品标题
+                </label>
+                <input type="text" class="form-control" id="keyword" placeholder="搜索商品标题" value="<?php echo isset($keyword) ? $keyword : ''; ?>">
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label font-weight-600 mb-2">商品分类</label>
+                <select class="form-control" id="cid">
+                    <option value="">全部分类</option>
+                    <?php if(isset($categories)): ?>
+                    <?php foreach($categories as $key => $value): ?>
+                    <option value="<?php echo $key; ?>" <?php echo isset($cid) && $cid == $key ? 'selected' : ''; ?>><?php echo $value; ?></option>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label font-weight-600 mb-2">排序方式</label>
+                <select class="form-control" id="sort">
+                    <option value="">默认排序</option>
+                    <option value="0" <?php echo isset($sort) && $sort == 0 ? 'selected' : ''; ?>>综合排序</option>
+                    <option value="1" <?php echo isset($sort) && $sort == 1 ? 'selected' : ''; ?>>上架时间新到旧</option>
+                    <option value="2" <?php echo isset($sort) && $sort == 2 ? 'selected' : ''; ?>>热销高到低</option>
+                    <option value="3" <?php echo isset($sort) && $sort == 3 ? 'selected' : ''; ?>>领券量高到低</option>
+                    <option value="4" <?php echo isset($sort) && $sort == 4 ? 'selected' : ''; ?>>佣金比例高到低</option>
+                    <option value="5" <?php echo isset($sort) && $sort == 5 ? 'selected' : ''; ?>>价格高到低</option>
+                    <option value="6" <?php echo isset($sort) && $sort == 6 ? 'selected' : ''; ?>>价格低到高</option>
+                </select>
+            </div>
+
+            <div class="col-md-2">
+                <label class="form-label font-weight-600 mb-2">优惠券</label>
+                <select class="form-control" id="hasCoupon">
+                    <option value="">全部券</option>
+                    <option value="1" <?php echo isset($hasCoupon) && $hasCoupon === '1' ? 'selected' : ''; ?>>有券</option>
+                    <option value="-1" <?php echo isset($hasCoupon) && $hasCoupon === '-1' ? 'selected' : ''; ?>>无券</option>
+                </select>
+            </div>
+
+            <div class="col-md-1">
+                <label class="form-label mb-2">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="search()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+</div>
+
+<!-- 商品列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-table"></i> 联盟商品列表
+        </h5>
+        <div class="text-muted">
+            <small>共 <?php echo isset($page['total']) ? $page['total'] : 0; ?> 件商品</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <?php if (!empty($isCompare)): ?>
+        <!-- 比价对比：同款聚合，按最低价升序 -->
+        <div class="compare-list">
+            <?php if (!empty($page['list'])): ?>
+            <?php
+                $cmpNames = ['taobao' => '淘宝', 'pdd' => '拼多多', 'jd' => '京东', 'vip' => '唯品会'];
+                $cmpColors = ['taobao' => '#FF5000', 'pdd' => '#E02E24', 'jd' => '#E1251B', 'vip' => '#F10180'];
+            ?>
+            <?php foreach ($page['list'] as $group):
+                $minPrice = $group['minPrice'];
+                $repTitle = $group['repTitle'];
+                $repPic = $group['repPic'];
+                $priceByPlatform = $group['priceByPlatform'];
+            ?>
+            <div class="card mb-3 border">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-center mb-2">
+                        <img src="<?php echo $repPic; ?>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;margin-right:12px;flex:0 0 auto;">
+                        <div style="min-width:0;">
+                            <div class="font-weight-bold" style="max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo htmlspecialchars(mb_substr($repTitle, 0, 60, 'UTF-8')); ?></div>
+                            <div class="text-muted small mt-1">
+                                同款匹配 <span class="badge badge-info"><?php echo $group['platformCount']; ?></span> 个平台 ·
+                                最低价 <span class="text-danger font-weight-bold">¥<?php echo number_format($minPrice, 2); ?></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th style="width:90px;">平台</th>
+                                    <th>店铺名称</th>
+                                    <th style="width:110px;">券后价</th>
+                                    <th style="width:80px;">佣金</th>
+                                    <th style="width:90px;">销量</th>
+                                    <th style="width:90px;">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($priceByPlatform as $pf => $p):
+                                $it = $p['item'];
+                                $pcolor = $cmpColors[$pf] ?? '#666';
+                                $pname = $cmpNames[$pf] ?? $pf;
+                                $isLowest = abs($p['price'] - $minPrice) < 0.001;
+                            ?>
+                            <tr>
+                                <td>
+                                    <span class="badge" style="background:<?php echo $pcolor; ?>20;color:<?php echo $pcolor; ?>"><?php echo $pname; ?></span>
+                                    <?php if ($isLowest): ?><span class="badge badge-success ml-1">最低</span><?php endif; ?>
+                                </td>
+                                <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo htmlspecialchars($it['shopName'] ?? '—'); ?></td>
+                                <td class="text-danger font-weight-bold">¥<?php echo number_format($p['price'], 2); ?></td>
+                                <td><?php echo $it['commissionRate'] ?? 0; ?>%</td>
+                                <td><?php echo number_format($it['monthSales'] ?? 0); ?></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary" onclick="collectGoods('<?php echo $it['goodsId']; ?>', '<?php echo $pf; ?>')">
+                                        <i class="fas fa-star"></i> 采集
+                                    </button>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+            <?php else: ?>
+            <div class="text-center text-muted py-5">
+                <i class="fas fa-balance-scale fa-3x mb-3 d-block"></i>
+                <h5>暂无比价结果</h5>
+                <p>请输入关键词后搜索，系统将同时对比淘宝 / 京东 / 拼多多同款价格</p>
+            </div>
+            <?php endif; ?>
+        </div>
+        <?php else: ?>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th style="width: 95px;">商品图片</th>
+                        <th>商品信息</th>
+                        <th style="width: 120px;">券后价</th>
+                        <th style="width: 100px;">佣金</th>
+                        <th style="width: 100px;">预估返利</th>
+                        <th style="width: 90px;">领券量</th>
+                        <th style="width: 100px;">优惠券</th>
+                        <th style="width: 80px;">包邮</th>
+                        <th style="width: 120px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($page['list'])): ?>
+                    <?php foreach ($page['list'] as $row):
+                        $itemFrom = $row['item_from'] ?? 'taobao';
+                        $platformText = $itemFrom == 'pdd' ? '拼多多' : ($itemFrom == 'jd' ? '京东' : ($itemFrom == 'vip' ? '唯品会' : '淘宝'));
+                        $platformColor = $itemFrom == 'pdd' ? '#E02E24' : ($itemFrom == 'jd' ? '#E1251B' : ($itemFrom == 'vip' ? '#F10180' : '#FF5000'));
+                        $couponPrice = $row['couponPrice'] ?? 0;
+                        $commissionRate = $row['commissionRate'] ?? 0;
+                        $estimateRebate = number_format($row['actualPrice'] * $commissionRate / 100, 2);
+                        $freeship = $row['yunfeixian'] ?? $row['freeshipRemoteDistrict'] ?? 0;
+                        $couponReceiveNum = $row['couponReceiveNum'] ?? 0;
+                        $commissionType = $row['commissionType'] ?? 0;
+                        $commissionTypeText = $commissionType == 3 ? '定向高佣' : ($commissionType == 2 ? '营销计划' : ($commissionType == 1 ? '通用佣金' : '普通'));
+                        $commissionTypeColor = $commissionType == 3 ? '#722ED1' : ($commissionType == 2 ? '#1890FF' : ($commissionType == 1 ? '#13C2C2' : '#8C8C8C'));
+                        $itemLink = $row['itemLink'] ?? '';
+                        $mainPic = $row['mainPic'] ?? '';
+                        // 判断是否已入库
+                        $isCollected = !empty($dbGoodsIds) && isset($dbGoodsIds[$row['goodsId']]);
+                    ?>
+                    <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>">
+                        <td>
+                            <img src="<?php echo $mainPic; ?>" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;<?php echo $isCollected ? ' opacity: 0.6;' : ''; ?>"
+                                 onclick="showImage('<?php echo $mainPic; ?>')">
+                        </td>
+                        <td>
+                            <div class="font-weight-bold mb-2">
+                                <span class="badge mr-2" style="background: <?php echo $platformColor; ?>20; color: <?php echo $platformColor; ?>">
+                                    <?php echo $platformText; ?>
+                                </span>
+                                <?php if ($isCollected): ?>
+                                <span class="badge badge-success mr-2"><i class="fas fa-check"></i> 已入库</span>
+                                <?php endif; ?>
+                                <span class="text-dark">
+                                    <?php echo mb_substr($row['title'], 0, 50, 'UTF-8'); ?>
+                                    <?php if(mb_strlen($row['title'], 'UTF-8') > 50): ?>...<?php endif; ?>
+                                </span>
+                            </div>
+                            <?php if (!empty($row['dtitle'])): ?>
+                            <div class="text-muted small">
+                                <?php echo mb_substr($row['dtitle'], 0, 60, 'UTF-8'); ?>
+                                <?php if(mb_strlen($row['dtitle'], 'UTF-8') > 60): ?>...<?php endif; ?>
+                            </div>
+                            <?php endif; ?>
+                            <div class="mt-2">
+                                <span class="badge" style="background: <?php echo $commissionTypeColor; ?>20; color: <?php echo $commissionTypeColor; ?>">
+                                    <?php echo $commissionTypeText; ?>
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-right">
+                            <div class="text-danger font-weight-bold h6 mb-0">
+                                ¥<?php echo number_format($row['actualPrice'], 2); ?>
+                            </div>
+                            <?php if ($row['originalPrice'] > $row['actualPrice']): ?>
+                            <div class="text-muted small" style="text-decoration: line-through;">
+                                ¥<?php echo number_format($row['originalPrice'], 2); ?>
+                            </div>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <div class="badge badge-pill bg-gradient-danger text-white px-2 py-1">
+                                <strong><?php echo $commissionRate; ?>%</strong>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="text-success font-weight-bold">
+                                ¥<?php echo $estimateRebate; ?>
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-light text-dark border">
+                                <?php echo number_format($couponReceiveNum); ?>
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($couponPrice > 0): ?>
+                            <div class="badge bg-gradient-danger text-white px-2 py-1">
+                                <?php echo number_format($couponPrice, 0); ?>元券
+                            </div>
+                            <?php else: ?>
+                            <span class="text-muted">无券</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($freeship == 1): ?>
+                            <span class="badge badge-success">包邮</span>
+                            <?php else: ?>
+                            <span class="badge badge-outline-secondary text-muted">否</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group-vertical btn-group-sm" role="group">
+                                <?php if ($isCollected): ?>
+                                <button class="btn btn-outline-success btn-sm" disabled title="已入库">
+                                    <i class="fas fa-check-circle"></i> 已入库
+                                </button>
+                                <?php else: ?>
+                                <button class="btn btn-outline-primary" onclick="collectGoods('<?php echo $row['goodsId']; ?>')" title="采集到本地库">
+                                    <i class="fas fa-star"></i> 采集
+                                </button>
+                                <?php endif; ?>
+                                <?php if (!empty($itemLink)): ?>
+                                <a href="<?php echo $itemLink; ?>" target="_blank" class="btn btn-outline-secondary" title="查看淘宝">
+                                    <i class="fas fa-external-link-alt"></i> 查看
+                                </a>
+                                <?php endif; ?>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="9" class="text-center py-5">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-cloud-download-alt fa-3x mb-3 d-block"></i>
+                                <h5>没有找到商品</h5>
+                                <?php if (!empty($apiError)): ?>
+                                <div class="alert alert-warning mt-3 mx-auto" style="max-width:500px;">
+                                    <i class="fas fa-exclamation-triangle"></i> API响应：<?php echo htmlspecialchars($apiError); ?>
+                                </div>
+                                <?php endif; ?>
+                                <p>请先在后台配置 API 密钥，或更改搜索条件</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php endif; ?>
+
+        <!-- 分页 -->
+        <nav aria-label="分页导航" class="mt-4">
+            <div class="text-center">
+                <?php if(empty($isCompare) && isset($page['pages'])): ?>
+                <ul class="pagination d-inline-flex">
+                    <?php echo $page['pages']; ?>
+                </ul>
+                <?php endif; ?>
+                <?php if(isset($page['total'])): ?>
+                <div class="text-muted mt-2">
+                    <small>共 <?php echo number_format($page['total']); ?> 条数据</small>
+                </div>
+                <?php endif; ?>
+            </div>
+        </nav>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<!-- 图片模态框 -->
+<div class="image-modal" onclick="closeImageModal()" style="display: none;">
+    <img id="modalImage" src="" alt="商品大图">
+</div>
+
+<!-- 采集分类选择弹窗（拼多多/京东/唯品会 等无标准分类时手动选择） -->
+<div class="cat-modal" id="catModal" style="display: none;">
+    <div class="cat-modal-box">
+        <div class="cat-modal-header">
+            <i class="fas fa-tags text-warning mr-2"></i> 选择商品分类
+        </div>
+        <div class="cat-modal-body">
+            <p class="text-muted small mb-3">该平台商品无标准分类或与本地分类不一致，请手动选择入库分类：</p>
+            <select class="form-control" id="collectCid">
+                <option value="">请选择分类</option>
+                <?php if(isset($categories)): ?>
+                <?php foreach($categories as $key => $value): ?>
+                <option value="<?php echo $key; ?>"><?php echo $value; ?></option>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
+        <div class="cat-modal-footer">
+            <button class="btn btn-sm btn-secondary" onclick="closeCatModal()">取消</button>
+            <button class="btn btn-sm btn-primary" id="catConfirmBtn">确定采集</button>
+        </div>
+    </div>
+</div>
+
+
+<style>
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.cat-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.cat-modal-box {
+    background: #fff;
+    width: 360px;
+    max-width: 92%;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.cat-modal-header {
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+.cat-modal-body {
+    padding: 18px;
+}
+.cat-modal-footer {
+    padding: 12px 18px;
+    border-top: 1px solid #f0f0f0;
+    text-align: right;
+}
+.cat-modal-footer .btn { margin-left: 8px; }
+
+
+.pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pagination li {
+    display: inline-flex;
+    list-style: none;
+}
+
+.pagination a, .pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    text-decoration: none;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    transition: all 0.2s;
+}
+
+.pagination a:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+    border-color: #b3d7ff;
+}
+
+.pagination span.current {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+    font-weight: 600;
+}
+
+/* 响应式表格 */
+@media (max-width: 767.98px) {
+    .table-responsive {
+        font-size: 12px;
+    }
+
+    .btn-group-vertical > .btn {
+        padding: 0.25rem 0.5rem;
+        font-size: 11px;
+    }
+}
+</style>
+
+<script>
+function search() {
+    var platform = document.getElementById('platform').value;
+    var keyword = document.getElementById('keyword').value;
+    var cid = document.getElementById('cid').value;
+    var sort = document.getElementById('sort').value;
+    var hasCoupon = document.getElementById('hasCoupon').value;
+
+    var url = 'index.php?r=manage/union/index';
+    if (platform) url += '&platform=' + platform;
+    if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+    if (cid) url += '&cid=' + cid;
+    if (sort) url += '&sort=' + sort;
+    if (hasCoupon !== '') url += '&hasCoupon=' + hasCoupon;
+    location.href = url;
+}
+
+function showImage(src) {
+    var modal = document.querySelector('.image-modal');
+    var modalImg = document.getElementById('modalImage');
+    modalImg.src = src;
+    modal.style.display = 'flex';
+}
+
+function closeImageModal() {
+    var modal = document.querySelector('.image-modal');
+    modal.style.display = 'none';
+}
+
+function collectGoods(goodsId, platform) {
+    platform = platform || (document.getElementById('platform') ? document.getElementById('platform').value : 'taobao');
+    // 拼多多/京东/唯品会 无标准分类或分类与本地不一致，采集前需手动选择分类
+    if (['pdd', 'jd', 'vip'].indexOf(platform) !== -1) {
+        openCatModal(goodsId, platform);
+    } else {
+        if(confirm('确定要采集这个商品到本地数据库吗？')) {
+            submitCollect(goodsId, platform, 0);
+        }
+    }
+}
+
+// 打开分类选择弹窗（拼多多/京东/唯品会）
+function openCatModal(goodsId, platform) {
+    var modal = document.getElementById('catModal');
+    modal.style.display = 'flex';
+    var sel = document.getElementById('collectCid');
+    sel.value = '';
+    var btn = document.getElementById('catConfirmBtn');
+    btn.onclick = function() {
+        var cid = sel.value;
+        if (!cid) {
+            showToast('请先选择商品分类', 'danger');
+            return;
+        }
+        closeCatModal();
+        submitCollect(goodsId, platform, cid);
+    };
+}
+
+function closeCatModal() {
+    document.getElementById('catModal').style.display = 'none';
+}
+
+// 执行采集（cid>0 表示使用手动选择的本地分类）
+function submitCollect(goodsId, platform, cid) {
+    var token = document.getElementById('csrfToken').value;
+    var url = 'index.php?r=manage/union/collectGoods&goodsId=' + goodsId + '&platform=' + platform + '&_token=' + token;
+    if (cid > 0) url += '&cid=' + cid;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var result = JSON.parse(xhr.responseText);
+                if (result.status === 'y') {
+                    showToast('商品采集成功！', 'success');
+                    setTimeout(function() {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    showToast(result.info, 'danger');
+                }
+            } catch(e) {
+                showToast('数据采集异常', 'danger');
+            }
+        }
+    };
+    xhr.send();
+}
+
+function oneKeyUpdate() {
+    if(confirm('确定要执行一键更新吗？这将从API获取最新商品并采集入库。')) {
+        var token = document.getElementById('csrfToken').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/union/syncGoods&_token=' + token, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        showToast('更新成功，共处理 ' + result.total + ' 条数据', 'success');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        showToast(result.info, 'danger');
+                    }
+                } catch(e) {
+                    showToast('更新失败', 'danger');
+                }
+            }
+        };
+        xhr.send();
+    }
+}
+
+function showToast(message, type = 'success') {
+    // 直接加 show 类并显式设置 opacity，避免依赖 Bootstrap JS 初始化（否则 .toast 默认隐藏不显示）
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 280px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // 3秒后淡出并移除
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() {
+            if(toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 350);
+    }, 3000);
+}
+
+// 键盘支持 - 回车搜索
+document.getElementById('keyword').addEventListener('keypress', function(e) {
+    if(e.which === 13) {
+        search();
+    }
+});
+
+// 键盘Esc关闭图片 / 分类弹窗
+document.addEventListener('keydown', function(event) {
+    if(event.key === 'Escape') {
+        var modal = document.querySelector('.image-modal');
+        if (modal) modal.style.display = 'none';
+        var catModal = document.getElementById('catModal');
+        if (catModal && catModal.style.display !== 'none') catModal.style.display = 'none';
+    }
+});
+
+// 点击分类弹窗背景关闭
+document.getElementById('catModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+
+// 淘宝关键词联想（复用淘宝官方 suggest 接口，JSONP，无需后端）
+(function(){
+    var kw = document.getElementById('keyword');
+    if(!kw) return;
+
+    var box = document.createElement('div');
+    box.id = 'tbSuggestBox';
+    box.style.cssText = 'position:absolute;z-index:9999;background:#fff;border:1px solid #dee2e6;border-radius:6px;max-height:320px;overflow:auto;box-shadow:0 6px 20px rgba(0,0,0,.12);display:none;';
+    kw.parentNode.style.position = 'relative';
+    kw.parentNode.appendChild(box);
+
+    var timer = null, lastQ = '';
+
+    function render(list){
+        if(!list || !list.length){ box.style.display='none'; return; }
+        box.style.width = kw.offsetWidth + 'px';
+        box.innerHTML = '';
+        list.forEach(function(item){
+            var div = document.createElement('div');
+            div.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid #f1f1f1;font-size:14px;';
+            div.textContent = item[0];
+            div.onmousedown = function(e){ e.preventDefault(); kw.value = item[0]; box.style.display='none'; search(); };
+            div.onmouseenter = function(){ div.style.background='#f5f7fa'; };
+            div.onmouseleave = function(){ div.style.background='#fff'; };
+            box.appendChild(div);
+        });
+        box.style.display = 'block';
+    }
+
+    function doSuggest(q){
+        if(q === lastQ) return;
+        lastQ = q;
+        var cbName = 'tb_sug_' + Date.now() + '_' + Math.floor(Math.random()*1000);
+        window[cbName] = function(data){
+            render((data && data.result) ? data.result : []);
+            try { delete window[cbName]; } catch(e) {}
+        };
+        var s = document.createElement('script');
+        s.src = 'https://suggest.taobao.com/sug?code=utf-8&q=' + encodeURIComponent(q) + '&callback=' + cbName;
+        document.body.appendChild(s);
+    }
+
+    kw.addEventListener('input', function(){
+        clearTimeout(timer);
+        var q = kw.value.trim();
+        if(q.length < 1){ box.style.display='none'; return; }
+        timer = setTimeout(function(){ doSuggest(q); }, 200);
+    });
+    kw.addEventListener('focus', function(){
+        var q = kw.value.trim();
+        if(q.length >= 1) doSuggest(q);
+    });
+    kw.addEventListener('blur', function(){ setTimeout(function(){ box.style.display='none'; }, 150); });
+    document.addEventListener('click', function(e){ if(e.target !== kw) box.style.display='none'; });
+})();
+</script>

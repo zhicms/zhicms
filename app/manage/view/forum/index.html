@@ -1,0 +1,228 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-list"></i>
+    社区管理 - 帖子列表
+</h1>
+
+<!-- 操作栏 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <button class="btn btn-outline-success" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i> 刷新
+        </button>
+    </div>
+
+    <div class="search-form" style="width: 300px;">
+        <div class="input-group">
+            <input type="text" class="form-control" id="keyword" placeholder="搜索帖子标题/内容" value="<?php echo isset($keyword) ? htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8') : ''; ?>">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" onclick="searchForum()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 数据列表 -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table"></i> 帖子列表
+        <span class="badge badge-info float-right mt-1"><?php echo isset($page['count']) ? $page['count'] : count($ret); ?> 条记录</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th>标题</th>
+                        <th style="width: 110px;">发帖人</th>
+                        <th style="width: 80px;">回复数</th>
+                        <th style="width: 80px;">浏览</th>
+                        <th style="width: 100px;">状态</th>
+                        <th style="width: 160px;">发布时间</th>
+                        <th style="width: 180px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($ret)): ?>
+                    <?php foreach ($ret as $row): ?>
+                    <tr>
+                        <td><?php echo (int)$row['id']; ?></td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 360px;" title="<?php echo htmlspecialchars($row['title'], ENT_QUOTES, 'UTF-8'); ?>">
+                                <a href="<?php echo htmlspecialchars($row['url'] ?? ('index.php?r=manage/forum/view&id='.(int)$row['id']), ENT_QUOTES, 'UTF-8'); ?>">
+                                    <?php echo htmlspecialchars(mb_substr($row['title'], 0, 60, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>
+                                </a>
+                            </div>
+                        </td>
+                        <td>
+                            <?php
+                            $poster = isset($row['poster']) ? $row['poster'] : '';
+                            if ($poster === '' && !empty($row['uid'])) {
+                                $u = obj("index/global", "controller")->finduser("y", $row['uid']);
+                                $poster = isset($u['username']) ? $u['username'] : 'UID:'.$row['uid'];
+                            }
+                            echo htmlspecialchars($poster ?: '访客', ENT_QUOTES, 'UTF-8');
+                            ?>
+                        </td>
+                        <td><span class="badge badge-info"><?php echo (int)($row['reply_count'] ?? 0); ?></span></td>
+                        <td><span class="text-muted"><i class="fas fa-eye mr-1"></i><?php echo (int)($row['view'] ?? 0); ?></span></td>
+                        <td>
+                            <?php $st = (int)($row['status'] ?? 1); ?>
+                            <span class="badge badge-<?php echo $st == 1 ? 'success' : 'secondary'; ?>" id="status-badge-<?php echo (int)$row['id']; ?>">
+                                <?php echo $st == 1 ? '显示' : '隐藏'; ?>
+                            </span>
+                        </td>
+                        <td><small class="text-muted"><?php echo htmlspecialchars($row['date'] ?? '', ENT_QUOTES, 'UTF-8'); ?></small></td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="index.php?r=manage/forum/view&id=<?php echo (int)$row['id']; ?>" class="btn btn-outline-info" title="详情">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="<?php echo url($route='index/forum/view', $params=array('id'=>(int)$row['id'])); ?>" target="_blank" class="btn btn-outline-primary" title="前台预览">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                                <button class="btn btn-outline-warning" onclick="toggleStatus(<?php echo (int)$row['id']; ?>)" title="切换显示/隐藏">
+                                    <i class="fas fa-toggle-on"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="delForum(<?php echo (int)$row['id']; ?>)" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无帖子数据</h5>
+                                <p class="text-muted">用户在前台社区发帖后会显示在这里</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        <nav aria-label="分页导航" class="mt-4">
+            <div class="text-center">
+                <?php if (isset($page['page']) && $page['page']): ?>
+                <ul class="pagination d-inline-flex">
+                    <?php echo $page['page']; ?>
+                </ul>
+                <?php endif; ?>
+                <?php if (isset($page['count'])): ?>
+                <div class="text-muted mt-2">
+                    <small>共 <?php echo number_format($page['count']); ?> 条数据</small>
+                </div>
+                <?php endif; ?>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<style>
+.pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+.pagination li { display: inline-flex; list-style: none; }
+.pagination a, .pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    text-decoration: none;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    transition: all 0.2s;
+}
+.pagination a:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+    border-color: #b3d7ff;
+}
+.pagination .active a {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+    font-weight: 600;
+}
+</style>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function searchForum() {
+    var keyword = document.getElementById('keyword').value;
+    var url = 'index.php?r=manage/forum/index';
+    if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+    location.href = url;
+}
+
+document.getElementById('keyword').addEventListener('keypress', function(e) {
+    if (e.which === 13) searchForum();
+});
+
+function toggleStatus(id) {
+    if (!confirm('确定要切换该帖子的显示状态吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/toggleStatus&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    var badge = document.getElementById('status-badge-' + id);
+                    if (badge) {
+                        var val = parseInt(r.status_val);
+                        badge.className = 'badge badge-' + (val === 1 ? 'success' : 'secondary');
+                        badge.innerText = val === 1 ? '显示' : '隐藏';
+                    }
+                }
+            } catch (e) {
+                alert('操作异常: ' + xhr.responseText.substring(0, 200));
+            }
+        }
+    };
+    xhr.send();
+}
+
+function delForum(id) {
+    if (!confirm('确定要删除该帖子吗？帖子下的所有回复也会被删除，此操作不可恢复！')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/delete&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') location.reload();
+            } catch (e) {
+                alert('删除失败，响应数据异常');
+            }
+        }
+    };
+    xhr.send();
+}
+</script>

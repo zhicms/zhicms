@@ -1,0 +1,101 @@
+{include file="app/index/view/index/common_header"}
+
+<div class="blog-hotbar">
+  <span class="blog-hotbar-label">{$rankInfo['icon']} {$rankInfo['name']}</span>
+  <div class="blog-hotbar-list">
+    <span class="blog-hotbar-item">{$rankInfo['desc']}</span>
+    <span class="blog-hotbar-item">🕐 每 5 分钟更新</span>
+    <span class="blog-hotbar-item">📊 数据来源 · 大淘客</span>
+  </div>
+</div>
+
+<!-- 榜单切换标签 -->
+<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:22px;">
+  {foreach $rankTypes as $t=>$info}
+  <a href="{url($route='index/rank/index', $params=array('type'=>$t))}"
+     style="display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:24px;font-size:14px;font-weight:600;text-decoration:none;transition:all .25s ease;{if $t==$rankType}background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;box-shadow:0 6px 16px rgba(102,126,234,.35);{else}background:var(--conBgcolor,#fff);color:var(--aColor,#333);border:1px solid var(--borderColor,rgba(0,0,0,.08));{/if}">
+    <b style="font-style:normal;">{$info['icon']}</b>{$info['name']}
+  </a>
+  {/foreach}
+</div>
+
+{if !empty($tips)}
+<div style="background:#fff7f7;border:1px solid #ffd6d6;color:#c0392b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;">
+  ⚠️ {$tips}
+</div>
+{/if}
+
+<div class="row">
+  <div class="column-big">
+
+    {if !empty($list)}
+      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+      {foreach $list as $item}
+      <?php
+        $rankNo = !empty($item['ranking']) ? $item['ranking'] : $n;
+        if ($rankNo == 1)      { $badge = 'linear-gradient(135deg,#ff6b6b,#ee5253)'; }
+        elseif ($rankNo == 2)  { $badge = 'linear-gradient(135deg,#feca57,#ff9f43)'; }
+        elseif ($rankNo == 3)  { $badge = 'linear-gradient(135deg,#54a0ff,#2e86de)'; }
+        else                   { $badge = 'linear-gradient(135deg,#c8d6e5,#8395a7)'; }
+        $goodsId    = !empty($item['goodsId']) ? $item['goodsId'] : ($item['id'] ?? 0);
+        $itemTitle  = !empty($item['title']) ? $item['title'] : (!empty($item['dtitle']) ? $item['dtitle'] : '热销商品');
+        $detailUrl  = url('index/view/detail', ['id' => $goodsId, 'type' => 'taobao']);
+        $couponUrl  = url('index/redirect/go', ['platform' => 'taobao', 'id' => $goodsId]);
+        $couponVal  = !empty($item['couponPrice']) ? $item['couponPrice'] : '';
+        $actual     = !empty($item['actualPrice']) ? $item['actualPrice'] : '';
+        $origin     = !empty($item['originalPrice']) ? $item['originalPrice'] : '';
+      ?>
+      <article class="shadow-theme" style="flex:1;min-width:300px;max-width:400px;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
+        <a href="{$detailUrl}" target="_blank" style="display:block;position:relative;overflow:hidden;">
+          <span style="position:absolute;top:10px;left:10px;z-index:2;min-width:30px;height:30px;padding:0 8px;border-radius:9px;background:<?php echo $badge; ?>;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 3px 8px rgba(0,0,0,.2);"><?php echo $rankNo; ?></span>
+          {if !empty($item['mainPic'])}
+          <img src="<?php echo $item['mainPic']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" style="width:100%;height:200px;object-fit:cover;transition:transform 0.4s ease;">
+          {else}
+          <div style="width:100%;height:200px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:48px;color:#ccc;">📦</span>
+          </div>
+          {/if}
+          <?php if(!empty($couponVal)): ?>
+          <div style="position:absolute;top:10px;right:10px;background:linear-gradient(135deg,#ff4757,#ff6b35);color:#fff;padding:4px 12px;border-radius:15px;font-size:12px;font-weight:700;">¥<?php echo $couponVal; ?>券</div>
+          <?php endif; ?>
+        </a>
+        <div style="padding:16px;">
+          <h3 style="font-size:15px;font-weight:600;color:#333;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+            <a href="{$detailUrl}" target="_blank" title="<?php echo htmlspecialchars($itemTitle); ?>" style="color:#333;">
+              <?php echo mb_substr(htmlspecialchars($itemTitle), 0, 50, 'UTF-8'); ?>
+            </a>
+          </h3>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <?php if(!empty($actual)): ?>
+            <span style="font-size:22px;font-weight:800;color:#ff4757;">¥<?php echo $actual; ?></span>
+            <?php endif; ?>
+            <?php if(!empty($origin)): ?>
+            <span style="font-size:13px;color:#999;text-decoration:line-through;">¥<?php echo $origin; ?></span>
+            <?php endif; ?>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;flex-wrap:wrap;gap:6px;">
+              {if !empty($item['twoHoursSales'])}
+              <span style="color:#ff6b35;font-size:12px;">🔥2h销 {$item['twoHoursSales']}</span>
+              {elseif !empty($item['monthSales'])}
+              <span style="color:#666;font-size:12px;">月销 {$item['monthSales']}</span>
+              {/if}
+              {if !empty($item['searchNum'])}
+              <span style="color:#4080ff;font-size:12px;">🔍搜索 {$item['searchNum']}</span>
+              {/if}
+            </div>
+            <a href="{$couponUrl}" class="btn btn-buy" target="_blank" style="padding:6px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;">领券购买</a>
+          </div>
+        </div>
+      </article>
+      {/foreach}
+      </div>
+    {else}
+      {include file="app/index/view/rank/empty"}
+    {/if}
+
+  </div>
+  {include file="app/index/view/index/common_sidebar"}
+</div>
+
+{include file="app/index/view/index/common_footer"}

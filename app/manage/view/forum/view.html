@@ -1,0 +1,215 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 面包屑 -->
+<div class="mb-3">
+    <a href="index.php?r=manage/forum/index" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> 返回帖子列表
+    </a>
+</div>
+
+<h1 class="page-title">
+    <i class="fas fa-file-alt"></i>
+    帖子详情
+</h1>
+
+<!-- 帖子信息 -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="fas fa-info-circle"></i> 帖子信息
+        <span class="badge badge-<?php echo ((int)($forum['status'] ?? 1) === 1) ? 'success' : 'warning'; ?> float-right">
+            <?php echo ((int)($forum['status'] ?? 1) === 1) ? '显示中' : '已隐藏'; ?>
+        </span>
+    </div>
+    <div class="card-body">
+        <h4 class="mb-3"><?php echo htmlspecialchars($forum['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?></h4>
+
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <small class="text-muted d-block">发帖人</small>
+                <strong>
+                    <?php
+                    $poster = $forum['poster'] ?? '';
+                    if ($poster === '' && !empty($forum['uid'])) {
+                        $u = obj("index/global", "controller")->finduser("y", $forum['uid']);
+                        $poster = isset($u['username']) ? $u['username'] : 'UID:'.$forum['uid'];
+                    }
+                    echo htmlspecialchars($poster ?: '访客', ENT_QUOTES, 'UTF-8');
+                    ?>
+                </strong>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">邮箱</small>
+                <span><?php echo htmlspecialchars($forum['mail'] ?? '', ENT_QUOTES, 'UTF-8') ?: '-'; ?></span>
+            </div>
+            <div class="col-md-3">
+                <small class="text-muted d-block">发布时间</small>
+                <span><?php echo htmlspecialchars($forum['date'] ?? '', ENT_QUOTES, 'UTF-8'); ?></span>
+            </div>
+            <div class="col-md-1">
+                <small class="text-muted d-block">浏览</small>
+                <span class="text-muted"><i class="fas fa-eye"></i> <?php echo (int)($forum['view'] ?? 0); ?></span>
+            </div>
+            <div class="col-md-1">
+                <small class="text-muted d-block">回复</small>
+                <span class="text-muted"><i class="fas fa-comment"></i> <?php echo (int)($forum['reply_count'] ?? 0); ?></span>
+            </div>
+            <div class="col-md-1">
+                <small class="text-muted d-block">IP</small>
+                <small class="text-muted"><?php echo htmlspecialchars($forum['ip'] ?? '', ENT_QUOTES, 'UTF-8'); ?></small>
+            </div>
+        </div>
+
+        <hr>
+
+        <div class="forum-content" style="line-height: 1.8; max-height: 400px; overflow-y: auto;">
+            <?php echo $forum['content'] ?? ''; ?>
+        </div>
+
+        <hr>
+
+        <div class="text-right">
+            <a href="<?php echo url($route='index/forum/view', $params=array('id'=>(int)$forum['id'])); ?>" target="_blank" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-external-link-alt"></i> 前台预览
+            </a>
+            <button class="btn btn-sm btn-outline-warning" onclick="toggleForumStatus(<?php echo (int)$forum['id']; ?>)">
+                <i class="fas fa-toggle-on"></i> 切换显示状态
+            </button>
+            <button class="btn btn-sm btn-outline-danger" onclick="delForum(<?php echo (int)$forum['id']; ?>)">
+                <i class="fas fa-trash"></i> 删除帖子
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 回复列表 -->
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-comments"></i> 回复列表
+        <span class="badge badge-info float-right mt-1"><?php echo count($replies); ?> 条回复</span>
+    </div>
+    <div class="card-body">
+        <?php if (!empty($replies)): ?>
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 50px;">ID</th>
+                        <th style="width: 110px;">回复人</th>
+                        <th style="width: 70px;">父ID</th>
+                        <th>内容</th>
+                        <th style="width: 70px;">点赞</th>
+                        <th style="width: 90px;">状态</th>
+                        <th style="width: 150px;">时间</th>
+                        <th style="width: 110px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($replies as $row): ?>
+                    <tr id="reply-row-<?php echo (int)$row['id']; ?>">
+                        <td><?php echo (int)$row['id']; ?></td>
+                        <td>
+                            <?php
+                            $poster = $row['poster'] ?? '';
+                            if ($poster === '' && !empty($row['uid'])) {
+                                $u = obj("index/global", "controller")->finduser("y", $row['uid']);
+                                $poster = isset($u['username']) ? $u['username'] : 'UID:'.$row['uid'];
+                            }
+                            echo htmlspecialchars($poster ?: '访客', ENT_QUOTES, 'UTF-8');
+                            ?>
+                        </td>
+                        <td><small class="text-muted"><?php echo (int)($row['pid'] ?? 0); ?></small></td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 360px;" title="<?php echo htmlspecialchars($row['content'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                                <?php echo htmlspecialchars(mb_substr($row['content'] ?? '', 0, 100, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-light"><i class="fas fa-heart text-danger"></i> <?php echo (int)($row['like_count'] ?? 0); ?></span></td>
+                        <td>
+                            <?php $hide = $row['hide'] ?? 'n'; ?>
+                            <span class="badge badge-<?php echo $hide === 'n' ? 'success' : 'warning'; ?>">
+                                <?php echo $hide === 'n' ? '显示' : '隐藏'; ?>
+                            </span>
+                        </td>
+                        <td><small class="text-muted"><?php echo htmlspecialchars($row['date'] ?? '', ENT_QUOTES, 'UTF-8'); ?></small></td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delReply(<?php echo (int)$row['id']; ?>)">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+        <?php else: ?>
+        <div class="text-center py-5">
+            <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">暂无回复</h5>
+            <p class="text-muted">用户在前台回复该帖子后会显示在这里</p>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function delReply(id) {
+    if (!confirm('确定要删除该回复吗？此操作不可恢复！')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/deleteReply&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    var row = document.getElementById('reply-row-' + id);
+                    if (row) row.style.display = 'none';
+                }
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+    };
+    xhr.send();
+}
+
+function toggleForumStatus(id) {
+    if (!confirm('确定要切换该帖子的显示状态吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/toggleStatus&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') location.reload();
+            } catch (e) {
+                alert('操作异常');
+            }
+        }
+    };
+    xhr.send();
+}
+
+function delForum(id) {
+    if (!confirm('确定要删除该帖子吗？帖子下的所有回复也会被删除，此操作不可恢复！')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/delete&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    location.href = 'index.php?r=manage/forum/index';
+                }
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+    };
+    xhr.send();
+}
+</script>

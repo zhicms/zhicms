@@ -1,0 +1,227 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-comments"></i>
+    社区管理 - 评论管理
+</h1>
+
+<form class="form-inline mb-3" method="get" action="index.php">
+    <input type="hidden" name="r" value="manage/forum/comment">
+    <label class="mr-2 font-weight-bold">模型筛选:</label>
+    <select class="form-control form-control-sm mr-2" name="model" onchange="this.form.submit()">
+        <option value="">全部</option>
+        <option value="1" <?php echo (string)($modelFilter ?? '') === '1' ? 'selected' : ''; ?>>单页</option>
+        <option value="2" <?php echo (string)($modelFilter ?? '') === '2' ? 'selected' : ''; ?>>文章</option>
+        <option value="3" <?php echo (string)($modelFilter ?? '') === '3' ? 'selected' : ''; ?>>社区</option>
+    </select>
+    <input type="text" class="form-control form-control-sm mr-2" name="keyword" placeholder="搜索评论内容" value="<?php echo htmlspecialchars($keyword ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+    <button type="submit" class="btn btn-outline-primary btn-sm"><i class="fas fa-search"></i> 筛选</button>
+    <a href="index.php?r=manage/forum/comment" class="btn btn-outline-secondary btn-sm ml-1"><i class="fas fa-undo"></i> 重置</a>
+</form>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table"></i> 评论列表
+        <span class="badge badge-info float-right mt-1"><?php echo isset($page['count']) ? $page['count'] : count($ret); ?> 条记录</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th style="width: 110px;">评论人</th>
+                        <th style="width: 90px;">模型</th>
+                        <th style="width: 70px;">目标ID</th>
+                        <th>内容</th>
+                        <th style="width: 80px;">点赞</th>
+                        <th style="width: 90px;">状态</th>
+                        <th style="width: 90px;">置顶</th>
+                        <th style="width: 150px;">时间</th>
+                        <th style="width: 220px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($ret)): ?>
+                    <?php foreach ($ret as $row): ?>
+                    <tr id="comment-row-<?php echo (int)$row['id']; ?>">
+                        <td><?php echo (int)$row['id']; ?></td>
+                        <td>
+                            <?php
+                            $poster = isset($row['poster']) ? $row['poster'] : '';
+                            if ($poster === '' && !empty($row['uid'])) {
+                                $u = obj("index/global", "controller")->finduser("y", $row['uid']);
+                                $poster = isset($u['username']) ? $u['username'] : 'UID:'.$row['uid'];
+                            }
+                            echo htmlspecialchars($poster ?: '访客', ENT_QUOTES, 'UTF-8');
+                            ?>
+                            <?php if (!empty($row['mail'])): ?>
+                            <br><small class="text-muted"><?php echo htmlspecialchars($row['mail'], ENT_QUOTES, 'UTF-8'); ?></small>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php
+                            $m = (string)($row['model'] ?? '');
+                            // 模型映射：1=单页 2=文章 3=社区 4=产品 5=品牌
+                            $modelLabels = array('1' => '单页', '2' => '文章', '3' => '社区', '4' => '产品', '5' => '品牌');
+                            $label = isset($modelLabels[$m]) ? $modelLabels[$m] : '其他';
+                            ?>
+                            <span class="badge badge-secondary"><?php echo $label; ?></span>
+                        </td>
+                        <td><?php echo (int)($row['mid'] ?? 0); ?></td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 280px;" title="<?php echo htmlspecialchars($row['body'] ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+                                <?php echo htmlspecialchars(mb_substr($row['body'] ?? '', 0, 80, 'UTF-8'), ENT_QUOTES, 'UTF-8'); ?>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge badge-light"><i class="fas fa-heart text-danger mr-1"></i><?php echo (int)($row['like_count'] ?? 0); ?></span>
+                        </td>
+                        <td>
+                            <?php $hide = $row['hide'] ?? 'n'; ?>
+                            <span class="badge badge-<?php echo $hide === 'n' ? 'success' : 'warning'; ?>" id="hide-badge-<?php echo (int)$row['id']; ?>">
+                                <?php echo $hide === 'n' ? '显示' : '隐藏'; ?>
+                            </span>
+                        </td>
+                        <td>
+                            <?php $top = $row['top'] ?? 'n'; ?>
+                            <span class="badge badge-<?php echo $top === 'y' ? 'primary' : 'light'; ?>" id="top-badge-<?php echo (int)$row['id']; ?>">
+                                <?php echo $top === 'y' ? '置顶' : '普通'; ?>
+                            </span>
+                        </td>
+                        <td><small class="text-muted"><?php echo htmlspecialchars($row['date'] ?? '', ENT_QUOTES, 'UTF-8'); ?></small></td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-<?php echo ($row['top'] ?? 'n') === 'y' ? 'primary' : 'outline-primary'; ?>" onclick="toggleTop(<?php echo (int)$row['id']; ?>)" title="切换置顶">
+                                    <i class="fas fa-thumbtack"></i>
+                                </button>
+                                <button class="btn btn-outline-warning" onclick="toggleHide(<?php echo (int)$row['id']; ?>)" title="切换显示/隐藏">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="delComment(<?php echo (int)$row['id']; ?>)" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="10" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-comments fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无评论数据</h5>
+                                <p class="text-muted">用户在前台评论后会显示在这里</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <nav aria-label="分页导航" class="mt-4">
+            <div class="text-center">
+                <?php if (isset($page['page']) && $page['page']): ?>
+                <ul class="pagination d-inline-flex">
+                    <?php echo $page['page']; ?>
+                </ul>
+                <?php endif; ?>
+                <?php if (isset($page['count'])): ?>
+                <div class="text-muted mt-2">
+                    <small>共 <?php echo number_format($page['count']); ?> 条评论</small>
+                </div>
+                <?php endif; ?>
+            </div>
+        </nav>
+    </div>
+</div>
+
+<style>
+.pagination {
+    display: inline-flex; align-items: center; gap: 5px; list-style: none;
+    padding: 0; margin: 0; flex-wrap: wrap; justify-content: center;
+}
+.pagination li { display: inline-flex; list-style: none; }
+.pagination a, .pagination span {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 36px; height: 36px; padding: 0 12px; border-radius: 6px;
+    font-size: 14px; text-decoration: none; color: #495057;
+    border: 1px solid #dee2e6; background-color: #fff; transition: all 0.2s;
+}
+.pagination a:hover { background-color: #e9ecef; color: #007bff; border-color: #b3d7ff; }
+.pagination .active a { background-color: #007bff; color: #fff; border-color: #007bff; font-weight: 600; }
+</style>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function toggleTop(id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/toggleCommentTop&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    var badge = document.getElementById('top-badge-' + id);
+                    if (badge) {
+                        var isTop = r.top === 'y';
+                        badge.className = 'badge badge-' + (isTop ? 'primary' : 'light');
+                        badge.innerText = isTop ? '置顶' : '普通';
+                    }
+                }
+            } catch (e) {
+                alert('操作异常: ' + xhr.responseText.substring(0, 200));
+            }
+        }
+    };
+    xhr.send();
+}
+
+function toggleHide(id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/toggleCommentHide&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    var badge = document.getElementById('hide-badge-' + id);
+                    if (badge) {
+                        var isHide = r.hide === 'y';
+                        badge.className = 'badge badge-' + (isHide ? 'warning' : 'success');
+                        badge.innerText = isHide ? '隐藏' : '显示';
+                    }
+                }
+            } catch (e) {
+                alert('操作异常: ' + xhr.responseText.substring(0, 200));
+            }
+        }
+    };
+    xhr.send();
+}
+
+function delComment(id) {
+    if (!confirm('确定要删除该评论吗？此操作不可恢复！')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/deleteComment&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    var row = document.getElementById('comment-row-' + id);
+                    if (row) row.style.display = 'none';
+                }
+            } catch (e) {
+                alert('删除失败，响应数据异常');
+            }
+        }
+    };
+    xhr.send();
+}
+</script>

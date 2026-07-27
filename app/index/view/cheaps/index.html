@@ -1,0 +1,103 @@
+{include file="app/index/view/index/common_header"}
+
+<div class="blog-hotbar">
+  <span class="blog-hotbar-label">优惠券中心</span>
+  <div class="blog-hotbar-list">
+    <span class="blog-hotbar-item"><b>🎫</b>海量优惠券</span>
+    <span class="blog-hotbar-item"><b>💰</b>超值折扣</span>
+    <span class="blog-hotbar-item"><b>⏰</b>限时优惠</span>
+  </div>
+</div>
+
+<div class="row">
+  <div class="column-big">
+    {if !empty($page['list'])}
+      {foreach $page['list'] as $item}
+      <?php 
+        $detailId = !empty($item['id']) ? $item['id'] : (!empty($item['ID']) ? $item['ID'] : 0);
+        $itemTitle = !empty($item['title']) ? $item['title'] : (!empty($item['goods_name']) ? $item['goods_name'] : (!empty($item['name']) ? $item['name'] : '优惠券商品'));
+        $goodsId = !empty($item['goodsId']) ? $item['goodsId'] : (!empty($item['goods_id']) ? $item['goods_id'] : $detailId);
+        $itemFrom = !empty($item['item_from']) ? $item['item_from'] : (!empty($item['laiyuan']) ? ($item['laiyuan'] == 1 ? 'taobao' : ($item['laiyuan'] == 4 ? 'jd' : ($item['laiyuan'] == 2 ? 'pdd' : ($item['laiyuan'] == 3 ? 'vip' : 'taobao')))) : 'taobao');
+        $detailUrl = url('index/view/detail', ['id' => $goodsId, 'type' => $itemFrom]);
+        $couponVal = !empty($item['couponPrice']) ? $item['couponPrice'] : (!empty($item['coupon_price']) ? $item['coupon_price'] : (!empty($item['coupon']) ? $item['coupon'] : ''));
+        $actualPrice = !empty($item['actualPrice']) ? $item['actualPrice'] : (!empty($item['goodsVipPrice']) ? $item['goodsVipPrice'] : (!empty($item['price']) ? $item['price'] : (!empty($item['unit_price']) ? $item['unit_price'] : (!empty($item['now_price']) ? $item['now_price'] : ''))));
+        $originalPrice = !empty($item['originalPrice']) ? $item['originalPrice'] : (!empty($item['original_price']) ? $item['original_price'] : (!empty($item['originPrice']) ? $item['originPrice'] : (!empty($item['marketPrice']) ? $item['marketPrice'] : '')));
+        $couponUrl = url('index/redirect/go', ['platform' => $itemFrom, 'id' => $goodsId]);
+      ?>
+      <article class="shadow-theme post" style="border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
+        {if !empty($item['mainPic']) || !empty($item['main_pic']) || !empty($item['image'])}
+        <a class="post-cover" href="{$detailUrl}" target="_blank" style="position:relative;overflow:hidden;">
+          <?php if(!empty($item['mainPic'])): ?>
+          <img src="<?php echo $item['mainPic']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" loading="lazy" style="transition:transform 0.4s ease;">
+          <?php elseif(!empty($item['main_pic'])): ?>
+          <img src="<?php echo $item['main_pic']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" loading="lazy" style="transition:transform 0.4s ease;">
+          <?php elseif(!empty($item['image'])): ?>
+          <img src="<?php echo $item['image']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" loading="lazy" style="transition:transform 0.4s ease;">
+          <?php endif; ?>
+          <?php if(!empty($couponVal)): ?>
+          <div style="position:absolute;top:12px;right:12px;background:linear-gradient(135deg,#ff4757,#ff6b35);color:#fff;padding:5px 14px;border-radius:20px;font-size:13px;font-weight:700;box-shadow:0 4px 16px rgba(255,71,87,0.4);">
+            ¥<?php echo $couponVal; ?>券
+          </div>
+          <?php endif; ?>
+          <div style="position:absolute;bottom:0;left:0;right:0;height:35%;background:linear-gradient(transparent, rgba(0,0,0,0.2));"></div>
+        </a>
+        {/if}
+        <div class="card-padding" style="padding:20px;">
+          <div class="card-tags" style="margin-bottom:12px;">
+            {if !empty($couponVal)}
+            <span class="card-tag" style="background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">领券减¥<?php echo $couponVal; ?></span>
+            {/if}
+            {if !empty($item['shopName'])}
+            <span class="card-tag" style="background:#f7f8fa;color:#555;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;"><?php echo $item['shopName']; ?></span>
+            {/if}
+          </div>
+          <h3 class="card-title" style="margin-bottom:12px;">
+            <a class="post-title" href="{$detailUrl}" target="_blank" title="<?php echo htmlspecialchars($itemTitle); ?>" style="font-size:17px;font-weight:700;color:#1f2329;line-height:1.5;">
+              <?php echo mb_substr(htmlspecialchars($itemTitle), 0, 80, 'UTF-8'); ?><?php if(mb_strlen($itemTitle, 'UTF-8') > 80) echo '...'; ?>
+            </a>
+          </h3>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+            <?php if(!empty($actualPrice)): ?>
+            <span style="font-size:28px;font-weight:800;color:#ff4757;">¥<?php echo $actualPrice; ?></span>
+            <?php endif; ?>
+            <?php if(!empty($originalPrice)): ?>
+            <span style="font-size:15px;color:#999;text-decoration:line-through;">¥<?php echo $originalPrice; ?></span>
+            <?php endif; ?>
+          </div>
+          <div class="info-row" style="display:flex;align-items:center;justify-content:space-between;">
+            <div class="log-info" style="display:flex;align-items:center;gap:12px;">
+              <?php if(!empty($item['sales'])): ?>
+              <span style="color:#555;font-size:13px;">月销 <?php echo $item['sales']; ?></span>
+              <span class="dot" style="color:#ddd;">·</span>
+              <?php endif; ?>
+              <?php if(!empty($item['monthSales'])): ?>
+              <span style="color:#555;font-size:13px;"><?php echo $item['monthSales']; ?></span>
+              <?php endif; ?>
+            </div>
+            <div class="post-actions">
+              <a class="btn btn-buy" href="{$couponUrl}" target="_blank" rel="nofollow" style="padding:10px 24px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;transition:all 0.2s;">立即领券</a>
+            </div>
+          </div>
+        </div>
+      </article>
+      {/foreach}
+      
+      <div class="pagination" style="margin-top:24px;">{$page['page']}</div>
+    {else}
+      <div style="text-align:center;padding:80px 20px;background:var(--conBgcolor);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--borderColor);">
+        <div style="font-size:80px;margin-bottom:20px;">🎫</div>
+        <h3 style="font-size:24px;margin-bottom:12px;color:var(--aColor);font-weight:700;">暂无优惠券</h3>
+        <p style="color:var(--lightColor);margin-bottom:24px;font-size:15px;">
+          {if !empty($_GET['key'])}没有找到 "{$searchKeyword}" 相关的优惠券，换个关键词试试？
+          {elseif !empty($_GET['id'])}该分类暂时没有优惠券，去看看其他分类吧！
+          {else}暂无优惠券，请稍后再来查看！
+          {/if}
+        </p>
+        <a href="{url($route='index/cheaps/index', $params=array())}" class="btn btn-buy" style="padding:12px 32px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;">查看全部优惠券</a>
+      </div>
+    {/if}
+  </div>
+  {include file="app/index/view/index/common_sidebar"}
+</div>
+
+{include file="app/index/view/index/common_footer"}

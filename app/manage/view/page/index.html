@@ -1,0 +1,245 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-file-alt"></i>
+    页面管理
+</h1>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card stats-card primary">
+            <div class="stats-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="stats-title">总页面数</div>
+            <div class="stats-value"><?php echo isset($total_pages) ? number_format($total_pages) : count($ret); ?></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card success">
+            <div class="stats-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stats-title">已发布</div>
+            <div class="stats-value"><?php echo isset($published_pages) ? number_format($published_pages) : count($ret); ?></div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stats-card warning">
+            <div class="stats-icon">
+                <i class="fas fa-clock"></i>
+            </div>
+            <div class="stats-title">草稿</div>
+            <div class="stats-value">0</div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作栏 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <a href="index.php?r=manage/page/addpage" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 添加页面
+        </a>
+        <button class="btn btn-outline-secondary" onclick="exportPages()">
+            <i class="fas fa-file-export"></i> 导出
+        </button>
+    </div>
+    
+    <div class="search-form" style="width: 300px;">
+        <div class="input-group">
+            <input type="text" class="form-control" id="keyword" placeholder="搜索页面标题..." value="<?php echo isset($keyword) ? $keyword : ''; ?>">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" onclick="searchPage()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 页面列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-table"></i> 页面列表
+        </h5>
+        <div class="text-muted">
+            <small>共 <?php echo isset($page_total) ? number_format($page_total) : count($ret); ?> 个页面</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 80px;">ID</th>
+                        <th>页面信息</th>
+                        <th style="width: 120px;">关键词</th>
+                        <th style="width: 200px;">描述</th>
+                        <th style="width: 130px;">创建时间</th>
+                        <th style="width: 120px;" class="text-center">状态</th>
+                        <th style="width: 150px;" class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($ret)): ?>
+                    <?php foreach ($ret as $row): ?>
+                    <tr>
+                        <td class="text-center font-weight-bold">
+                            <?php echo $row['id']; ?>
+                        </td>
+                        <td>
+                            <div class="font-weight-600 mb-1">
+                                <?php echo $row['title']; ?>
+                            </div>
+                            <div class="text-muted small">
+                                <i class="fas fa-link mr-1"></i>
+                                page/<?php echo $row['en_title'] ?? $row['id']; ?>.html
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 120px;">
+                                <?php echo !empty($row['keywords']) ? $row['keywords'] : '<span class="text-muted">-</span>'; ?>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 200px;">
+                                <?php echo !empty($row['dec']) ? mb_substr($row['dec'], 0, 50, 'UTF-8') : '<span class="text-muted">-</span>'; ?>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <div class="small">
+                                <?php echo date('Y-m-d', strtotime($row['date'])); ?>
+                                <br>
+                                <span class="text-muted"><?php echo date('H:i', strtotime($row['date'])); ?></span>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-success badge-pill">
+                                <i class="fas fa-check mr-1"></i>已发布
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="index.php?r=manage/page/edit&id=<?php echo $row['id']; ?>" class="btn btn-outline-primary" title="编辑页面">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="../page/<?php echo $row['en_title'] ?? $row['id']; ?>.html" target="_blank" class="btn btn-outline-info" title="预览页面">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="btn btn-outline-danger" onclick="deletePage(<?php echo $row['id']; ?>)" title="删除页面">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无页面数据</h5>
+                                <p class="text-muted">点击上方"添加页面"按钮创建页面</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        <?php if(isset($page) && $page): ?>
+        <nav aria-label="分页导航" class="mt-4">
+            <div class="text-center">
+                <div class="pagination d-inline-flex">
+                    <?php echo $page; ?>
+                </div>
+                <div class="text-muted mt-2">
+                    <small>共 <?php echo isset($page_total) ? number_format($page_total) : count($ret); ?> 条数据</small>
+                </div>
+            </div>
+        </nav>
+        <?php endif; ?>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function searchPage() {
+    var keyword = document.getElementById('keyword').value;
+    var url = 'index.php?r=manage/page/index';
+    if (keyword) {
+        url += '&keyword=' + encodeURIComponent(keyword);
+    }
+    location.href = url;
+}
+
+function deletePage(id) {
+    if(confirm('确定要删除这个页面吗？此操作不可恢复！')) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/page/del&id=' + id, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        showToast('页面删除成功', 'success');
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1000);
+                    } else {
+                        showToast(result.info, 'danger');
+                    }
+                } catch(e) {
+                    showToast('删除失败', 'danger');
+                }
+            }
+        };
+        xhr.send();
+    }
+}
+
+function exportPages() {
+    if(confirm('确定要导出页面数据吗？')) {
+        // 实现导出功能
+        showToast('导出功能开发中...', 'info');
+    }
+}
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0';
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 280px;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // 自动消失
+    setTimeout(function() {
+        if(toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+
+// 键盘事件 - 回车搜索
+document.getElementById('keyword').addEventListener('keypress', function(e) {
+    if(e.which === 13) {
+        searchPage();
+    }
+});
+</script>

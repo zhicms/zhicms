@@ -1,0 +1,298 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-edit"></i>
+    {$pagetext['1']}
+</h1>
+
+<!-- 文章表单 -->
+<form class="" id="form" action="" method="post">
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-pen"></i> 文章信息
+            </div>
+            <div class="card-body">
+                    <div class="form-group">
+                        <label for="title">文章标题</label>
+                        <input type="text" class="form-control" name="title" id="title" placeholder="请输入文章标题" value="{$ret['title']}">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="cid">文章分类</label>
+                        <select class="form-control" name="cid" id="cid">
+                            <option value="0">请选择分类</option>
+                            <?php if(isset($categories)): ?>
+                            <?php foreach($categories as $key => $value): ?>
+                            <option value="<?php echo $key; ?>" <?php echo isset($ret['cid']) && $ret['cid'] == $key ? 'selected' : ''; ?>><?php echo $value; ?></option>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="author">作者</label>
+                                <input type="text" class="form-control" name="author" id="author" placeholder="文章作者" value="{$ret['author']}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="laiyuan">文章来源</label>
+                                <input type="text" class="form-control" name="laiyuan" id="laiyuan" placeholder="文章来源" value="{$ret['laiyuan']}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                        <div class="form-group">
+                            <label for="body">文章内容</label>
+                            <!-- 使用emlog风格的容器结构 -->
+                            <div id="editor-md-container-article">
+                                <textarea name="body">{$ret['content']}</textarea>
+                            </div>
+                            <small class="form-text text-muted">发布文章支持天猫淘宝/京东/拼多多/唯品会产品链接，手动添加格式[ZhiCmsUrl]产品链接[/ZhiCmsUrl]</small>
+                        </div>
+                    
+                    <div class="form-group">
+                        <label for="surl">来源链接</label>
+                        <input type="text" class="form-control" name="surl" id="surl" placeholder="文章来源链接" value="{$ret['surl']}">
+                        <small class="form-text text-muted">外部文章或资源的原链接地址</small>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="sort">排序</label>
+                                <input type="number" class="form-control" name="sort" id="sort" min="0" max="255" placeholder="越大越靠前" value="{$ret['sort']}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="hits">浏览量</label>
+                                <input type="number" class="form-control" name="hits" id="hits" min="0" placeholder="自定义浏览量" value="{$ret['hits']}">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label for="bili">图片处理</label>
+                                <input type="number" class="form-control" name="bili" id="bili" min="1" max="9999" placeholder="图片显示比例" value="{$ret['bili']}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>SEO设置</label>
+                        <div class="form-row">
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="keywords" placeholder="关键词" value="{if $ret['keywords']!=""}{$ret['keywords']} {else}{$ret['dtitle']}{/if}">
+                            </div>
+                            <div class="col-md-6">
+                                <input type="text" class="form-control" name="dec" placeholder="描述信息" value="{if $ret['dec']!=""}{$ret['dec']} {else}{$ret['desc']}{/if}">
+                            </div>
+                        </div>
+                        <small class="form-text text-muted mt-1">用于搜索引擎优化，提高文章曝光度</small>
+                    </div>
+                    
+                    {$html}
+                    
+                    <div class="form-group">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存文章
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary" onclick="window.location.href='index.php?r=manage/find/index'">
+                            <i class="fas fa-arrow-left"></i> 返回列表
+                        </button>
+                    </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 侧边栏 -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-image"></i> 图片设置
+            </div>
+            <div class="card-body">
+                <div class="form-group">
+                    <label>封面图片</label>
+                    <div class="input-group">
+                        <input type="text" class="form-control" name="pic" id="picbox" placeholder="图片地址" value="{$ret['mainPic']}">
+                        <div class="input-group-append">
+                            <button type="button" class="btn btn-outline-secondary" onclick="upthis()">上传图片</button>
+                        </div>
+                    </div>
+                    <input type="file" name="jpg" id="up_file" style="display: none;" onchange="upimg()"/>
+                    <div class="mt-3">
+                        <img id="showimg" src="{$ret['mainPic']}" class="img-thumbnail" {if $ret['mainPic']==""} style="display: none;"{/if}>
+                    </div>
+                    <small class="form-text text-muted">建议尺寸：600*330，支持JPG、PNG格式</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>显示设置</label>
+                    <select class="form-control" name="sheng">
+                        <option value="" {if $ret['sheng']==""}selected{/if}>正常显示</option>
+                        <option value="sheng" {if $ret['sheng']=="sheng"}selected{/if}>隐藏图片</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-cog"></i> 发布选项
+            </div>
+            <div class="card-body">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="status" id="publish_check" value="1" {if !isset($ret['status']) || $ret['status'] == 1}checked{/if}>
+                    <label class="form-check-label" for="publish_check">
+                        立即发布
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="allow_comment">
+                    <label class="form-check-label" for="allow_comment">
+                        允许评论
+                    </label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="featured_post">
+                    <label class="form-check-label" for="featured_post">
+                        推荐文章
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</form>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<!-- Editor.md 本地集成（移植自 emlog 后台，避免 CDN 不可达与样式冲突） -->
+<link rel="stylesheet" href="/public/global/editormd/css/editormd.css" />
+<script src="/public/global/editormd/editormd.js"></script>
+
+<script>
+$(function() {
+    var testEditor = editormd("editor-md-container-article", {
+        width: "100%",
+        height: 550,
+        path: "/public/global/editormd/lib/",
+        placeholder: "开始编写文章内容...",
+        toolbarIcons: function() {
+            return ["bold", "del", "italic", "quote", "|", "h1", "h2", "h3", "|", "list-ul", "list-ol", "hr", "|",
+                "link", "image", "code", "code-block", "table", "|", "search", "preview", "fullscreen"]
+        },
+        watch: false,
+        lineNumbers: false,
+        htmlDecode: true,
+        emoji: true,
+        taskList: true,
+        tocm: true,
+        imageUpload: true,
+        imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
+        imageUploadURL: "index.php?r=manage/File/editor&type=article",
+        theme: "default",
+        editorTheme: "default",
+        previewTheme: "default",
+        saveHTMLToTextarea: true,
+        syncScrolling: "single",
+        autoFocus: false,
+        onload: function() {
+            var content = $("textarea[name='body']").val();
+            if (content) {
+                this.setContent(content);
+            }
+        },
+        onchange: function() {
+            this.sync();
+        }
+    });
+
+    $('#form').on('submit', function() {
+        if (testEditor) {
+            testEditor.sync();
+        }
+    });
+
+    // 编辑预览中把 [ZhiCmsUrl]链接[/ZhiCmsUrl] 渲染为可点击的「去购买」链接，
+    // 避免预览区显示原始标记文本（前端展示时会自动渲染成站内商品卡片）
+    function getPlatformStyle(url) {
+        if (/pinduoduo\.com|yangkeduo\.com/i.test(url)) return {color:'#e02e24',text:'去拼多多购买'};
+        if (/jd\.com/i.test(url)) return {color:'#e4393c',text:'去京东购买'};
+        if (/vip\.com|vipshop\.com/i.test(url)) return {color:'#cd2e6b',text:'去唯品会购买'};
+        if (/taobao\.com|tmall\.com/i.test(url)) return {color:'#ff2e54',text:'去淘宝购买'};
+        return {color:'#ff5000',text:'去购买'};
+    }
+    function renderZhiCmsUrlInPreview() {
+        var preview = document.querySelector('.editormd-preview');
+        if (!preview) return;
+        var walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT, null, false);
+        var node;
+        while (node = walker.nextNode()) {
+            var m = node.nodeValue.match(/\[ZhiCmsUrl\]([\s\S]+?)\[\/ZhiCmsUrl\]/);
+            if (m) {
+                var url = m[1].trim();
+                var ps = getPlatformStyle(url);
+                var a = document.createElement('a');
+                a.href = url;
+                a.target = '_blank';
+                a.className = 'zhicms-url-preview';
+                a.textContent = '🛒 ' + ps.text;
+                a.setAttribute('style', 'display:inline-block;margin:8px 0;padding:6px 16px;background:' + ps.color + ';color:#fff;border-radius:20px;text-decoration:none;font-size:13px;');
+                var span = document.createElement('span');
+                span.appendChild(a);
+                node.parentNode.replaceChild(span, node);
+            }
+        }
+    }
+
+    var previewEl = document.querySelector('.editormd-preview');
+    if (previewEl && typeof MutationObserver !== 'undefined') {
+        var obs = new MutationObserver(renderZhiCmsUrlInPreview);
+        obs.observe(previewEl, { childList: true, subtree: true, characterData: true });
+        renderZhiCmsUrlInPreview();
+    }
+});
+
+function upthis(){
+    document.getElementById("up_file").click(); 	
+}
+
+function upimg() {
+    var fileInput = document.getElementById("up_file");
+    var file = fileInput.files[0];
+    if (file) {
+        var formData = new FormData();
+        formData.append('file', file);
+        $.ajax({
+            url: 'index.php?r=manage/File/articlepic',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(res) {
+                try {
+                    var data = JSON.parse(res);
+                    if (data.url) {
+                        $('#picbox').val(data.url);
+                        $('#showimg').attr('src', data.url).show();
+                    } else {
+                        alert('上传失败');
+                    }
+                } catch(e) {
+                    alert('上传失败，请重试');
+                }
+            },
+            error: function() {
+                alert('上传失败，请检查网络连接');
+            }
+        });
+    }
+}
+</script>

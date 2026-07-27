@@ -1,0 +1,22 @@
+{
+    "name": "zhicms/project",
+    "description": "ZhiCms project with Composer and ThinkPHP support",
+    "type": "project",
+    "require": {
+        "php": ">=7.2",
+        "topthink/think-cache": "^2.0",
+        "topthink/think-orm": "^2.0",
+        "topthink/think-template": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "app\\": "app/",
+            "ZhiCms\\": "ZhiCms/"
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
+    "minimum-stability": "stable"
+}

@@ -1,0 +1,223 @@
+{include file="app/index/view/index/common_header"}
+
+{if !isset($ret) || empty($ret)}
+<div class="blog-hotbar">
+  <span class="blog-hotbar-label">商品详情</span>
+</div>
+<div class="row">
+  <div class="column-big">
+    <div style="text-align:center;padding:80px 20px;background:var(--conBgcolor);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--borderColor);">
+      <div style="font-size:80px;margin-bottom:20px;">😅</div>
+      <h3 style="font-size:24px;margin-bottom:12px;color:var(--aColor);font-weight:700;">商品没有找到</h3>
+      <p style="color:var(--lightColor);margin-bottom:24px;font-size:15px;">
+        {if !empty($errmsg)}{$errmsg}{else}该商品可能已下架或链接地址有误{/if}
+      </p>
+      <a href="{url($route='index/cheaps/index', $params=array())}" class="btn btn-buy" style="padding:12px 32px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;">返回优惠券中心</a>
+    </div>
+  </div>
+  {include file="app/index/view/index/common_sidebar"}
+</div>
+{else}
+
+<div class="blog-hotbar">
+  <span class="blog-hotbar-label">优惠券详情</span>
+  <div class="blog-hotbar-list">
+    <span class="blog-hotbar-item">{$platformIcon} {$platformName}</span>
+    {if !empty($ret['shopName'])}
+    <span class="blog-hotbar-item">🏪 {$ret['shopName']}</span>
+    {/if}
+    {if !empty($ret['monthSales'])}
+    <span class="blog-hotbar-item">📦 月销 {$ret['monthSales']}</span>
+    {/if}
+  </div>
+</div>
+
+<div class="row">
+  <div class="column-big">
+    <article class="shadow-theme post" style="border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;">
+      {if !empty($ret['mainPic'])}
+      <div style="position:relative;">
+        <img src="{$ret['mainPic']}" alt="{$ret['title']}" style="width:100%;height:auto;">
+        {if !empty($ret['couponPrice'])}
+        <div style="position:absolute;top:16px;right:16px;background:linear-gradient(135deg,#ff4757,#ff6b35);color:#fff;padding:8px 20px;border-radius:25px;font-size:16px;font-weight:700;box-shadow:0 4px 16px rgba(255,71,87,0.4);">
+          ¥{$ret['couponPrice']}券
+        </div>
+        {/if}
+      </div>
+      {/if}
+      
+      <div style="padding:24px;">
+        <h1 class="post-title" style="font-size:22px;font-weight:700;color:#1f2329;line-height:1.6;margin-bottom:20px;">
+          {$ret['title']}
+        </h1>
+        
+        <div style="background:linear-gradient(135deg,#fff8f0,#fff5ee);border-radius:12px;padding:20px;margin-bottom:20px;border-left:4px solid #ff8e53;">
+          <div style="display:flex;align-items:flex-end;gap:16px;margin-bottom:12px;">
+            {if !empty($ret['actualPrice'])}
+            <div>
+              <span style="font-size:40px;font-weight:800;color:#ff4757;">¥{$ret['actualPrice']}</span>
+            </div>
+            {if $showOriginalPrice}
+            <div style="margin-bottom:6px;">
+              <span style="font-size:16px;color:#999;text-decoration:line-through;">¥{$ret['originalPrice']}</span>
+            </div>
+            {/if}
+            {if !empty($saveAmount)}
+            <div style="background:#ff4757;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:6px;">
+              立省 ¥{$saveAmount}
+            </div>
+            {/if}
+            {/if}
+          </div>
+          <div style="display:flex;flex-wrap:wrap;align-items:center;gap:10px;">
+            {if !empty($ret['couponConditions'])}
+            <span style="background:#e8f4fd;color:#4080ff;padding:5px 12px;border-radius:6px;font-size:13px;">满{$ret['couponConditions']}可用</span>
+            {/if}
+            {if !empty($ret['monthSales'])}
+            <span style="background:#fff8f0;color:#ff8c00;padding:5px 12px;border-radius:6px;font-size:13px;">月销 {$ret['monthSales']}</span>
+            {/if}
+            {if $showCouponEndTime}
+            <span style="background:#fff0f0;color:#ff4757;padding:5px 12px;border-radius:6px;font-size:13px;">有效期至 {$ret['couponEndTime']}</span>
+            {/if}
+          </div>
+        </div>
+        
+        <div class="post-actions" style="margin-bottom:24px;">
+          <a href="{$buyUrl}" class="btn btn-buy" target="_blank" rel="nofollow" style="width:100%;padding:16px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;text-align:center;box-shadow:0 4px 16px rgba(255,107,107,0.3);">🚀 立即领券购买</a>
+        </div>
+        
+        <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+          <div style="flex:1;min-width:200px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);border:1px solid #f0f0f0;">
+            <h4 style="font-size:14px;font-weight:600;color:#999;margin-bottom:10px;">📋 商品信息</h4>
+            <div style="display:flex;flex-wrap:wrap;gap:12px;">
+              {if !empty($ret['monthSales'])}
+              <div>
+                <span style="color:#666;font-size:13px;">月销</span>
+                <span style="color:#333;font-weight:600;margin-left:6px;">{$ret['monthSales']}</span>
+              </div>
+              {/if}
+              {if !empty($ret['couponPrice'])}
+              <div>
+                <span style="color:#666;font-size:13px;">优惠券</span>
+                <span style="color:#ff4757;font-weight:600;margin-left:6px;">¥{$ret['couponPrice']}</span>
+              </div>
+              {/if}
+              {if !empty($ret['couponConditions'])}
+              <div>
+                <span style="color:#666;font-size:13px;">满减</span>
+                <span style="color:#4080ff;font-weight:600;margin-left:6px;">{$ret['couponConditions']}</span>
+              </div>
+              {/if}
+              {if !empty($ret['couponRemainCount'])}
+              <div>
+                <span style="color:#666;font-size:13px;">剩余</span>
+                <span style="color:#333;font-weight:600;margin-left:6px;">{$ret['couponRemainCount']}</span>
+              </div>
+              {/if}
+            </div>
+          </div>
+          
+          <div style="flex:1;min-width:200px;background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);border:1px solid #f0f0f0;">
+            <h4 style="font-size:14px;font-weight:600;color:#999;margin-bottom:10px;">📅 有效期</h4>
+            <div style="font-size:13px;color:#666;line-height:1.8;">
+              {if $showCouponStartTime}
+              <div>开始: <span style="color:#333;">{$ret['couponStartTime']}</span></div>
+              {/if}
+              {if $showCouponEndTime}
+              <div>结束: <span style="color:#ff4757;font-weight:600;">{$ret['couponEndTime']}</span></div>
+              {/if}
+            </div>
+          </div>
+          
+          <div style="flex:2;min-width:200px;background:linear-gradient(135deg,#fff8f0,#fff);border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(255,142,83,0.1);border:1px solid #ffe4cc;">
+            <h4 style="font-size:14px;font-weight:600;color:#ff8c00;margin-bottom:10px;">✨ 推荐理由</h4>
+            <div style="font-size:13px;color:#666;line-height:1.6;">
+              {if !empty($ret['dtitle'])}
+                {$ret['dtitle']}
+              {else}
+                优质商品，价格合适，推荐购买！
+              {/if}
+            </div>
+          </div>
+        </div>
+        
+        <div style="border-top:1px solid #eee;padding-top:24px;margin-bottom:24px;">
+          <h3 style="font-size:18px;font-weight:700;color:#333;margin-bottom:16px;">📷 商品详情</h3>
+          {if !empty($detailPicsHtml)}
+            {$detailPicsHtml}
+          {elseif !empty($newBody)}
+            {$newBody}
+          {elseif !empty($ret['content'])}
+            <div style="color:#666;line-height:1.8;">{$ret['content']}</div>
+          {elseif !empty($ret['dtitle'])}
+            <div style="color:#666;line-height:1.8;">{$ret['dtitle']}</div>
+          {else}
+            <div style="color:#999;text-align:center;padding:40px;">暂无商品详情描述</div>
+          {/if}
+        </div>
+        
+        <div style="border-top:1px solid #eee;padding-top:24px;">
+          <h3 style="font-size:18px;font-weight:700;color:#333;margin-bottom:16px;">🏪 店铺信息</h3>
+          <div style="display:flex;flex-wrap:wrap;gap:16px;">
+            {if !empty($ret['shopName'])}
+            <div style="background:#f8f9fa;border-radius:8px;padding:12px 20px;">
+              <strong style="color:#999;font-size:14px;">店铺名称:</strong>
+              <span style="color:#333;margin-left:8px;font-weight:500;">{$ret['shopName']}</span>
+            </div>
+            {/if}
+            {if !empty($ret['shopType'])}
+            <div style="background:#f8f9fa;border-radius:8px;padding:12px 20px;">
+              <strong style="color:#999;font-size:14px;">店铺类型:</strong>
+              <span style="color:#333;margin-left:8px;font-weight:500;">{$shopTypeText}</span>
+            </div>
+            {/if}
+            {if !empty($ret['dsrScore'])}
+            <div style="background:#f8f9fa;border-radius:8px;padding:12px 20px;">
+              <strong style="color:#999;font-size:14px;">DSR评分:</strong>
+              <span style="color:#333;margin-left:8px;font-weight:500;">{$ret['dsrScore']}</span>
+            </div>
+            {/if}
+          </div>
+        </div>
+      </div>
+    </article>
+    
+    <div style="margin-top:24px;text-align:center;">
+      <a href="{url($route='index/cheaps/index', $params=array())}" style="color:#666;font-size:14px;">← 返回优惠券中心</a>
+    </div>
+  </div>
+  
+  <aside class="column-small side-bar">
+    <div class="widget widget-search">
+      <h3>搜索</h3>
+      <form class="widget-search-form" method="get" action="so.html" autocomplete="off" onsubmit="return false;">
+        <input type="text" name="content" class="widget-search-input" placeholder="搜索好物 / 攻略...">
+        <button type="button" class="widget-search-btn">搜索</button>
+      </form>
+    </div>
+    
+    <div class="widget">
+      <h3>分类目录</h3>
+      <ul class="unstyle-li widget-list">
+        {foreach $cats as $c}
+        <li><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$c['cid']))}">{$c['name']}</a></li>
+        {/foreach}
+      </ul>
+    </div>
+    
+    <div class="widget">
+      <h3>热门文章</h3>
+      <div class="unstyle-li">
+        {foreach $hot as $k=>$vo}
+        <div class="hot-item">
+          <span class="hot-rank {if $k<3}top{/if}">{$vo['rank']}</span>
+          <a href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" title="{$vo['title']}">{$vo['title']}</a>
+        </div>
+        {/foreach}
+      </div>
+    </div>
+  </aside>
+</div>
+{/if}
+
+{include file="app/index/view/index/common_footer"}

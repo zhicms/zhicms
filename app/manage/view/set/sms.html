@@ -1,0 +1,71 @@
+{include file="app/manage/view/index/nav"}
+            
+            <div class="layui-container" style="max-width:900px;">
+                <div class="layui-row">
+                    <div class="layui-col-md12">
+                        <div class="layui-card">
+                            <div class="layui-card-header">
+                                <span class="layui-icon layui-icon-phone"></span> 短信设置
+                            </div>
+                            <div class="layui-card-body">
+                                <form class="layui-form" id="sms-form">
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label">短信接口</label>
+                                        <div class="layui-input-block" style="width:550px;">
+                                            <input type="text" name="smsurl" class="layui-input" value="{$ret['smsurl']}" placeholder="短信接口地址">
+                                            <div class="layui-form-mid layui-word-aux" style="margin-left:0;color:#F30">http://api.smsbao.com/sms?u=smsbao账号&amp;p=密码MD532位大写 &nbsp;&nbsp;现在：<a href="http://www.smsbao.com/reg" target="_blank">注册送测试短信</a></div>
+                                        </div>
+                                    </div>
+                                    <div class="layui-form-item">
+                                        <label class="layui-form-label">用户注册短信</label>
+                                        <div class="layui-input-block" style="width:550px;">
+                                            <input type="text" name="reg_sms" class="layui-input" value="{$ret['reg_sms']}" placeholder="短信验证码模板">
+                                        </div>
+                                    </div>
+                                    <div class="layui-form-item">
+                                        <div class="layui-input-block" style="width:550px;">
+                                            <button type="button" class="layui-btn" onclick="submitForm('sms')"><i class="layui-icon layui-icon-save"></i> 保存设置</button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.staticfile.org/layui/2.9.10/layui.js"></script>
+    <script>
+        layui.use(['form'], function(){
+            var form = layui.form;
+            
+            window.submitForm = function(type) {
+                var form = document.getElementById(type + '-form');
+                var data = {};
+                var inputs = form.querySelectorAll('input, textarea, select');
+                inputs.forEach(function(input) {
+                    data[input.name] = input.value;
+                });
+                
+                var url = 'index.php?r=manage/set/' + type;
+                
+                var xhr = new XMLHttpRequest();
+                xhr.open('POST', url, true);
+                xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+                xhr.onreadystatechange = function() {
+                    if (xhr.readyState == 4 && xhr.status == 200) {
+                        var result = JSON.parse(xhr.responseText);
+                        alert(result.info);
+                    }
+                };
+                var params = Object.keys(data).map(function(k) {
+                    return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
+                }).join('&');
+                xhr.send(params);
+            };
+        });
+    </script>
+</body>
+</html>

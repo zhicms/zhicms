@@ -1,0 +1,276 @@
+/**
+ * SB Admin 2 风格自定义样式
+ * 模仿emlog后台管理设计
+ */
+
+/* 主要布局 */
+body {
+    background-color: #f8f9fc;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+#wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+/* 侧边栏 */
+.sidebar {
+    min-height: 100vh;
+    width: 250px;
+    background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+    color: #fff;
+    transition: all 0.3s;
+    /* 菜单项超出视口时可独立滚动，避免底部选项被截掉 */
+    position: sticky;
+    top: 0;
+    max-height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.sidebar .sidebar-brand {
+    padding: 1.15rem 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    font-size: 1.2rem;
+    font-weight: 800;
+    letter-spacing: .05rem;
+    text-transform: uppercase;
+    z-index: 1;
+}
+
+.sidebar .sidebar-heading {
+    padding: 0 1.5rem;
+    font-weight: 800;
+    font-size: .65rem;
+    letter-spacing: .13rem;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, .4);
+}
+
+.sidebar .nav-item {
+    position: relative;
+}
+
+.sidebar .nav-item .nav-link {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: .75rem 1rem;
+    color: rgba(255, 255, 255, .8);
+    text-decoration: none;
+    border-left: 3px solid transparent;
+}
+
+.sidebar .nav-item .nav-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, .1);
+    border-left: 3px solid #fff;
+}
+
+.sidebar .nav-item.active .nav-link {
+    color: #fff;
+    background: rgba(255, 255, 255, .1);
+    border-left: 3px solid #fff;
+}
+
+.sidebar .nav-item .nav-link i {
+    margin-right: .5rem;
+    font-size: .85rem;
+}
+
+/* 主内容区域 */
+#content-wrapper {
+    flex: 1;
+    overflow-x: hidden;
+}
+
+.container-fluid {
+    padding: 1.5rem 1rem;
+}
+
+/* 头部导航 */
+.topbar {
+    height: 4.375rem;
+    background: #fff;
+    box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.topbar .navbar-nav {
+    flex-direction: row;
+}
+
+.topbar .nav-item .nav-link {
+    color: #d1d3e2;
+    padding: 0 .75rem;
+}
+
+.topbar .nav-item .nav-link:hover {
+    color: #b7b9cc;
+}
+
+/* 卡片 */
+.card {
+    box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+    border: 1px solid #e3e6f0;
+    border-radius: .35rem;
+    margin-bottom: 1.5rem;
+}
+
+.card .card-header {
+    padding: .75rem 1.25rem;
+    margin-bottom: 0;
+    background-color: #f8f9fc;
+    border-bottom: 1px solid #e3e6f0;
+    font-weight: 700;
+    color: #4e73df;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .1rem;
+}
+
+.card .card-body {
+    padding: 1.25rem;
+}
+
+/* 表单样式 */
+.form-group label {
+    font-weight: 600;
+    color: #5a5c69;
+    margin-bottom: .5rem;
+}
+
+.form-control {
+    border: 1px solid #d1d3e2;
+    border-radius: .35rem;
+    padding: .375rem .75rem;
+    font-size: .875rem;
+    color: #6e707e;
+    background-color: #fff;
+    font-weight: 400;
+    line-height: 1.5;
+}
+
+.form-control:focus {
+    color: #6e707e;
+    background-color: #fff;
+    border-color: #bac8f3;
+    outline: 0;
+    box-shadow: 0 0 0 .2rem rgba(78, 115, 223, .25);
+}
+
+/* 按钮 */
+.btn {
+    display: inline-block;
+    font-weight: 400;
+    color: #858796;
+    text-align: center;
+    vertical-align: middle;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: .375rem .75rem;
+    font-size: .875rem;
+    line-height: 1.5;
+    border-radius: .35rem;
+    transition: color .15s ease-in-out,background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
+}
+
+.btn-primary {
+    color: #fff;
+    background-color: #4e73df;
+    border-color: #4e73df;
+}
+
+.btn-primary:hover {
+    color: #fff;
+    background-color: #2e59d9;
+    border-color: #2e59d9;
+}
+
+.btn-success {
+    color: #fff;
+    background-color: #1cc88a;
+    border-color: #1cc88a;
+}
+
+.btn-success:hover {
+    color: #fff;
+    background-color: #17a673;
+    border-color: #169b6b;
+}
+
+/* 统计卡片 */
+.stat-card {
+    padding: 1.5rem;
+    border-radius: .35rem;
+    box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
+    background: #fff;
+    margin-bottom: 1.5rem;
+}
+
+.stat-card .icon {
+    font-size: 2rem;
+    color: #ddd;
+}
+
+.stat-card.primary {
+    border-left: .25rem solid #4e73df;
+}
+
+.stat-card.success {
+    border-left: .25rem solid #1cc88a;
+}
+
+.stat-card.warning {
+    border-left: .25rem solid #f6c23e;
+}
+
+.stat-card.danger {
+    border-left: .25rem solid #e74a3b;
+}
+
+/* 表格 */
+.table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #858796;
+    background-color: transparent;
+}
+
+.table th,
+.table td {
+    padding: .75rem;
+    vertical-align: top;
+    border-top: 1px solid #e3e6f0;
+}
+
+.table thead th {
+    vertical-align: bottom;
+    border-bottom: 2px solid #e3e6f0;
+    background-color: #f8f9fc;
+    font-weight: 700;
+    color: #4e73df;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+    .sidebar {
+        width: 6rem;
+    }
+    
+    .sidebar .nav-link span {
+        display: none;
+    }
+    
+    .sidebar .nav-link i {
+        font-size: 1rem;
+        margin-right: 0;
+    }
+}

@@ -1,0 +1,54 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title"><i class="fas fa-cogs"></i> 联盟模型</h1>
+
+<div class="mb-3">
+    <a href="index.php?r=manage/union/addUnion" class="btn btn-primary"><i class="fas fa-plus"></i> 新增联盟模型</a>
+    <a href="index.php?r=manage/union/index" class="btn btn-outline-secondary"><i class="fas fa-arrow-left"></i> 返回API选品</a>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr><th>ID</th><th>名称</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+                <?php if (!empty($page['list'])): ?>
+                <?php foreach ($page['list'] as $row): ?>
+                <tr>
+                    <td><?php echo $row['id']; ?></td>
+                    <td><?php echo $row['name'] ?? ''; ?></td>
+                    <td>
+                        <a href="index.php?r=manage/union/editorUnion&id=<?php echo $row['id']; ?>" class="btn btn-sm btn-outline-primary">编辑</a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="del(<?php echo $row['id']; ?>)">删除</button>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                <?php else: ?>
+                <tr><td colspan="3" class="text-center text-muted py-4">暂无数据</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+        <div class="text-center"><?php echo $page['page'] ?? ''; ?></div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function del(id) {
+    if (confirm('确定删除？')) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/union/deleteUnion&id=' + id, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') location.reload();
+            }
+        };
+        xhr.send();
+    }
+}
+</script>

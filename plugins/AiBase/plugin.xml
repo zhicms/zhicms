@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin version="php">
+<id>AiBase</id>
+<name>优杰AI大模型连接器</name>
+<url>https://ztwd.cn</url>
+<note>优杰 AI 插件家族核心连接器。统一管理 API 配置，免除重复配置密钥，支持流式对话，提供全家桶式插件推广生态。</note>
+<description>为优杰AI系列插件提供底层大模型连接服务。一次配置，全站AI功能免配置开箱即用。兼容标准 OpenAI/DeepSeek 及主流国内大模型接口，支持多账号/流式与非流式调用，内置敏感数据加密与测试握手检测。</description>
+<path>main.php</path>
+<include>include.php</include>
+<level>1</level>
+<author>
+  <name>Yojack</name>
+  <email>laylwenl@gmail.com</email>
+  <url>https://ztwd.cn</url>
+</author>
+<source>
+  <name></name>
+  <email></email>
+  <url></url>
+</source>
+<adapted>173540</adapted>
+<version>1.0.0</version>
+<pubdate>2026-06-25</pubdate>
+<modified>2026-06-25</modified>
+<price>0</price>
+<phpver>7.0</phpver>
+<advanced>
+  <dependency></dependency>
+  <rewritefunctions></rewritefunctions>
+  <existsfunctions></existsfunctions>
+  <conflict></conflict>
+</advanced>
+<sidebars>
+  <sidebar1></sidebar1>
+  <sidebar2></sidebar2>
+  <sidebar3></sidebar3>
+  <sidebar4></sidebar4>
+  <sidebar5></sidebar5>
+  <sidebar6></sidebar6>
+  <sidebar7></sidebar7>
+  <sidebar8></sidebar8>
+  <sidebar9></sidebar9>
+</sidebars>
+</plugin>

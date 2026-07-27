@@ -1,0 +1,128 @@
+                </div>
+                <!-- /.container-fluid -->
+            </div>
+            <!-- End of Main Content -->
+
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white">
+                <div class="container my-auto">
+                    <div class="copyright text-center my-auto">
+                        <span>© 2026 ZhiCms 管理后台</span>
+                    </div>
+                </div>
+            </footer>
+            <!-- End of Footer -->
+        </div>
+        <!-- End of Content Wrapper -->
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script>window.jQuery || document.write('<script src="/public/index/js/jquery.min.js"><\/script>');</script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="https://cdn.jsdelivr.net/npm/jquery-easing@1.4.1/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="/public/admin/emlog/js/sb-admin-2.min.js"></script>
+
+    <!-- Page level plugins -->
+    <script src="/public/global/js/index.js"></script>
+
+    <!-- AI 开放平台 -->
+    <link rel="stylesheet" href="/public/admin/emlog/css/ai-chat.css">
+    <script src="/public/global/editormd/lib/marked.min.js"></script>
+    <script src="/public/admin/emlog/js/ai-chat.js"></script>
+
+    <!-- AI Chat Modal -->
+    <div class="modal fade" id="aiChatModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header border-0 pb-2">
+                    <h5 class="modal-title"><i class="fas fa-robot text-primary mr-2"></i>AI 智能助手</h5>
+                    <button type="button" class="btn btn-xs btn-outline-danger ml-auto mr-3" id="clear-chat-btn"
+                        title="清空对话历史" style="font-size: 11px; padding: 1px 6px;">清空历史</button>
+                    <button type="button" class="close ml-0" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body pt-0">
+                    <div id="chat-box" style="height: 500px; overflow-y: scroll; border: 1px solid #e3e6f0; padding: 10px; margin-bottom: 10px; border-radius: 8px;">
+                        <!-- 动态填充 -->
+                    </div>
+                    <form id="chat-form">
+                        <div class="input-group">
+                            <textarea class="form-control" id="chat-input" placeholder="输入你的问题，按 Enter 发送..."
+                                rows="1" style="resize: none; overflow: hidden;"></textarea>
+                            <div class="input-group-append">
+                                <button class="btn btn-primary" type="submit" id="send-btn">发送</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 浮动按钮（右下角快捷入口） -->
+    <button id="ai-float-btn" class="btn btn-primary rounded-circle shadow-lg"
+        style="position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px; z-index: 1050; font-size: 24px; display: flex; align-items: center; justify-content: center;"
+        onclick="AIChat.open()" title="AI 智能助手">
+        <i class="fas fa-robot"></i>
+    </button>
+    
+    <script>
+    $(document).ready(function() {
+        // Toggle the side navigation
+        $("#sidebarToggle, #sidebarToggleTop").on('click', function(e) {
+            $("body").toggleClass("sidebar-toggled");
+            $(".sidebar").toggleClass("toggled");
+            if ($(".sidebar").hasClass("toggled")) {
+                $('.sidebar .collapse').collapse('hide');
+            };
+        });
+
+        // Close any open menu accordions when window is resized below 768px
+        $(window).resize(function() {
+            if ($(window).width() < 768) {
+                $('.sidebar .collapse').collapse('hide');
+            };
+        });
+
+        // Prevent the content wrapper from scrolling when the fixed side navigation hovered over
+        $('body.fixed-nav .sidebar').on('mousewheel DOMMouseScroll wheel', function(e) {
+            if ($(window).width() > 768) {
+                var e0 = e.originalEvent,
+                    delta = e0.wheelDelta || -e0.detail;
+                this.scrollTop += (delta < 0 ? 1 : -1) * 30;
+                e.preventDefault();
+            }
+        });
+
+        // Scroll to top button appear
+        $(document).on('scroll', function() {
+            var scrollDistance = $(this).scrollTop();
+            if (scrollDistance > 100) {
+                $('.scroll-to-top').fadeIn();
+            } else {
+                $('.scroll-to-top').fadeOut();
+            }
+        });
+
+        // Smooth scrolling using jQuery easing
+        $(document).on('click', 'a.scroll-to-top', function(e) {
+            var $anchor = $(this);
+            $('html, body').stop().animate({
+                scrollTop: ($($anchor.attr('href')).offset().top)
+            }, 1000, 'easeInOutExpo');
+            e.preventDefault();
+        });
+    });
+    </script>
+</body>
+</html>

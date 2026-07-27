@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>全网搜 特惠购</title>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no"
+    />
+    <!-- <link rel="stylesheet" href="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-ms/minireset.css/0.0.2/minireset.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_1534407_cqy0t98abrg.css">
+    <link rel="stylesheet" href="https://lf9-cdn-tos.bytecdntp.com/cdn/expire-1-ms/vant/2.12.12/index.css">
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-ms/promise-polyfill/8.2.0/polyfill.min.js"></script>
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-ms/jquery/2.2.4/jquery.min.js"></script>
+    <script src="https://lf6-cdn-tos.bytecdntp.com/cdn/expire-1-ms/vue/2.6.10/vue.min.js"></script>
+    <script src="https://lf26-cdn-tos.bytecdntp.com/cdn/expire-1-ms/vant/2.12.12/vant.min.js"></script>
+    <script src="https://img.bc.haodanku.com/cdn/vant-touch-emulator.js"></script> -->
+    
+    <link rel="stylesheet" href="https://cdnjs.efengqing.com/ajax/libs/minireset.css/0.0.2/minireset.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_1534407_cqy0t98abrg.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vant@2.12/lib/index.css">
+    <script src="https://cdnjs.efengqing.com/ajax/libs/promise-polyfill/8.0.0/polyfill.min.js"></script>
+    <script src="https://cdnjs.efengqing.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="https://cdnjs.efengqing.com/ajax/libs/vue/2.6.10/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vant@2.12/lib/vant.min.js"></script><!--pc端click代替touch-->
+    <script src="https://cdn.jsdelivr.net/npm/@vant/touch-emulator"></script>
+    <!-- <script src="http://img.bc.haodanku.com/cms/SdkUtils.min.js"></script> -->
+
+    <script src="https://img.bc.haodanku.com/cms/SpaUtils.min.js"></script>
+    <script src="https://img.bc.haodanku.com/cms/SdkUtils.min.js"></script>
+    <script src="https://img.bc.haodanku.com/cdn/tsUtils.js"></script>
+    <script>
+      var vmUrlSearchs = null;
+
+      /**
+       * @param msg {string}
+       */
+      function toast(msg) {
+        layer.msg(msg, {
+          time: 3000,
+          shift: 5
+        });
+      }
+
+      function vmRequest(name) {
+        if (!vmUrlSearchs) {
+          vmUrlSearchs = new vmUrlSearch();
+        }
+        return vmUrlSearchs[name];
+      }
+
+      function vmUrlSearch() {
+        var name, value;
+        var str = location.href;
+        var num = str.indexOf("?");
+        str = str.substr(num + 1);
+        var arr = str.split("&");
+        for (var i = 0; i < arr.length; i++) {
+          num = arr[i].indexOf("=");
+          if (num > 0) {
+            name = arr[i].substring(0, num);
+            value = arr[i].substr(num + 1);
+            this[name] = value;
+          }
+        }
+      }
+    </script>
+    <style>
+      /* 搜索框淘宝联想下拉（锚定到搜索输入区，而非整个 search-box，避免落到了 tab 下方） */
+      .search-box .search-input-wrap{position:relative;}
+      .tb-suggest{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#fff;border-radius:10px;z-index:80;max-height:300px;overflow:auto;-webkit-overflow-scrolling:touch;box-shadow:0 10px 28px rgba(0,0,0,.18);}
+      .tb-suggest li{padding:12px 16px;font-size:15px;color:#333;border-bottom:1px solid #f4f4f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s ease,color .15s ease;}
+      .tb-suggest li:last-child{border-bottom:0;}
+      .tb-suggest li:active{background:#fff3e8;color:#ff5000;}
+      .tb-suggest li .hl{color:#ff5000;font-style:normal;}
+      /* 底部频道导航（整站 m 端入口，自包含样式，避免与 super_search.css 的 .nav 冲突） */
+      .search-box .channel-nav{
+        display:flex;align-items:stretch;
+        margin:16px -.54rem 0;          /* 负边距撑满搜索区宽度 */
+        background:#fff;
+        border-top:1px solid #f1f1f1;
+        box-shadow:0 1px 0 #f1f1f1;
+      }
+      .search-box .channel-nav .item{
+        flex:1;text-align:center;
+        padding:13px 0 11px;
+        font-size:15px;line-height:1.1;
+        color:#888;background:transparent;
+        position:relative;cursor:pointer;
+        transition:color .25s ease, background .2s ease;
+      }
+      .search-box .channel-nav .item:active{background:#f6f6f6;}
+      .search-box .channel-nav .item.active{color:#ff5000;font-weight:700;}
+      .search-box .channel-nav .item.active:after{
+        content:'';position:absolute;left:50%;bottom:0;
+        transform:translateX(-50%);
+        width:24px;height:3px;border-radius:2px;
+        background:linear-gradient(135deg,#ff7a18,#ff5000);
+        animation:navInd .25s ease;
+      }
+      @keyframes navInd{from{opacity:0;transform:translateX(-50%) scaleX(.4);}to{opacity:1;transform:translateX(-50%) scaleX(1);}}
+      /* 空频道 / 加载中提示 */
+      .empty-tip{text-align:center;color:#ffb38a;padding:1.2rem .3rem;font-size:.28rem;}
+      .empty-tip .iconfont{display:block;font-size:.8rem;margin-bottom:.15rem;color:#ff7a18;}
+      .empty-tip p{margin:0;}
+      .empty-list .free-lists{min-height:2rem;}
+    </style>
+    <script>try{localStorage.setItem('smz_mobile','1');}catch(e){}</script>
+  </head>
+  <script defer>
+    document.write(
+      '<link rel="stylesheet" href="https://img.bc.haodanku.com/cms/super_search.css?t=' +
+        (Date.now() - (Date.now() % (60 * 1000 * 30))) +
+        '"/>'
+    );
+  </script>
+  <body>
+    <template id="c-list-item">
+      <div class="goods-card heji">
+        <img v-lazy="item.itempic" v-if="item.itempic" />
+        <img
+          src="http://img.bc.fqapps.com/fudai13cae4ae6ef16739ed3b100a2ec39e97.gif"
+          alt=""
+          v-else
+        />
+        <div class="detail">
+          <div class="title">
+            <img class="icon" :src="iconUrl" alt="" />
+            <span
+              >{{ item.itemshorttitle || item.itemtitle || item.goodsnameshort
+              || item.goodsname }}</span
+            >
+          </div>
+          <div class="center">
+            <div class="today-sale" v-if="item.itemsale > 0">
+              <i class="iconfont hdk-huo"></i>月销
+              {{getMoneyStr(item.itemsale)}}
+            </div>
+            <!--<div class="month-sale">月销 {{getMoneyStr(item.itemsale)}}</div>-->
+          </div>
+          <div class="footer">
+            <div class="price" v-bind:class="{'has-share': showShare}" v-if="Number(item.itemendprice) > 0">
+              <div class="discount">
+                券后价￥<strong>{{ Number(item.itemendprice) }}</strong>
+              </div>
+              <div class="origin">￥{{ item.itemprice }}</div>
+            </div>
+            <div class="ticket" v-show="item.couponmoney != '0'">
+              <span class="name">券</span
+              ><span class="value">￥{{ item.couponmoney }}</span>
+            </div>
+          </div>
+          <div class="btn-block">
+            <div class="btn-share">
+              <span
+                v-if="activeType !== Types.tb"
+                class="operation"
+                v-on:click.capture="share($event,item)"
+                >分享</span
+              >
+              <span
+                v-else
+                class="operation"
+                v-on:click.capture="buy($event,item)"
+                >立即下单</span
+              >
+            </div>
+            <div class="btn-order" v-if="activeType !== Types.tb">
+              <span v-if="item.stock == 0" class="operation sell-out"
+                >已抢完</span
+              >
+              <span v-else-if="item.stock == -1" class="operation sell-out"
+                >未开始</span
+              >
+              <span
+                v-else
+                class="operation"
+                v-on:click.capture="buy($event,item)"
+                >立即下单</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
+    <script>
+      Vue.component("list-item", {
+        template: "#c-list-item",
+        props: {
+          item: Object,
+          type: {
+            type: String,
+            default: "tb", // tb || jd
+          },
+          showShare: {
+            type: Boolean,
+            default: false,
+          },
+        },
+
+        computed: {
+          iconUrl: function () {
+            return this.$parent.itemIcon;
+          },
+          Types: function () {
+            return this.$parent.Types;
+          },
+          activeType: function () {
+            return this.$parent.activeType;
+          },
+        },
+        methods: {
+          buy: function (e, item) {
+            // this.$emit("buy", e, item);
+            this.$parent.handleGoodsTransfer(e, item, "link");
+          },
+          share: function (e, item) {
+            // this.$emit("share", e, item);
+            this.$parent.handleGoodsTransfer(e, item, "copy");
+          },
+          getMoneyStr: function (num) {
+            var w = 10000;
+            if (num < w) return num;
+            return (num / w).toFixed(2) + "万";
+          },
+        },
+      });
+    </script>
+
+    <div class="page-container" id="single-page-app" v-cloak>
+      <div class="banner-wrapper">
+        <img class="free-banner" v-bind:src="banner" alt="" />
+      </div>
+      <div
+        class="fixed-block max-width"
+        v-sticky="{type:'fixed'}"
+        key="fixed-block"
+        ref="searchBox"
+      >
+        <div class="search-box">
+          <div class="search-input-wrap">
+          <van-search
+            v-model="search.value"
+            show-action
+            placeholder="搜索全网折扣、优惠券..."
+            clear-trigger="always"
+            v-on:search="onSearch"
+            v-on:clear="onClear"
+            v-on:focus="suggest.focus=true"
+            v-on:blur="onSuggestBlur"
+            v-on:input="getSuggest"
+          >
+            <template slot="action">
+              <div v-on:click="onSearch">搜索</div>
+            </template>
+          </van-search>
+          <ul class="tb-suggest" v-show="suggest.list.length && suggest.focus">
+            <li
+              v-for="(w, i) in suggest.list"
+              v-on:click="pickSuggest(w)"
+              v-html="hl(w)"
+            ></li>
+          </ul>
+          </div>
+          <ul class="hot-key">
+            <li
+              v-for="(item, index) in search.hotkey"
+              v-bind:class="{active:item === search.value}"
+              v-on:click="handleHotkey(item)"
+            >
+              {{item}}
+            </li>
+          </ul>
+          <ul class="channel-nav">
+            <li
+              class="item"
+              v-for="(item, index) in nav.list"
+              v-bind:class="{active: nav.activeIndex === index}"
+              v-on:click="goChannel(item)"
+            >
+              <span>{{item.label}}</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div
+        class="page-content"
+        ref="list"
+        v-bind:class="{'empty-list':!listData.list.length}"
+      >
+        <div class="free-lists">
+          <template v-if="listData.list.length">
+            <list-item
+              class="free-item"
+              v-for="(item, index) in listData.list"
+              v-bind:item="item"
+              v-bind:key="index"
+              v-on:buy="handleGoodsTransfer($event,item,'link')"
+              v-on:share="handleGoodsTransfer($event,item,'copy')"
+            ></list-item
+            ><!-- 底部提示 -->
+            <div class="list-item-loading">
+              <span v-if="listData.finished">没有更多商品了~</span
+              ><span v-else>数据正在赶来的路上...</span>
+            </div>
+          </template>
+          <div class="empty-tip" v-else-if="listData.finished">
+            <i class="iconfont hdk-huo"></i>
+            <p>该频道暂无内容，去其他频道逛逛吧~</p>
+          </div>
+          <div class="list-item-loading" v-else>
+            <span>数据加载中...</span>
+          </div>
+        </div>
+      </div>
+      <van-overlay v-bind:show="loading">
+        <van-loading color="#0094ff"></van-loading>
+      </van-overlay>
+    </div>
+    <script>
+      Vue.use(vant.Lazyload, {
+        preLoad: 1.3,
+        error: "http://img.bc.haodanku.com/haodanku/1595237918",
+        loading:
+          "http://img.bc.fqapps.com/fudai13cae4ae6ef16739ed3b100a2ec39e97.gif",
+        attempt: 1,
+      });
+
+      var listDataStr = JSON.stringify({
+        list: [],
+        loading: false,
+        finished: false,
+        min_id: 1,
+        pageTotal: 1,
+        pageCurrent: 0,
+      });
+
+      // 根据微信浏览器缩放比例设置rem缩放
+      if (SpaUtils.inWechat() && "ontouchstart" in window) {
+        const scale = SpaUtils.getFontScale(true);
+        document.documentElement.style.fontSize =
+          "calc(13.33333vw * " + scale + ")";
+      }
+
+      var baseMixin = {
+        el: "#single-page-app",
+        data: function () {
+          return {
+            listData: JSON.parse(listDataStr),
+            scrollTop: 0,
+            isScrollToDown: false,
+          };
+        },
+        created: function () {
+          this.getListData();
+        },
+        watch: {
+          scrollTop: function (n, o) {
+            this.isScrollToDown = n > o;
+          },
+        },
+        mounted: function () {
+          var that = this;
+          window.addEventListener("scroll", function (ev) {
+            that.scrollTop =
+              document.documentElement.scrollTop || document.body.scrollTop;
+            if (SpaUtils.isScrollEnd(this, "vertical", 40)) {
+              that.onScrollEnd();
+            }
+          });
+        },
+        methods: {
+          onScrollEnd: function () {
+            this.getListData();
+          },
+          resetListData: function () {
+            this.listData = JSON.parse(listDataStr);
+          },
+          getListDataParams: function (item) {
+            throw new Error("需要使用了该mixins的组件实现listDataParams函数");
+          },
+          getListData: function () {
+            throw new Error("需要使用了该mixins的组件实现getListData函数");
+          },
+          getTransferParams: function () {
+            throw new Error("需要使用了该mixins的组件实现transferParams函数");
+          },
+          handleGoodsTransfer: function () {
+            throw new Error(
+              "需要使用了该mixins的组件实现handleGoodsTransfer函数"
+            );
+          },
+          /**
+           * 分享给好友
+           */
+          handleShare: function () {
+            SpaUtils.copy(location.href, "复制成功，快去下单吧~");
+          },
+        },
+      };
+      var Types = {
+        tb: "1",
+        jd: "2",
+        pdd: "3",
+        wph: "4",
+      };
+      var TypeNames = {};
+      TypeNames[Types.tb] = "tb";
+      TypeNames[Types.jd] = "jd";
+      TypeNames[Types.pdd] = "pdd";
+      TypeNames[Types.wph] = "wph";
+      var indexMixin = (function () {
+        var that;
+        baseMixin.created = undefined;
+        return {
+          mixins: [baseMixin],
+          directives: {
+            sticky: sticky,
+          },
+          data: function () {
+            return {
+              Types: Types,
+              currentType: "index",
+              tabPage: 1,
+            nav: {
+              list: [
+                { label: "首页", key: "index" },
+                { label: "风云榜", key: "rank" },
+                { label: "热榜", key: "hot" },
+                { label: "大牌", key: "brand" },
+                { label: "优惠券", key: "cheaps" },
+              ],
+              activeIndex: 0,
+            },
+              navFixed: false,
+              banner: "http://img.bc.haodanku.com/cms/1627972539",
+              search: {
+                value: "",
+                hotkey: [],
+                focus: false,
+              },
+              suggest: {
+                list: [],
+              },
+              activeType: Types.tb,
+              shareList: [],
+              loading: false,
+              hdk_pdd: vmRequest('hdk_pdd'),
+            };
+          },
+          mounted: function () {
+            that = this;
+            this.getInitData();
+            this.reGetListData();
+          },
+          computed: {
+            navBgLeft: function () {
+              var nav = this.nav;
+              var offset = [0, 0, 1, 2];
+              var index = nav.activeIndex;
+              return (index / nav.list.length) * 100 + offset[index] + "%";
+            },
+            activeNav: function () {
+              return this.nav.list[this.nav.activeIndex];
+            },
+            itemIcon: function () {
+              var icons = createObj(
+                [
+                  Types.tb,
+                  "http://img-haodanku-com.cdn.fudaiapp.com/FvU9Lg74-WgBzWQphv98-9KgYF6d",
+                ],
+                [
+                  Types.jd,
+                  "http://img-haodanku-com.cdn.fudaiapp.com/FieNXmZjc_io1YMTcsCbrxsQJBR0",
+                ],
+                [
+                  Types.pdd,
+                  "http://img-haodanku-com.cdn.fudaiapp.com/Fpjf7JUJTCWNo7zm0RnZkLn6YQBq",
+                ],
+                [Types.wph, "http://img.bc.haodanku.com/cms/1627871327"]
+              );
+              return icons[this.activeType];
+            },
+          },
+          methods: {
+            getSuggest: function () {
+              var q = (this.search.value || "").trim();
+              if (!q) { this.suggest.list = []; return; }
+              var that = this;
+              if (this._sgTimer) clearTimeout(this._sgTimer);
+              this._sgTimer = setTimeout(function () {
+                $.ajax({
+                  url: "https://suggest.taobao.com/sug",
+                  dataType: "jsonp",
+                  data: { code: "utf-8", q: q },
+                  success: function (d) {
+                    var arr = (d && d.result) ? d.result : [];
+                    that.suggest.list = arr.map(function (it) {
+                      return typeof it === "string" ? it : (it[0] || "");
+                    }).slice(0, 10);
+                  },
+                  error: function () { that.suggest.list = []; }
+                });
+              }, 300);
+            },
+            pickSuggest: function (w) {
+              this.search.value = w;
+              this.suggest.list = [];
+              this.suggest.focus = false;
+              this.onSearch();
+            },
+            // 联想词点击后立即收起；失焦延迟收起，保证移动端点击联想词时下拉不提前消失
+            onSuggestBlur: function () {
+              var that = this;
+              setTimeout(function () { that.suggest.focus = false; }, 200);
+            },
+            // 高亮联想词中与输入一致的部分（含 XSS 转义）
+            hl: function (w) {
+              var q = (this.search.value || "").trim();
+              w = String(w);
+              if (!q) return this.escapeHtml(w);
+              var idx = w.toLowerCase().indexOf(q.toLowerCase());
+              if (idx < 0) return this.escapeHtml(w);
+              return (
+                this.escapeHtml(w.slice(0, idx)) +
+                '<em class="hl">' +
+                this.escapeHtml(w.slice(idx, idx + q.length)) +
+                "</em>" +
+                this.escapeHtml(w.slice(idx + q.length))
+              );
+            },
+            escapeHtml: function (s) {
+              return String(s).replace(/[&<>"']/g, function (c) {
+                return {
+                  "&": "&amp;",
+                  "<": "&lt;",
+                  ">": "&gt;",
+                  '"': "&quot;",
+                  "'": "&#39;",
+                }[c];
+              });
+            },
+            goChannel: function (item) {
+              var idx = this.nav.list.indexOf(item);
+              if (idx === this.nav.activeIndex && this.currentType === item.key) {
+                window.scrollTo(0, 0);
+                return;
+              }
+              this.nav.activeIndex = idx;
+              this.currentType = item.key;
+              window.scrollTo(0, 0);
+              this.reGetListData();
+            },
+            scrollToList: function () {
+              var top = this.$refs.list.offsetTop;
+              var searchBoxHeight = this.$refs.searchBox.offsetHeight;
+              window.scrollTo(0, top - searchBoxHeight);
+            },
+            onSearch: function () {
+              that.scrollToList();
+              this.reGetListData();
+            },
+            handleHotkey: function (hotkey) {
+              this.search.value = hotkey;
+              this.onSearch();
+            },
+            onClear: function () {
+              this.onSearch();
+            },
+            onNavChange: function (index) {
+              if (this.listData.loading || this.nav.activeIndex === index)
+                return;
+              this.nav.activeIndex = index;
+              this.onSearch();
+            },
+            resetListData: function () {
+              this.tabPage = 1;
+              this.listData = {
+                list: [],
+                loading: false,
+                finished: false,
+                min_id: 1,
+              };
+            },
+            reGetListData: function () {
+              this.resetListData();
+              return this.getListData(true);
+            },
+            /**
+             * 获取商品数据
+             * @param clean {boolean}
+             */
+            getListData: function (clean) {
+              if (
+                this.loading ||
+                this.listData.loading ||
+                this.listData.finished ||
+                this.cate_id === ""
+              )
+                return;
+              // 非首页 tab，或首页无搜索词时：走服务端频道接口（原地切换内容）
+              var isIndexSearch = this.currentType === 'index' && (this.search.value || '').trim();
+              if (!isIndexSearch) {
+                return this.getServerTabData(clean);
+              }
+              this.listData.loading = true;
+              if (clean) {
+                this.loading = true;
+              }
+              var params = Object.assign(
+                {
+                  keyword: this.search.value,
+                  min_id: this.listData.min_id,
+                },
+                this.getListDataParams()
+              );
+
+              var urls = createObj(
+                [Types.tb, '{url($route="api/goods/hdksearch", $params=array("platform"=>"tb"))}'],
+                [Types.jd, '{url($route="api/goods/hdksearch", $params=array("platform"=>"jd"))}'],
+                [Types.pdd, '{url($route="api/goods/hdksearch", $params=array("platform"=>"pdd"))}'],
+                [Types.wph, '{url($route="api/goods/hdksearch", $params=array("platform"=>"vip"))}']
+              );
+
+              var obj = Request.get(urls[this.activeType], params);
+              // this.getListDataAbort = obj.ajax.abort.bind(obj.ajax);
+              obj.promise
+                .then(function (res) {
+                  setTimeout(function () {
+                    if (clean) {
+                      that.listData.list = res.data || [];
+                    } else {
+                      that.listData.list = that.listData.list.concat(
+                        res.data || []
+                      );
+                    }
+                    that.listData.finished =
+                      that.listData.min_id == res.min_id ||
+                      !Boolean(res.data && res.data.length);
+                    that.listData.min_id = res.min_id || that.listData.min_id;
+                    // 微信浏览器 promise没有finally
+                    that.listData.loading = false;
+                    that.loading = false;
+                  }, 200);
+                })
+                .catch(function () {
+                  if (clean) {
+                    that.listData.list = [];
+                  }
+                  that.listData.finished = true;
+                  // 微信浏览器 promise没有finally
+                  that.listData.loading = false;
+                  that.loading = false;
+                });
+              return obj.promise;
+            },
+            // 服务端频道接口：拉取当前 tab 的归一化商品，原地切换内容
+            getServerTabData: function (clean) {
+              var that = this;
+              this.listData.loading = true;
+              if (clean) this.loading = true;
+              var params = {
+                act: "tab",
+                type: this.currentType,
+                p: this.tabPage,
+                keyword: (this.search.value || "").trim(),
+              };
+              return $.ajax({
+                url: "/m.html",
+                data: params,
+                dataType: "json",
+                type: "GET",
+              }).then(function (res) {
+                setTimeout(function () {
+                  var list = (res && res.data) ? res.data : [];
+                  if (clean) {
+                    that.listData.list = list;
+                  } else {
+                    that.listData.list = that.listData.list.concat(list);
+                  }
+                  that.tabPage = (res && res.next_page) ? res.next_page : (that.tabPage + 1);
+                  that.listData.finished = Boolean(res && res.finished) || !list.length;
+                  that.listData.loading = false;
+                  that.loading = false;
+                }, 150);
+              }).catch(function () {
+                that.listData.finished = true;
+                that.listData.loading = false;
+                that.loading = false;
+              });
+            },
+            /**
+             * 商品转链
+             * @param e {MouseEvent}
+             * @param item
+             * @param type {'copy'|'link'}
+             */
+            handleGoodsTransfer: function (e, item, type) {
+              const match = {
+                [Types.tb]: {
+                  key: "taoword",
+                  msg: "复制淘口令成功，请打开淘宝领取",
+                },
+                [Types.jd]: {
+                  key: "short_url",
+                  msg: "下单链接已复制成功，快去下单吧~",
+                },
+                [Types.pdd]: {
+                  key: "short_url",
+                  msg: "下单链接已复制成功，快去下单吧~",
+                },
+                [Types.wph]: {
+                  key: "url",
+                  msg: "下单链接已复制成功，快去下单吧~",
+                  titleKey: "itemtitle",
+                },
+              };
+
+              const current = match[this.activeType];
+              let url = TypeNames[this.activeType];
+              if (window.SdkUtils) {
+                url = SdkUtils.getTransferUrl(
+                  url,
+                  this.transferUrl[this.activeType]
+                );
+              }
+              const params = {
+                itemData: item,
+                sync: { copy: true }[type],
+                url,
+                el: e.target,
+                data: this.getTransferParams(item),
+                copySuccessMsg: current.msg,
+                getCopyTarget: (res) => {
+                  let code = res.data;
+
+                  if (this.activeType === Types.tb) {
+                    if (res.data[current.key]) {
+                      code = "0" + res.data[current.key] + "/";
+                    }
+                  } else {
+                    code = res.data[current.key];
+                  }
+
+                  if (type === "copy") {
+                    let copyText = code;
+                    if (that.activeType === Types.tb) {
+                      copyText =
+                        "0" +
+                        (item.itemshorttitle || item.itemtitle) +
+                        copyText.substr(1);
+                    } else {
+                      copyText =
+                        item[current.titleKey || "goodsname"] + "\n" + copyText;
+                    }
+                    return copyText;
+                  }
+
+                  return code;
+                },
+              };
+              let utils = window.SdkUtils || window.SpaUtils;
+              utils.conversionLink(params);
+            },
+            getInitData: function () {
+              Request.get(
+                '{url($route="api/goods/hdkproxy", $params=array("_target"=>"search_activity_data"))}'
+              ).promise.then(function (res) {
+                that.shareList = res.data || [];
+                that.search.hotkey = (res.hot_keyword || []).map(function (
+                  value
+                ) {
+                  return value.keyword;
+                });
+              });
+            },
+            clickActivity: function (e, item) {
+              var el = e.currentTarget.parentNode;
+              var url = this.activityTransferUrl[item.type];
+
+              url = SdkUtils.getTransferUrl(TypeNames[item.type], url);
+              var doCopy = function () {
+                copy(
+                  item.copyText,
+                  "复制淘口令成功，请打开淘宝领取",
+                  "复制失败,请点击重试",
+                  true
+                );
+              };
+              if (item.copyText) {
+                doCopy();
+                return;
+              }
+              el.addEventListener(
+                "click",
+                function () {
+                  doCopy();
+                  el.removeEventListener("click", arguments.callee, false);
+                },
+                false
+              );
+              Request.postSync(
+                url,
+                this.getActivityTransferParams(item),
+                function (res) {
+                  if (item.type == Types.tb) {
+                    var code = res.data;
+                    if (res.data.tao_code) {
+                      code = "0" + res.data.tao_code + "/";
+                    }
+                    item.copyText = code;
+                  } else {
+                    SdkUtils.openPage(res.data.short_url);
+                  }
+                }.bind(this)
+              ).promise.catch(function (res) {
+                toast(res.msg || "转链失败");
+              });
+            },
+            handleShare: function () {
+              copy(
+                "我发现了一个神奇的网站,三大电商平台隐藏福利一键搜 " +
+                  location.href,
+                "复制成功，快去下单吧~"
+              );
+            },
+          },
+        };
+      })();
+    </script>
+    <script>
+      new Vue({
+        mixins: [indexMixin],
+        data: function () {
+          // 转链链接
+          var transferUrl = createObj(
+            [Types.tb, '{url($route="api/goods/transfer", $params=array("platform"=>"tb"))}'],
+            [Types.jd, '{url($route="api/goods/transfer", $params=array("platform"=>"jd"))}'],
+            [Types.pdd, '{url($route="api/goods/transfer", $params=array("platform"=>"pdd"))}'],
+            [Types.wph, '{url($route="api/goods/transfer", $params=array("platform"=>"vip"))}']
+          );
+          return {
+            // 转链链接
+            transferUrl: transferUrl,
+            // 活动转链链接
+            activityTransferUrl: createObj(
+              [Types.tb, '{url($route="api/goods/hdkproxy", $params=array("_target"=>"createConference_code"))}'],
+              [Types.jd, transferUrl[Types.jd]],
+              [Types.pdd, '{url($route="api/goods/hdkproxy", $params=array("_target"=>"pdd_activity_promotion"))}'],
+              [Types.wph, '{url($route="api/goods/transfer", $params=array("platform"=>"vip"))}']
+            ),
+            // 公共参数
+            commonParams: {
+              apikey: "", //必填
+            },
+            // 淘宝、京东、拼多多转链需填写参数
+            typesParams: createObj(
+              [
+                Types.tb,
+                {
+                  pid: "", //必填
+                  tb_name: "", //必填
+                  relation_id: "", //选填
+                },
+              ],
+              [
+                Types.jd,
+                {
+                  union_id: "", //必填
+                },
+              ],
+              [
+                Types.pdd,
+                {
+                  pid: "", //必填
+                },
+              ],
+              [
+                Types.wph,
+                {
+                  pid: "", //必填
+                },
+              ]
+            ),
+          };
+        },
+        methods: {
+          // 列表参数 公共部分
+          getListDataParams: function (item) {
+            return this.commonParams;
+          },
+          // 转链参数
+          getTransferParams: function (item) {
+            var params = {};
+            switch (this.activeType) {
+              case Types.tb:
+                params = Object.assign(
+                  {
+                    itemid: item.itemid,
+                    title: item.itemshorttitle,
+                    activityid: item.activityid,
+                    get_taoword: 1,
+                  },
+                  this.typesParams[Types.tb]
+                );
+                break;
+              case Types.jd:
+                params = Object.assign(
+                  {
+                    coupon_url: item.couponurl,
+                    material_id: item.itemid,
+                  },
+                  this.typesParams[Types.jd]
+                );
+                break;
+              case Types.pdd:
+                params = Object.assign(
+                  {
+                    goods_id: item.goods_id,
+                    goods_sign: item.goods_sign,
+                    zs_duo_id: item.zs_duo_id,
+                    hdk_pdd: this.hdk_pdd,
+                  },
+                  this.typesParams[Types.pdd]
+                );
+                break;
+              case Types.wph:
+                params = Object.assign(
+                  {
+                    goodsid: item.itemid,
+                  },
+                  this.typesParams[Types.wph]
+                );
+                break;
+            }
+            return Object.assign({}, this.commonParams, params);
+          },
+          // 活动转链参数
+          getActivityTransferParams: function (item) {
+            switch (String(item.type)) {
+              case Types.tb:
+                return Object.assign(
+                  {
+                    activity_id: item.activity_id,
+                    title: item.name,
+                  },
+                  this.typesParams[Types.tb],
+                  this.commonParams
+                );
+              case Types.jd:
+                return Object.assign(
+                  {
+                    material_id: item.url,
+                    type: 2,
+                  },
+                  this.typesParams[Types.jd],
+                  this.commonParams
+                );
+              case Types.pdd:
+                return Object.assign(
+                  {
+                    url: item.url,
+                    resource_type: item.activity_id,
+                  },
+                  this.typesParams[Types.pdd],
+                  this.commonParams
+                );
+              case Types.wph:
+                return Object.assign(
+                  {
+                    url: item.url,
+                  },
+                  this.typesParams[Types.wph],
+                  this.commonParams
+                );
+            }
+          },
+        },
+      });
+    </script>
+  </body>
+</html>

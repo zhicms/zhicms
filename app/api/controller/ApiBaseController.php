@@ -1,0 +1,103 @@
+<?php
+namespace app\api\controller;
+
+use ZhiCms\base\Controller;
+
+/**
+ * API 基类
+ * 提供 JSON 输出、CORS、原始参数读取、JSON 请求体解析等通用能力。
+ * 注意：直接继承 \ZhiCms\base\Controller，不触发前台站点关闭拦截与 Session。
+ */
+class ApiBaseController extends Controller {
+
+    /**
+     * 输出 JSON 并结束请求
+     */
+    protected function json($data, $httpCode = 200) {
+        header('Access-Control-Allow-Origin: *');
+        header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+        header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+        header('Content-Type: application/json; charset=utf-8');
+        if ($httpCode != 200) {
+            http_response_code($httpCode);
+        }
+        echo json_encode($data, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    /**
+     * 处理 CORS 预检请求
+     */
+    protected function options() {
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+            header('Access-Control-Allow-Origin: *');
+            header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+            header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
+            header('HTTP/1.1 204 No Content');
+            exit;
+        }
+    }
+
+    /**
+     * 读取原始 GET+POST 参数（不做 htmlspecialchars，避免破坏消息体）
+     */
+    protected function raw($name = null, $default = null) {
+        $args = array_merge((array) $_GET, (array) $_POST);
+        if ($name === null) {
+            return $args;
+        }
+        return $args[$name] ?? $default;
+    }
+
+    /**
+     * 读取 JSON 请求体
+     */
+    protected function body() {
+        $raw = file_get_contents('php://input');
+        if ($raw === false || $raw === '') {
+            return [];
+        }
+        $dec = json_decode($raw, true);
+        return is_array($dec) ? $dec : [];
+    }
+
+    /**
+     * 当前站点根 URL（含结尾 /）
+     */
+    protected function siteUrl() {
+        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+        $scriptDir = rtrim(dirname($scriptName), '/\\');
+        // 兜底：CLI 等环境 SCRIPT_NAME 无前导斜杠时 dirname 返回 '.'，需归一为空
+        if ($scriptDir === '' || $scriptDir === '.') {
+            $scriptDir = '';
+        }
+        return $scheme . $host . $scriptDir . '/';
+    }
+
+    /**
+     * 加载 AI 配置（不下发 api_key 之外的内容由调用方控制）
+     */
+    protected function loadAiConfig() {
+        $file = CONFIG_PATH . 'aichat.php';
+        if (file_exists($file)) {
+            $cfg = include $file;
+            if (is_array($cfg)) {
+                return $cfg;
+            }
+        }
+        return array();
+    }
+
+    /**
+     * 从 Authorization: Bearer <token> 或 ?token= 获取访问令牌
+     */
+    protected function requestToken() {
+        $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+        if ($auth !== '' && preg_match('/Bearer\s+(.+)/i', $auth, $m)) {
+            return trim($m[1]);
+        }
+        return $this->raw('token', '');
+    }
+}

@@ -1,0 +1,473 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-database"></i>
+    本地库(选品库)
+    <small class="text-muted ml-3">管理已采集/入库的本地商品</small>
+</h1>
+
+<!-- 操作栏 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <a href="index.php?r=manage/items/addItems" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 新增宝贝
+        </a>
+        <a href="index.php?r=manage/union/index" class="btn btn-outline-success">
+            <i class="fas fa-cloud-download-alt"></i> 联盟库(API选品)
+        </a>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-success mr-2" onclick="oneKeyUpdate()">
+            <i class="fas fa-sync"></i> 一键更新
+        </button>
+        <button class="btn btn-outline-warning" onclick="overdue()">
+            <i class="fas fa-trash-restore"></i> 清理过期
+        </button>
+    </div>
+</div>
+
+<!-- 当前状态提示 -->
+<div class="alert alert-info mb-4">
+    <i class="fas fa-info-circle"></i>
+    当前展示：<strong>数据库选品库（本地库）</strong>
+</div>
+
+<!-- 搜索筛选 -->
+<div class="filter-bar">
+    <div class="filter-title">
+        <i class="fas fa-filter"></i> 筛选搜索
+    </div>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label font-weight-600 mb-2">
+                <i class="fas fa-search mr-1"></i>商品标题
+            </label>
+            <input type="text" class="form-control" id="keyword" placeholder="搜索商品标题" value="<?php echo isset($keyword) ? $keyword : ''; ?>">
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label font-weight-600 mb-2">商品分类</label>
+            <select class="form-control" id="cid">
+                <option value="">全部分类</option>
+                <?php if(isset($categories)): ?>
+                <?php foreach($categories as $key => $value): ?>
+                <option value="<?php echo $key; ?>" <?php echo isset($cid) && $cid == $key ? 'selected' : ''; ?>><?php echo $value; ?></option>
+                <?php endforeach; ?>
+                <?php endif; ?>
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label mb-2">&nbsp;</label>
+            <button class="btn btn-primary w-100" onclick="search()">
+                <i class="fas fa-search"></i> 搜索
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- 商品列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-table"></i> 选品库列表
+        </h5>
+        <div class="text-muted">
+            <small>共 <?php echo isset($page['count']) ? $page['count'] : 0; ?> 件商品</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th style="width: 95px;">商品图片</th>
+                        <th>商品信息</th>
+                        <th style="width: 120px;">券后价</th>
+                        <th style="width: 90px;">佣金</th>
+                        <th style="width: 100px;">预估返利</th>
+                        <th style="width: 100px;">销量</th>
+                        <th style="width: 90px;">领券量</th>
+                        <th style="width: 100px;">优惠券</th>
+                        <th style="width: 80px;">包邮</th>
+                        <th style="width: 80px;">置顶</th>
+                        <th style="width: 160px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($page['list'])): ?>
+                    <?php foreach ($page['list'] as $row):
+                        $mainPic = $row['mainPic'] ?? '';
+                        $actualPrice = $row['actualPrice'] ?? 0;
+                        $originalPrice = $row['originalPrice'] ?? 0;
+                        $monthSales = $row['monthSales'] ?? 0;
+                        $isTop = !empty($row['top']);
+                        // 返利信息（与联盟库展示一致）
+                        $commissionRate = $row['commissionRate'] ?? 0;
+                        $estimateRebate = number_format($row['actualPrice'] * $commissionRate / 100, 2);
+                        $couponReceiveNum = $row['couponReceiveNum'] ?? 0;
+                        $couponPrice = $row['couponPrice'] ?? 0;
+                        $commissionType = $row['commissionType'] ?? 0;
+                        $commissionTypeText = $commissionType == 3 ? '定向高佣' : ($commissionType == 2 ? '营销计划' : ($commissionType == 1 ? '通用佣金' : '普通'));
+                        $commissionTypeColor = $commissionType == 3 ? '#722ED1' : ($commissionType == 2 ? '#1890FF' : ($commissionType == 1 ? '#13C2C2' : '#8C8C8C'));
+                        $freeship = $row['yunfeixian'] ?? $row['freeshipRemoteDistrict'] ?? 0;
+                    ?>
+                    <tr class="align-middle">
+                        <td>
+                            <img src="<?php echo $mainPic; ?>" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;"
+                                 onclick="showImage('<?php echo $mainPic; ?>')">
+                        </td>
+                        <td>
+                            <div class="font-weight-bold mb-2">
+                                <span class="text-dark">
+                                    <?php echo mb_substr($row['title'] ?? '', 0, 50, 'UTF-8'); ?>
+                                    <?php if(!empty($row['title']) && mb_strlen($row['title'], 'UTF-8') > 50): ?>...<?php endif; ?>
+                                </span>
+                            </div>
+                            <div class="text-muted small">goodsId：<?php echo $row['goodsId'] ?? ''; ?></div>
+                            <div class="mt-2">
+                                <span class="badge" style="background: <?php echo $commissionTypeColor; ?>20; color: <?php echo $commissionTypeColor; ?>">
+                                    <?php echo $commissionTypeText; ?>
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-right">
+                            <div class="text-danger font-weight-bold h6 mb-0">
+                                ¥<?php echo number_format($actualPrice, 2); ?>
+                            </div>
+                            <?php if ($originalPrice > $actualPrice): ?>
+                            <div class="text-muted small" style="text-decoration: line-through;">
+                                ¥<?php echo number_format($originalPrice, 2); ?>
+                            </div>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <div class="badge badge-pill bg-gradient-danger text-white px-2 py-1">
+                                <strong><?php echo $commissionRate; ?>%</strong>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="text-success font-weight-bold">
+                                ¥<?php echo $estimateRebate; ?>
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <?php echo number_format($monthSales); ?>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-light text-dark border">
+                                <?php echo number_format($couponReceiveNum); ?>
+                            </span>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($couponPrice > 0): ?>
+                            <div class="badge bg-gradient-danger text-white px-2 py-1">
+                                <?php echo number_format($couponPrice, 0); ?>元券
+                            </div>
+                            <?php else: ?>
+                            <span class="text-muted">无券</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($freeship == 1): ?>
+                            <span class="badge badge-success">包邮</span>
+                            <?php else: ?>
+                            <span class="badge badge-outline-secondary text-muted">否</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <?php if ($isTop): ?>
+                            <span class="badge badge-danger">置顶中</span>
+                            <?php else: ?>
+                            <span class="text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group-vertical btn-group-sm" role="group">
+                                <a href="index.php?r=manage/items/edit&id=<?php echo $row['id']; ?>" class="btn btn-outline-primary" title="编辑">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </a>
+                                <button class="btn btn-outline-warning" onclick="topItem(<?php echo $row['id']; ?>)" title="置顶">
+                                    <i class="fas fa-arrow-up"></i> 置顶
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="delItem(<?php echo $row['id']; ?>)" title="删除">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="11" class="text-center py-5">
+                            <div class="text-center text-muted">
+                                <i class="fas fa-database fa-3x mb-3 d-block"></i>
+                                <h5>选品库还是空的</h5>
+                                <p>去 <a href="index.php?r=manage/union/index">联盟库(API选品)</a> 采集商品，或点击「新增宝贝」手动添加</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 分页 -->
+        <nav aria-label="分页导航" class="mt-4">
+            <div class="text-center">
+                <?php if(isset($page['page']) && $page['page']): ?>
+                <ul class="pagination d-inline-flex">
+                    <?php echo $page['page']; ?>
+                </ul>
+                <?php endif; ?>
+                <?php if(isset($page['count'])): ?>
+                <div class="text-muted mt-2">
+                    <small>共 <?php echo number_format($page['count']); ?> 条数据</small>
+                </div>
+                <?php endif; ?>
+            </div>
+        </nav>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<!-- 图片模态框 -->
+<div class="image-modal" onclick="closeImageModal()" style="display: none;">
+    <img id="modalImage" src="" alt="商品大图">
+</div>
+
+<style>
+.image-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.image-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.pagination {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.pagination li {
+    display: inline-flex;
+    list-style: none;
+}
+
+.pagination a, .pagination span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    text-decoration: none;
+    color: #495057;
+    border: 1px solid #dee2e6;
+    background-color: #fff;
+    transition: all 0.2s;
+}
+
+.pagination a:hover {
+    background-color: #e9ecef;
+    color: #007bff;
+    border-color: #b3d7ff;
+}
+
+.pagination span.current {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+    font-weight: 600;
+}
+</style>
+
+<script>
+function search() {
+    var keyword = document.getElementById('keyword').value;
+    var cid = document.getElementById('cid').value;
+
+    var url = 'index.php?r=manage/items/index';
+    if (keyword) url += '&keyword=' + encodeURIComponent(keyword);
+    if (cid) url += '&cid=' + cid;
+    location.href = url;
+}
+
+function showImage(src) {
+    var modal = document.querySelector('.image-modal');
+    var modalImg = document.getElementById('modalImage');
+    modalImg.src = src;
+    modal.style.display = 'flex';
+}
+
+function closeImageModal() {
+    var modal = document.querySelector('.image-modal');
+    modal.style.display = 'none';
+}
+
+function delItem(id) {
+    if(confirm('确定要删除这个商品吗？此操作不可逆！')) {
+        var token = document.getElementById('csrfToken').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/items/del&id=' + id + '&_token=' + token, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        showToast('删除成功', 'success');
+                        setTimeout(function() { location.reload(); }, 800);
+                    } else {
+                        showToast(result.info, 'danger');
+                    }
+                } catch(e) {
+                    showToast('操作异常', 'danger');
+                }
+            }
+        };
+        xhr.send();
+    }
+}
+
+function topItem(id) {
+    if(confirm('确定要置顶这个商品吗？')) {
+        var token = document.getElementById('csrfToken').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/items/top&id=' + id + '&_token=' + token, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        showToast('置顶成功', 'success');
+                        setTimeout(function() { location.reload(); }, 800);
+                    } else {
+                        showToast(result.info, 'danger');
+                    }
+                } catch(e) {
+                    showToast('操作异常', 'danger');
+                }
+            }
+        };
+        xhr.send();
+    }
+}
+
+function oneKeyUpdate() {
+    if(confirm('确定要执行一键更新吗？这将从API获取最新商品并采集入库到选品库。')) {
+        var token = document.getElementById('csrfToken').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/union/syncGoods&_token=' + token, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        showToast('更新成功，共处理 ' + (result.total || 0) + ' 条数据', 'success');
+                        setTimeout(function() { location.reload(); }, 1500);
+                    } else {
+                        showToast(result.info, 'danger');
+                    }
+                } catch(e) {
+                    showToast('更新失败', 'danger');
+                }
+            }
+        };
+        xhr.send();
+    }
+}
+
+function overdue() {
+    if(confirm('确定要清理过期优惠券商品吗？此操作不可逆！')) {
+        var token = document.getElementById('csrfToken').value;
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/items/overdue&_token=' + token, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        showToast(result.info, 'success');
+                        setTimeout(function() { location.reload(); }, 1500);
+                    } else {
+                        showToast(result.info, 'danger');
+                    }
+                } catch(e) {
+                    showToast('操作异常', 'danger');
+                }
+            }
+        };
+        xhr.send();
+    }
+}
+
+function showToast(message, type = 'success') {
+    // 直接加 show 类并显式设置 opacity，避免依赖 Bootstrap JS 初始化（否则 .toast 默认隐藏不显示）
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 280px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // 3秒后淡出并移除
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() {
+            if(toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 350);
+    }, 3000);
+}
+
+// 键盘支持 - 回车搜索
+document.getElementById('keyword').addEventListener('keypress', function(e) {
+    if(e.which === 13) {
+        search();
+    }
+});
+
+// 键盘Esc关闭图片
+document.addEventListener('keydown', function(event) {
+    if(event.key === 'Escape') {
+        var modal = document.querySelector('.image-modal');
+        if (modal) modal.style.display = 'none';
+    }
+});
+</script>

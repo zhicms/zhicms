@@ -1,0 +1,608 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h4 mb-0 text-gray-800">AI 开放平台</h1>
+</div>
+
+<!-- Tab 导航 -->
+<ul class="nav nav-pills mb-4">
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="tab" href="#tab-chat">文本对话模型</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#tab-image">图像生成模型</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="tab" href="#tab-apps">AI 应用</a>
+    </li>
+</ul>
+
+<div class="tab-content">
+
+    <!-- ============ 文本对话模型 ============ -->
+    <div class="tab-pane fade show active" id="tab-chat">
+        <div class="card shadow mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="mb-0">文本对话模型</h5>
+                <button class="btn btn-sm btn-success" data-toggle="modal" data-target="#addModelModal" data-model-type="chat">
+                    <i class="fas fa-plus"></i> 添加模型
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {foreach $aiModels as $k => $val}
+                        {if !isset($val['type']) || $val['type'] === 'chat'}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-primary shadow h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {if $k === $currentChatKey}
+                                            <span class="badge badge-success mr-2">当前使用</span>
+                                        {/if}
+                                        {$val['model']}
+                                    </h5>
+                                    <p class="text-muted small mb-1">
+                                        接口：<?php echo parse_url($val['api_url'], PHP_URL_HOST); ?>
+                                    </p>
+                                    <p class="text-muted small">
+                                        Key：<?php echo substr($val['api_key'], 0, 10); ?>******
+                                    </p>
+                                    <div class="mt-2">
+                                        {if $k !== $currentChatKey}
+                                            <a href="javascript:;" class="btn btn-sm btn-outline-success model-active-btn" data-key="{$k}" data-type="chat">启用</a>
+                                        {/if}
+                                        <button class="btn btn-sm btn-outline-primary edit-model-btn"
+                                            data-key="{$k}"
+                                            data-url="<?php echo htmlspecialchars($val['api_url'], ENT_QUOTES); ?>"
+                                            data-model="<?php echo htmlspecialchars($val['model'], ENT_QUOTES); ?>"
+                                            data-apikey="<?php echo htmlspecialchars($val['api_key'], ENT_QUOTES); ?>"
+                                            data-type="chat"
+                                            data-toggle="modal" data-target="#editModelModal">编辑</button>
+                                        <button class="btn btn-sm btn-outline-danger model-del-btn" data-key="{$k}">删除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {/if}
+                    {/foreach}
+
+                    <?php $hasChat = false; ?>
+                    {foreach $aiModels as $val}
+                        {if !isset($val['type']) || $val['type'] === 'chat'}<?php $hasChat = true; ?>{/if}
+                    {/foreach}
+                    {if !$hasChat}
+                        <div class="col-12">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-robot fa-3x mb-3 d-block"></i>
+                                <p>暂无文本对话模型，点击上方「添加模型」按钮开始配置</p>
+                                <p class="small">支持的平台：DeepSeek、智谱AI、通义千问、OpenAI 及所有兼容 OpenAI 协议的大模型</p>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ 图像生成模型 ============ -->
+    <div class="tab-pane fade" id="tab-image">
+        <div class="card shadow mb-4">
+            <div class="card-header d-flex align-items-center justify-content-between">
+                <h5 class="mb-0">图像生成模型</h5>
+                <button class="btn btn-sm btn-success" data-toggle="modal" data-target="#addModelModal" data-model-type="image">
+                    <i class="fas fa-plus"></i> 添加模型
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {foreach $aiModels as $k => $val}
+                        {if isset($val['type']) && $val['type'] === 'image'}
+                        <div class="col-md-4 mb-3">
+                            <div class="card border-left-info shadow h-100">
+                                <div class="card-body">
+                                    <h5 class="card-title">
+                                        {if $k === $currentImageKey}
+                                            <span class="badge badge-success mr-2">当前使用</span>
+                                        {/if}
+                                        {$val['model']}
+                                    </h5>
+                                    <p class="text-muted small mb-1">
+                                        接口：<?php echo parse_url($val['api_url'], PHP_URL_HOST); ?>
+                                    </p>
+                                    <p class="text-muted small">
+                                        Key：<?php echo substr($val['api_key'], 0, 10); ?>******
+                                    </p>
+                                    <div class="mt-2">
+                                        {if $k !== $currentImageKey}
+                                            <a href="javascript:;" class="btn btn-sm btn-outline-info model-active-btn" data-key="{$k}" data-type="image">启用</a>
+                                        {/if}
+                                        <button class="btn btn-sm btn-outline-primary edit-model-btn"
+                                            data-key="{$k}"
+                                            data-url="<?php echo htmlspecialchars($val['api_url'], ENT_QUOTES); ?>"
+                                            data-model="<?php echo htmlspecialchars($val['model'], ENT_QUOTES); ?>"
+                                            data-apikey="<?php echo htmlspecialchars($val['api_key'], ENT_QUOTES); ?>"
+                                            data-type="image"
+                                            data-toggle="modal" data-target="#editModelModal">编辑</button>
+                                        <button class="btn btn-sm btn-outline-danger model-del-btn" data-key="{$k}">删除</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {/if}
+                    {/foreach}
+
+                    <?php $hasImage = false; ?>
+                    {foreach $aiModels as $val}
+                        {if isset($val['type']) && $val['type'] === 'image'}<?php $hasImage = true; ?>{/if}
+                    {/foreach}
+                    {if !$hasImage}
+                        <div class="col-12">
+                            <div class="text-center text-muted py-5">
+                                <i class="fas fa-image fa-3x mb-3 d-block"></i>
+                                <p>暂无图像生成模型，点击上方「添加模型」按钮开始配置</p>
+                                <p class="small">支持的平台：硅基流动、豆包、OpenAI DALL-E 及所有兼容的图生模型</p>
+                            </div>
+                        </div>
+                    {/if}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ AI 应用入口 ============ -->
+    <div class="tab-pane fade" id="tab-apps">
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <div class="card border-left-primary shadow h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-comments fa-3x text-primary mb-3"></i>
+                        <h5>AI 对话助手</h5>
+                        <p class="text-muted small">与 AI 模型实时对话，获取写作建议、技术解答等</p>
+                        <button class="btn btn-primary" onclick="AIChat.open()">
+                            <i class="fas fa-comment-dots"></i> 开始对话
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-left-info shadow h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-paint-brush fa-3x text-info mb-3"></i>
+                        <h5>AI 图像生成</h5>
+                        <p class="text-muted small">输入文字描述，AI 自动生成高质量图片</p>
+                        <button class="btn btn-info" data-toggle="modal" data-target="#aiImageModal">
+                            <i class="fas fa-image"></i> 生成图像
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-left-warning shadow h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-plug fa-3x text-warning mb-3"></i>
+                        <h5>系统提示词</h5>
+                        <p class="text-muted small">自定义 AI 助手的角色和回复风格</p>
+                        <button class="btn btn-warning" data-toggle="modal" data-target="#systemPromptModal">
+                            <i class="fas fa-edit"></i> 设置提示词
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+
+<!-- ============ 添加模型弹窗 ============ -->
+<div class="modal fade" id="addModelModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addModelModalLabel">添加 AI 模型</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="addModelForm" method="post" action="index.php?r=manage/ai/save">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>API 地址</label>
+                        <input type="url" class="form-control" name="ai_api_url" required
+                            placeholder="https://api.deepseek.com/v1/chat/completions">
+                    </div>
+                    <div class="form-group">
+                        <label>API Key</label>
+                        <input type="text" class="form-control" name="ai_api_key" required
+                            placeholder="sk-xxxxxxxxxxxxxxxx">
+                    </div>
+                    <div class="form-group">
+                        <label>模型名称</label>
+                        <input type="text" class="form-control" name="ai_model" required
+                            placeholder="deepseek-v4-flash">
+                    </div>
+                    <input type="hidden" name="ai_model_type" id="add-model-type" value="chat">
+
+                    <hr>
+                    <div id="add-model-examples">
+                        <!-- 动态填充 -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">取消</button>
+                    <button type="submit" id="add-save-btn" class="btn btn-success">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============ 编辑模型弹窗 ============ -->
+<div class="modal fade" id="editModelModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">编辑 AI 模型</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="editModelForm" method="post" action="index.php?r=manage/ai/update">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>API 地址</label>
+                        <input type="url" class="form-control" name="edit_ai_api_url" id="edit-api-url" required>
+                    </div>
+                    <div class="form-group">
+                        <label>API Key <small class="text-muted">（留空则不修改）</small></label>
+                        <input type="text" class="form-control" name="edit_ai_api_key" id="edit-api-key"
+                            placeholder="留空则不修改">
+                    </div>
+                    <div class="form-group">
+                        <label>模型名称</label>
+                        <input type="text" class="form-control" name="edit_ai_model" id="edit-model" required>
+                    </div>
+                    <input type="hidden" name="ai_model_key" id="edit-model-key" value="">
+                    <input type="hidden" name="ai_model_type" id="edit-model-type" value="chat">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">取消</button>
+                    <button type="submit" id="edit-save-btn" class="btn btn-success">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============ 系统提示词弹窗 ============ -->
+<div class="modal fade" id="systemPromptModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">设置系统提示词</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <form id="systemPromptForm">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>系统提示词（定义 AI 助手的角色和行为）</label>
+                        <textarea class="form-control" name="ai_system_prompt" id="sys-prompt-input" rows="6"
+                            placeholder="你是一个专业的网站管理助手..."><?php echo isset($aiSystemPrompt) ? $aiSystemPrompt : ''; ?></textarea>
+                        <small class="form-text text-muted">留空则使用默认提示词</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save-system-prompt">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ============ AI 图像生成弹窗 ============ -->
+<div class="modal fade" id="aiImageModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">AI 图像生成</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="image-result" style="min-height: 200px; border: 1px dashed #ddd; padding: 20px; margin-bottom: 15px; border-radius: 8px; text-align: center; background-color: #f8f9fa;">
+                    <div class="text-muted py-4">
+                        <i class="fas fa-image fa-2x mb-2 d-block"></i>
+                        <p>生成的图像将显示在这里</p>
+                    </div>
+                </div>
+                <form id="image-form">
+                    <div class="form-group">
+                        <label>图像描述（提示词）</label>
+                        <textarea class="form-control" id="image-prompt" rows="3"
+                            placeholder="一只可爱的橘猫坐在窗台上，阳光透过窗户洒在它身上，宫崎骏风格..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>尺寸</label>
+                                <select class="form-control" id="image-size">
+                                    <option value="1024x1024">1024x1024 (方形)</option>
+                                    <option value="1792x1024">1792x1024 (横版)</option>
+                                    <option value="1024x1792">1024x1792 (竖版)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>质量</label>
+                                <select class="form-control" id="image-quality">
+                                    <option value="standard">标准</option>
+                                    <option value="hd">高清</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <button class="btn btn-info" type="submit" id="generate-btn">
+                            <i class="fas fa-magic"></i> 生成图像
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function initAiSetting() {
+    if (window.__aiSettingInited) return;
+    window.__aiSettingInited = true;
+    $(function() {
+    // ==================== 直接访问 manage/ai/update 时自动弹出编辑弹窗 ====================
+    <?php if (!empty($autoOpenEdit)): ?>
+    (function() {
+        var d = <?php echo json_encode($autoOpenEditData, JSON_UNESCAPED_UNICODE); ?>;
+        $('#edit-api-url').val(d.api_url || '');
+        $('#edit-model').val(d.model || '');
+        $('#edit-model-key').val('<?php echo addslashes($autoOpenEditKey); ?>');
+        $('#edit-model-type').val(d.type || 'chat');
+        var mask = (d.api_key ? String(d.api_key).substring(0, 12) : '');
+        $('#edit-api-key').val('').attr('placeholder', '留空则不修改（当前: ' + mask + '...）');
+        $('#editModelModal').modal('show');
+    })();
+    <?php endif; ?>
+
+    // ==================== Toast 通知 ====================
+    function showToast(message, type) {
+        type = type || 'success';
+        var icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+        var toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+        toast.setAttribute('role', 'alert');
+        toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 280px; opacity: 1; transition: opacity .3s ease;';
+        toast.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="fas fa-' + icon + ' mr-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button></div>';
+        document.body.appendChild(toast);
+        setTimeout(function() {
+            toast.style.opacity = '0';
+            setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
+        }, 2500);
+    }
+
+    // ==================== 添加模型（AJAX，submit 事件委托，绑定时机稳健） ====================
+    $(document).on('submit', '#addModelForm', function(e) {
+        e.preventDefault();
+        var $form = $(this);
+        var $btn = $('#add-save-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...');
+        $.ajax({
+            url: 'index.php?r=manage/ai/save',
+            type: 'POST',
+            data: $form.serialize(),
+            dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(res) {
+                $btn.prop('disabled', false).html('保存');
+                if (res.status === 'y') {
+                    showToast(res.info, 'success');
+                    $('#addModelModal').modal('hide');
+                    $form[0].reset();
+                    setTimeout(function() { location.reload(); }, 800);
+                } else {
+                    showToast(res.info, 'danger');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).html('保存');
+                showToast('请求失败，请重试', 'danger');
+            }
+        });
+    });
+
+    // ==================== 编辑模型（AJAX，submit 事件委托，绑定时机稳健） ====================
+    $(document).on('submit', '#editModelForm', function(e) {
+        e.preventDefault();
+        var $form = $(this);
+        var $btn = $('#edit-save-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...');
+        $.ajax({
+            url: 'index.php?r=manage/ai/update',
+            type: 'POST',
+            data: $form.serialize(),
+            dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(res) {
+                $btn.prop('disabled', false).html('保存');
+                if (res.status === 'y') {
+                    showToast(res.info, 'success');
+                    $('#editModelModal').modal('hide');
+                    setTimeout(function() { location.reload(); }, 800);
+                } else {
+                    showToast(res.info, 'danger');
+                }
+            },
+            error: function() {
+                $btn.prop('disabled', false).html('保存');
+                showToast('请求失败，请重试', 'danger');
+            }
+        });
+    });
+
+    // ==================== 启用模型（AJAX） ====================
+    $('.model-active-btn').on('click', function() {
+        var $btn = $(this);
+        var key  = $btn.data('key');
+        var type = $btn.data('type');
+        if (!confirm('确定切换到该模型？')) return;
+        $.getJSON('index.php?r=manage/ai/active&key=' + key + '&type=' + type, function(res) {
+            if (res.info) {
+                showToast(res.info || '切换成功', 'success');
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                location.reload();
+            }
+        }).fail(function() {
+            // active 接口是 redirect，所以 $.getJSON 会失败，直接刷新
+            showToast('切换成功', 'success');
+            setTimeout(function() { location.reload(); }, 800);
+        });
+    });
+
+    // ==================== 删除模型（AJAX） ====================
+    $('.model-del-btn').on('click', function() {
+        var key = $(this).data('key');
+        if (!confirm('确定删除该模型？此操作不可撤销。')) return;
+        $.getJSON('index.php?r=manage/ai/delete&key=' + key, function(res) {
+            if (res.status === 'y') {
+                showToast(res.info, 'success');
+                setTimeout(function() { location.reload(); }, 800);
+            } else {
+                showToast(res.info, 'danger');
+            }
+        }).fail(function() {
+            showToast('删除失败，请重试', 'danger');
+        });
+    });
+
+    // ==================== 添加模型按钮 - 切换类型 ====================
+    $('[data-target="#addModelModal"]').click(function() {
+        var type = $(this).data('model-type');
+        $('#add-model-type').val(type);
+        if (type === 'image') {
+            $('#addModelModalLabel').text('添加图像生成模型');
+            $('#add-model-examples').html(getImageExamples());
+        } else {
+            $('#addModelModalLabel').text('添加文本对话模型');
+            $('#add-model-examples').html(getChatExamples());
+        }
+    });
+
+    // ==================== 编辑模型按钮 ====================
+    $('.edit-model-btn').click(function() {
+        var btn = $(this);
+        $('#edit-api-url').val(btn.data('url') || '');
+        $('#edit-model').val(btn.data('model') || '');
+        $('#edit-model-key').val(btn.data('key') || '');
+        $('#edit-model-type').val(btn.data('type') || 'chat');
+        var ak = btn.data('apikey');
+        $('#edit-api-key').val('').attr('placeholder', '留空则不修改（当前: ' + (ak ? String(ak).substring(0,12) : '') + '...）');
+    });
+
+    // ==================== 保存系统提示词（AJAX + Toast） ====================
+    $('#save-system-prompt').click(function() {
+        var prompt = $('#sys-prompt-input').val().trim();
+        var $btn = $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...');
+        $.post('index.php?r=manage/ai/savePrompt', { prompt: prompt }, function(res) {
+            $btn.prop('disabled', false).html('保存');
+            try {
+                var r = JSON.parse(res);
+                showToast(r.info, r.status === 'y' ? 'success' : 'danger');
+                if (r.status === 'y') $('#systemPromptModal').modal('hide');
+            } catch(e) {
+                showToast('保存成功', 'success');
+                $('#systemPromptModal').modal('hide');
+            }
+        }).fail(function() {
+            $btn.prop('disabled', false).html('保存');
+            showToast('请求失败，请重试', 'danger');
+        });
+    });
+
+    // ==================== 图像生成（AJAX + Toast） ====================
+    $('#image-form').submit(function(e) {
+        e.preventDefault();
+        var prompt = $('#image-prompt').val().trim();
+        if (!prompt) { showToast('请输入图像描述', 'danger'); return; }
+
+        var $btn = $('#generate-btn');
+        var $result = $('#image-result');
+        $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 生成中...');
+        $result.html('<div class="text-center py-3"><div class="spinner-border text-info"></div><p class="mt-2">AI 正在生成图像，请稍候...</p></div>');
+
+        $.ajax({
+            url: 'index.php?r=manage/ai/generateImage',
+            type: 'POST',
+            data: {
+                prompt: prompt,
+                size: $('#image-size').val(),
+                quality: $('#image-quality').val()
+            },
+            dataType: 'json',
+            timeout: 120000,
+            success: function(res) {
+                $btn.prop('disabled', false).html('<i class="fas fa-magic"></i> 生成图像');
+                if (res.code === 0 && res.data && res.data.url) {
+                    showToast('图像生成成功', 'success');
+                    $result.html(
+                        '<div class="text-center">' +
+                        '<img src="' + res.data.url + '" class="img-fluid rounded shadow" style="max-height: 500px;">' +
+                        '<div class="mt-2">' +
+                        '<a href="' + res.data.url + '" target="_blank" class="btn btn-sm btn-outline-primary mr-2">查看原图</a>' +
+                        '<button class="btn btn-sm btn-outline-success" onclick="window.open(\'' + res.data.url + '\')">下载</button>' +
+                        '</div></div>'
+                    );
+                } else {
+                    showToast('生成失败：' + (res.msg || '未知错误'), 'danger');
+                }
+            },
+            error: function(xhr, status, err) {
+                $btn.prop('disabled', false).html('<i class="fas fa-magic"></i> 生成图像');
+                showToast('请求失败：' + (status === 'timeout' ? '超时' : err), 'danger');
+            }
+        });
+    });
+    });
+}
+
+// jQuery 由底部 footer 引入，晚于本脚本执行；等待 jQuery 就绪后再初始化，避免 "$ is not defined"
+(function () {
+    if (window.jQuery) { initAiSetting(); return; }
+    var _t = setInterval(function () {
+        if (window.jQuery) { clearInterval(_t); initAiSetting(); }
+    }, 30);
+    window.addEventListener('load', function () {
+        if (window.jQuery) { initAiSetting(); }
+    });
+})();
+
+// 文本模型示例
+function getChatExamples() {
+    return '<div class="alert alert-info small"><strong>常用平台示例：</strong><br>' +
+        '<strong>DeepSeek：</strong><br>' +
+        'API URL：https://api.deepseek.com/v1/chat/completions<br>' +
+        'Model：deepseek-v4-flash<br>' +
+        '<a href="https://platform.deepseek.com/api_keys" target="_blank">获取API Key</a><br><br>' +
+        '<strong>智谱AI：</strong><br>' +
+        'API URL：https://open.bigmodel.cn/api/paas/v4/chat/completions<br>' +
+        'Model：glm-4.7-flash<br>' +
+        '<a href="https://bigmodel.cn/usercenter/proj-mgmt/apikeys" target="_blank">获取API Key</a><br><br>' +
+        '以上均兼容 OpenAI API 协议，其他兼容平台同样适用。</div>';
+}
+
+function getImageExamples() {
+    return '<div class="alert alert-info small"><strong>常用平台示例：</strong><br>' +
+        '<strong>硅基流动：</strong><br>' +
+        'API URL：https://api.siliconflow.cn/v1/images/generations<br>' +
+        'Model：Kwai-Kolors/Kolors<br>' +
+        '<a href="https://cloud.siliconflow.cn/me/account/ak" target="_blank">获取API Key</a><br><br>' +
+        '<strong>豆包（火山引擎）：</strong><br>' +
+        'API URL：https://ark.cn-beijing.volces.com/api/v3/images/generations<br>' +
+        'Model：doubao-seedream-3-0-t2i-250415<br>' +
+        '<a href="https://console.volcengine.com/ark" target="_blank">获取API Key</a></div>';
+}
+</script>
+
+{include file="app/manage/view/index/emlog_footer"}

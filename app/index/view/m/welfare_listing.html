@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>省钱攻略文档</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <link rel="stylesheet" href="https://cdnjs.efengqing.com/ajax/libs/minireset.css/0.0.2/minireset.css">
+    <link rel="stylesheet" href="https://at.alicdn.com/t/font_1534407_mj4m6393aya.css">
+    <script src="https://cdnjs.efengqing.com/ajax/libs/promise-polyfill/8.2.0/polyfill.min.js"></script>
+    <script src="https://cdnjs.efengqing.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="https://cdnjs.efengqing.com/ajax/libs/vue/3.0.11/vue.global.js"></script>
+    <script src="https://cdnjs.efengqing.com/ajax/libs/vant/3.2.4/vant.min.js"></script>
+    <link href="https://cdnjs.efengqing.com/ajax/libs/vant/3.2.4/index.min.css" rel="stylesheet"><!--pc端click代替touch-->
+    <script src="https://img.bc.haodanku.com/cdn/touch-emulator.js"></script>
+    <link rel="stylesheet" href="https://img.bc.haodanku.com/cdn/locss.css">
+    <meta name="referrer" content="no-referrer">
+    <script src="https://img.bc.haodanku.com/cdn/tsUtils.js"></script>
+    <script src="https://img.bc.haodanku.com/cms/utils.v1_0_5.js"></script>
+    <script defer>document.write('<link rel="stylesheet" href="https://img.bc.haodanku.com/cms/welfare_listing.css?t=' + (Date.now() - Date.now() % (60 * 1000 * 30)) + '"/>')</script>
+  <style>
+    /* 移动端频道导航 + 淘宝联想下拉（自包含，避免与 welfare_listing.css 冲突） */
+    .search-box .search-input-wrap{position:relative;}
+    .tb-suggest{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#fff;border-radius:10px;z-index:80;max-height:300px;overflow:auto;-webkit-overflow-scrolling:touch;box-shadow:0 10px 28px rgba(0,0,0,.18);}
+    .tb-suggest li{padding:12px 16px;font-size:15px;color:#333;border-bottom:1px solid #f4f4f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:background .15s ease,color .15s ease;}
+    .tb-suggest li:last-child{border-bottom:0;}
+    .tb-suggest li:active{background:#fff3e8;color:#ff5000;}
+    .tb-suggest li .hl{color:#ff5000;font-style:normal;}
+    .channel-nav{display:flex;align-items:stretch;background:#fff;border-top:1px solid #f1f1f1;}
+    .channel-nav .item{flex:1;text-align:center;padding:13px 0 11px;font-size:15px;line-height:1.1;color:#888;background:transparent;position:relative;cursor:pointer;transition:color .25s ease, background .2s ease;}
+    .channel-nav .item:active{background:#f6f6f6;}
+    .channel-nav .item.active{color:#ff5000;font-weight:700;}
+    .channel-nav .item.active:after{content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:24px;height:3px;border-radius:2px;background:linear-gradient(135deg,#ff7a18,#ff5000);animation:navInd .25s ease;}
+    @keyframes navInd{from{opacity:0;transform:translateX(-50%) scaleX(.4);}to{opacity:1;transform:translateX(-50%) scaleX(1);}}
+    .empty-tip{text-align:center;color:#ffb38a;padding:1.2rem .3rem;font-size:.28rem;}
+    .empty-tip .iconfont{display:block;font-size:.8rem;margin-bottom:.15rem;color:#ff7a18;}
+    .empty-tip p{margin:0;}
+  </style>
+  </head>
+  <body>
+    <template id="c-card">
+  <div class="card row _ flex-c">
+    <div class="col">
+      <img class="cover" v-lazy="item.itempic" v-if="item.itempic"/>
+      <img
+        class="cover"
+        src="http://img.bc.fqapps.com/fudai13cae4ae6ef16739ed3b100a2ec39e97.gif"
+        alt=""
+        v-else
+      />
+    </div>
+    <div class="col pd-1">
+      <div class="title _ ellipsis-2">{{ item.itemshorttitle || item.itemtitle }}</div>
+    </div>
+    <div class="col pd-1 discount-info _ ellipsis-2">
+      {{item.activity_gameplay}}
+    </div>
+    <div class="col">
+      <div class="price">
+        <div class="end">
+          <strong>￥{{ Number(item.itemendprice) }}</strong>
+        </div>
+        <div class="origin">
+          <del>￥{{ Number(item.itemprice) }}</del>
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="btn-block">
+        <div class="_ btn order">
+          <span v-on:click.capture="buy($event,item)">去抢购</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+    <template id="c-fixed-card">
+  <div class="fixed-card">
+    <img v-lazy="item.itempic" v-if="item.itempic"/>
+    <img
+      src="http://img.bc.fqapps.com/fudai13cae4ae6ef16739ed3b100a2ec39e97.gif"
+      alt=""
+      v-else
+    />
+    <div class="detail">
+      <div class="title _ ellipsis-2">
+        <span>{{ item.itemshorttitle || item.itemtitle }}</span>
+      </div>
+      <div class="center" v-if="item.activity_gameplay">
+        <div class="discount-info">{{item.activity_gameplay}}</div>
+      </div>
+      <div class="price">
+        <div class="end-price">
+          <strong>￥{{ Number(item.itemendprice) }}</strong>
+        </div>
+        <div class="origin">
+          <del>￥{{ Number(item.itemprice) }}</del>
+        </div>
+      </div>
+      <div class="tags">
+        <div class="ticket" v-if="item.couponmoney != '0'">
+          <span class="name">券</span><span class="value">￥{{ item.couponmoney }}</span>
+        </div>
+      </div>
+      <div class="btn-block">
+        <div class="btn order">
+          <span v-on:click.capture="buy($event,item)">去抢购</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+<template id="c-list-item">
+  <div class="goods-card">
+    <div class="type-title">
+      <img
+        v-if="item.platform == 2"
+        class="jd"
+        src="http://img-haodanku-com.cdn.fudaiapp.com/Fi4ijtJvI0QJWqmMpwI2sWQ5gOJn"
+        alt=""
+      >
+      <img
+        v-else-if="item.platform == 1"
+        class="tb"
+        src="http://img-haodanku-com.cdn.fudaiapp.com/Fgj3o1aNeDaQe0BRrAqXSDx1pyz0"
+        alt=""
+      >
+      <span class="text">{{title}}</span><span class="time">{{item.startTime}}</span>
+    </div>
+    <div class="detail-block">
+      <div class="row" v-for="(item,index) in list">
+        <div class="cover-block" v-if="item.image">
+          <img v-on:click="previewImg(index)" referrerpolicy="no-referrer" v-bind:src="item.image" alt="">
+        </div>
+        <div class="content-block" ref="copyBase">
+          <ul>
+            <li v-for="it in item.content">
+              <div v-if="it.type === 'text'" class="title">{{it.value+"\n"}}</div>
+              <template v-else>
+                <button class="btn buy" v-on:click="buy($event,it)">马上抢</button>
+                <div class="transfer"><br>{{it.transfer}}</div>
+                <!--              <div style="word-break: break-all;">{{it.transfer}}</div>-->
+              </template>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="btn-block">
+      <button class="btn copy-text" v-on:click="transferAndCopy($event)">复制文案</button>
+    </div>
+  </div>
+</template>
+
+    <template id="xb-body">
+      <van-pull-refresh v-model="refreshing" @refresh="reGetListData">
+        <van-list class="xb page-container" v-bind:loading="loading" v-bind:finished="listData.finished" v-on:load="getListData"><!-- 底部提示 -->
+          <template #finished v-if="listData.list.length"><span class="list-item-loading">-优惠到底啦-</span></template>
+          <template #loading><span class="list-item-loading">数据正在赶来的路上...</span></template>
+          <div class="banner-wrapper" ref="bannerRef"><img class="free-banner" v-bind:src="banner" alt=""></div>
+          <van-sticky class="fixed-box xb _ flex-c" v-show="category.list.length">
+            <div class="tabs-wrapper">
+              <van-tabs ref="firstTabsRef" v-model:active="category.value" @click-tab="onTabChange" background="none" v-bind:ellipsis="false">
+                <van-tab v-for="item in category.list" v-bind:key="item.id" v-bind:name="item.id" v-bind:title="item.name"></van-tab>
+              </van-tabs>
+            </div>
+          </van-sticky>
+          <div class="page-content" ref="list" v-bind:class="{'empty-list':!listData.list.length}">
+            <div class="lists" ref="listsRef" v-if="listData.list.length || listData.finished">
+              <list-item v-for="(item, index) in listData.list" v-bind:item="item" v-bind:key="item.wire_id" v-bind:title="activeCategoryItem.name" v-on:transfer-url="handleGoodsTransfer"></list-item>
+            </div>
+            <div class="empty" v-show="!listData.list.length &amp;&amp; !loading">
+              <div class="empty-box"><img src="http://img.bc.haodanku.com/cms/1627883509">
+                <div class="text">暂无数据~</div>
+              </div>
+            </div>
+          </div>
+          <div class="back-top-wrap max-width">
+            <div class="btn back-top" v-on:click="backTop" v-bind:class="{hide: scrollTop &lt; 600}"></div>
+          </div>
+          <van-overlay v-bind:show="loading">
+            <van-loading color="#0094ff"></van-loading>
+          </van-overlay>
+        </van-list>
+      </van-pull-refresh>
+    </template>
+    <div id="single-page-app" v-cloak>
+      <template v-if="!activeXbCategory">
+        <van-pull-refresh v-model="refreshing" @refresh="reGetListData">
+          <van-sticky class="fixed-box _ flex-c">
+            <div class="search-input-wrap">
+              <van-search v-model="searchValue" show-action placeholder="搜索全网折扣、优惠券..." @search="onSearch" @clear="onSearchClear" @focus="suggest.focus=true" @blur="onSuggestBlur" @input="getSuggest">
+                <template v-slot:action><div class="_ flex-c-c" @click="onSearch">搜索</div></template>
+              </van-search>
+              <ul class="tb-suggest" v-show="suggest.list.length && suggest.focus">
+                <li v-for="(w,i) in suggest.list" v-on:click="pickSuggest(w)" v-html="hl(w)"></li>
+              </ul>
+            </div>
+            <ul class="channel-nav">
+              <li class="item" v-for="(item,index) in nav.list" v-bind:class="{active: nav.activeIndex===index}" v-on:click="goChannel(item,index)"><span>{{item.label}}</span></li>
+            </ul>
+          </van-sticky>
+          <van-list class="page-container" v-bind:loading="loading" v-bind:finished="listData.finished" v-on:load="getListData"><!-- 底部提示 -->
+            <template v-slot:finished v-if="listData.list.length"><span class="list-item-loading">-优惠到底啦-</span></template>
+            <template v-slot:loading><span class="list-item-loading">数据正在赶来的路上...</span></template>
+            <div class="banner-wrapper" ref="bannerRef"><img class="free-banner" v-bind:src="hongbaoInfo.banner" alt=""></div>
+            <van-sticky class="fixed-box _ flex-c" v-show="category.list.length">
+              <ul class="nav row _ flex-c">
+                <li class="item col">图片</li>
+                <li class="item col">商品标题</li>
+                <li class="item col">优惠信息</li>
+                <li class="item col">到手价</li>
+                <li class="item col">购买</li>
+              </ul>
+            </van-sticky>
+            <div class="page-content" ref="list" v-bind:class="{'empty-list':!listData.list.length}">
+              <div class="lists" ref="listsRef" v-if="listData.list.length || listData.finished">
+                <card v-for="(item, index) in listData.list" v-bind:item="item" v-bind:key="item.itemid" v-on:transfer-url="handleGoodsTransfer"></card>
+              </div>
+              <div class="empty" v-show="!listData.list.length &amp;&amp; !loading">
+                <div class="empty-box"><img src="http://img.bc.haodanku.com/cms/1627883509">
+                  <div class="text">暂无数据~</div>
+                </div>
+              </div>
+            </div>
+          </van-list>
+        </van-pull-refresh>
+      </template>
+      <xb v-else :banner="hongbaoInfo.banner"></xb>
+      <footer class="main-width">
+        <div class="second-tabs-wrapper" v-if="activeCategoryItem.child.list.length" v-bind:class="{show:secondTabsVisible}">
+          <div class="second-tabs _ flex-c">
+            <div class="direct-left _ btn" v-on:click="secondTabsScrollTo(-1)"><i class="iconfont hdk-xiangyou"></i></div>
+            <div class="tabs-wrapper">
+              <van-tabs ref="secondTabsRef" v-model:active="activeCategoryItem.child.value" @click-tab="onSecondTabChange" background="none" v-bind:ellipsis="false">
+                <van-tab v-for="item in activeCategoryItem.child.list" v-bind:key="item.id" v-bind:name="item.id" v-bind:title="item.name"></van-tab>
+              </van-tabs>
+            </div>
+            <div class="direct-right _ btn" v-on:click="secondTabsScrollTo(1)"><i class="iconfont hdk-xiangyou"></i></div>
+          </div>
+        </div>
+        <div class="first-tabs-all" v-bind:class="{show:firstTabsAllVisible}">
+          <ul>
+            <li class="_ btn ellipsis-1" v-for="(item,index) in category.list" v-bind:key="item.id" v-on:click="onClickFirstTabsAll(index)" v-bind:class="{active:item === activeCategoryItem}">{{item.name}}</li>
+          </ul>
+        </div>
+        <div class="first-tabs-wrapper">
+          <div class="first-tabs _ flex-c">
+            <div class="direct-left _ btn" v-on:click="firstTabsScrollTo(-1)"><i class="iconfont hdk-xiangyou"></i></div>
+            <div class="tabs-wrapper van-hairline--left van-hairline--right">
+              <van-tabs ref="firstTabsRef" v-model:active="category.value" @click-tab="onTabChange" background="none">
+                <van-tab v-for="item in category.list" v-bind:key="item.id" v-bind:name="item.id">
+                  <template v-slot:title>
+                    <div class="tab-content _ flex-c-c van-hairline--right" v-bind:class="{'has-child':item.child.list.length}"><span>{{item.name}}</span><i class="iconfont hdk-paixu" v-if="item.child.list.length"></i></div>
+                  </template>
+                </van-tab>
+              </van-tabs>
+            </div>
+            <div class="show-all _ flex-c-c btn" v-on:click.stop="switchFirstNavAll" v-bind:class="{show:firstTabsAllVisible}">
+              <div class="square-4">
+                <div class="r1 _ flex-c-c"></div>
+                <div class="r2 _ flex-c-c"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </footer>
+      <div class="fixed-card-wrapper" v-if="!activeXbCategory" ref="fixedCardRef" v-bind:class="{show:fixedCardVisible &amp;&amp; listData.list.length, 'hide-second': !secondTabsVisible}">
+        <div class="_ btn close flex-c-c" v-on:click="fixedCardVisible = !fixedCardVisible"><i class="iconfont hdk-guanbi" v-if="fixedCardVisible &amp;&amp; listData.list.length"></i>
+          <div class="inner _ flex-c-c" v-else><i class="iconfont hdk-paixu"></i></div>
+        </div>
+        <fixed-card v-bind:item="fixedCardItem" v-on:transfer-url="handleGoodsTransfer"></fixed-card>
+      </div>
+      <div class="gather-search max-width" v-if="superSearchUrl &amp;&amp; customParams.code" draggable="false" v-moveable><a class="_ btn" v-bind:href="superSearchUrl" v-bind:class="{hide: isScrollToDown}"><img src="http://img-haodanku-com.cdn.fudaiapp.com//FmkQ5Pvie1NIt6K-qT1hd6RAxoa4"></a></div>
+      <div class="hongbao-small" v-if="hongbaoInfo.is_show != '0'" draggable="false" v-moveable><img v-bind:class="{hide: isScrollToDown}" v-bind:src="hongbaoInfo.little_packet" v-on:click="bigHBVisible = true"></div>
+      <van-overlay class="hongbao-big" v-bind:show="bigHBVisible">
+        <div class="hb-box"><img v-bind:src="hongbaoInfo.big_packet" v-on:click.capture="clickBigHB"><span v-on:click="bigHBVisible = false"></span></div>
+      </van-overlay>
+      <div class="back-top-wrap max-width" draggable="false" v-moveable>
+        <div class="btn back-top" v-on:click="backTop" v-bind:class="{hide: scrollTop &lt; 600}"></div>
+      </div>
+      <van-overlay v-bind:show="loading">
+        <van-loading color="#0094ff"></van-loading>
+      </van-overlay>
+    </div>
+    <script>
+      function useBase() {
+  const listDataStr = JSON.stringify({
+    list: [],
+    loading: false,
+    finished: false,
+    min_id: 1,
+    pageTotal: 1,
+    pageCurrent: 0
+  });
+
+  const scrollTop = Vue.ref(0);
+  const listData = Vue.reactive(JSON.parse(listDataStr));
+
+  // 根据微信浏览器缩放比例设置rem缩放
+  if(inWechat() && "ontouchstart" in window) {
+    const scale = getFontScale(true);
+    document.documentElement.style.fontSize =
+      "calc(100vw / 7.5 * " + scale + ")";
+  }
+
+  return {
+    listDataStr,
+    data: {
+      scrollTop,
+      listData
+    },
+    useScrollEndMounted(onScrollEnd, onNotScrollEnd) {
+      Vue.onMounted(function() {
+        window.addEventListener("scroll", function(ev) {
+          scrollTop.value = document.documentElement.scrollTop || document.body.scrollTop;
+          if(isScrollEnd(this, "vertical", 40)) {
+            onScrollEnd && onScrollEnd();
+          } else {
+            onNotScrollEnd && onNotScrollEnd();
+          }
+        });
+      });
+    },
+    methods: {
+      onScrollEnd() {
+        this.getListData();
+      },
+      handleShare() {
+        copy(location.href, "复制成功，快去下单吧~");
+      },
+      resetListData(isCleanList = true) {
+        Object.assign(
+          listData,
+          JSON.parse(listDataStr),
+          isCleanList ? undefined : {list: listData.list}
+        );
+      }
+    }
+  };
+}
+
+function findParent(component, parentName) {
+  if(component.$options.name === parentName) {
+    return component;
+  }
+  if(!component.$parent) return null;
+  return findParent(component.$parent, parentName);
+}function getXBComponents() {
+  const labels = ["₳", "$", "¢", "₴", "€", "₤", "￥", "＄", "《", "\\(", "\/"];
+  const labelLeft = "[" + labels.join("") + "]";
+  const taoCodeReg = new RegExp(labelLeft + "\\w{11}");
+  const urlReg = new RegExp("^(?!mailto:)(?:(?:http|https|ftp)://|//)(?:\\S+(?::\\S*)?@)?(?:(?:(?:[1-9]\\d?|1\\d\\d|2[01]\\d|22[0-3])(?:\\.(?:1?\\d{1,2}|2[0-4]\\d|25[0-5])){2}(?:\\.(?:[0-9]\\d?|1\\d\\d|2[0-4]\\d|25[0-4]))|(?:(?:[a-z\\u00a1-\\uffff0-9]+-*)*[a-z\\u00a1-\\uffff0-9]+)(?:\\.(?:[a-z\\u00a1-\\uffff0-9]+-*)*[a-z\\u00a1-\\uffff0-9]+)*(?:\\.(?:[a-z\\u00a1-\\uffff]{2,})))|localhost)(?::\\d{2,5})?(?:(/|\\?|#)[^\\s]*)?$", "i");
+
+  return {
+    "list-item": Vue.defineComponent({
+      template: "#c-list-item",
+      props: {
+        item: Object,
+        title: String
+      },
+      setup(props) {
+        const propsRefs = Vue.toRefs(props);
+        const data = {
+          list: Vue.ref([])
+        };
+        const methods = {
+          getImage(img) {
+            if(!img) return "";
+            return img.replace(/https?:/, "");
+          },
+          previewImg(index) {
+            vant.ImagePreview({
+              images: data.list.value.map(function(it) {
+                return it.image;
+              }),
+              startPosition: index || 0
+            });
+          },
+          copyTransfer(listItem) {
+            const copyText = listItem.transfer;
+            if(!copyText) {
+              return;
+            }
+            if(urlReg.test(copyText)) {
+              customOpenPage(copyText);
+              return;
+            }
+            const successMsg = taoCodeReg.test(copyText) ? "复制淘口令成功，请打开淘宝领取" : "复制成功!";
+            copy(copyText, successMsg, true);
+          },
+          buy(e, listItem) {
+            if(listItem.type === "url") {
+              customOpenPage(listItem.value);
+              return;
+            }
+            if(listItem.transfer) {
+              methods.copyTransfer(listItem);
+              return;
+            }
+            findParent(this,'XbBody').handleGoodsTransfer({goodsItem: props.item, item: listItem});
+          },
+          transferAndCopy(e) {
+            const list = data.list.value;
+            const parent = findParent(this,'XbBody');
+            const strArr = list.map((it) => {
+              return it.content.map(function(item) {
+                if(item.type === "text" || item.type === "url") {
+                  return item.value;
+                } else {
+                  if(!item.transfer) {
+                    const {param, url} = parent.generateTransferParamAndUrl({goodsItem: props.item, item});
+                    Request.postSync(url, param, (res) => {
+                      item.transfer = inWechat() ? (res.data.short_url || res.data) : (res.link || res.data.short_url || res.data);
+                    });
+                  }
+                  return item.transfer;
+                }
+              }).join("\n");
+            });
+            copy(strArr.join("\n\n"), "文案复制成功", "复制失败,请点击重试", true);
+          }
+        };
+        Vue.watch(propsRefs.item, (n) => {
+          if(!n) return;
+          n.startTime = tsUtils.formatDate.call(new Date(n.starttime * 1000));
+          let arr;
+          if(Array.isArray(n.step) && n.step.length) {
+            arr = n.step;
+          } else {
+            arr = [{content: n.list, image: n.images[0]}];
+          }
+          data.list.value = arr.map(function(item) {
+            /**
+             * @type {{value:string, transfer:string, type:'url'|'code'|'text'}[]}
+             */
+            const content = [];
+            item.content.forEach((v) => {
+              const result = {value: v.content, type: "text", transfer: ""};
+              content.push(result);
+              if(v.hasOwnProperty("item_id")) {
+                result.type = "code";
+                result.value = v["item_id"];
+              } else if(v.hasOwnProperty("coupon_url")) {
+                result.type = "url";
+                result.value = v["coupon_url"];
+              }
+            });
+            return {content: content, image: methods.getImage(item.image)};
+          });
+        }, {
+          immediate: true,
+          deep: true
+        });
+        return {
+          ...data,
+          ...methods
+        };
+      }
+    })
+  };
+}
+      function getXb() {
+  return Vue.defineComponent({
+    template: "#xb-body",
+    name: "XbBody",
+    components: getXBComponents(),
+    props: {
+      banner: String
+    },
+    setup() {
+      const PlatformTypes = {
+        tb: "1",
+        jd: "2"
+      };
+      window.PlatformTypes = PlatformTypes;
+      const cateKey = "spa_xb_cate_id";
+      const {
+        data: baseData,
+        methods: baseMethods,
+        useScrollEndMounted
+      } = useBase();
+      const customParams = useXbCustomParams();
+      const data = {
+        ...baseData,
+        top: 0,
+        loading: Vue.ref(true),
+        refreshing: Vue.ref(false),
+        isScrollToDown: Vue.ref(false),
+        category: Vue.reactive({
+          value: parseSearch()[cateKey] || "0",
+          list: []
+        }),
+        firstTabsAllVisible: Vue.ref(false),
+        firstTabsRef: Vue.ref(),
+        listsRef: Vue.ref(),
+        ...customParams
+      };
+      Vue.watch(baseData.scrollTop, (n, o) => {
+        data.isScrollToDown.value = n > o;
+      });
+      const computed = {
+        activeCategoryIndex: Vue.computed(() => {
+          const {list, value} = data.category;
+          return list.findIndex((item) => item.id === value);
+        }),
+        activeCategoryItem: Vue.computed(() => {
+          const {list, value} = data.category;
+          return list.find((item) => item.id === value) || {};
+        })
+      };
+      const methods = {
+        ...baseMethods,
+        onClickFirstTabsAll(index) {
+          const list = data.category.list;
+          if(index >= list.length || index < 0) {
+            return;
+          }
+          const value = list[index].id;
+          if(value === data.category.value) return;
+          data.firstTabsRef.value.scrollTo(value);
+          methods.onTabChange({name: value});
+        },
+        firstTabsScrollTo(diff) {
+          const index = computed.activeCategoryIndex.value + diff;
+          methods.onClickFirstTabsAll(index);
+        },
+        switchFirstNavAll() {
+          data.firstTabsAllVisible.value = !data.firstTabsAllVisible.value;
+        },
+        onTabChange({name}) {
+          Vue.nextTick(() => {
+            if(window.URLSearchParams) {
+              const params = new URLSearchParams(location.search);
+              const activeItem = computed.activeCategoryItem.value;
+              params.set(cateKey, activeItem.id);
+              history.replaceState(
+                null,
+                "",
+                `${location.pathname}?${params.toString()}`
+              );
+            }
+            methods.backTopAndReGetListData();
+          });
+        },
+        backTop() {
+          $("html,body").animate({scrollTop: 0});
+        },
+        backTopAndReGetListData() {
+          methods.resetListData(false);
+          $("html,body").animate({scrollTop: $(".banner-wrapper").height()});
+          return methods.getListData(true);
+        },
+        async getCategory() {
+          try {
+            const res = await Request.get('{url($route="api/goods/hdkproxy", $params=array("_target"=>"weal_category"))}', {
+              ...data.customParams,
+              type: 2
+            }).promise;
+            data.category.list = (res.data || []).map(i => {
+              return {
+                name: i.name,
+                id: i.category_id
+              };
+            });
+            Vue.nextTick(() => {
+              data.loading.value = false;
+              data.category.value = data.category.list[0].id;
+            });
+          } catch(e) {
+            data.loading.value = false;
+          }
+        },
+        reGetListData() {
+          methods.resetListData(false);
+          return methods.getListData(true);
+        },
+        async getListData(clean = false) {
+          const loading = data.loading;
+          const listData = data.listData;
+          if(loading.value || listData.loading || listData.finished)
+            return Promise.reject();
+          listData.loading = true;
+          if(clean) {
+            loading.value = true;
+          }
+          const min_size = 10;
+          const params = {
+            label_id: data.category.value,
+            min_size,
+            min_id: data.listData.min_id,
+            ...customParams.getListDataParams()
+          };
+          try {
+            const res = await Request.get('{url($route="api/goods/hdkproxy", $params=array("_target"=>"wire_report_new"))}', params).promise;
+            const list = res.data || [];
+            const cate = res.label_list || [];
+            if(cate.length) {
+              cate.forEach((it) => (it.id = String(it.id)));
+              // data.category.list = cate;
+              // data.category.value = parseSearch()[cateKey] || data.category.list[0].id;
+            }
+
+            setTimeout(() => {
+              if(clean) {
+                listData.list = list;
+              } else {
+                listData.list = listData.list.concat(list);
+              }
+              listData.finished =
+                listData.min_id == res.min_id ||
+                !list.length ||
+                list.length < min_size;
+              listData.min_id = res.min_id || listData.min_id;
+            }, 200);
+            return res;
+          } catch(e) {
+            if(clean) {
+              listData.list = [];
+            }
+            listData.finished = true;
+          } finally {
+            setTimeout(() => {
+              listData.loading = false;
+              loading.value = false;
+              data.refreshing.value = false;
+            }, 200);
+          }
+        },
+        generateTransferParamAndUrl({item, goodsItem}) {
+          const isJd = goodsItem.platform === PlatformTypes.jd;
+          const param = {
+            ...(
+              isJd ?
+                {
+                  material_id: item.value,
+                  type: PlatformTypes.jd
+                } :
+                {
+                  itemid: item.value,
+                  domain: window.location.host
+                }
+            ),
+            ...customParams.getTransferParams(isJd)
+          };
+          const links = {
+            [PlatformTypes.tb]: '{url($route="api/goods/hdkproxy", $params=array("_target"=>"sourcecode_to_cid"))}',
+            [PlatformTypes.jd]: "{url($route="api/goods/transfer", $params=array("platform"=>"jd"))}"
+          };
+          return {
+            param,
+            url: customParams.getTransferUrl(
+              goodsItem.platform,
+              url(links[goodsItem.platform])
+            )
+          };
+        },
+        /**
+         * 商品转链
+         * @param item
+         * @param goodsItem
+         */
+        async handleGoodsTransfer({item, goodsItem}) {
+          const {param, url} = methods.generateTransferParamAndUrl({item, goodsItem});
+
+          function errorCB(res) {
+            toast(res.msg || "转链失败");
+          }
+
+          const loading = data.loading;
+          loading.value = true;
+          try {
+            return await useXbResolveTransferResult(url, param, item);
+          } catch(e) {
+            errorCB(e);
+          } finally {
+            setTimeout(function() {
+              loading.value = false;
+            }, 200);
+          }
+        }
+      };
+
+      function init() {
+        useScrollEndMounted();
+        methods.getCategory();
+      }
+
+      init();
+      return {...data, ...methods, ...computed};
+    }
+  });
+}function getComponents() {
+  function getMoneyStr(num) {
+    const w = 10000;
+    if(num < w) return num;
+    return (num / w).toFixed(2) + "万";
+  }
+
+  const itemCommon = {
+    props: {
+      item: Object
+    },
+    emits: ["transferUrl"],
+    setup(props, ctx) {
+      return {
+        buy(e, type = "default") {
+          findParent(this,'App').handleGoodsTransfer({e, item: props.item, type});
+        },
+        getMoneyStr
+      };
+    }
+  };
+
+  const Card = Vue.defineComponent({
+    template: "#c-card",
+    ...itemCommon
+  });
+  const FixedCard = Vue.defineComponent({
+    template: "#c-fixed-card",
+    ...itemCommon
+  });
+  return {"card": Card, "fixed-card": FixedCard, "xb": getXb()};
+}
+
+    </script>
+    <script>window.onload = function() {
+  const originUrl = url;
+  const stamp = Date.now() - (Date.now() % (60 * 1000 * 30));
+  const app = Vue.createApp({
+    name: "App",
+    directives: {
+      moveable: {
+        mounted(el, binding, vnode) {
+          el.setAttribute("moveable", "");
+          tsUtils.onDragEvent(({onMove, onUp, onDown}) => {
+            let last = {x: 0, y: 0};
+            let offset = {x: 0, y: 0};
+            let isDrag = false;
+            onDown(() => {
+              isDrag = false;
+            });
+            onMove((e, curXY, lastXY, downXY) => {
+              // 模拟的事件
+              if(!e.isTrusted) return;
+              const moveX = curXY.x - downXY.x + offset.x;
+              const moveY = curXY.y - downXY.y + offset.y;
+              last = {x: moveX, y: moveY};
+              tsUtils.setStyle({
+                transform: `translate(${moveX}px,${moveY}px)`
+              }, {el});
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            });
+            onUp((e, upXy, downXY) => {
+              offset = last;
+              if(!e.isTrusted) {
+                const xy = e.changedTouches[0];
+                upXy = {x: xy.screenX, y: xy.screenY};
+              }
+              isDrag = Math.abs(downXY.x - upXy.x) > 10 || Math.abs(downXY.y - upXy.y) > 10;
+              if(!isDrag) {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            });
+            el.addEventListener("click", (e) => {
+              if(!isDrag) {
+                return;
+              }
+              e.preventDefault();
+              e.stopPropagation();
+              return false;
+            }, true);
+          }, {el, capture: {down: true, up: true, move: true}});
+        }
+      }
+    },
+    components: getComponents(),
+    setup() {
+      /*const url = function(s, useLocalUrl) {
+        return useLocalUrl ? "http://192.168.0.208:9501/" + s.split("/")[1] : originUrl(s);
+      };*/
+      const cateKey = "spa_cate_id";
+      const {
+        data: baseData,
+        methods: baseMethods,
+        useScrollEndMounted
+      } = useBase();
+      const customParams = useCustomParams();
+      const data = {
+        ...baseData,
+        top: 0,
+        loading: Vue.ref(true),
+        refreshing: Vue.ref(false),
+        isScrollToDown: Vue.ref(false),
+        searchValue: Vue.ref(""),
+        currentType: Vue.ref("index"),
+        tabPage: Vue.ref(1),
+        suggest: Vue.reactive({ list: [], focus: false }),
+        nav: Vue.reactive({
+          list: [
+            { label: "首页", key: "index" },
+            { label: "风云榜", key: "rank" },
+            { label: "热榜", key: "hot" },
+            { label: "大牌", key: "brand" },
+            { label: "优惠券", key: "cheaps" }
+          ],
+          activeIndex: 0
+        }),
+        category: Vue.reactive({
+          value: "0",
+          /*list: tsUtils.createArray({
+            len: 20,
+            fill: (i) => ({
+              id: String(i),
+              name: "name" + i,
+              child: {
+                value: "",
+                list:
+                  i % 2 === 0
+                    ? tsUtils.createArray({
+                      len: 20,
+                      fill: (i) => ({
+                        id: String(i),
+                        name: "name" + i
+                      })
+                    })
+                    : []
+              }
+            })
+          })*/
+          list: []
+        }),
+        bigHBVisible: Vue.ref(false),
+        firstTabsAllVisible: Vue.ref(false),
+        secondTabsVisible: Vue.ref(true),
+        fixedCardVisible: Vue.ref(true),
+        secondTabsRef: Vue.ref(),
+        firstTabsRef: Vue.ref(),
+        listsRef: Vue.ref(),
+        fixedCardRef: Vue.ref(),
+        smallHbRef: Vue.ref(),
+        fixedCardItem: Vue.ref({}),
+        hongbaoInfo: Vue.ref({}),
+        ...customParams
+      };
+      Vue.watch(baseData.scrollTop, (n, o) => {
+        data.isScrollToDown.value = n > o;
+      });
+      const computed = {
+        activeCategoryIndex: Vue.computed(() => {
+          const {list, value} = data.category;
+          return list.findIndex((item) => item.id === value);
+        }),
+        activeCategoryItem: Vue.computed(() => {
+          const {list, value} = data.category;
+          return list.find((item) => item.id === value) || {child: {list: [], value: ""}};
+        }),
+        activeCategoryChildIndex: Vue.computed(() => {
+          const {list, value} = computed.activeCategoryItem.value.child;
+          return list.findIndex((item) => item.id === value);
+        }),
+        activeXbCategory: Vue.computed(() => {
+          return data.category.value == "9999";
+        })
+      };
+      let scrollWatcher;
+      const methods = {
+        ...baseMethods,
+        handleShare() {
+          copy("多件多折 爆款好物  实时线报，速戳>" + location.href, "复制成功，快去下单吧~");
+        },
+        setFixedCardData: tsUtils.debounce((scrollTop) => {
+          const fixedCard = data.fixedCardRef.value;
+          const lists = data.listsRef.value;
+          if(!lists) return;
+          const top = lists.offsetTop;
+          const fcTop = fixedCard.getBoundingClientRect().top;
+          const first = lists.children[0];
+          if(!first) return;
+          const cardHeight = first.offsetHeight;
+          const index = ~~((scrollTop - top + fcTop) / cardHeight) + 1;
+          const list = data.listData.list;
+          list.length && (data.fixedCardItem.value = list[Math.max(0, Math.min(index, list.length - 1))]);
+        }, 50),
+        setFixedCardDataWatch() {
+          scrollWatcher = Vue.watch(
+            baseData.scrollTop,
+            (n, o) => {
+              methods.setFixedCardData(n);
+            }
+          );
+        },
+        secondTabsScrollTo(diff) {
+          data.secondTabsVisible.value = true;
+          const index = computed.activeCategoryChildIndex.value + diff;
+          const list = computed.activeCategoryItem.value.child.list;
+          if(index >= list.length || index < 0) {
+            return;
+          }
+          const value = list[index].id;
+          data.secondTabsRef.value.scrollTo(value);
+          Vue.nextTick(() => {
+            methods.backTopAndReGetListData();
+          });
+        },
+        onClickFirstTabsAll(index) {
+          const list = data.category.list;
+          if(index >= list.length || index < 0) {
+            return;
+          }
+          const value = list[index].id;
+          if(value === data.category.value) return;
+          data.firstTabsRef.value.scrollTo(value);
+          methods.onTabChange({name: value});
+        },
+        firstTabsScrollTo(diff) {
+          const index = computed.activeCategoryIndex.value + diff;
+          methods.onClickFirstTabsAll(index);
+        },
+        switchFirstNavAll() {
+          data.firstTabsAllVisible.value = !data.firstTabsAllVisible.value;
+        },
+        onSecondTabChange({name}) {
+          Vue.nextTick(() => {
+            methods.backTopAndReGetListData();
+          });
+        },
+        onTabChange({name}) {
+          const activeItem = computed.activeCategoryItem.value;
+          if(name === activeItem.id) {
+            if(data.firstTabsAllVisible.value) {
+              data.firstTabsAllVisible.value = false;
+              data.secondTabsVisible.value = true;
+              return;
+            }
+            data.secondTabsVisible.value = !data.secondTabsVisible.value;
+            return;
+          }
+          data.secondTabsVisible.value = true;
+
+          $("html,body").animate({scrollTop: $(".banner-wrapper").height()});
+
+          // 重置2级分类
+          Vue.nextTick(() => {
+            if(window.URLSearchParams) {
+              const params = new URLSearchParams(location.search);
+              params.set(cateKey, data.category.value);
+              history.replaceState(
+                null,
+                "",
+                `${location.pathname}?${params.toString()}`
+              );
+            }
+            if(computed.activeXbCategory.value) {
+              return;
+            }
+            const itemChild = computed.activeCategoryItem.value.child;
+            if(itemChild.list.length) {
+              itemChild.value = itemChild.list[0].id;
+            }
+            methods.backTopAndReGetListData();
+
+          });
+        },
+        backTop() {
+          $("html,body").animate({scrollTop: 0});
+        },
+        backTopAndReGetListData() {
+          methods.resetListData(false);
+          $("html,body").animate({scrollTop: $(".banner-wrapper").height()});
+          return methods.getListData(true);
+        },
+        clickBigHB(e) {
+          const item = data.hongbaoInfo.value;
+          let params = {};
+          params = {
+            itemtitle: item.activity_name,
+            activity_id: item.activity_id,
+            activity_url: item.activity_url
+          };
+          methods.handleGoodsTransfer({e, item: params, isHongbao: true});
+        },
+        async getHongbaoInfo() {
+          const res = await Request.get('{url($route="api/goods/hdkproxy", $params=array("_target"=>"activity_setting"))}').promise;
+          data.hongbaoInfo.value = res.data || {};
+          if(data.hongbaoInfo.value.is_show != "0") {
+            data.bigHBVisible.value = true;
+          }
+        },
+        async getCategory() {
+          try {
+            const res = await Request.get('{url($route="api/goods/hdkproxy", $params=array("_target"=>"weal_category"))}', {
+              cid: 14,
+              label_id: parseSearch().cate_id
+            }).promise;
+            console.log(data.category.list);
+            data.category.list = (res.data || []).map(i => {
+              return {
+                name: i.name,
+                id: i.category_id,
+                child: {
+                  list: (i.sub_category || []).map(it => ({
+                    id: it.category_id,
+                    name: it.name
+                  })),
+                  value: ""
+                }
+              };
+            });
+            Vue.nextTick(() => {
+              data.category.value = parseSearch()[cateKey] || data.category.list[0].id;
+              data.loading.value = false;
+            });
+          } catch(e) {
+            data.loading.value = false;
+          }
+        },
+        reGetListData() {
+          methods.resetListData(false);
+          return methods.getListData(true);
+        },
+        async getListData(clean = false) {
+          const loading = data.loading;
+          const listData = data.listData;
+          if(loading.value || listData.loading || listData.finished)
+            return Promise.reject();
+          listData.loading = true;
+          if(clean) {
+            loading.value = true;
+          }
+          if(data.currentType.value && data.currentType.value !== "index") {
+            return methods.getServerTabData(clean);
+          }
+          const min_size = 10;
+          const params = {
+            // label_id: data.category.value,
+            cid: data.category.value,
+            sub_cid: computed.activeCategoryItem.value.child.value,
+            min_size,
+            min_id: data.listData.min_id,
+            ...customParams.getListDataParams()
+          };
+          try {
+            const res = await Request.get('{url($route="api/goods/hdkproxy", $params=array("_target"=>"weal_list"))}', params).promise;
+            const list = res.data || [];
+            const cate = res.label_list || [];
+            if(cate.length) {
+              cate.forEach((it) => (it.id = String(it.id)));
+              // data.category.list = cate;
+              // data.category.value = parseSearch()[cateKey] || data.category.list[0].id;
+            }
+
+            setTimeout(() => {
+              if(clean) {
+                listData.list = list;
+              } else {
+                listData.list = listData.list.concat(list);
+              }
+              listData.finished =
+                listData.min_id == res.min_id ||
+                !list.length ||
+                list.length < min_size;
+              listData.min_id = res.min_id || listData.min_id;
+            }, 200);
+            return res;
+          } catch(e) {
+            if(clean) {
+              listData.list = [];
+            }
+            listData.finished = true;
+          } finally {
+            setTimeout(() => {
+              listData.loading = false;
+              loading.value = false;
+              data.refreshing.value = false;
+              setTimeout(() =>
+                  methods.setFixedCardData(data.scrollTop.value),
+                500);
+            }, 200);
+          }
+        },
+        /**
+         * 商品转链
+         * @param e {MouseEvent}
+         * @param item
+         * @param isHongbao
+         */
+        goChannel(item, index) {
+          if(data.nav.activeIndex === index && data.currentType.value === item.key) {
+            methods.backTop();
+            return;
+          }
+          data.nav.activeIndex = index;
+          data.currentType.value = item.key;
+          data.tabPage.value = 1;
+          data.suggest.list = [];
+          methods.backTop();
+          methods.reGetListData();
+        },
+        pickSuggest(w) {
+          data.searchValue.value = w;
+          data.suggest.list = [];
+          data.suggest.focus = false;
+          methods.onSearch();
+        },
+        onSuggestBlur() {
+          const that = data;
+          setTimeout(function() { that.suggest.focus = false; }, 200);
+        },
+        hl(w) {
+          const q = (data.searchValue.value || "").trim();
+          w = String(w);
+          if(!q) return methods.escapeHtml(w);
+          const idx = w.toLowerCase().indexOf(q.toLowerCase());
+          if(idx < 0) return methods.escapeHtml(w);
+          return methods.escapeHtml(w.slice(0, idx)) + '<em class="hl">' + methods.escapeHtml(w.slice(idx, idx + q.length)) + "</em>" + methods.escapeHtml(w.slice(idx + q.length));
+        },
+        escapeHtml(s) {
+          return String(s).replace(/[&<>"']/g, function(c) {
+            return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;""}[c];
+          });
+        },
+        getSuggest() {
+          const q = data.searchValue.value;
+          if(!q) { data.suggest.list = []; return; }
+          SpaUtils.Request.get('{url($route="api/goods/hdksuggest", $params=array())}' + '&keyword=' + encodeURIComponent(q)).promise.then(function(res){
+            const d = (res && res.data) || [];
+            data.suggest.list = d.map(function(it){ return it.keyword || it; }).slice(0, 10);
+          }).catch(function(){ data.suggest.list = []; });
+        },
+        async getServerTabData(clean) {
+          const loading = data.loading;
+          const listData = data.listData;
+          if(loading.value || listData.loading || listData.finished) return Promise.reject();
+          listData.loading = true;
+          if(clean) loading.value = true;
+          const params = {
+            act: "tab",
+            type: data.currentType.value,
+            p: data.tabPage.value,
+            keyword: data.searchValue.value
+          };
+          return $.ajax({ url: "/m.html", data: params, dataType: "json", type: "GET" }).then(function(res){
+            const list = (res && res.data) ? res.data : [];
+            setTimeout(function(){
+              listData.list = clean ? list : listData.list.concat(list);
+              listData.finished = Boolean(res && res.finished) || !list.length;
+              data.tabPage.value = (res && res.next_page) ? res.next_page : (data.tabPage.value + 1);
+              loading.value = false;
+              listData.loading = false;
+              data.refreshing.value = false;
+            }, 150);
+          }).catch(function(){
+            listData.list = [];
+            listData.finished = true;
+            loading.value = false;
+            listData.loading = false;
+            data.refreshing.value = false;
+          });
+        },
+        async handleGoodsTransfer({e, item, isHongbao}) {
+          const param = Object.assign(
+            {
+              activity_url: item.activity_url,
+              title: item.itemtitle,
+              itemid: item.itemid,
+              activityid: item.activityid,
+              domain: window.location.host
+            },
+            customParams.getTransferParams()
+          );
+
+          if(isHongbao) {
+            param.activity_id = item.activity_id;
+          }
+
+          function errorCB(res) {
+            toast(res.msg || "转链失败");
+          }
+
+          const loading = data.loading;
+          loading.value = true;
+          try {
+            await useResolveTransferResult(
+              e.currentTarget,
+              '{url($route="api/goods/hdkproxy", $params=array("_target"=>"sourcecode_to_cid"))}',
+              param,
+              item
+            );
+          } catch(e) {
+            errorCB(e);
+          } finally {
+            setTimeout(function() {
+              loading.value = false;
+            }, 200);
+          }
+        }
+      };
+
+      function init() {
+        useScrollEndMounted();
+        methods.setFixedCardDataWatch();
+        methods.getCategory();
+        methods.getHongbaoInfo();
+        addEventListener("click", () => {
+          data.firstTabsAllVisible.value = false;
+        });
+      }
+
+      init();
+      return {...data, ...methods, ...computed};
+    }
+  });
+  app.use(vant);
+  app.use(vant.Lazyload, {
+    lazyComponent: true,
+    preLoad: 1.3,
+    error: "http://img.bc.haodanku.com/haodanku/1595237918",
+    loading:
+      "http://img.bc.fqapps.com/fudai13cae4ae6ef16739ed3b100a2ec39e97.gif",
+    attempt: 1
+  });
+  app.mount("#single-page-app");
+};
+
+    </script>
+    <script>function useXbCustomParams() {
+  const cp = useCustomParams();
+  return {
+    ...cp,
+    // 转链参数
+    getTransferParams: function(isJd) {
+      // tsUtils.pick(customParams,['apikey','pid','tb_name'])
+      return isJd ?
+        tsUtils.pickByKeys(cp.customParams, ["apikey", "union_id", "jd_pid"]) :
+        tsUtils.pickByKeys(cp.customParams, ["apikey", "pid", "tb_name"]);
+    },
+    getTransferUrl(platform, transferUrl) {
+      return transferUrl;
+    }
+  };
+}
+
+/**
+ * 线报商品转链
+ * @param transferUrl
+ * @param param
+ * @param item
+ */
+async function useXbResolveTransferResult(transferUrl, param, item) {
+  if(!inWechat()) {
+    const res = await Request.post(transferUrl, param).promise;
+    customOpenPage(res.link);
+    return;
+  }
+  await Request.postSync(transferUrl, param, (res) => {
+    copy(res.data, "复制口令成功,请打开淘宝领取");
+  }).promise;
+}
+
+function customOpenPage(link) {
+  vant.Dialog.confirm({
+    message: "是否跳转到下单页面?"
+  }).then(() => {
+    window.top.location = link;
+  });
+}
+    </script>
+    <script>
+      function useCustomParams() {
+        const customParams = {
+          apikey: "", //必填
+          pid: "",//必填-淘宝pid
+          tb_name: "",//必填-好单库后台授权的淘宝昵称
+      
+          union_id: "",//必填-好单库后台授权的京东联盟ID
+          jd_pid: ""//必填-京东联盟pid
+        }
+        return {
+          customParams,
+          // 列表参数
+          getListDataParams: function() {
+            return tsUtils.pickByKeys(customParams,['apikey']);
+          },
+          // 转链参数
+          getTransferParams: function(item) {
+            return tsUtils.pickByKeys(customParams,['apikey','pid','tb_name']);
+          }
+        }
+      }
+      /**
+       * 商品转链
+       * @param el
+       * @param transferUrl
+       * @param param
+       * @param item
+       */
+      async function useResolveTransferResult(el,transferUrl, param, item) {
+        if(!inWechat()) {
+          const res = await Request.post(transferUrl, param).promise;
+          vant.Dialog.confirm({
+            message: "是否跳转到下单页面?"
+          }).then(() => {
+            window.top.location = res.link;
+          });
+          return;
+        }
+      
+        const execCopy = function() {
+          if(!item.transferStr) return;
+          copy(item.transferStr, "复制口令成功,请打开淘宝领取", "复制失败,请点击重试", true).then(rmDiv, rmDiv);
+        };
+      
+        if(item.transferStr) {
+          execCopy();
+          return;
+        }
+        el.addEventListener("click", function copyHandle() {
+          execCopy();
+          el.removeEventListener("click", copyHandle, false);
+        }, false);
+        await Request.postSync(transferUrl, param, (res) => {
+          item.transferStr = res.data;
+        }).promise;
+      }
+    </script>
+  </body>
+</html>

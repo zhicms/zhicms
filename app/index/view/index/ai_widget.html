@@ -1,0 +1,1676 @@
+<!-- AI 购物助手 - 悬浮聊天组件 -->
+<style>
+/* ========== AI助手悬浮按钮 ========== */
+.ai-assistant-btn {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ff2e54, #ff6b81);
+  box-shadow: 0 4px 16px rgba(255, 46, 84, 0.4);
+  cursor: pointer;
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .3s ease;
+  border: none;
+  outline: none;
+}
+.ai-assistant-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(255, 46, 84, 0.5);
+}
+.ai-assistant-btn .ai-btn-icon {
+  font-size: 28px;
+  color: #fff;
+  line-height: 1;
+}
+.ai-assistant-btn .ai-btn-tip {
+  position: absolute;
+  right: 72px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #333;
+  color: #fff;
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 20px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+.ai-assistant-btn:hover .ai-btn-tip {
+  opacity: 1;
+}
+.ai-assistant-btn .ai-btn-tip::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: 6px solid transparent;
+  border-left-color: #333;
+  border-right: none;
+}
+
+/* 呼吸动画 */
+@keyframes ai-breath {
+  0%, 100% { box-shadow: 0 4px 16px rgba(255, 46, 84, 0.4); }
+  50% { box-shadow: 0 4px 28px rgba(255, 46, 84, 0.7); }
+}
+.ai-assistant-btn.breathing {
+  animation: ai-breath 2s ease-in-out infinite;
+}
+
+/* 未读消息小红点 */
+.ai-assistant-btn .ai-dot {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #ff2e54;
+  display: none;
+}
+.ai-assistant-btn .ai-dot.show {
+  display: block;
+}
+
+/* ========== 聊天面板 ========== */
+.ai-chat-panel {
+  position: fixed;
+  bottom: 100px;
+  right: 30px;
+  width: 380px;
+  height: 560px;
+  max-height: calc(100vh - 120px);
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 8px 40px rgba(0,0,0,.15);
+  z-index: 9999;
+  display: none;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e8e8e8;
+}
+.ai-chat-panel.open {
+  display: flex;
+}
+
+/* ---------- 面板头部 ---------- */
+.ai-chat-header {
+  background: linear-gradient(135deg, #ff2e54, #ff6b81);
+  color: #fff;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.ai-chat-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ai-chat-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+.ai-chat-title {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ai-chat-subtitle {
+  font-size: 11px;
+  opacity: .8;
+  margin-top: 1px;
+}
+.ai-chat-actions {
+  display: flex;
+  gap: 8px;
+}
+.ai-chat-actions button {
+  background: rgba(255,255,255,.2);
+  border: none;
+  color: #fff;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ai-chat-actions button:hover {
+  background: rgba(255,255,255,.35);
+}
+
+/* ---------- 消息区域 ---------- */
+.ai-chat-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  background: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ai-chat-body::-webkit-scrollbar {
+  width: 5px;
+}
+.ai-chat-body::-webkit-scrollbar-thumb {
+  background: #ddd;
+  border-radius: 3px;
+}
+
+/* 欢迎卡片 */
+.ai-welcome-card {
+  text-align: center;
+  padding: 20px 10px;
+}
+.ai-welcome-icon {
+  font-size: 48px;
+  margin-bottom: 10px;
+}
+.ai-welcome-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 6px;
+}
+.ai-welcome-desc {
+  font-size: 13px;
+  color: #888;
+  line-height: 1.6;
+}
+.ai-quick-words {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.ai-quick-word {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 5px 12px;
+  font-size: 12px;
+  color: #555;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ai-quick-word:hover {
+  border-color: #ff2e54;
+  color: #ff2e54;
+  background: #fff5f5;
+}
+.ai-quick-refresh {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 11px;
+  color: #aaa;
+  cursor: pointer;
+  user-select: none;
+  transition: color .2s;
+}
+.ai-quick-refresh:hover {
+  color: #ff2e54;
+}
+.ai-quick-words.rotating .ai-quick-word {
+  animation: ai-fade-in .35s ease;
+}
+@keyframes ai-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* 消息气泡 */
+.ai-msg {
+  display: flex;
+  gap: 8px;
+  max-width: 90%;
+  animation: ai-msg-in .3s ease;
+}
+@keyframes ai-msg-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.ai-msg.user {
+  align-self: flex-end;
+  flex-direction: row-reverse;
+}
+.ai-msg.assistant {
+  align-self: flex-start;
+}
+.ai-msg-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+.ai-msg.user .ai-msg-avatar {
+  background: #e8f5e9;
+}
+.ai-msg.assistant .ai-msg-avatar {
+  background: #fce4ec;
+}
+.ai-msg-bubble {
+  padding: 10px 14px;
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.ai-msg.user .ai-msg-bubble {
+  background: #ff2e54;
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+.ai-msg.assistant .ai-msg-bubble {
+  background: #fff;
+  color: #333;
+  border: 1px solid #eee;
+  border-bottom-left-radius: 4px;
+}
+
+/* 助手消息内的链接样式 */
+.ai-msg.assistant .ai-msg-bubble a {
+  color: #ff2e54;
+  text-decoration: none;
+  font-weight: 500;
+}
+.ai-msg.assistant .ai-msg-bubble a:hover {
+  text-decoration: underline;
+}
+
+/* 商品卡片（在聊天中） */
+.ai-product-header {
+  font-size: 13px;
+  color: #555;
+  margin-bottom: 6px;
+  padding: 2px 0;
+}
+.ai-product-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.ai-product-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 10px;
+  padding: 10px;
+  text-decoration: none !important;
+  color: #333 !important;
+  transition: all .2s;
+}
+.ai-product-item:hover {
+  border-color: #ff2e54;
+  box-shadow: 0 2px 8px rgba(255,46,84,.1);
+}
+.ai-product-pic {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+.ai-product-info {
+  flex: 1;
+  min-width: 0;
+}
+.ai-product-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  margin-bottom: 3px;
+}
+.ai-product-desc {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.ai-product-price {
+  font-size: 12px;
+  color: #ff2e54;
+}
+.ai-product-price b {
+  font-size: 15px;
+}
+.ai-product-date {
+  font-size: 10px;
+  color: #bbb;
+}
+.ai-product-badge {
+  font-size: 11px;
+  color: #ff2e54;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ai-product-footer {
+  font-size: 12px;
+  color: #999;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+/* ---------- 输入区域 ---------- */
+.ai-chat-footer {
+  border-top: 1px solid #eee;
+  padding: 10px 14px;
+  background: #fff;
+  flex-shrink: 0;
+}
+.ai-input-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+.ai-input-area {
+  flex: 1;
+  position: relative;
+}
+.ai-input-area textarea {
+  width: 100%;
+  border: 1px solid #e0e0e0;
+  border-radius: 20px;
+  padding: 10px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+  max-height: 80px;
+  transition: border-color .2s;
+  background: #f8f9fa;
+  font-family: inherit;
+}
+.ai-input-area textarea:focus {
+  border-color: #ff2e54;
+  background: #fff;
+}
+.ai-send-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: #ff2e54;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  flex-shrink: 0;
+  transition: all .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ai-send-btn:hover {
+  background: #e0284a;
+  transform: scale(1.05);
+}
+.ai-send-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+.ai-chat-footer-tip {
+  text-align: center;
+  font-size: 10px;
+  color: #bbb;
+  margin-top: 6px;
+}
+
+/* 打字指示器 */
+.ai-typing {
+  display: flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+.ai-typing span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #bbb;
+  animation: ai-typing-bounce 1.4s infinite ease-in-out;
+}
+.ai-typing span:nth-child(1) { animation-delay: 0s; }
+.ai-typing span:nth-child(2) { animation-delay: .2s; }
+.ai-typing span:nth-child(3) { animation-delay: .4s; }
+@keyframes ai-typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: .4; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* ========== AI选品筛选面板 ========== */
+.ai-pick-btn {
+  display: inline-block;
+  margin-top: 10px;
+  margin-left: 12px;
+  font-size: 12px;
+  color: #ff2e54;
+  cursor: pointer;
+  user-select: none;
+  transition: all .2s;
+  font-weight: 500;
+}
+.ai-pick-btn:hover {
+  color: #e0284a;
+  transform: scale(1.05);
+}
+.ai-pick-btn.active {
+  color: #e0284a;
+  font-weight: 600;
+}
+
+.ai-pick-panel {
+  display: none;
+  margin-top: 14px;
+  background: #fff;
+  border: 1px solid #ffe0e5;
+  border-radius: 14px;
+  padding: 14px;
+  animation: ai-pick-in .3s ease;
+}
+.ai-pick-panel.open {
+  display: block;
+}
+.ai-pick-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ai-pick-search input {
+  flex: 1;
+  border: 1px solid #eee;
+  background: #fafafa;
+  border-radius: 18px;
+  padding: 8px 14px;
+  font-size: 12px;
+  color: #333;
+  outline: none;
+  transition: all .2s;
+}
+.ai-pick-search input:focus {
+  border-color: #ff2e54;
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(255,46,84,.12);
+}
+.ai-pick-search button {
+  flex-shrink: 0;
+  border: none;
+  background: linear-gradient(135deg, #ff2e54, #ff6b81);
+  color: #fff;
+  border-radius: 18px;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ai-pick-search button:hover {
+  box-shadow: 0 3px 10px rgba(255,46,84,.3);
+}
+.ai-pick-search button:active {
+  transform: scale(.96);
+}
+@keyframes ai-pick-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ai-pick-section {
+  margin-bottom: 12px;
+}
+.ai-pick-section:last-child {
+  margin-bottom: 6px;
+}
+/* 筛选区默认隐藏，选了品类后才显示 */
+.ai-pick-section.filter-hidden {
+  display: none;
+}
+.ai-pick-section.filter-show {
+  display: block;
+  animation: ai-filter-in .35s ease;
+}
+@keyframes ai-filter-in {
+  from { opacity: 0; max-height: 0; overflow: hidden; }
+  to   { opacity: 1; max-height: 300px; overflow: hidden; }
+}
+/* 品类区始终可见 */
+.ai-pick-section.category-section {
+  margin-bottom: 10px;
+}
+/* 已选面包屑 */
+.ai-pick-breadcrumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+.ai-pick-breadcrumb .ai-pick-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff5f7;
+  border: 1px solid #ff2e54;
+  border-radius: 14px;
+  padding: 3px 10px;
+  font-size: 11px;
+  color: #ff2e54;
+  font-weight: 500;
+}
+.ai-pick-breadcrumb .ai-pick-chip .ai-chip-close {
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  opacity: .7;
+  margin-left: 2px;
+}
+.ai-pick-breadcrumb .ai-pick-chip .ai-chip-close:hover {
+  opacity: 1;
+}
+.ai-pick-divider {
+  width: 100%;
+  height: 1px;
+  background: #f0f0f0;
+  margin: 8px 0 12px;
+}
+.ai-pick-section-title {
+  font-size: 11px;
+  color: #999;
+  margin-bottom: 7px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ai-pick-section-title .ai-pick-icon {
+  font-size: 13px;
+}
+.ai-pick-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.ai-pick-tag {
+  background: #f8f9fa;
+  border: 1px solid #eee;
+  border-radius: 14px;
+  padding: 4px 12px;
+  font-size: 11px;
+  color: #666;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+  white-space: nowrap;
+}
+.ai-pick-tag:hover {
+  border-color: #ff6b81;
+  color: #ff2e54;
+  background: #fff5f5;
+}
+.ai-pick-tag.selected {
+  background: #fff5f7;
+  color: #ff2e54;
+  border-color: #ff2e54;
+  box-shadow: 0 0 0 2px rgba(255,46,84,.18);
+  font-weight: 600;
+}
+
+.ai-pick-submit-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.ai-pick-submit {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 20px;
+  background: linear-gradient(135deg, #ff2e54, #ff6b81);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: 1px;
+}
+.ai-pick-submit:hover {
+  box-shadow: 0 4px 12px rgba(255,46,84,.3);
+  transform: translateY(-1px);
+}
+.ai-pick-submit:disabled {
+  background: #ddd;
+  color: #aaa;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
+.ai-pick-reset {
+  padding: 9px 16px;
+  border-radius: 20px;
+  background: #fff;
+  color: #999;
+  border: 1px solid #eee;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.ai-pick-reset:hover {
+  border-color: #ccc;
+  color: #666;
+}
+
+.ai-pick-preview {
+  font-size: 11px;
+  color: #aaa;
+  margin-top: 8px;
+  text-align: center;
+  min-height: 16px;
+  line-height: 1.5;
+}
+.ai-pick-preview strong {
+  color: #ff2e54;
+}
+
+/* 加载中状态 */
+.ai-pick-panel.loading .ai-pick-tags {
+  position: relative;
+  min-height: 30px;
+}
+.ai-pick-panel.loading .ai-pick-tags::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid #eee;
+  border-top-color: #ff2e54;
+  border-radius: 50%;
+  animation: ai-pick-spin .6s linear infinite;
+}
+@keyframes ai-pick-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+.ai-pick-panel.loading .ai-pick-tag {
+  opacity: .5;
+  pointer-events: none;
+}
+
+/* 空状态 */
+.ai-pick-empty {
+  font-size: 11px;
+  color: #ccc;
+  font-style: italic;
+}
+
+/* 响应式 */
+@media (max-width: 480px) {
+  .ai-chat-panel {
+    width: calc(100vw - 20px);
+    right: 10px;
+    bottom: 86px;
+    height: 480px;
+    max-height: calc(100vh - 110px);
+    border-radius: 12px;
+  }
+  .ai-assistant-btn {
+    bottom: 20px;
+    right: 15px;
+    width: 50px;
+    height: 50px;
+  }
+  .ai-assistant-btn .ai-btn-icon {
+    font-size: 24px;
+  }
+}
+</style>
+
+<!-- 悬浮按钮 -->
+<button class="ai-assistant-btn breathing" id="aiAssistantBtn" title="AI购物助手 ZhiCms[Next版]">
+  <span class="ai-btn-icon">🤖</span>
+  <span class="ai-btn-tip">购物助手 ZhiCms</span>
+  <span class="ai-dot" id="aiDot"></span>
+</button>
+
+<!-- 聊天面板 -->
+<div class="ai-chat-panel" id="aiChatPanel">
+  <!-- 头部 -->
+  <div class="ai-chat-header">
+    <div class="ai-chat-header-left">
+      <div class="ai-chat-avatar">🤖</div>
+      <div>
+        <div class="ai-chat-title">AI购物助手 · 小淘</div>
+        <div class="ai-chat-subtitle">智能导购 · 帮你找到最值的</div>
+      </div>
+    </div>
+    <div class="ai-chat-actions">
+      <button id="aiClearBtn" title="清除对话">🗑</button>
+      <button id="aiCloseBtn" title="关闭">✕</button>
+    </div>
+  </div>
+
+  <!-- 消息区 -->
+  <div class="ai-chat-body" id="aiChatBody">
+    <div class="ai-welcome-card" id="aiWelcome">
+      <div class="ai-welcome-icon">🎉</div>
+      <div class="ai-welcome-title">嗨~ 我是ZhiCms，你的AI购物助手！</div>
+      <div class="ai-welcome-desc">
+        想买什么告诉我，我帮你搜索全网优惠<br>
+        比价格、找优惠券、看评价，统统交给我~
+      </div>
+      <div class="ai-quick-words" id="aiQuickWords"></div>
+      <div class="ai-quick-refresh" id="aiQuickRefresh">🔄 换一批问题</div>
+      <span class="ai-pick-btn" id="aiPickBtn">🛒 AI选品</span>
+
+      <!-- AI选品筛选面板 -->
+      <div class="ai-pick-panel" id="aiPickPanel">
+        <!-- 关键词直接输入 -->
+        <div class="ai-pick-search">
+          <input type="text" id="aiPickSearch" placeholder="🔍 直接输入想买的东西，如：手机、连衣裙…" maxlength="30" autocomplete="off">
+          <button id="aiPickSearchBtn">搜索</button>
+        </div>
+
+        <!-- 已选条件面包屑 -->
+        <div class="ai-pick-breadcrumb" id="aiPickBreadcrumb" style="display:none;"></div>
+
+        <!-- 品类区：始终可见 -->
+        <div class="ai-pick-section category-section" id="aiPickCategorySection">
+          <div class="ai-pick-section-title"><span class="ai-pick-icon">📂</span>品类</div>
+          <div class="ai-pick-tags" id="aiPickTagCategory" data-group="category"></div>
+        </div>
+
+        <!-- 分割线 -->
+        <div class="ai-pick-divider filter-hidden" id="aiPickDivider"></div>
+
+        <!-- 筛选区：选了品类后才显示，全部AI动态生成 -->
+        <div class="ai-pick-section filter-hidden" id="aiPickPriceSection">
+          <div class="ai-pick-section-title"><span class="ai-pick-icon">💰</span>价格区间</div>
+          <div class="ai-pick-tags" id="aiPickTagPrice" data-group="price"></div>
+        </div>
+        <div class="ai-pick-section filter-hidden" id="aiPickBrandSection">
+          <div class="ai-pick-section-title"><span class="ai-pick-icon">🏷️</span>品牌</div>
+          <div class="ai-pick-tags" id="aiPickTagBrand" data-group="brand"></div>
+        </div>
+        <div class="ai-pick-section filter-hidden" id="aiPickSceneSection">
+          <div class="ai-pick-section-title"><span class="ai-pick-icon">🎯</span>使用场景</div>
+          <div class="ai-pick-tags" id="aiPickTagScene" data-group="scene"></div>
+        </div>
+        <div class="ai-pick-section filter-hidden" id="aiPickFeatureSection">
+          <div class="ai-pick-section-title"><span class="ai-pick-icon">✨</span>特殊需求</div>
+          <div class="ai-pick-tags" id="aiPickTagFeature" data-group="feature"></div>
+        </div>
+        <div class="ai-pick-submit-row">
+          <button class="ai-pick-reset" id="aiPickReset">重置</button>
+          <button class="ai-pick-submit" id="aiPickSubmit" disabled>✨ 让AI帮你选</button>
+        </div>
+        <div class="ai-pick-preview" id="aiPickPreview"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入区 -->
+  <div class="ai-chat-footer">
+    <div class="ai-input-row">
+      <div class="ai-input-area">
+        <textarea id="aiInput" placeholder="输入你想买的东西..." rows="1" maxlength="500"></textarea>
+      </div>
+      <button class="ai-send-btn" id="aiSendBtn" title="发送">➤</button>
+    </div>
+    <div class="ai-chat-footer-tip">ZhiCms可能会犯错，请理性参考建议哟~</div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var API_BASE = '{url($route="index/aiAssistant/index", $params=array())}';
+  var isOpen = false;
+  var isLoading = false;
+  var chatBody, inputEl, sendBtn, panel, btn, welcome, dot;
+
+  // DOM 元素
+  function initDom() {
+    chatBody = document.getElementById('aiChatBody');
+    inputEl  = document.getElementById('aiInput');
+    sendBtn  = document.getElementById('aiSendBtn');
+    panel    = document.getElementById('aiChatPanel');
+    btn      = document.getElementById('aiAssistantBtn');
+    welcome  = document.getElementById('aiWelcome');
+    dot      = document.getElementById('aiDot');
+  }
+
+  // 打开/关闭面板
+  function togglePanel() {
+    isOpen = !isOpen;
+    if (isOpen) {
+      panel.classList.add('open');
+      btn.classList.remove('breathing');
+      dot.classList.remove('show');
+      // 每次打开面板自动换一组热门问题
+      rotateQuickWords();
+      setTimeout(function() { inputEl.focus(); }, 300);
+    } else {
+      panel.classList.remove('open');
+      btn.classList.add('breathing');
+      // 关闭选品面板，恢复快捷词
+      if (pickOpen) {
+        togglePickPanel();
+      }
+    }
+  }
+
+  // 加载历史消息
+  function loadHistory() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_BASE + 'getHistory', true);
+    xhr.onload = function() {
+      try {
+        var res = JSON.parse(xhr.responseText);
+        if (res.history && res.history.length > 0) {
+          renderHistory(res.history);
+        }
+      } catch(e) {}
+    };
+    xhr.send();
+  }
+
+  // 渲染历史消息
+  function renderHistory(history) {
+    if (welcome) welcome.style.display = 'none';
+    for (var i = 0; i < history.length; i++) {
+      appendMessage(history[i].role, history[i].content, false);
+    }
+    scrollBottom();
+  }
+
+  // 添加消息到界面
+  function appendMessage(role, content, animate) {
+    if (welcome && welcome.style.display !== 'none') {
+      welcome.style.display = 'none';
+    }
+
+    var msgDiv = document.createElement('div');
+    msgDiv.className = 'ai-msg ' + role;
+
+    var avatar = document.createElement('div');
+    avatar.className = 'ai-msg-avatar';
+    avatar.textContent = role === 'user' ? '👤' : '🤖';
+
+    var bubble = document.createElement('div');
+    bubble.className = 'ai-msg-bubble';
+    bubble.innerHTML = formatContent(content);
+
+    msgDiv.appendChild(avatar);
+    msgDiv.appendChild(bubble);
+    chatBody.appendChild(msgDiv);
+    scrollBottom();
+  }
+
+  // 格式化内容（简单的 markdown 处理）
+  function formatContent(text) {
+    if (!text) return '';
+    // HTML 内容（商品卡片）直接放行
+    if (/<div|<a /i.test(text)) {
+      return text;
+    }
+    // 换行处理
+    return text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>')
+      // URL 自动链接（排除已有的 a 标签）
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
+  }
+
+  // 显示打字动画
+  function showTyping() {
+    var div = document.createElement('div');
+    div.className = 'ai-msg assistant';
+    div.id = 'aiTyping';
+    div.innerHTML = '<div class="ai-msg-avatar">🤖</div><div class="ai-msg-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div>';
+    chatBody.appendChild(div);
+    scrollBottom();
+  }
+
+  // 移除打字动画
+  function removeTyping() {
+    var el = document.getElementById('aiTyping');
+    if (el) el.remove();
+  }
+
+  // 滚动到底部
+  function scrollBottom() {
+    setTimeout(function() {
+      chatBody.scrollTop = chatBody.scrollHeight;
+    }, 50);
+  }
+
+  // 发送消息
+  function sendMessage() {
+    var msg = inputEl.value.trim();
+    if (!msg || isLoading) return;
+
+    isLoading = true;
+    sendBtn.disabled = true;
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+
+    appendMessage('user', msg, true);
+    showTyping();
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_BASE + 'chat', true);
+    xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    xhr.onload = function() {
+      removeTyping();
+      isLoading = false;
+      sendBtn.disabled = false;
+      try {
+        var res = JSON.parse(xhr.responseText);
+        appendMessage('assistant', res.reply || '哎呀，ZhiCms没反应过来😅 再试一次吧~', true);
+      } catch(e) {
+        appendMessage('assistant', '网络出了点小问题，请稍后再试~', true);
+      }
+    };
+    xhr.onerror = function() {
+      removeTyping();
+      isLoading = false;
+      sendBtn.disabled = false;
+      appendMessage('assistant', '网络连接失败，请检查网络后再试~', true);
+    };
+    xhr.send(JSON.stringify({ message: msg }));
+  }
+
+  // 清除历史
+  function clearHistory() {
+    if (!confirm('确定要清除所有对话记录吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_BASE + 'clearHistory', true);
+    xhr.send();
+    // 清空界面
+    var msgs = chatBody.querySelectorAll('.ai-msg');
+    for (var i = 0; i < msgs.length; i++) {
+      msgs[i].remove();
+    }
+    if (welcome) {
+      welcome.style.display = '';
+    }
+  }
+
+  // 自动调整输入框高度
+  function autoResize() {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 80) + 'px';
+  }
+
+  // ===== 快捷提问词库 —— 内置兜底 + 动态加载（提至IIFE作用域） =====
+  // 内置兜底池（用于后端JSON不可用时本地切换）
+  var builtinPools = [
+    [
+      { icon: '📱', msg: '2000以内性价比最高的手机推荐', label: '2000元手机推荐' },
+      { icon: '🎧', msg: '降噪蓝牙耳机哪个牌子的好性价比高', label: '降噪耳机哪家好' },
+      { icon: '📲', msg: '华为Mate60和iPhone16怎么选哪个好', label: 'Mate60 vs iPhone16' },
+      { icon: '💻', msg: '5000左右游戏本推荐性价比高的', label: '5000元游戏本推荐' },
+      { icon: '🖥️', msg: '迷你主机办公家用哪款性价比高', label: '迷你主机家用推荐' },
+      { icon: '📺', msg: '投影仪家用卧室1000元以内推荐', label: '千元投影仪推荐' },
+      { icon: '⌚', msg: '智能手表运动健康监测哪款性价比高', label: '智能手表推荐' },
+      { icon: '🎮', msg: 'Switch游戏机和PS5买哪个好', label: 'Switch还是PS5' },
+    ],
+    [
+      { icon: '🌞', msg: '防晒霜哪个牌子效果好不油腻学生党', label: '防晒霜哪家强' },
+      { icon: '❄️', msg: '空调哪个牌子性价比高省电家用', label: '空调推荐省电' },
+      { icon: '👒', msg: '夏天防晒衣透气防晒值高推荐', label: '防晒衣透气推荐' },
+      { icon: '🏕️', msg: '露营装备新手入门套装有什么推荐', label: '露营装备推荐' },
+      { icon: '🩴', msg: '夏季凉鞋男士透气不臭脚推荐', label: '男士透气凉鞋' },
+      { icon: '🦟', msg: '驱蚊器灭蚊灯家用哪个牌子效果好', label: '灭蚊驱蚊推荐' },
+      { icon: '💨', msg: '手持小风扇便携强力学生宿舍推荐', label: '便携小风扇推荐' },
+      { icon: '👙', msg: '泳衣女保守款显瘦遮肉好看推荐', label: '保守款泳衣推荐' },
+    ],
+    [
+      { icon: '🧴', msg: '女生用的护肤品水乳套装推荐平价好用的', label: '平价水乳套装' },
+      { icon: '💄', msg: '不沾杯口红不掉色平价推荐国货', label: '平价不沾杯口红' },
+      { icon: '👗', msg: '夏天女生上班通勤显瘦穿搭推荐', label: '夏天通勤穿搭' },
+      { icon: '🎒', msg: '大学生宿舍生活用品必备清单推荐', label: '开学宿舍必备' },
+      { icon: '📚', msg: '考研党ipad和华为平板哪个适合学习', label: '考研平板推荐' },
+      { icon: '👟', msg: '跑鞋减震回弹好适合大体重推荐', label: '减震跑鞋推荐' },
+      { icon: '💇', msg: '吹风机负离子不伤发家用推荐哪款好', label: '负离子吹风机' },
+      { icon: '⌨️', msg: '机械键盘办公打字声音小推荐', label: '静音机械键盘' },
+    ],
+    [
+      { icon: '🏠', msg: '扫地机器人和洗地机买哪个好家庭用', label: '扫地机vs洗地机' },
+      { icon: '🍳', msg: '空气炸锅100以内性价比推荐小型', label: '百元空气炸锅' },
+      { icon: '🛏️', msg: '冰丝凉席三件套1.8m床哪个牌子好', label: '冰丝凉席推荐' },
+      { icon: '💰', msg: '有什么9块9包邮的实用好东西', label: '9块9包邮好物' },
+      { icon: '🍜', msg: '好吃的螺蛳粉速食推荐哪个牌子正宗', label: '螺蛳粉哪家好' },
+      { icon: '🚗', msg: '行车记录仪高清夜视前后双录推荐', label: '行车记录仪推荐' },
+      { icon: '🐱', msg: '猫粮性价比推荐成猫幼猫天然粮', label: '猫粮性价比推荐' },
+      { icon: '🎁', msg: '送女朋友生日礼物500以内惊喜推荐', label: '送女友生日礼物' },
+    ],
+  ];
+
+  // 当前使用的词池（优先从后端加载，失败则用内置）
+  var quickWordPools = builtinPools;
+  var quickPoolIdx = 0;
+  var hotKeywordsLoaded = false;
+  var hotKeywordsMeta = '';
+
+  // 渲染快捷词到 DOM
+  function renderQuickWords() {
+    var container = document.getElementById('aiQuickWords');
+    if (!container) return;
+    container.classList.add('rotating');
+    var pool = quickWordPools[quickPoolIdx % quickWordPools.length];
+    var html = '';
+    for (var i = 0; i < pool.length; i++) {
+      var item = pool[i];
+      html += '<span class="ai-quick-word" data-msg="' + item.msg.replace(/"/g, '&quot;') + '">' + item.icon + ' ' + item.label + '</span>';
+    }
+    container.innerHTML = html;
+    // 重新绑定点击
+    var words = container.querySelectorAll('.ai-quick-word');
+    for (var w = 0; w < words.length; w++) {
+      words[w].addEventListener('click', function() {
+        var msg = this.getAttribute('data-msg');
+        inputEl.value = msg;
+        sendMessage();
+      });
+    }
+    setTimeout(function() { container.classList.remove('rotating'); }, 400);
+  }
+
+  // 换一批
+  function rotateQuickWords() {
+    quickPoolIdx = (quickPoolIdx + 1) % quickWordPools.length;
+    renderQuickWords();
+  }
+
+  // 从后端获取最新热词（带缓存：页内只请求一次）
+  function fetchHotKeywords() {
+    if (hotKeywordsLoaded) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', API_BASE + 'getHotKeywords', true);
+    xhr.timeout = 5000;
+    xhr.onload = function() {
+      try {
+        var res = JSON.parse(xhr.responseText);
+        if (res.pools && res.pools.length > 0) {
+          quickWordPools = res.pools;
+          quickPoolIdx = Math.floor(Math.random() * quickWordPools.length);
+          hotKeywordsLoaded = true;
+          // 展示来源标记（如果是AI更新的）
+          if (!res.is_fallback && res.updated && res.updated !== 'built-in') {
+            hotKeywordsMeta = res.updated;
+            var refEl = document.getElementById('aiQuickRefresh');
+            if (refEl) {
+              refEl.textContent = '🔄 换一批问题 （🔥' + res.updated + '最新热榜）';
+            }
+          }
+          // 重新渲染
+          renderQuickWords();
+        }
+      } catch(e) {
+        // 回退到内置池，静默失败
+      }
+    };
+    xhr.onerror = function() {
+      // 回退到内置池
+    };
+    xhr.ontimeout = function() {
+      // 回退到内置池
+    };
+    xhr.send();
+  }
+
+  // ===== AI选品筛选器（动态联动版 v2） =====
+  var pickOpen = false;
+  var pickLoading = false;
+  var pickSelected = {};   // { category: ["手机数码"], price: ["500-1000元"], ... }
+  var pickKeyword = '';    // 用户真正想买的商品词（如“水杯”），选品类只是细化，不会覆盖它
+  var pickOptions = null;  // 当前展示的选项（AI返回）
+
+  // 各维度元数据
+  var pickGroupMeta = {
+    category: { icon: '📂', title: '品类' },
+    price:    { icon: '💰', title: '价格区间' },
+    brand:    { icon: '🏷️', title: '品牌' },
+    scene:    { icon: '🎯', title: '使用场景' },
+    feature:  { icon: '✨', title: '特殊需求' }
+  };
+
+  // AI不可用时的兜底大品类（仅作为入口，选中后筛选仍走AI）
+  var pickFallbackCategories = [
+    '手机数码', '电脑办公', '家用电器', '服装鞋包', '美妆护肤',
+    '食品饮料', '母婴用品', '家居生活', '运动户外', '汽车用品'
+  ];
+
+  // 获取当前选择参数
+  function getPickParams() {
+    return {
+      category: pickSelected.category ? pickSelected.category[0] || '' : '',
+      price:    pickSelected.price    ? pickSelected.price[0]    || '' : '',
+      brand:    pickSelected.brand    ? pickSelected.brand[0]    || '' : '',
+      scene:    pickSelected.scene    ? pickSelected.scene[0]    || '' : '',
+      feature:  pickSelected.feature  || []
+    };
+  }
+
+  // 是否有品类选中
+  function hasCategory() {
+    return !!(pickSelected.category && pickSelected.category.length > 0);
+  }
+
+  // 构建API查询参数
+  function buildPickQuery() {
+    var p = getPickParams();
+    var query = [];
+    if (p.category) query.push('category=' + encodeURIComponent(p.category));
+    if (p.price)    query.push('price=' + encodeURIComponent(p.price));
+    if (p.brand)    query.push('brand=' + encodeURIComponent(p.brand));
+    if (p.scene)    query.push('scene=' + encodeURIComponent(p.scene));
+    for (var i = 0; i < p.feature.length; i++) {
+      query.push('feature[]=' + encodeURIComponent(p.feature[i]));
+    }
+    return query.join('&');
+  }
+
+  // 显示/隐藏筛选区域
+  function toggleFilterSections(show) {
+    var sections = ['aiPickPriceSection', 'aiPickBrandSection', 'aiPickSceneSection', 'aiPickFeatureSection'];
+    var divider = document.getElementById('aiPickDivider');
+    for (var i = 0; i < sections.length; i++) {
+      var sec = document.getElementById(sections[i]);
+      if (!sec) continue;
+      if (show) {
+        sec.classList.remove('filter-hidden');
+        sec.classList.add('filter-show');
+      } else {
+        sec.classList.remove('filter-show');
+        sec.classList.add('filter-hidden');
+      }
+    }
+    if (divider) {
+      divider.classList.toggle('filter-hidden', !show);
+      divider.classList.toggle('filter-show', show);
+    }
+  }
+
+  // 更新面包屑
+  function updateBreadcrumb() {
+    var bc = document.getElementById('aiPickBreadcrumb');
+    if (!bc) return;
+    var chips = [];
+    var p = getPickParams();
+    if (p.category) chips.push({ group: 'category', label: p.category });
+    if (p.price)    chips.push({ group: 'price',    label: p.price });
+    if (p.brand)    chips.push({ group: 'brand',    label: p.brand });
+    if (p.scene)    chips.push({ group: 'scene',    label: p.scene });
+    if (p.feature.length > 0) {
+      for (var i = 0; i < p.feature.length; i++) {
+        chips.push({ group: 'feature', label: p.feature[i] });
+      }
+    }
+    if (chips.length === 0) {
+      bc.style.display = 'none';
+      bc.innerHTML = '';
+      return;
+    }
+    bc.style.display = 'flex';
+    var html = '';
+    for (var j = 0; j < chips.length; j++) {
+      html += '<span class="ai-pick-chip" data-group="' + chips[j].group + '" data-val="' + chips[j].label.replace(/"/g, '&quot;') + '">' + chips[j].label + '<span class="ai-chip-close">&times;</span></span>';
+    }
+    bc.innerHTML = html + '<span style="font-size:11px;color:#aaa;">已选</span>';
+  }
+
+  // 面包屑点击移除
+  function handleChipClick(e) {
+    var closeBtn = e.target.closest('.ai-chip-close');
+    if (!closeBtn) return;
+    var chip = closeBtn.closest('.ai-pick-chip');
+    if (!chip) return;
+    var group = chip.getAttribute('data-group');
+    var val = chip.getAttribute('data-val');
+    if (!group || !val) return;
+
+    if (pickSelected[group]) {
+      var idx = pickSelected[group].indexOf(val);
+      if (idx > -1) pickSelected[group].splice(idx, 1);
+    }
+    // 如果移除的是品类，清空后续所有筛选+隐藏筛选区
+    if (group === 'category') {
+      pickSelected.price = [];
+      pickSelected.brand = [];
+      pickSelected.scene = [];
+      pickSelected.feature = [];
+      toggleFilterSections(false);
+    }
+    updatePickState();
+    updateBreadcrumb();
+    fetchPickSuggestions();
+  }
+
+  // 设置面板loading态
+  function setPickLoading(loading) {
+    pickLoading = loading;
+    var panelEl = document.getElementById('aiPickPanel');
+    if (panelEl) {
+      panelEl.classList.toggle('loading', loading);
+    }
+  }
+
+  // 渲染筛选标签组
+  function renderPickGroups(options) {
+    if (!options) return;
+    pickOptions = options;
+
+    for (var group in pickGroupMeta) {
+      var container = document.getElementById('aiPickTag' + group.charAt(0).toUpperCase() + group.slice(1));
+      if (!container) continue;
+
+      var tags = options[group] || [];
+      // 保留已选中的值（即使AI没返回也保留显示）
+      var existingSelected = pickSelected[group] || [];
+      var html = '';
+      // 先渲染已选中但AI未返回的项
+      for (var s = 0; s < existingSelected.length; s++) {
+        var sv = existingSelected[s];
+        if (tags.indexOf(sv) === -1) {
+          html += '<span class="ai-pick-tag selected" data-val="' + sv.replace(/"/g, '&quot;') + '">' + sv + '</span>';
+        }
+      }
+      // 渲染AI返回的项
+      for (var i = 0; i < tags.length; i++) {
+        var val = tags[i];
+        if (existingSelected.indexOf(val) > -1) continue; // 上面已经渲染了
+        html += '<span class="ai-pick-tag" data-val="' + val.replace(/"/g, '&quot;') + '">' + val + '</span>';
+      }
+      container.innerHTML = html || '<span class="ai-pick-empty">— 无 —</span>';
+    }
+
+    // 品类区域始终是 category 行，选了品类后才展示筛选区
+    toggleFilterSections(hasCategory());
+  }
+
+  // 网络层完全失败时的 JS 兜底（按当前已选关键词生成通用联动维度）
+  function buildGenericFallback(kw) {
+    kw = kw || '该商品';
+    return {
+      category: ['全部' + kw, kw + '配件', '其他' + kw, '热门' + kw],
+      price:    ['100元以下', '100-300元', '300-800元', '800-2000元', '2000元以上'],
+      brand:    ['国货优选', '国际大牌', '高性价比', '网红推荐', '专业品牌'],
+      scene:    ['日常自用', '送礼', '旅行携带', '办公使用', '囤货'],
+      feature:  ['热销爆款', '好评如潮', '新品上市', '限时优惠', '正品保障']
+    };
+  }
+
+  // 从API获取联动建议
+  function fetchPickSuggestions() {
+    setPickLoading(true);
+    var query = buildPickQuery();
+    var url = API_BASE + 'getFilterSuggestions' + (query ? '?' + query : '');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.timeout = 8000;
+    xhr.onload = function() {
+      setPickLoading(false);
+      try {
+        var res = JSON.parse(xhr.responseText);
+        if (res.groups && Object.keys(res.groups).length > 0) {
+          renderPickGroups(res.groups);
+        } else if (!hasCategory()) {
+          // AI不可用时，初始状态退回兜底大品类，保证面板有内容
+          renderPickGroups({ category: pickFallbackCategories });
+        } else {
+          // 已选品类但后端未返回 → JS 兜底，保证筛选区不为空
+          renderPickGroups(buildGenericFallback(getPickParams().category || ''));
+        }
+      } catch(e) {
+        // 解析失败：已选品类用 JS 兜底，否则用兜底大品类
+        if (hasCategory()) {
+          renderPickGroups(buildGenericFallback(getPickParams().category || ''));
+        } else {
+          renderPickGroups({ category: pickFallbackCategories });
+        }
+      }
+    };
+    xhr.onerror = function() {
+      setPickLoading(false);
+      // 网络层失败：有品类用通用兜底，无品类用大品类入口
+      if (hasCategory()) {
+        renderPickGroups(buildGenericFallback(getPickParams().category || ''));
+      } else {
+        renderPickGroups({ category: pickFallbackCategories });
+      }
+    };
+    xhr.ontimeout = function() {
+      setPickLoading(false);
+      if (hasCategory()) {
+        renderPickGroups(buildGenericFallback(getPickParams().category || ''));
+      } else {
+        renderPickGroups({ category: pickFallbackCategories });
+      }
+    };
+    xhr.send();
+  }
+
+  // 打开/关闭选品面板
+  function togglePickPanel() {
+    var panelEl = document.getElementById('aiPickPanel');
+    var btnEl = document.getElementById('aiPickBtn');
+    var refreshEl = document.getElementById('aiQuickRefresh');
+    if (!panelEl) return;
+
+    pickOpen = !pickOpen;
+    if (pickOpen) {
+      panelEl.classList.add('open');
+      btnEl.classList.add('active');
+      var qc = document.getElementById('aiQuickWords');
+      if (qc) qc.style.display = 'none';
+      if (refreshEl) refreshEl.style.display = 'none';
+
+      // 打开面板：恢复之前的状态，或首次加载
+      if (!pickOptions) {
+        fetchPickSuggestions();
+      } else {
+        // 恢复UI状态
+        toggleFilterSections(hasCategory());
+        updateBreadcrumb();
+      }
+    } else {
+      panelEl.classList.remove('open');
+      btnEl.classList.remove('active');
+      var qc2 = document.getElementById('aiQuickWords');
+      if (qc2) qc2.style.display = '';
+      if (refreshEl) refreshEl.style.display = '';
+    }
+  }
+
+  // 点击标签切换选中
+  function handlePickTag(e) {
+    var tag = e.target;
+    if (!tag.classList.contains('ai-pick-tag') || pickLoading) return;
+
+    var container = tag.parentElement;
+    if (!container) return;
+    var group = container.getAttribute('data-group');
+    var val = tag.getAttribute('data-val');
+    if (!group || !val) return;
+
+    if (!pickSelected[group]) pickSelected[group] = [];
+
+    var idx = pickSelected[group].indexOf(val);
+    if (idx > -1) {
+      // 取消选中
+      pickSelected[group].splice(idx, 1);
+      // 如果取消的是品类，清空后续筛选
+      if (group === 'category') {
+        pickSelected.price = [];
+        pickSelected.brand = [];
+        pickSelected.scene = [];
+        pickSelected.feature = [];
+        toggleFilterSections(false);
+      }
+    } else {
+      // 单选：清空同组
+      if (group !== 'feature') {
+        pickSelected[group] = [];
+      }
+      pickSelected[group].push(val);
+
+      // 选了新品类 → 清空后续筛选（AI会重新给）
+      if (group === 'category') {
+        pickSelected.price = [];
+        pickSelected.brand = [];
+        pickSelected.scene = [];
+        pickSelected.feature = [];
+        // 品类变更=重新开始，筛选区暂时隐藏等AI返回后展开
+        toggleFilterSections(false);
+      }
+    }
+
+    updatePickState();
+    updateBreadcrumb();
+    fetchPickSuggestions();
+  }
+
+  // 更新提交按钮和预览
+  function updatePickState() {
+    var submitBtn = document.getElementById('aiPickSubmit');
+    var previewEl = document.getElementById('aiPickPreview');
+    var hasAny = false;
+
+    for (var k in pickSelected) {
+      if (pickSelected[k] && pickSelected[k].length > 0) { hasAny = true; break; }
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = !hasAny || pickLoading;
+    }
+
+    if (previewEl && hasAny) {
+      var parts = [];
+      var p = getPickParams();
+      if (p.category) parts.push('<strong>' + p.category + '</strong>');
+      if (p.price)    parts.push(p.price);
+      if (p.brand)    parts.push(p.brand);
+      if (p.scene)    parts.push(p.scene);
+      if (p.feature && p.feature.length > 0) parts.push(p.feature.join('、'));
+      previewEl.innerHTML = '帮你找：' + parts.join(' · ');
+    } else if (previewEl) {
+      previewEl.innerHTML = '';
+    }
+  }
+
+  // 关键词直接搜索 → 设为品类并触发联动，同时记住真正的商品词
+  function submitPickSearch() {
+    var input = document.getElementById('aiPickSearch');
+    if (!input) return;
+    var kw = input.value.trim();
+    if (!kw) {
+      input.focus();
+      return;
+    }
+
+    // 清空之前选择，以输入的关键词作为品类/核心词
+    pickSelected = {};
+    pickSelected.category = [kw];
+    pickKeyword = kw;   // 记住真正想买的商品（如“水杯”），后续选品类不会覆盖它
+    input.value = '';
+
+    // 立即展示筛选区（loading中由fetch控制）
+    toggleFilterSections(true);
+    updatePickState();
+    updateBreadcrumb();
+    fetchPickSuggestions();
+  }
+
+  // 生成查询并直接走选品搜索接口（不再经由聊天意图解析，避免关键词被品类词覆盖）
+  function submitPick() {
+    var submitBtn = document.getElementById('aiPickSubmit');
+    if (submitBtn && submitBtn.disabled) return;
+
+    var p = getPickParams();
+    // 真正要搜的词：用户输入的商品词优先，其次才用品类
+    var keyword = pickKeyword || p.category || '';
+    if (!keyword) return;
+
+    // 组装回显条件
+    var crit = [];
+    if (p.category && p.category !== keyword) crit.push('品类' + p.category);
+    if (p.price)    crit.push('预算' + p.price);
+    if (p.brand)    crit.push('偏好' + p.brand);
+    if (p.scene)    crit.push(p.scene);
+    if (p.feature && p.feature.length > 0) crit.push('要求' + p.feature.join('、'));
+
+    var userMsg = '帮我找：' + keyword + (crit.length ? '（' + crit.join('，') + '）' : '');
+    appendMessage('user', userMsg, true);
+
+    togglePickPanel();
+    doPickSearch(keyword, p);
+  }
+
+  // 调用选品专用搜索接口（按商品词 + 预算等真实过滤）
+  function doPickSearch(keyword, p) {
+    showTyping();
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', API_BASE + 'pickProductSearch', true);
+    xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    xhr.onload = function() {
+      removeTyping();
+      try {
+        var res = JSON.parse(xhr.responseText);
+        var html = (res && res.html) ? res.html : '抱歉，没找到相关商品，换个关键词试试~';
+        appendMessage('assistant', html, true);
+      } catch(e) {
+        appendMessage('assistant', '网络出了点小问题，请稍后再试~', true);
+      }
+    };
+    xhr.onerror = function() {
+      removeTyping();
+      appendMessage('assistant', '网络连接失败，请检查网络后再试~', true);
+    };
+    xhr.send(JSON.stringify({
+      keyword: keyword,
+      category: p.category,
+      price: p.price,
+      brand: p.brand,
+      scene: p.scene,
+      feature: p.feature
+    }));
+  }
+
+  // 重置所有筛选
+  function resetPick() {
+    pickSelected = {};
+    pickKeyword = '';
+    toggleFilterSections(false);
+    updatePickState();
+    updateBreadcrumb();
+    fetchPickSuggestions();
+  }
+
+  // 初始化事件
+  function bindEvents() {
+    // 悬浮按钮
+    btn.addEventListener('click', togglePanel);
+
+    // 关闭按钮
+    document.getElementById('aiCloseBtn').addEventListener('click', togglePanel);
+
+    // 清除按钮
+    document.getElementById('aiClearBtn').addEventListener('click', clearHistory);
+
+    // 发送按钮
+    sendBtn.addEventListener('click', sendMessage);
+
+    // 换一批快捷词
+    document.getElementById('aiQuickRefresh').addEventListener('click', rotateQuickWords);
+
+    // AI选品按钮
+    document.getElementById('aiPickBtn').addEventListener('click', togglePickPanel);
+
+    // 选品面板标签点击（事件代理）
+    document.getElementById('aiPickPanel').addEventListener('click', function(e) {
+      if (e.target.classList.contains('ai-pick-tag')) {
+        handlePickTag(e);
+        return;
+      }
+      // 面包屑芯片关闭按钮
+      if (e.target.closest('.ai-chip-close')) {
+        handleChipClick(e);
+        return;
+      }
+    });
+
+    // 选品提交
+    document.getElementById('aiPickSubmit').addEventListener('click', submitPick);
+
+    // 选品重置
+    document.getElementById('aiPickReset').addEventListener('click', resetPick);
+
+    // 关键词搜索框
+    var pickSearchInput = document.getElementById('aiPickSearch');
+    var pickSearchBtn = document.getElementById('aiPickSearchBtn');
+    if (pickSearchInput && pickSearchBtn) {
+      pickSearchBtn.addEventListener('click', submitPickSearch);
+      pickSearchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          submitPickSearch();
+        }
+      });
+    }
+
+    // 输入框回车发送
+    inputEl.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // 自动调整高度
+    inputEl.addEventListener('input', autoResize);
+
+    // 点击面板外部不关闭（因为是悬浮面板，保留该行为）
+    // ESC 关闭面板
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && isOpen) {
+        togglePanel();
+      }
+    });
+  }
+
+  // 启动
+  function init() {
+    initDom();
+    bindEvents();
+    renderQuickWords();
+    loadHistory();
+    // 异步拉取最新热词（不阻塞渲染）
+    fetchHotKeywords();
+  }
+
+  // DOM 加载完成后初始化
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+</script>

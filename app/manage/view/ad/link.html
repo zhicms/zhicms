@@ -1,0 +1,248 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-link"></i>
+    链接管理
+</h1>
+
+<!-- 统计卡片 -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stats-card primary">
+            <div class="stats-icon">
+                <i class="fas fa-link"></i>
+            </div>
+            <div class="stats-title">总链接数</div>
+            <div class="stats-value"><?php echo isset($total_links) ? number_format($total_links) : count($Page['list']); ?></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card success">
+            <div class="stats-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div class="stats-title">有效链接</div>
+            <div class="stats-value"><?php echo isset($active_links) ? number_format($active_links) : count($Page['list']); ?></div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card warning">
+            <div class="stats-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stats-title">失效链接</div>
+            <div class="stats-value">0</div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stats-card info">
+            <div class="stats-icon">
+                <i class="fas fa-tags"></i>
+            </div>
+            <div class="stats-title">分类标签</div>
+            <div class="stats-value">0</div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作栏 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <a href="index.php?r=manage/ad/addlink" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 添加链接
+        </a>
+        <button class="btn btn-outline-info" onclick="checkLinks()">
+            <i class="fas fa-sync-alt"></i> 检测链接
+        </button>
+        <button class="btn btn-outline-secondary" onclick="exportLinks()">
+            <i class="fas fa-file-export"></i> 导出
+        </button>
+    </div>
+    
+    <div class="search-form" style="width: 300px;">
+        <div class="input-group">
+            <input type="text" class="form-control" id="keyword" placeholder="搜索链接标题或URL..." value="<?php echo isset($keyword) ? $keyword : ''; ?>">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" type="button" onclick="searchLinks()">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 链接列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">
+            <i class="fas fa-table"></i> 链接列表
+        </h5>
+        <div class="text-muted">
+            <small>共 <?php echo isset($Page['total']) ? number_format($Page['total']) : 0; ?> 个链接</small>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 80px;" class="text-center">ID</th>
+                        <th>链接信息</th>
+                        <th style="width: 200px;">链接地址</th>
+                        <th style="width: 120px;" class="text-center">状态</th>
+                        <th style="width: 150px;" class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($Page['list'])): ?>
+                    <?php foreach ($Page['list'] as $item): ?>
+                    <tr>
+                        <td class="text-center font-weight-bold">
+                            <?php echo $item['id']; ?>
+                        </td>
+                        <td>
+                            <div class="font-weight-600 mb-1">
+                                <?php echo !empty($item['title']) ? $item['title'] : '<span class="text-muted">无标题</span>'; ?>
+                            </div>
+                            <?php if(!empty($item['description'])): ?>
+                            <div class="text-muted small">
+                                <?php echo mb_substr($item['description'], 0, 60, 'UTF-8'); ?>
+                                <?php if(mb_strlen($item['description'], 'UTF-8') > 60): ?>...<?php endif; ?>
+                            </div>
+                            <?php endif; ?>
+                            <div class="mt-1">
+                                <span class="badge badge-light text-dark border">
+                                    <i class="fas fa-tags mr-1"></i>
+                                    友情链接
+                                </span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 200px;">
+                                <a href="<?php echo $item['link']; ?>" target="_blank" class="text-decoration-none" title="<?php echo $item['link']; ?>">
+                                    <?php echo $item['link']; ?>
+                                </a>
+                            </div>
+                            <div class="small text-muted mt-1">
+                                <i class="fas fa-mouse-pointer mr-1"></i>
+                                访问: <?php echo isset($item['clicks']) ? number_format($item['clicks']) : 0; ?>
+                            </div>
+                        </td>
+                        <td class="text-center">
+                            <span class="badge badge-success badge-pill">
+                                <i class="fas fa-check mr-1"></i>正常
+                            </span>
+                            <br>
+                            <small class="text-muted mt-1">
+                                <?php echo date('Y-m', strtotime($item['create_time'] ?? $item['date'])); ?>
+                            </small>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="index.php?r=manage/ad/editorlink&id=<?php echo $item['id']; ?>" class="btn btn-outline-primary" title="编辑链接">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="<?php echo $item['link']; ?>" target="_blank" class="btn btn-outline-info" title="访问链接">
+                                    <i class="fas fa-external-link-alt"></i>
+                                </a>
+                                <button class="btn btn-outline-danger" onclick="deleteLink(<?php echo $item['id']; ?>)" title="删除链接">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="5" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-link fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无链接数据</h5>
+                                <p class="text-muted">点击上方"添加链接"按钮创建第一个链接</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- 分页 -->
+        <?php if(isset($Page['page']) && $Page['page']): ?>
+        <nav aria-label="分页导航" class="mt-4">
+            <div class="text-center">
+                <div class="pagination d-inline-flex">
+                    <?php echo $Page['page']; ?>
+                </div>
+                <?php if(isset($Page['count'])): ?>
+                <div class="text-muted mt-2">
+                    <small>共 <?php echo number_format($Page['count']); ?> 条数据</small>
+                </div>
+                <?php endif; ?>
+            </div>
+        </nav>
+        <?php endif; ?>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function searchLinks() {
+    var keyword = document.getElementById('keyword').value;
+    var url = 'index.php?r=manage/ad/link';
+    if (keyword) {
+        url += '&keyword=' + encodeURIComponent(keyword);
+    }
+    location.href = url;
+}
+
+function deleteLink(id) {
+    if(confirm('确定要删除这个链接吗？此操作不可恢复！')) {
+        location.href = 'index.php?r=manage/ad/deletelink&id=' + id;
+    }
+}
+
+function checkLinks() {
+    showToast('链接检测功能开发中...', 'info');
+}
+
+function exportLinks() {
+    if(confirm('确定要导出链接数据吗？')) {
+        // 实现导出功能
+        showToast('导出功能开发中...', 'info');
+    }
+}
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0';
+    toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 280px;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // 自动消失
+    setTimeout(function() {
+        if(toast.parentNode) {
+            toast.parentNode.removeChild(toast);
+        }
+    }, 3000);
+}
+
+// 键盘事件 - 回车搜索
+document.getElementById('keyword').addEventListener('keypress', function(e) {
+    if(e.which === 13) {
+        searchLinks();
+    }
+});
+</script>

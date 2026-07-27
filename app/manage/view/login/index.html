@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>后台管理登录</title>
+    <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.10/css/layui.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        .login-container {
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(59, 130, 246, 0.3);
+            padding: 48px;
+            width: 100%;
+            max-width: 420px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        .login-header h1 {
+            font-size: 28px;
+            color: #1E293B;
+            margin: 0 0 12px 0;
+            font-weight: 700;
+        }
+        .login-header p {
+            color: #94A3B8;
+            font-size: 14px;
+            margin: 0;
+        }
+        .login-form {
+            margin-top: 20px;
+        }
+        .login-form .layui-form-item {
+            margin-bottom: 24px;
+        }
+        .login-form .layui-form-label {
+            display: none;
+        }
+        .login-form .layui-input-block {
+            margin-left: 0;
+        }
+        .login-form .layui-input {
+            height: 44px;
+            padding-left: 44px;
+            border-radius: 8px;
+            font-size: 14px;
+            border: 1.5px solid #E2E8F0;
+            transition: all 0.2s;
+        }
+        .login-form .layui-input:focus {
+            border-color: #3B82F6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+        .login-form .input-icon {
+            position: relative;
+        }
+        .login-form .input-icon i {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 18px;
+            color: #94A3B8;
+        }
+        .login-btn {
+            height: 44px;
+            font-size: 16px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            width: 100%;
+            font-weight: 600;
+            transition: all 0.3s;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.4);
+        }
+        .login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 1px 4px rgba(59, 130, 246, 0.3);
+        }
+        .login-tips {
+            text-align: center;
+            margin-top: 20px;
+            color: #94A3B8;
+            font-size: 13px;
+        }
+        .error-msg {
+            color: #EF4444;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+        .success-msg {
+            color: #10B981;
+            font-size: 13px;
+            margin-top: 8px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>后台管理系统</h1>
+            <p>欢迎登录管理后台</p>
+        </div>
+        
+        <form class="login-form" id="login-form">
+            <div class="layui-form-item">
+                <div class="input-icon">
+                    <i class="layui-icon layui-icon-username"></i>
+                    <input type="text" name="username" id="username" placeholder="请输入用户名" class="layui-input">
+                </div>
+                <div class="error-msg" id="username-error"></div>
+            </div>
+            
+            <div class="layui-form-item">
+                <div class="input-icon">
+                    <i class="layui-icon layui-icon-password"></i>
+                    <input type="password" name="password" id="password" placeholder="请输入密码" class="layui-input">
+                </div>
+                <div class="error-msg" id="password-error"></div>
+            </div>
+            
+            <div class="layui-form-item">
+                <button type="button" class="login-btn" onclick="doLogin()">登 录</button>
+            </div>
+        </form>
+        
+        <div class="login-tips">
+            © 2026 后台管理系统
+        </div>
+    </div>
+
+    <script src="https://cdn.staticfile.org/layui/2.9.10/layui.js"></script>
+    <script>
+        function doLogin() {
+            var username = document.getElementById('username').value;
+            var password = document.getElementById('password').value;
+            
+            document.getElementById('username-error').style.display = 'none';
+            document.getElementById('password-error').style.display = 'none';
+            
+            if (!username) {
+                document.getElementById('username-error').innerHTML = '请填写用户名';
+                document.getElementById('username-error').style.display = 'block';
+                return;
+            }
+            
+            if (!password) {
+                document.getElementById('password-error').innerHTML = '请填写密码';
+                document.getElementById('password-error').style.display = 'block';
+                return;
+            }
+            
+            var btn = document.querySelector('.login-btn');
+            btn.innerHTML = '登录中...';
+            btn.disabled = true;
+            
+            layui.jquery.post('index.php?r=manage/login/index', {
+                username: username,
+                password: password
+            }, function(res) {
+                if (res.status === 'y') {
+                    btn.innerHTML = '登录成功，正在跳转...';
+                    setTimeout(function() {
+                        window.location.href = 'index.php?r=manage/index/index';
+                    }, 1000);
+                } else {
+                    btn.innerHTML = '登 录';
+                    btn.disabled = false;
+                    layui.layer.msg(res.info, {icon: 2});
+                }
+            }, 'json').fail(function() {
+                btn.innerHTML = '登 录';
+                btn.disabled = false;
+                layui.layer.msg('网络请求失败，请检查服务器', {icon: 2});
+            });
+        }
+        
+        document.getElementById('password').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                doLogin();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,832 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-cogs"></i>
+    系统设置
+</h1>
+
+<div class="row">
+    <div class="col-lg-12">
+        <!-- 设置选项卡 -->
+        <div class="card">
+            <div class="card-header">
+                <ul class="nav nav-tabs card-header-tabs" id="myTab" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="basic-tab" data-toggle="tab" href="#basic" role="tab" aria-controls="basic" aria-selected="true">
+                            <i class="fas fa-home"></i> 基础设置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="url-tab" data-toggle="tab" href="#url" role="tab" aria-controls="url" aria-selected="false">
+                            <i class="fas fa-link"></i> URL设置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="seo-tab" data-toggle="tab" href="#seo" role="tab" aria-controls="seo" aria-selected="false">
+                            <i class="fas fa-search"></i> SEO设置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="api-tab" data-toggle="tab" href="#api" role="tab" aria-controls="api" aria-selected="false">
+                            <i class="fas fa-plug"></i> API设置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="sms-tab" data-toggle="tab" href="#sms" role="tab" aria-controls="sms" aria-selected="false">
+                            <i class="fas fa-sms"></i> 短信设置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="js-tab" data-toggle="tab" href="#js" role="tab" aria-controls="js" aria-selected="false">
+                            <i class="fas fa-code"></i> 统计代码
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="interact-tab" data-toggle="tab" href="#interact" role="tab" aria-controls="interact" aria-selected="false">
+                            <i class="fas fa-comments"></i> 互动设置
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="aichat-tab" data-toggle="tab" href="#aichat" role="tab" aria-controls="aichat" aria-selected="false">
+                            <i class="fas fa-robot"></i> AI对话
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="card-body">
+                <div class="tab-content" id="myTabContent">
+                    <!-- 基础设置 -->
+                    <div class="tab-pane fade show active" id="basic" role="tabpanel" aria-labelledby="basic-tab">
+                        <form id="index-form">
+                            <!-- 站点信息 -->
+                            <h5 class="section-title"><i class="fas fa-info-circle"></i> 站点信息</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="sitename" class="font-weight-bold">网站名称 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="sitename" name="sitename" placeholder="请输入网站名称" value="<?php echo isset($ret['sitename']) ? $ret['sitename'] : ''; ?>">
+                                        <small class="form-text text-muted">显示在网站标题和页面顶部</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="hosturl" class="font-weight-bold">网站地址 <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="hosturl" name="hosturl" placeholder="例如: http://www.example.com" value="<?php echo isset($ret['hosturl']) ? $ret['hosturl'] : ''; ?>">
+                                        <small class="form-text text-muted">网站完整地址，用于SEO优化</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="beian" class="font-weight-bold">备案号</label>
+                                        <input type="text" class="form-control" id="beian" name="beian" placeholder="备案号" value="<?php echo isset($ret['beian']) ? $ret['beian'] : ''; ?>">
+                                        <small class="form-text text-muted">工信部备案号，显示在页面底部</small>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="sitekeywords" class="font-weight-bold">网站关键词</label>
+                                        <input type="text" class="form-control" id="sitekeywords" name="sitekeywords" placeholder="请输入网站关键词" value="<?php echo isset($ret['sitekeywords']) ? $ret['sitekeywords'] : ''; ?>">
+                                        <small class="form-text text-muted">多个关键词用逗号分隔</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 移动端风格 -->
+                            <h5 class="section-title"><i class="fas fa-mobile-alt"></i> 移动端风格</h5>
+                            <div class="form-group">
+                                <label for="mobile_style" class="font-weight-bold">移动端首页风格</label>
+                                <select class="form-control" id="mobile_style" name="mobile_style">
+                                    <option value="super_search" <?php echo empty($ret['mobile_style']) || $ret['mobile_style']=='super_search' ? 'selected' : ''; ?>>超级搜索（默认）</option>
+                                    <option value="tb_minishop" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='tb_minishop' ? 'selected' : ''; ?>>小样种草机</option>
+                                    <option value="rt_xb" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='rt_xb' ? 'selected' : ''; ?>>好单线报</option>
+                                </select>
+                                <small class="form-text text-muted">m 端首页（/m.html）展示的页面风格，对应 page 目录下的页面文件</small>
+                            </div>
+
+                            <!-- 站点状态（关闭站点 + 关闭说明 放在一起） -->
+                            <h5 class="section-title"><i class="fas fa-power-off"></i> 站点状态</h5>
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="closed" name="closed" value="1" <?php echo isset($ret['closed']) && $ret['closed'] == '1' ? 'checked' : ''; ?>>
+                                    <label class="custom-control-label" for="closed">关闭站点</label>
+                                </div>
+                                <small class="form-text text-muted">开启后前台访客将无法访问网站（后台不受影响）</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="closemsg" class="font-weight-bold">关闭提示</label>
+                                <textarea class="form-control" id="closemsg" name="closemsg" rows="2" placeholder="站点关闭时显示的提示信息"><?php echo isset($ret['closemsg']) ? $ret['closemsg'] : ''; ?></textarea>
+                            </div>
+
+                            <!-- 内容与版权 -->
+                            <h5 class="section-title"><i class="fas fa-font"></i> 内容与版权</h5>
+                            <div class="form-group">
+                                <label for="sitedescription" class="font-weight-bold">网站描述</label>
+                                <textarea class="form-control" id="sitedescription" name="sitedescription" rows="3" placeholder="请输入网站描述"><?php echo isset($ret['sitedescription']) ? $ret['sitedescription'] : ''; ?></textarea>
+                                <small class="form-text text-muted">网站简介，用于SEO优化</small>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="about" class="font-weight-bold">关于我们</label>
+                                        <textarea class="form-control" id="about" name="about" rows="4" placeholder="关于我们"><?php echo isset($ret['about']) ? $ret['about'] : ''; ?></textarea>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="banquan" class="font-weight-bold">底部版权</label>
+                                        <input type="text" class="form-control" id="banquan" name="banquan" placeholder="网站底部版权" value="<?php echo isset($ret['banquan']) ? $ret['banquan'] : ''; ?>">
+                                        <small class="form-text text-muted">页脚显示的版权信息</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 媒体与形象 -->
+                            <h5 class="section-title"><i class="fas fa-image"></i> 媒体与形象</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">网站LOGO</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="logo-input" name="logo" placeholder="请输入LOGO图片地址" value="<?php echo isset($ret['logo']) ? $ret['logo'] : ''; ?>">
+                                            <div class="input-group-append">
+                                                <button type="button" class="btn btn-outline-secondary" onclick="uploadImage('logo')">
+                                                    <i class="fas fa-upload"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <?php if (isset($ret['logo']) && $ret['logo']): ?>
+                                        <div class="mt-2">
+                                            <img src="<?php echo $ret['logo']; ?>" class="img-thumbnail" style="max-width: 120px; max-height: 60px;">
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">二维码</label>
+                                        <div class="input-group">
+                                            <input type="text" class="form-control" id="ewm-input" name="ewm" placeholder="请输入二维码图片地址" value="<?php echo isset($ret['ewm']) ? $ret['ewm'] : ''; ?>">
+                                            <div class="input-group-append">
+                                                <button type="button" class="btn btn-outline-secondary" onclick="uploadImage('ewm')">
+                                                    <i class="fas fa-upload"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <?php if (isset($ret['ewm']) && $ret['ewm']): ?>
+                                        <div class="mt-2">
+                                            <img src="<?php echo $ret['ewm']; ?>" class="img-thumbnail" style="max-width: 100px; max-height: 100px;">
+                                        </div>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label class="font-weight-bold">默认图片</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="defaultimg-input" name="defaultimg" placeholder="请输入默认图片地址" value="<?php echo isset($ret['defaultimg']) ? $ret['defaultimg'] : ''; ?>">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="uploadImage('defaultimg')">
+                                            <i class="fas fa-upload"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 图片与水印 -->
+                            <h5 class="section-title"><i class="fas fa-tint"></i> 图片与水印</h5>
+                            <div class="form-group">
+                                <label class="font-weight-bold">图片水印设置</label>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="watermark" name="watermark" value="1" <?php echo isset($ret['watermark']) && $ret['watermark'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="watermark">开启水印</label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-8">
+                                        <input type="text" class="form-control" id="watermarktext" name="watermarktext" placeholder="水印文字" value="<?php echo isset($ret['watermarktext']) ? $ret['watermarktext'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">为上传的图片添加文字水印</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="cdnurl" class="font-weight-bold">CDN设置</label>
+                                <input type="text" class="form-control" id="cdnurl" name="cdnurl" placeholder="图片/附件独立域名，如 http://cdn.example.com" value="<?php echo isset($ret['cdnurl']) ? $ret['cdnurl'] : ''; ?>">
+                                <small class="form-text text-muted">留空则使用网站域名，需将域名指向 uploadfile 目录</small>
+                            </div>
+
+                            <!-- 功能与性能 -->
+                            <h5 class="section-title"><i class="fas fa-cogs"></i> 功能与性能</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="download" class="font-weight-bold">下载链接</label>
+                                        <input type="text" class="form-control" id="download" name="download" placeholder="客户端下载地址" value="<?php echo isset($ret['download']) ? $ret['download'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="cachetime" class="font-weight-bold">缓存时间（秒）</label>
+                                        <input type="number" class="form-control" id="cachetime" name="cachetime" placeholder="3600" value="<?php echo isset($ret['cachetime']) ? $ret['cachetime'] : '3600'; ?>">
+                                        <small class="form-text text-muted">设置页面缓存有效时间</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="pagelimit" class="font-weight-bold">分页条数</label>
+                                <input type="number" class="form-control" id="pagelimit" name="pagelimit" placeholder="20" value="<?php echo isset($ret['pagelimit']) ? $ret['pagelimit'] : '20'; ?>">
+                                <small class="form-text text-muted">每页显示的项目数量</small>
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-4">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('index')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- URL设置 -->
+                    <div class="tab-pane fade" id="url" role="tabpanel" aria-labelledby="url-tab">
+                        <form id="url-form" class="mt-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">网站模式</label>
+                                        <select class="custom-select" id="DEBUG" name="DEBUG">
+                                            <option value="0" <?php echo !isset($DEBUG) || $DEBUG == 0 ? 'selected' : ''; ?>>安全模式</option>
+                                            <option value="1" <?php echo isset($DEBUG) && $DEBUG == 1 ? 'selected' : ''; ?>>调试模式</option>
+                                        </select>
+                                        <small class="form-text text-muted">调试模式会显示错误信息</small>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">首页默认访问</label>
+                                        <select class="custom-select" id="moren" name="moren">
+                                            <option value="index" <?php echo isset($moren) && $moren == 'index' ? 'selected' : ''; ?>>国内折扣</option>
+                                            <option value="haitao" <?php echo isset($moren) && $moren == 'haitao' ? 'selected' : ''; ?>>海淘折扣</option>
+                                            <option value="cheaps" <?php echo isset($moren) && $moren == 'cheaps' ? 'selected' : ''; ?>>优惠券</option>
+                                            <option value="rank" <?php echo isset($moren) && $moren == 'rank' ? 'selected' : ''; ?>>排行榜</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">伪静态设置</label>
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="REWRITE_ON" name="REWRITE_ON" value="1" <?php echo isset($REWRITE_ON) && $REWRITE_ON == 1 ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="REWRITE_ON">开启伪静态</label>
+                                        </div>
+                                        <small class="form-text text-muted">需要配置网站服务器支持</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-4">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('url')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- SEO设置 -->
+                    <div class="tab-pane fade" id="seo" role="tabpanel" aria-labelledby="seo-tab">
+                        <form id="seo-form" class="mt-4">
+                            <h5 class="sub-title mb-4">首页SEO</h5>
+                            <div class="form-group">
+                                <label for="index_title" class="font-weight-bold">网站首页标题</label>
+                                <input type="text" class="form-control" id="index_title" name="index_title" placeholder="网站首页标题" value="<?php echo isset($ret['index_title']) ? $ret['index_title'] : ''; ?>">
+                                <small class="form-text text-muted">首页标题，用于SEO优化</small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="index_keywords" class="font-weight-bold">网站首页关键字</label>
+                                        <input type="text" class="form-control" id="index_keywords" name="index_keywords" placeholder="网站首页关键字" value="<?php echo isset($ret['index_keywords']) ? $ret['index_keywords'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="index_dec" class="font-weight-bold">网站首页描述</label>
+                                        <input type="text" class="form-control" id="index_dec" name="index_dec" placeholder="网站首页描述" value="<?php echo isset($ret['index_dec']) ? $ret['index_dec'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">大牌风尚SEO</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="brand_title" class="font-weight-bold">大牌风尚标题</label>
+                                        <input type="text" class="form-control" id="brand_title" name="brand_title" placeholder="大牌风尚标题" value="<?php echo isset($ret['brand_title']) ? $ret['brand_title'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="brand_keywords" class="font-weight-bold">大牌风尚关键词</label>
+                                        <input type="text" class="form-control" id="brand_keywords" name="brand_keywords" placeholder="大牌风尚关键词" value="<?php echo isset($ret['brand_keywords']) ? $ret['brand_keywords'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="brand_dec" class="font-weight-bold">大牌风尚描述</label>
+                                        <input type="text" class="form-control" id="brand_dec" name="brand_dec" placeholder="大牌风尚页面描述" value="<?php echo isset($ret['brand_dec']) ? $ret['brand_dec'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">风云榜SEO</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="rank_title" class="font-weight-bold">风云榜标题</label>
+                                        <input type="text" class="form-control" id="rank_title" name="rank_title" placeholder="风云榜标题" value="<?php echo isset($ret['rank_title']) ? $ret['rank_title'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="rank_keywords" class="font-weight-bold">风云榜关键词</label>
+                                        <input type="text" class="form-control" id="rank_keywords" name="rank_keywords" placeholder="风云榜关键词" value="<?php echo isset($ret['rank_keywords']) ? $ret['rank_keywords'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="rank_dec" class="font-weight-bold">风云榜描述</label>
+                                        <input type="text" class="form-control" id="rank_dec" name="rank_dec" placeholder="风云榜描述" value="<?php echo isset($ret['rank_dec']) ? $ret['rank_dec'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">优惠券SEO</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="cheaps_title" class="font-weight-bold">优惠券标题</label>
+                                        <input type="text" class="form-control" id="cheaps_title" name="cheaps_title" placeholder="优惠券标题" value="<?php echo isset($ret['cheaps_title']) ? $ret['cheaps_title'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="cheaps_keywords" class="font-weight-bold">优惠券关键词</label>
+                                        <input type="text" class="form-control" id="cheaps_keywords" name="cheaps_keywords" placeholder="优惠券关键词" value="<?php echo isset($ret['cheaps_keywords']) ? $ret['cheaps_keywords'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="cheaps_dec" class="font-weight-bold">优惠券描述</label>
+                                        <input type="text" class="form-control" id="cheaps_dec" name="cheaps_dec" placeholder="优惠券描述" value="<?php echo isset($ret['cheaps_dec']) ? $ret['cheaps_dec'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-5">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('seo')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- API设置 -->
+                    <div class="tab-pane fade" id="api" role="tabpanel" aria-labelledby="api-tab">
+                        <form id="api-form" class="mt-4">
+                            <h5 class="sub-title mb-4">官网API配置</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">官网API地址</label>
+                                        <select class="custom-select" name="apiurl">
+                                            <option value="https://open.zhicms.cc/" <?php echo isset($ret['apiurl']) && $ret['apiurl'] == 'https://open.zhicms.cc/' ? 'selected' : ''; ?>>https://open.zhicms.cc/</option>
+                                            <option value="https://open.zhicms.vip/" <?php echo isset($ret['apiurl']) && $ret['apiurl'] == 'https://open.zhicms.vip/' ? 'selected' : ''; ?>>https://open.zhicms.vip/</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="appid" class="font-weight-bold">官网appid</label>
+                                        <input type="text" class="form-control" id="appid" name="appid" placeholder="官网授权appid" value="<?php echo isset($ret['appid']) ? $ret['appid'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label for="secretkey" class="font-weight-bold">官网secretkey</label>
+                                        <input type="text" class="form-control" id="secretkey" name="secretkey" placeholder="官网授权secretkey" value="<?php echo isset($ret['secretkey']) ? $ret['secretkey'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">淘宝联盟API</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="tb_appkey" class="font-weight-bold">淘宝联盟appkey</label>
+                                        <input type="text" class="form-control" id="tb_appkey" name="tb_appkey" placeholder="淘宝联盟appkey" value="<?php echo isset($ret['tb_appkey']) ? $ret['tb_appkey'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="tb_secretKey" class="font-weight-bold">淘宝联盟secretKey</label>
+                                        <input type="text" class="form-control" id="tb_secretKey" name="tb_secretKey" placeholder="淘宝联盟secretKey" value="<?php echo isset($ret['tb_secretKey']) ? $ret['tb_secretKey'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="tb_pid" class="font-weight-bold">阿里妈妈PID</label>
+                                        <input type="text" class="form-control" id="tb_pid" name="tb_pid" placeholder="阿里妈妈PID" value="<?php echo isset($ret['tb_pid']) ? $ret['tb_pid'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">阿里巴巴API</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="ali_appid" class="font-weight-bold">阿里巴巴appid</label>
+                                        <input type="text" class="form-control" id="ali_appid" name="ali_appid" placeholder="阿里巴巴appid" value="<?php echo isset($ret['ali_appid']) ? $ret['ali_appid'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="ali_appsecretKey" class="font-weight-bold">阿里巴巴appsecretKey</label>
+                                        <input type="text" class="form-control" id="ali_appsecretKey" name="ali_appsecretKey" placeholder="阿里巴巴appsecretKey" value="<?php echo isset($ret['ali_appsecretKey']) ? $ret['ali_appsecretKey'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">转链模式配置</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">转链模式</label>
+                                        <select class="custom-select" name="zhuan">
+                                            <option value="dtk" <?php echo isset($ret['zhuan']) && $ret['zhuan'] == 'dtk' ? 'selected' : ''; ?>>大淘客</option>
+                                            <option value="hdk" <?php echo isset($ret['zhuan']) && $ret['zhuan'] == 'hdk' ? 'selected' : ''; ?>>好单库</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">大淘客API</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="dtk_appkey" class="font-weight-bold">大淘客appKey</label>
+                                        <input type="text" class="form-control" id="dtk_appkey" name="dtk_appkey" placeholder="大淘客appKey" value="<?php echo isset($ret['dtk_appkey']) ? $ret['dtk_appkey'] : ''; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="dtk_appsecret" class="font-weight-bold">大淘客appSecret</label>
+                                        <input type="text" class="form-control" id="dtk_appsecret" name="dtk_appsecret" placeholder="大淘客appSecret" value="<?php echo isset($ret['dtk_appsecret']) ? $ret['dtk_appsecret'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="sub-title mb-4 mt-5">好单库API</h5>
+                            <div class="form-group">
+                                <label for="hdk_appkey" class="font-weight-bold">好单库appKey</label>
+                                <input type="text" class="form-control" id="hdk_appkey" name="hdk_appkey" placeholder="好单库appKey" value="<?php echo isset($ret['hdk_appkey']) ? $ret['hdk_appkey'] : ''; ?>">
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-5">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('api')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 短信设置 -->
+                    <div class="tab-pane fade" id="sms" role="tabpanel" aria-labelledby="sms-tab">
+                        <form id="sms-form" class="mt-4">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="smsurl" class="font-weight-bold">短信接口地址</label>
+                                        <input type="text" class="form-control" id="smsurl" name="smsurl" placeholder="请输入短信接口地址" value="<?php echo isset($ret['smsurl']) ? $ret['smsurl'] : ''; ?>">
+                                        <small class="form-text text-muted">配置短信发送接口地址</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="reg_sms" class="font-weight-bold">短信验证码模板</label>
+                                <textarea class="form-control" id="reg_sms" name="reg_sms" rows="4" placeholder="请输入短信验证码模板"><?php echo isset($ret['reg_sms']) ? $ret['reg_sms'] : ''; ?></textarea>
+                                <small class="form-text text-muted">用于注册、重置密码等短信验证</small>
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-4">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('sms')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 统计代码 -->
+                    <div class="tab-pane fade" id="js" role="tabpanel" aria-labelledby="js-tab">
+                        <form id="js-form" class="mt-4">
+                            <div class="form-group">
+                                <label for="tongji" class="font-weight-bold">网站统计代码</label>
+                                <textarea class="form-control" id="tongji" name="tongji" rows="12" placeholder="请输入网站统计代码"><?php echo isset($tongji) ? $tongji : ''; ?></textarea>
+                                <small class="form-text text-muted">百度统计、CNZZ、51.la等统计代码</small>
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-4">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('js')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- 互动设置 -->
+                    <div class="tab-pane fade" id="interact" role="tabpanel" aria-labelledby="interact-tab">
+                        <form id="interact-form" class="mt-4">
+                            <h5 class="section-title"><i class="fas fa-toggle-on"></i> 功能总开关</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="comment_on" name="comment_on" value="1" <?php echo isset($ret['comment_on']) && $ret['comment_on'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="comment_on">开启评论功能</label>
+                                        </div>
+                                        <small class="form-text text-muted">关闭后前台文章详情页评论区将不显示，也无法提交评论</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="forum_on" name="forum_on" value="1" <?php echo isset($ret['forum_on']) && $ret['forum_on'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="forum_on">开启社区功能</label>
+                                        </div>
+                                        <small class="form-text text-muted">关闭后前台社区入口和页面将无法访问</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="section-title mt-4"><i class="fas fa-user-shield"></i> 评论规则</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="comment_anonymous" name="comment_anonymous" value="1" <?php echo isset($ret['comment_anonymous']) && $ret['comment_anonymous'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="comment_anonymous">允许未登录评论</label>
+                                        </div>
+                                        <small class="form-text text-muted">开启后未登录访客可通过"昵称+邮箱+cookie"提交评论</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="comment_check" name="comment_check" value="1" <?php echo isset($ret['comment_check']) && $ret['comment_check'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="comment_check">评论需要审核</label>
+                                        </div>
+                                        <small class="form-text text-muted">开启后新提交的评论默认隐藏，需在后台审核通过后显示</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="comment_interval" class="font-weight-bold">评论间隔（秒）</label>
+                                <input type="number" class="form-control" id="comment_interval" name="comment_interval" min="0" max="3600" value="<?php echo isset($ret['comment_interval']) ? (int)$ret['comment_interval'] : 60; ?>">
+                                <small class="form-text text-muted">同一 IP 在该秒数内无法再次评论，0 表示不限制（防刷建议 30~120 秒）</small>
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-4">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('interact')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- AI对话设置 -->
+                    <div class="tab-pane fade" id="aichat" role="tabpanel" aria-labelledby="aichat-tab">
+                        <form id="aichat-form" class="mt-4">
+                            <h5 class="section-title"><i class="fas fa-power-off"></i> 基础开关</h5>
+                            <div class="form-group">
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="enabled" name="enabled" value="1" <?php echo isset($ret['enabled']) && $ret['enabled'] ? 'checked' : ''; ?>>
+                                    <label class="custom-control-label" for="enabled">开启 AI 对话（小程序智能导购）</label>
+                                </div>
+                                <small class="form-text text-muted">关闭后小程序将以演示模式运行（使用模拟回复，不消耗配额）</small>
+                            </div>
+
+                            <h5 class="section-title mt-4"><i class="fas fa-paint-brush"></i> 小程序外观</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="theme_color" class="font-weight-bold">主题色</label>
+                                        <input type="text" class="form-control" id="theme_color" name="theme_color" placeholder="#6C63FF" value="<?php echo isset($ret['theme_color']) ? $ret['theme_color'] : '#6C63FF'; ?>">
+                                        <small class="form-text text-muted">16 进制颜色，如 #6C63FF</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="default_role" class="font-weight-bold">默认 AI 角色</label>
+                                        <select class="custom-select" id="default_role" name="default_role">
+                                            <option value="shopping" <?php echo isset($ret['default_role']) && $ret['default_role']=='shopping' ? 'selected' : ''; ?>>🛍️ 购物顾问</option>
+                                            <option value="fashion" <?php echo isset($ret['default_role']) && $ret['default_role']=='fashion' ? 'selected' : ''; ?>>👗 时尚达人</option>
+                                            <option value="tech" <?php echo isset($ret['default_role']) && $ret['default_role']=='tech' ? 'selected' : ''; ?>>💻 数码专家</option>
+                                            <option value="food" <?php echo isset($ret['default_role']) && $ret['default_role']=='food' ? 'selected' : ''; ?>>🍜 美食家</option>
+                                            <option value="assistant" <?php echo isset($ret['default_role']) && $ret['default_role']=='assistant' ? 'selected' : ''; ?>>🤖 智能助手</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h5 class="section-title mt-4"><i class="fas fa-microchip"></i> AI 服务商</h5>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="provider" class="font-weight-bold">服务商标识</label>
+                                        <input type="text" class="form-control" id="provider" name="provider" placeholder="deepseek" value="<?php echo isset($ret['provider']) ? $ret['provider'] : 'deepseek'; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <div class="form-group">
+                                        <label for="api_url" class="font-weight-bold">接口地址（OpenAI 兼容）</label>
+                                        <input type="text" class="form-control" id="api_url" name="api_url" placeholder="https://api.deepseek.com/v1/chat/completions" value="<?php echo isset($ret['api_url']) ? $ret['api_url'] : ''; ?>">
+                                        <small class="form-text text-muted">如 DeepSeek / 通义千问 / 豆包 等兼容接口</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="api_key" class="font-weight-bold">API Key（服务端保管）</label>
+                                        <input type="text" class="form-control" id="api_key" name="api_key" placeholder="sk-..." value="<?php echo isset($ret['api_key']) ? $ret['api_key'] : ''; ?>">
+                                        <small class="form-text text-muted">仅存于服务器，绝不下发到小程序</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="model" class="font-weight-bold">模型名称</label>
+                                        <input type="text" class="form-control" id="model" name="model" placeholder="deepseek-chat" value="<?php echo isset($ret['model']) ? $ret['model'] : ''; ?>">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="temperature" class="font-weight-bold">温度</label>
+                                        <input type="number" step="0.1" class="form-control" id="temperature" name="temperature" value="<?php echo isset($ret['temperature']) ? $ret['temperature'] : 0.7; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="max_tokens" class="font-weight-bold">最大 Token</label>
+                                        <input type="number" class="form-control" id="max_tokens" name="max_tokens" value="<?php echo isset($ret['max_tokens']) ? $ret['max_tokens'] : 1024; ?>">
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="form-group">
+                                        <label for="token" class="font-weight-bold">访问令牌（可选）</label>
+                                        <input type="text" class="form-control" id="token" name="token" placeholder="留空则不校验" value="<?php echo isset($ret['token']) ? $ret['token'] : ''; ?>">
+                                        <small class="form-text text-muted">小程序请求 AI 时需携带，作为 Bearer 令牌</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group border-top pt-3 mt-4">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('aichat')">
+                                    <i class="fas fa-save"></i> 保存设置
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<input type="hidden" name="__hash__" id="hash_field" value="<?php echo isset($hash) ? $hash : ''; ?>">
+
+<script>
+function submitForm(type) {
+    var form = document.getElementById(type + '-form');
+    var data = {};
+    var inputs = form.querySelectorAll('input, textarea, select');
+
+    inputs.forEach(function(input) {
+        if(input.type === 'checkbox') {
+            data[input.name] = input.checked ? '1' : '0';
+        } else {
+            data[input.name] = input.value;
+        }
+    });
+
+    // 添加hash字段
+    if(document.getElementById('hash_field')) {
+        data['hash'] = document.getElementById('hash_field').value;
+    }
+
+    var url = 'index.php?r=manage/set/' + type;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var result = JSON.parse(xhr.responseText);
+                if (result.status === 'y') {
+                    showToast(result.info, 'success');
+                } else {
+                    showToast(result.info, 'danger');
+                }
+            } catch(e) {
+                showToast('数据保存失败', 'danger');
+            }
+        }
+    };
+
+    var params = Object.keys(data).map(function(k) {
+        return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
+    }).join('&');
+    xhr.send(params);
+}
+
+function uploadImage(field) {
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+
+    input.onchange = function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+
+        var formData = new FormData();
+        formData.append('file', file);
+        formData.append('hash', document.getElementById('hash_field') ? document.getElementById('hash_field').value : '');
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'index.php?r=manage/set/upload', true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        document.getElementById(field + '-input').value = result.url;
+                        showToast('图片上传成功', 'success');
+                        // 刷新图片预览
+                        location.reload();
+                    } else {
+                        showToast(result.info, 'danger');
+                    }
+                } catch(e) {
+                    showToast('上传失败', 'danger');
+                }
+            }
+        };
+        xhr.send(formData);
+    };
+
+    input.click();
+}
+
+function showToast(message, type = 'success') {
+    // 创建toast提示；直接加 show 类并显式设置 opacity，避免依赖 Bootstrap JS 初始化（否则 .toast 默认隐藏不显示）
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // 3秒后淡出并移除
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() {
+            if(toast.parentNode) {
+                toast.parentNode.removeChild(toast);
+            }
+        }, 350);
+    }, 3000);
+}
+
+// 键盘事件支持
+document.addEventListener('DOMContentLoaded', function() {
+    // 回车提交表单
+    var forms = document.querySelectorAll('form');
+    forms.forEach(function(form) {
+        form.addEventListener('keypress', function(e) {
+            if(e.which === 13 && e.target.tagName === 'INPUT' && e.target.type !== 'submit') {
+                e.preventDefault();
+            }
+        });
+    });
+});
+</script>

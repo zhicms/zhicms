@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="keywords" content="{obj('base/Base')->SEO('cheaps_keywords')}" />
+<meta name="description" content="{obj('base/Base')->SEO('cheaps_dec')}" />
+<title>【{$key}】的搜索结果 - {obj('base/Base')->SEO('index_title')}</title>
+<link rel="stylesheet" href="{__PUBLIC__}web/css/smzdm.css">
+</head>
+<body>
+{include file="app/index/view/index/topheader"}
+
+<div class="smz-main">
+  <div class="smz-feed">
+    <div class="sres-head">
+      <div class="smz-side-title">查询词【{$key}】</div>
+      <div class="sres-tabs">
+        {foreach $platforms as $pk => $pn}
+        <a class="sres-tab {if $platform==$pk}active{/if}" href="so.html?content={$q}&platform={$pk}">{$pn}</a>
+        {/foreach}
+      </div>
+    </div>
+
+    {if empty($Page['list'])}
+    <div class="sres-empty">{$emptyTip}</div>
+    {else}
+    {foreach $Page['list'] as $vo}
+    <article class="smz-card sres-card">
+      <a class="smz-card-img" href="{$vo['buyUrl']}" target="_blank" rel="nofollow">
+        <img src="{$vo['mainPic']}" alt="{$vo['title']}" loading="lazy">
+      </a>
+      <div class="smz-card-body">
+        <span class="sres-badge sres-{$vo['item_from']}">{if $vo['item_from']=='taobao'}淘宝{elseif $vo['item_from']=='jd'}京东{elseif $vo['item_from']=='pdd'}拼多多{elseif $vo['item_from']=='vip'}唯品会{else}{$vo['item_from']}{/if}</span>
+        <h2 class="smz-card-title">
+          <a href="{$vo['buyUrl']}" target="_blank" rel="nofollow">{$vo['title']}</a>
+        </h2>
+        <div class="smz-card-price">
+          <span class="smz-price"><small>券后 ¥</small>{$vo['actualPrice']}</span>
+          {if $vo['couponPrice']}<span class="smz-coupon">领{$vo['couponPrice']}元券</span>{/if}
+        </div>
+        <a class="smz-card-btn" href="{$vo['buyUrl']}" target="_blank" rel="nofollow">去购买 &gt;</a>
+      </div>
+    </article>
+    {/foreach}
+    {/if}
+
+    <div class="smz-pager">{$page['pages']}</div>
+  </div>
+
+  {include file="app/index/view/index/sidemod"}
+</div>
+
+{include file="app/index/view/index/footerjs"}
+{include file="app/index/view/index/footer"}

@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{if isset($pageText['1'])}{$pageText['1']}{else}{$pageText['0']}{/if} - ZhiCms</title>
+    <link rel="stylesheet" href="/public/admin/emlog/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/public/admin/emlog/css/sb-admin-2.css">
+    <link rel="stylesheet" href="/public/admin/emlog/css/emlog-style.css">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+<body id="page-top">
+    <!-- Editor.md 对话框挂载容器（图片/链接等弹窗依赖此节点，缺失会导致点击无反应） -->
+    <div id="editor-md-dialog"></div>
+    <div id="wrapper">
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
+            <!-- Sidebar - Brand -->
+            <li class="nav-item active">
+                <a class="nav-link sidebar-brand" href="index.php?r=manage/index/index">
+                    <span>ZhiCms 管理后台</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+            <!-- Nav Item - Dashboard -->
+            <li class="nav-item {if CONTROLLER_NAME=='index'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/index/index">
+                    <i class="fas fa-fw fa-tachometer-alt"></i>
+                    <span>控制台</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                内容管理
+            </div>
+
+            <!-- Nav Item - Articles Collapse Menu -->
+            <li class="nav-item {if CONTROLLER_NAME=='find'}active{/if}">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseArticles" aria-expanded="true" aria-controls="collapseArticles">
+                    <i class="fas fa-fw fa-edit"></i>
+                    <span>发现管理</span>
+                </a>
+                <div id="collapseArticles" class="collapse {if CONTROLLER_NAME=='find'}show{/if}" aria-labelledby="headingArticles" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item {if CONTROLLER_NAME=='find' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/find/index">发现列表</a>
+                        <a class="collapse-item {if CONTROLLER_NAME=='find' && ACTION_NAME=='addarticle'}active{/if}" href="index.php?r=manage/find/addarticle">发布线索</a>
+                    </div>
+                </div>
+            </li>
+
+            <!-- Nav Item - Forum Collapse Menu -->
+            <li class="nav-item {if CONTROLLER_NAME=='forum'}active{/if}">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseForum" aria-expanded="true" aria-controls="collapseForum">
+                    <i class="fas fa-fw fa-comments"></i>
+                    <span>社区管理</span>
+                </a>
+                <div id="collapseForum" class="collapse {if CONTROLLER_NAME=='forum'}show{/if}" aria-labelledby="headingForum" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/forum/index">帖子列表</a>
+                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='comment'}active{/if}" href="index.php?r=manage/forum/comment">评论管理</a>
+                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='board'}active{/if}" href="index.php?r=manage/forum/board">板块管理</a>
+                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='group'}active{/if}" href="index.php?r=manage/forum/group">小组管理</a>
+                    </div>
+                </div>
+            </li>
+
+            <!-- Nav Item - Pages -->
+            <li class="nav-item {if CONTROLLER_NAME=='page'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/page/index">
+                    <i class="fas fa-fw fa-file"></i>
+                    <span>页面管理</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - Goods -->
+            <li class="nav-item {if CONTROLLER_NAME=='items'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/items/index">
+                    <i class="fas fa-fw fa-shopping-cart"></i>
+                    <span>电商宝库</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                系统设置
+            </div>
+
+            <!-- Nav Item - User Management -->
+            <li class="nav-item {if CONTROLLER_NAME=='user'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/user/index">
+                    <i class="fas fa-fw fa-user"></i>
+                    <span>用户管理</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - System Settings -->
+            <li class="nav-item {if CONTROLLER_NAME=='set'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/set/index">
+                    <i class="fas fa-fw fa-cogs"></i>
+                    <span>系统设置</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - Advertising -->
+            <li class="nav-item {if CONTROLLER_NAME=='ad'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/ad/huan">
+                    <i class="fas fa-fw fa-ad"></i>
+                    <span>广告管理</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - Plugins -->
+            <li class="nav-item {if CONTROLLER_NAME=='plug' || CONTROLLER_NAME=='plugin'}active{/if}">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePlugins" aria-expanded="true" aria-controls="collapsePlugins">
+                    <i class="fas fa-fw fa-puzzle-piece"></i>
+                    <span>插件管理</span>
+                </a>
+                <div id="collapsePlugins" class="collapse {if CONTROLLER_NAME=='plug' || CONTROLLER_NAME=='plugin'}show{/if}" aria-labelledby="headingPlugins" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item {if CONTROLLER_NAME=='plugin' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/plugin/index"><i class="fas fa-store mr-1"></i>插件市场</a>
+                        <a class="collapse-item {if CONTROLLER_NAME=='plug' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/plug/index">插件模块</a>
+                    </div>
+                </div>
+            </li>
+
+            <!-- Nav Item - AI Platform -->
+            <li class="nav-item {if CONTROLLER_NAME=='ai'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/ai/setting">
+                    <i class="fas fa-fw fa-robot"></i>
+                    <span>AI 开放平台</span>
+                </a>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider d-none d-md-block">
+
+            <!-- Sidebar Toggler (Sidebar) -->
+            <div class="text-center d-none d-md-inline">
+                <button class="rounded-circle border-0" id="sidebarToggle"></button>
+            </div>
+        </ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+            <!-- Main Content -->
+            <div id="content">
+                <!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
+                        <!-- Nav Item - User Information -->
+                        <li class="nav-item dropdown no-arrow">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">{$_SESSION['manage_system']}</span>
+                                <img class="img-profile rounded-circle" src="{$_SESSION['manage_pic']}" style="width: 32px; height: 32px;">
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="#" onclick="ZhiCmsConfirm('确定要清除缓存吗？','是的','取消','index.php?r=manage/index/delcache','清除缓存中...')">
+                                    <i class="fas fa-sync-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    清除缓存
+                                </a>
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="index.php?r=manage/login/loginout">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    退出登录
+                                </a>
+                            </div>
+                        </li>
+                    </ul>
+                </nav>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">

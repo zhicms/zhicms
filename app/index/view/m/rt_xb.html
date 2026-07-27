@@ -1,0 +1,1789 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>好单线报</title>
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.efengqing.com/ajax/libs/vant/4.9.1/index.min.css" />
+    <style>
+      div,
+      header,
+      section,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        touch-action: manipulation;
+      }
+      html {
+        --max-width: 540px;
+        font-size: calc(var(--max-width) / 750);
+      }
+      @media screen and (max-width: 540px) {
+        html {
+          font-size: calc(100vw / 750);
+        }
+      }
+      body,
+      dl,
+      dd,
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      form {
+        margin: 0;
+        color: #333;
+      }
+      body {
+        font-size: 28rem;
+        background-color: #f7f7f7;
+        max-width: var(--max-width) !important;
+        margin: 0 auto !important;
+      }
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-size: inherit;
+      }
+      ol,
+      li,
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+      body {
+        background-color: #f3f6f9;
+      }
+      i {
+        font-style: normal;
+      }
+      .ellipsis-single {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .g-ellipsis2 {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+      }
+      #app {
+        box-shadow: 0 0 10px 20rem #e9e9e9;
+        min-height: 100vh;
+      }
+      .flex {
+        display: flex;
+      }
+      .items-center {
+        align-items: center;
+      }
+      .items-start {
+        align-items: flex-start;
+      }
+      .items-end {
+        align-items: flex-end;
+      }
+      .items-baseline {
+        align-items: baseline;
+      }
+      .items-stretch {
+        align-items: stretch;
+      }
+      .justify-start {
+        justify-content: flex-start;
+      }
+      .justify-end {
+        justify-content: flex-end;
+      }
+      .justify-center {
+        justify-content: center;
+      }
+      .justify-between {
+        justify-content: space-between;
+      }
+      .justify-around {
+        justify-content: space-around;
+      }
+      .justify-evenly {
+        justify-content: space-evenly;
+      }
+      .flex-wrap {
+        flex-wrap: wrap;
+      }
+      .flex-wrap-reverse {
+        flex-wrap: wrap-reverse;
+      }
+      .flex-nowrap {
+        flex-wrap: nowrap;
+      }
+      .flex-row {
+        flex-direction: row;
+      }
+      .flex-row-reverse {
+        flex-direction: row-reverse;
+      }
+      .flex-col {
+        flex-direction: column;
+      }
+      .flex-col-reverse {
+        flex-direction: column-reverse;
+      }
+      .flex-1 {
+        flex: 1;
+      }
+      .flex-1-none {
+        flex: none !important;
+      }
+      .shrink-0 {
+        flex-shrink: 0;
+      }
+      .mar-l-a {
+        margin-left: auto;
+      }
+      .mar-t-a {
+        margin-top: auto;
+      }
+      .space-around {
+        justify-content: space-around;
+      }
+      @media screen and (max-width: 750px) {
+        ::-webkit-scrollbar {
+          width: 0;
+          height: 0;
+        }
+      }
+      @font-face {
+        font-family: cspa-icon;
+        src:
+          url(//at.alicdn.com/t/c/font_4626589_ljfvo0ffqif.woff2?t=1760162883960) format('woff2'),
+          url(//at.alicdn.com/t/c/font_4626589_ljfvo0ffqif.woff?t=1760162883960) format('woff'),
+          url(//at.alicdn.com/t/c/font_4626589_ljfvo0ffqif.ttf?t=1760162883960) format('truetype');
+      }
+      .cspa-icon {
+        font-family: cspa-icon !important;
+        font-size: 16px;
+        font-style: normal;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+      .cspa-fensi:before {
+        content: '';
+      }
+      .cspa-nav:before {
+        content: '';
+      }
+      .cspa-dizhiguanli:before {
+        content: '';
+      }
+      .cspa-jiantou:before {
+        content: '';
+      }
+      .cspa-jiantou-up:before {
+        content: '';
+      }
+      .cspa-jiantou-right:before {
+        content: '';
+      }
+      .cspa-jiantou-left:before {
+        content: '';
+      }
+      .cspa-baobei:before {
+        content: '';
+      }
+      .cspa-yishou:before {
+        content: '';
+      }
+      .cspa-renqizhi:before {
+        content: '';
+      }
+      .cspa-sousuo:before {
+        content: '';
+      }
+      .cspa-mti-fenxiang2:before {
+        content: '';
+      }
+      .cspa-mti-fuzhi:before {
+        content: '';
+      }
+      .cspa-mti-jiantouyou2:before {
+        content: '';
+      }
+      .cspa-tupian:before {
+        content: '';
+      }
+      .cspa-roundclosefill:before {
+        content: '';
+      }
+      .cspa-roundclose:before {
+        content: '';
+      }
+      .cspa-link:before {
+        content: '';
+      }
+      .g-reset-bubble.van-floating-bubble {
+        width: 162rem;
+        height: fit-content;
+        background-color: transparent;
+        transition: none;
+      }
+      .goods-card-v2[data-v-e4a79fc5] {
+        position: relative;
+        margin: 20rem auto 0;
+        width: 690rem;
+        padding: 20rem 26rem 104rem;
+        background: #fff;
+        box-shadow: 0 2rem 20rem #0713581a;
+        border-radius: 20rem;
+        box-sizing: border-box;
+      }
+      .type-title[data-v-e4a79fc5] {
+        display: flex;
+        align-items: center;
+      }
+      .type-title img[data-v-e4a79fc5] {
+        margin-right: 6rem;
+        width: 42rem;
+        height: 42rem;
+      }
+      .type-title .text[data-v-e4a79fc5] {
+        flex: 1;
+        font-size: 30rem;
+        font-weight: 500;
+        color: #333;
+      }
+      .type-title .time[data-v-e4a79fc5] {
+        align-self: flex-end;
+        font-size: 24rem;
+        font-weight: 300;
+        color: #999;
+      }
+      .detail-block .row[data-v-e4a79fc5] {
+        display: flex;
+        margin-top: 32rem;
+      }
+      .detail-block .cover-block[data-v-e4a79fc5] {
+        width: 210rem;
+      }
+      .detail-block .cover-block img[data-v-e4a79fc5] {
+        display: block;
+        width: 210rem;
+        height: 210rem;
+        border-radius: 5rem;
+        filter: brightness(0.98);
+        object-fit: contain;
+      }
+      .detail-block .content-block[data-v-e4a79fc5] {
+        flex: 1;
+        margin-left: 10rem;
+      }
+      .detail-block .content-block .title[data-v-e4a79fc5] {
+        font-size: 26rem;
+        font-weight: 300;
+        color: #333;
+        line-height: 36rem;
+      }
+      .detail-block .content-block .btn.buy[data-v-e4a79fc5] {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: 4rem;
+        width: 100rem;
+        height: 40rem;
+        background: #fff0f2;
+        border: 1px solid #fe3b3f;
+        border-radius: 5rem;
+        font-size: 24rem;
+        font-weight: 300;
+        color: #fe3a40;
+        -webkit-user-select: none;
+        user-select: none;
+        cursor: pointer;
+      }
+      .detail-block .content-block ul li .transfer[data-v-e4a79fc5] {
+        position: absolute;
+        left: -10000px;
+        opacity: 0;
+      }
+      .detail-block .content-block ul li + li[data-v-e4a79fc5] {
+        margin-top: 20rem;
+      }
+      .btn-block[data-v-e4a79fc5] {
+        position: absolute;
+        right: 0;
+        bottom: 20rem;
+      }
+      .btn-block .btn.copy-text[data-v-e4a79fc5] {
+        width: 152rem;
+        height: 56rem;
+        background: linear-gradient(-90deg, #fe3a3f, #faa450);
+        border-radius: 28rem 0 0 28rem;
+        font-size: 26rem;
+        font-weight: 400;
+        color: #fffefd;
+        line-height: 56rem;
+        text-align: center;
+        border: 0;
+        outline: 0;
+        cursor: pointer;
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .btn-block .btn.copy-text[data-v-e4a79fc5]:focus {
+        outline: none;
+      }
+      .btn-block .btn.copy-text[data-v-e4a79fc5]:active {
+        opacity: 1;
+      }
+      .draggable-back-top[data-v-85291611] {
+        position: fixed;
+        bottom: 200rem;
+        right: 20rem;
+        width: 78rem;
+        height: 78rem;
+        z-index: 99;
+        cursor: pointer;
+        touch-action: none;
+        box-shadow: 0 4rem 12rem #00000026;
+        border-radius: 50%;
+      }
+      .draggable-back-top.hide[data-v-85291611] {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .draggable-back-top[data-v-85291611] .back-top-icon {
+        width: 100%;
+        height: 100%;
+        background: url(http://img.bc.haodanku.com/haodanku/1596017135) no-repeat;
+        background-size: 100% 100%;
+      }
+      .footer-share {
+        position: fixed;
+        z-index: 10;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+        padding: 0;
+        width: 750rem;
+        height: 160rem;
+        background: linear-gradient(0deg, #e60f4b, transparent);
+        transition: all 0.3s;
+      }
+      .footer-share.hide {
+        opacity: 0;
+        transform: translateY(100%);
+      }
+      .footer-share .share_href {
+        position: absolute;
+        bottom: 20rem;
+        margin: auto;
+        left: 0;
+        right: 0;
+        width: 694rem;
+        height: 90rem;
+        padding: 6rem;
+        border-radius: 45rem;
+        box-shadow: 0 20rem 40rem #e60f4b;
+      }
+      .footer-share .share-bg {
+        width: 100%;
+        height: 100%;
+        border-radius: 45rem;
+        background: linear-gradient(0deg, #ffe6b4, #ffc98a, #fff7de);
+        color: #ff4c7d;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      .footer-share svg {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        width: 36rem;
+        height: 36rem;
+        background: #ff4c7d;
+        border-radius: 50%;
+      }
+      .footer-share svg path {
+        transform: scale(0.8);
+        transform-origin: center;
+        fill: #ffe6b4;
+      }
+      .footer-share span {
+        margin-left: 20rem;
+      }
+      .share-pop-box {
+        position: fixed;
+        z-index: 1001;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: auto;
+        padding: 40rem 63rem 72rem;
+        color: #333;
+        font-size: 30rem;
+        font-weight: 400;
+        max-width: 750rem;
+        background: #fff;
+        border-radius: 40rem 40rem 0 0;
+        transition: transform 0.3s;
+      }
+      .share-pop-box.hide {
+        transform: translateY(100%);
+      }
+      .share-pop-box .share-pop-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 40rem;
+      }
+      .share-pop-box .btn.close {
+        width: 20rem;
+        height: 20rem;
+        background: currentColor;
+        transform: translate(100%);
+        position: relative;
+      }
+      .share-pop-box .btn.close i {
+        border-radius: 50%;
+        font-size: 40rem;
+        color: #edf1f5;
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .share-pop-box .btn {
+        cursor: pointer;
+      }
+      .share-pop-box .sh-btn-block {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .share-pop-box .sh-btn-block .btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 302rem;
+        height: 120rem;
+        background: #edf1f5;
+        border-radius: 15rem;
+      }
+      .share-pop-box .sh-btn-block .btn:active {
+        background: #f5f5f6;
+      }
+      .share-pop-box .sh-btn-block i {
+        font-size: 36rem;
+        margin-right: 5rem;
+        font-weight: 900;
+      }
+      .share-pop-box .sh-btn-block span {
+        line-height: 1;
+      }
+      .share-mask {
+        position: fixed;
+        z-index: 1000;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background: #00000059;
+        transition: all 0.3s;
+      }
+      .share-mask.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .poster-box {
+        position: fixed;
+        z-index: 1001;
+        top: 50%;
+        left: 0;
+        right: 0;
+        margin: auto;
+        width: 470rem;
+        transform: translateY(-50%);
+        transition: all 0.3s;
+        font-size: 0;
+      }
+      .poster-box.hide {
+        opacity: 0;
+        pointer-events: none;
+      }
+      .poster-box .poster {
+        width: 100%;
+      }
+      .poster-box .tips {
+        margin-top: 38rem;
+        text-align: center;
+        font-size: 30rem;
+        font-weight: 400;
+        color: #fff;
+      }
+      .poster-box .close {
+        position: absolute;
+        left: 100%;
+        bottom: 100%;
+        margin: 0 0 8rem 28rem;
+        color: #fff;
+        font-size: 60rem;
+      }
+      .page-container[data-v-fd407ccd] {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        max-width: 750rem;
+        background: #f3f3f7;
+        padding-bottom: 120rem;
+        margin: 0 auto;
+        box-sizing: border-box;
+        font-size: 32rem;
+        font-family: PingFang SC;
+        box-shadow: 0 0 8px 8px #0000001a;
+      }
+      .banner-wrapper[data-v-fd407ccd] {
+        display: block;
+        width: 750rem;
+        height: 213rem;
+        min-height: 213rem;
+      }
+      .banner-wrapper .free-banner[data-v-fd407ccd] {
+        width: 100%;
+        display: block;
+      }
+      .page-content[data-v-fd407ccd] {
+        flex: 1;
+        margin-top: -20rem;
+        padding: 0;
+        border-radius: 20rem 20rem 0 0;
+        background: #f3f3f7;
+        transition: padding 0.3s;
+      }
+      .page-content.empty-list[data-v-fd407ccd] {
+        min-height: 400rem;
+      }
+      .nav[data-v-fd407ccd] {
+        margin: -8rem;
+        padding: 30rem;
+        width: 100%;
+        list-style: none;
+        box-sizing: border-box;
+      }
+      .nav li[data-v-fd407ccd] {
+        display: inline-block;
+        margin: 8rem;
+        height: 60rem;
+        padding: 0 32rem;
+        border-radius: 30rem;
+        background: #fff;
+        font-size: 28rem;
+        font-weight: 300;
+        color: #333;
+        line-height: 60rem;
+        text-align: center;
+        cursor: pointer;
+      }
+      .nav li.active[data-v-fd407ccd] {
+        background: linear-gradient(90deg, #faa350, #fe3d3f);
+        color: #fff;
+        cursor: default;
+      }
+      .lists[data-v-fd407ccd] {
+        width: 710rem;
+        margin: auto;
+      }
+      .list-item-loading[data-v-fd407ccd] {
+        text-align: center;
+        padding: 40rem 0;
+        color: #333;
+        font-size: 24rem;
+        letter-spacing: 1rem;
+      }
+      .loading-overlay[data-v-fd407ccd] {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: #0000004d;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      .loading-spinner[data-v-fd407ccd] {
+        width: 48rem;
+        height: 48rem;
+        border: 4rem solid #fff;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin-fd407ccd 1s linear infinite;
+      }
+      @keyframes spin-fd407ccd {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      /* 移动端频道导航 + 淘宝联想下拉（自包含） */
+      .search-box .search-input-wrap{position:relative;}
+      .tb-suggest{position:absolute;left:0;right:0;top:100%;margin-top:6px;background:#fff;border-radius:10px;z-index:80;max-height:300px;overflow:auto;-webkit-overflow-scrolling:touch;box-shadow:0 10px 28px rgba(0,0,0,.18);}
+      .tb-suggest li{padding:12px 16px;font-size:15px;color:#333;border-bottom:1px solid #f4f4f4;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+      .tb-suggest li:last-child{border-bottom:0;}
+      .tb-suggest li:active{background:#fff3e8;color:#ff5000;}
+      .tb-suggest li .hl{color:#ff5000;font-style:normal;}
+      .channel-nav{display:flex;align-items:stretch;background:#fff;border-top:1px solid #f1f1f1;}
+      .channel-nav .item{flex:1;text-align:center;padding:13px 0 11px;font-size:15px;line-height:1.1;color:#888;background:transparent;position:relative;cursor:pointer;}
+      .channel-nav .item.active{color:#ff5000;font-weight:700;}
+      .channel-nav .item.active:after{content:'';position:absolute;left:50%;bottom:0;transform:translateX(-50%);width:24px;height:3px;border-radius:2px;background:linear-gradient(135deg,#ff7a18,#ff5000);animation:navInd .25s ease;}
+      @keyframes navInd{from{opacity:0;transform:translateX(-50%) scaleX(.4);}to{opacity:1;transform:translateX(-50%) scaleX(1);}}
+      .empty-tip{text-align:center;color:#ffb38a;padding:1.2rem .3rem;font-size:.28rem;}
+      .empty-tip .iconfont{display:block;font-size:.8rem;margin-bottom:.15rem;color:#ff7a18;}
+      .empty-tip p{margin:0;}
+      .goods-card{display:flex;margin:20rem auto 0;width:690rem;padding:20rem 26rem;background:#fff;box-shadow:0 2rem 20rem #0713581a;border-radius:20rem;box-sizing:border-box;}
+      .goods-card .pic{width:210rem;height:210rem;border-radius:10rem;object-fit:contain;}
+      .goods-card .info{flex:1;margin-left:20rem;display:flex;flex-direction:column;}
+      .goods-card .title{font-size:26rem;color:#333;line-height:36rem;}
+      .goods-card .center{font-size:22rem;color:#999;margin-top:6rem;}
+      .goods-card .price{margin-top:auto;display:flex;align-items:baseline;}
+      .goods-card .discount{color:#fe3a40;font-size:26rem;}
+      .goods-card .discount strong{font-size:32rem;}
+      .goods-card .origin{margin-left:10rem;color:#999;font-size:22rem;text-decoration:line-through;}
+      .goods-card .btn-block{margin-top:14rem;align-self:flex-end;padding:10rem 28rem;background:linear-gradient(-90deg,#fe3a3f,#faa450);color:#fff;border-radius:30rem;font-size:24rem;}
+      /*$vite$:1*/
+    </style>
+  </head>
+  <body>
+    <div id="app"><sfc-main></sfc-main></div>
+
+    <template id="sfc-main">
+      <div data-v-fd407ccd class="page-container" v-cloak>
+        <!-- 顶部Banner -->
+        <div data-v-fd407ccd class="banner-wrapper">
+          <img data-v-fd407ccd class="free-banner" :src="banner" alt="" />
+        </div>
+
+        <!-- 搜索 + 频道导航 -->
+        <div data-v-fd407ccd class="search-input-wrap">
+          <van-search v-model="searchValue" show-action placeholder="搜索全网折扣、优惠券..." @search="onSearch" @clear="onSearchClear" @focus="suggest.focus=true" @blur="onSuggestBlur" @input="getSuggest">
+            <template v-slot:action><div @click="onSearch">搜索</div></template>
+          </van-search>
+          <ul class="tb-suggest" v-show="suggest.list.length && suggest.focus">
+            <li v-for="(w,i) in suggest.list" v-on:click="pickSuggest(w)" v-html="hl(w)"></li>
+          </ul>
+        </div>
+        <ul data-v-fd407ccd class="channel-nav">
+          <li class="item" v-for="(item,index) in mChannel.list" v-bind:class="{active: mChannel.activeIndex===index}" v-on:click="goChannel(item,index)"><span>{{item.label}}</span></li>
+        </ul>
+
+        <!-- 内容区域 -->
+        <div data-v-fd407ccd ref="listRef" class="page-content" :class="{ 'empty-list': !listData.length }">
+          <!-- 分类导航 -->
+          <ul data-v-fd407ccd class="nav">
+            <li data-v-fd407ccd v-for="(item, index) in nav.list" :key="item.type_id" class="btn" :class="{ active: index === nav.activeIndex }" @click="onNavChange(index)">{{ item.type_name }}</li>
+          </ul>
+
+          <!-- 商品列表（频道 tab 时）/ 线报列表 -->
+          <div data-v-fd407ccd class="lists">
+            <template data-v-fd407ccd v-if="listData.length || finished">
+              <template data-v-fd407ccd v-if="currentType !== 'index'">
+                <product-item data-v-fd407ccd v-for="(item, index) in listData" :key="index" class="free-item" :item="item" :on-transfer="handleGoodsTransfer" @buy="handleGoodsTransfer"></product-item>
+              </template>
+              <template data-v-fd407ccd v-else>
+                <list-item data-v-fd407ccd v-for="(item, index) in listData" :key="index" class="free-item" :item="item" :title="activeNav?.type_name || ''" :on-transfer="handleGoodsTransfer" @buy="handleGoodsTransfer"></list-item>
+              </template>
+              <div data-v-fd407ccd class="list-item-loading">
+                <span data-v-fd407ccd v-if="finished">没有更多商品了~</span>
+                <span data-v-fd407ccd v-else>数据正在赶来的路上...</span>
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- 返回顶部 -->
+        <draggable-back-top data-v-fd407ccd :threshold="1000"></draggable-back-top>
+
+        <!-- 分享按钮 -->
+        <app-share data-v-fd407ccd></app-share>
+
+        <!-- 加载遮罩 -->
+        <div data-v-fd407ccd v-if="pageLoading" class="loading-overlay">
+          <div data-v-fd407ccd class="loading-spinner"></div>
+        </div>
+      </div>
+    </template>
+    <template id="product-item">
+      <div class="goods-card">
+        <img class="pic" v-if="item.itempic" :src="item.itempic" referrerpolicy="no-referrer" alt="" />
+        <img class="pic" v-else src="http://img.bc.fqapps.com/fudai13cae4ef16739ed3b100a2ec39e97.gif" alt="" />
+        <div class="info">
+          <div class="title">{{ item.itemshorttitle || item.itemtitle }}</div>
+          <div class="center" v-if="Number(item.itemsale) > 0">月销 {{ item.itemsale }}</div>
+          <div class="price" v-if="Number(item.itemendprice) > 0">
+            <span class="discount">券后价￥<strong>{{ Number(item.itemendprice) }}</strong></span>
+            <span class="origin">￥{{ item.itemprice }}</span>
+          </div>
+          <div class="btn-block" v-on:click="$emit('buy', { listItem: { value: item.itemid }, goodsItem: item })">立即下单</div>
+        </div>
+      </div>
+    </template>
+    <template id="list-item">
+      <div data-v-e4a79fc5 class="goods-card-v2">
+        <div data-v-e4a79fc5 class="type-title">
+          <img data-v-e4a79fc5 v-if="item.platform == 2" class="jd" src="http://img-haodanku-com.cdn.fudaiapp.com/Fi4ijtJvI0QJWqmMpwI2sWQ5gOJn" alt="" />
+          <img data-v-e4a79fc5 v-else class="tb" src="http://img-haodanku-com.cdn.fudaiapp.com/Fgj3o1aNeDaQe0BRrAqXSDx1pyz0" alt="" />
+          <span data-v-e4a79fc5 class="text">{{ title }}</span>
+          <span data-v-e4a79fc5 class="time">{{ startTime }}</span>
+        </div>
+        <div data-v-e4a79fc5 class="detail-block">
+          <div data-v-e4a79fc5 v-for="(row, rowIdx) in parsedList" :key="rowIdx" class="row">
+            <div data-v-e4a79fc5 v-if="row.image" class="cover-block" @click="previewImg(rowIdx)">
+              <img data-v-e4a79fc5 referrerpolicy="no-referrer" :src="row.image" alt="" />
+            </div>
+            <div data-v-e4a79fc5 class="content-block">
+              <ul data-v-e4a79fc5>
+                <li data-v-e4a79fc5 v-for="(it, idx) in row.content" :key="idx">
+                  <div data-v-e4a79fc5 v-if="it.type === 'text'" class="title">{{ it.value + '\n' }}</div>
+                  <template data-v-e4a79fc5 v-else>
+                    <button data-v-e4a79fc5 class="btn buy" @click="handleBuy(it)">{{ it.type === 'coupon' ? '去领劵' : '马上抢' }}</button>
+                    <div data-v-e4a79fc5 class="transfer"><br data-v-e4a79fc5 />{{ it.transfer }}</div>
+                  </template>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        <div data-v-e4a79fc5 class="btn-block">
+          <button data-v-e4a79fc5 class="btn copy-text" @click="transferAndCopy">复制文案</button>
+        </div>
+      </div>
+    </template>
+    <template id="draggable-back-top">
+      <div data-v-85291611 class="draggable-back-top" :class="{ hide: !showBackTop }" draggable="false" v-moveable @click="scrollToTop">
+        <slot data-v-85291611>
+          <div data-v-85291611 class="back-top-icon"></div>
+        </slot>
+      </div>
+    </template>
+    <template id="app-share">
+      <div class="footer-share" :class="ishide ? 'hide' : ''">
+        <div class="share_href" @click="shareClick">
+          <div class="share-bg">
+            <slot>
+              <svg t="1721202384035" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="14421">
+                <path
+                  d="M136.84280889 815.50449778c-1.74762667 0-3.49525333 0-5.24288-0.58254223-19.80643555-2.91271111-33.78744889-20.97152-31.45728-40.77795555 18.05880889-169.51978667 78.06065778-294.76636445 177.67537778-372.82702222 71.65269333-56.50659555 162.52928-87.96387555 269.71704888-93.78929778l22.13660445-1.16508445V185.77635555c0-47.76846222 43.69066667-58.25422222 66.99235555-34.95253333l272.04721778 276.70755556c34.36999111 34.95253333 32.62236445 71.07015111-1.74762666 106.02268444L641.90691555 803.27111111c-27.96202667 27.96202667-72.23523555 11.06830222-72.23523555-28.54456889V645.40216889h-27.37948445c-99.61472 0-280.78535111 19.80643555-375.73973333 153.20860444-5.82542222 11.06830222-17.47626667 16.89372445-29.70965333 16.89372445z"
+                  fill="#2C2C2C"
+                  p-id="14422"></path>
+              </svg>
+              <span>立即分享</span>
+            </slot>
+          </div>
+        </div>
+      </div>
+      <div class="share-mask" :class="isMaskHide ? 'hide' : ''" @click="maskClose"></div>
+      <div class="share-pop-box" :class="isShareHide ? 'hide' : ''">
+        <div class="share-pop-header">
+          <div class="title">分享方式选择</div>
+          <div class="btn close" @click="maskClose"><i class="cspa-icon cspa-roundclosefill"></i></div>
+        </div>
+        <div class="sh-btn-block">
+          <div class="btn copy-link" @click="copylink"><i class="cspa-icon cspa-link"></i><span>生成分享链接</span></div>
+          <div class="btn generate-poster" @click="createPoster"><i class="cspa-icon cspa-tupian"></i><span>生成分享海报</span></div>
+        </div>
+      </div>
+      <div class="poster-box" :class="isPosterHide ? 'hide' : ''">
+        <i class="close cspa-icon cspa-roundclose" @click="maskClose"></i>
+        <img class="poster" :src="posterImg" alt="" />
+        <div class="tips">长按图片保存</div>
+      </div>
+    </template>
+    <script src="https://cdnjs.efengqing.com/ajax/libs/vue/3.4.30/vue.global.min.js"></script>
+    <script src="https://cdnjs.efengqing.com/ajax/libs/vant/4.9.1/vant.min.js"></script>
+    <script src="https://img.bc.haodanku.com/cdn/qrcode@1.4.4.min.js"></script>
+    <script>
+      const $apikey = ''; //必填
+      const $channel = '';
+      const { createApp, ref, reactive, computed, onMounted, onUnmounted } = Vue;
+      const { showImagePreview } = vant;
+      const app = createApp();
+      function c(e) {
+        return Object.prototype.toString.call(e).slice(8, -1);
+      }
+      function u(e) {
+        return e !== null && c(e) === 'Object';
+      }
+      function h(e) {
+        return c(e) === 'String';
+      }
+      function O(e) {
+        return ['Null', 'Undefined'].includes(c(e));
+      }
+      function B(e) {
+        return ['String', 'Number', 'Boolean', 'Null', 'Undefined', 'Symbol', 'BigInt'].includes(c(e));
+      }
+      function $(e) {
+        try {
+          return (JSON.parse(e), true);
+        } catch {
+          return false;
+        }
+      }
+      function F() {
+        return /Android|iPhone|iPad/i.test(navigator.userAgent) ? 'Mobile' : 'Desktop';
+      }
+      function Y() {
+        return F() === 'Mobile';
+      }
+      function J() {
+        return Y() && /Android/i.test(navigator.userAgent);
+      }
+      function ce() {
+        return Y() && !J();
+      }
+      function ue() {
+        return /MicroMessenger\//i.test(navigator.userAgent);
+      }
+      function D(e) {
+        if (!h(e)) throw '参数必须是string';
+        try {
+          return (new URL(e), true);
+        } catch {
+          return false;
+        }
+      }
+      function U(e = '', t = true) {
+        const n = JSON.parse(JSON.stringify(Object.fromEntries(new URLSearchParams(e))));
+        return (
+          t &&
+            Object.keys(n).forEach(r => {
+              $(n[r]) && (n[r].startsWith('{') || n[r].startsWith('[')) && (n[r] = JSON.parse(n[r]));
+            }),
+          n
+        );
+      }
+      function x(
+        e = {
+          url: window.location.href,
+          type: 'all',
+        },
+      ) {
+        if (O(e) || !u(e)) throw '参数错误， 应该传入一个对象';
+        if ((e.url || (e.url = window.location.href), e.type || (e.type = 'all'), !D(e.url))) throw 'url 参数错误，不是有效的';
+        if (!h(e.type) || !['search', 'hash', 'all'].includes(e.type)) throw "type 参数错误， 应该传入一个字符串 'search' | 'hash' | 'all'";
+        const { url: t, type: n } = e,
+          r = new URL(t),
+          i = r.search.substring(1),
+          o = r.hash.indexOf('?') >= 0 ? r.hash.slice(r.hash.indexOf('?') + 1) : '',
+          s = n == 'hash' ? {} : U(i),
+          a = n == 'search' ? {} : U(o);
+        return Object.assign({}, s, a, s);
+      }
+      function N(e = {}, t = false) {
+        const n = Object.keys(e),
+          r = [];
+        for (let i = 0; i < n.length; i++) {
+          const o = n[i],
+            s = e[o];
+          if (O(s)) continue;
+          const a = B(s) ? encodeURIComponent(s) : encodeURIComponent(JSON.stringify(s));
+          r.push(o + '=' + a);
+        }
+        return t ? decodeURIComponent(r.join('&')) : r.join('&');
+      }
+      function qe(e) {
+        return new Promise((n, r) => {
+          navigator.clipboard
+            ? navigator.clipboard
+                .writeText(e)
+                .then(() => n())
+                .catch(() => {
+                  t(e, n, r);
+                })
+            : t(e, n, r);
+        });
+        function t(n, r, i) {
+          const o = document.createElement('textarea');
+          (document.body.appendChild(o), o.setAttribute('readonly', 'readonly'), (o.innerHTML = n), o.select(), o.setSelectionRange(0, o.innerHTML.length));
+          const s = document.execCommand('copy');
+          (o.remove(), s ? r() : i('execCommand error'));
+        }
+      }
+      function Get(url, params = {}, config = {}) {
+        const data = Object.keys(params).length > 0 ? '?' + N(params) : '';
+        return new Promise((resolve, reject) => {
+          const json = fetch(url + data, { method: 'GET' }).then(res => res.json());
+          uFetch(json, resolve, reject, config);
+        });
+      }
+      function Post(url, data = {}, config = {}) {
+        const body = c(data) == 'FormData' ? data : N(data);
+        const ContentType = c(data) == 'FormData' ? {} : { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' };
+        return new Promise((resolve, reject) => {
+          const json = fetch(url, {
+            method: 'POST',
+            body,
+            headers: { ...ContentType },
+          }).then(res => res.json());
+          uFetch(json, resolve, reject, config);
+        });
+      }
+      function uFetch(json, resolve, reject, config) {
+        json.then(res => {
+          const { data, msg, message, code, status, ...rs } = res;
+          if (code == 200 || status == 1 || code == 1) {
+            resolve({ res: data, msg: msg || message, ...rs });
+          } else {
+            reject(res);
+            if (config.showErr != false) toast(res.msg || res.message || '无法获取到数据');
+          }
+        });
+        json.catch(err => {
+          reject({ msg: err.message || '无法获取到数据' });
+          if (config.showErr != false) toast(err.msg || err.message || '无法获取到数据');
+        });
+      }
+      function copyText(text, msgok = '复制成功', msgerr = '复制失败', n = 0) {
+        qe(text.toString())
+          .then(() => {
+            toast(msgok);
+          })
+          .catch(() => {
+            dialog({
+              message: text,
+              theme: 'round-button',
+              confirmButtonText: '复制',
+            }).then(() => {
+              n > 3 ? toast(msgerr) : copyText(text, msgok, msgerr, n + 1);
+            });
+          });
+      }
+      let toastTimeout1 = 0;
+      let toastTimeout2 = 0;
+      function toast(options) {
+        var _a, _b, _c, _d;
+        const o = { duration: 1500, message: '', forbidClick: false, loading: false };
+        typeof options == 'object' ? Object.assign(o, options) : Object.assign(o, { message: options });
+        if (o.loading) o.duration = 0;
+        if (!document.querySelector('style[toast="1"]')) {
+          const totalStyle = document.createElement('style');
+          totalStyle.setAttribute('toast', '1');
+          totalStyle.innerHTML = `.u-toast {box-sizing: content-box;width: fit-content;min-width: 192rem;max-width: 70%;transition: opacity 0.3s ease, transform 0.3s ease;min-height: 0;padding: 16rem 24rem;display: flex;flex-direction: column;align-items: center;justify-content: center;color: #fff;font-size: 28rem;line-height: 40rem;white-space: pre-wrap;word-break: break-all;text-align: center;background: rgba(0, 0, 0, 0.7);border-radius: 16rem;opacity: 0;top: 50%;left: 0;right: 0;margin: 0 auto;transform: translateY(-50%);position: fixed;z-index: 3001;}.u-toast-active {opacity: 1;transform: translateY(-50%);}.u-toast--loading {padding-bottom: 32rem;padding-top: 28rem;}.u-toast-loading {width: 48rem;height: 48rem;border: 4rem solid #fff;position: relative;border-radius: 50%;border-top-color: transparent;animation: l5 1s infinite linear;margin: 20rem 0;}@keyframes l5 {to{transform: rotate(360deg)}}`;
+          document.head.appendChild(totalStyle);
+        }
+        if (!document.querySelector('.u-toast')) {
+          const div = document.createElement('div');
+          div.classList.add('u-toast');
+          div.innerHTML = `<div class="u-toast-text">${o.message}</div>`;
+          document.body.appendChild(div);
+        } else {
+          document.querySelector('.u-toast-text').innerHTML = o.message;
+        }
+        if (o.loading && !document.querySelector('.u-toast--loading')) {
+          (_a = document.querySelector('.u-toast')) == null ? void 0 : _a.classList.add('u-toast--loading');
+          document.querySelector('.u-toast').innerHTML = '<div class="u-toast-loading"></div>' + ((_b = document.querySelector('.u-toast')) == null ? void 0 : _b.innerHTML);
+          overlay().catch(() => {});
+        }
+        if (!o.loading && document.querySelector('.u-toast--loading')) {
+          (_c = document.querySelector('.u-toast')) == null ? void 0 : _c.classList.remove('u-toast--loading');
+          (_d = document.querySelector('.u-toast-loading')) == null ? void 0 : _d.remove();
+          overlay(false).catch(() => {});
+        }
+        clearTimeout(toastTimeout1);
+        clearTimeout(toastTimeout2);
+        setTimeout(() => document.querySelector('.u-toast').classList.add('u-toast-active'), 10);
+        toastTimeout1 = setTimeout(() => {
+          var _a2;
+          (_a2 = document.querySelector('.u-toast')) == null ? void 0 : _a2.classList.remove('u-toast-active');
+          toastTimeout2 = setTimeout(() => {
+            var _a3;
+            return (_a3 = document.querySelector('.u-toast')) == null ? void 0 : _a3.remove();
+          }, 300);
+        }, o.duration || 9999999999999);
+      }
+      function toastClear() {
+        var _a;
+        overlay(false).catch(() => {});
+        (_a = document.querySelector('.u-toast')) == null ? void 0 : _a.classList.remove('u-toast-active');
+        toastTimeout2 = setTimeout(() => {
+          var _a2;
+          return (_a2 = document.querySelector('.u-toast')) == null ? void 0 : _a2.remove();
+        }, 300);
+      }
+      function dialog(options) {
+        return new Promise((resolve, reject) => {
+          const o = {
+            title: '',
+            message: '',
+            confirmButtonText: '确认',
+            confirmButtonColor: '#1989fa',
+            cancelButtonText: '取消',
+            cancelButtonColor: '#000',
+            theme: '',
+          };
+          Object.assign(o, options);
+          if (!document.querySelector('style[dialog="1"]')) {
+            const totalStyle = document.createElement('style');
+            totalStyle.setAttribute('dialog', '1');
+            totalStyle.innerHTML = `.u-dialog {width: 640rem;top: 45%;overflow: hidden;font-size: 32rem;background: #fff;border-radius: 32rem;backface-visibility: hidden;position: fixed;left: 0;right: 0;margin: 0 auto;z-index: 3001;transform: translatey(-50%) scale(0.5);opacity: 0;transition: all 0.3s ease;}.u-dialog-active {transform: translatey(-50%) scale(1);opacity: 1;}.u-dialog-header {color: #323233;padding-top: 52rem;font-weight: 600;line-height: 48rem;text-align: center;}.u-dialog-content {padding: 52rem 48rem;padding-top: 32rem;max-height: 60vh;overflow-y: auto;white-space: pre-wrap;text-align: center;word-wrap: break-word;color: #646566;font-size: 28rem;}.u-dialog-footer {height: 96rem;display: flex;border-top: 1rem solid #ebedf0;}.u-dialog-button {flex: 1;display: flex;align-items: center;justify-content: center;height: 100%;}.u-dialog-button:nth-child(1) {border-right: 1rem solid #ebedf0;}.u-dialog-button:active {background-color: #e5e5e5;}.u-dialog-button_round{border-right: 0 !important;height: 72rem;background: #ee0a24;border-radius: 72rem;color: #fff !important;}.u-dialog-footer-round{padding: 0 48rem;border-top: 0; padding-bottom: 48rem; height: auto;}`;
+            document.head.appendChild(totalStyle);
+          }
+          const div = document.createElement('div');
+          div.classList.add('u-dialog');
+          div.innerHTML = `
+      <div class="u-dialog-header">${o.title}</div>
+      <div class="u-dialog-content">${o.message}</div>
+      <div class="u-dialog-footer ${o.theme == 'round-button' ? 'u-dialog-footer-round' : ''}">
+        ${o.theme == 'round-button' ? `<div class="u-dialog-button u-dialog-button_r u-dialog-button_round" style="color: ${o.confirmButtonColor}">${o.confirmButtonText}</div>` : `<div class="u-dialog-button u-dialog-button_l" style="color: ${o.cancelButtonColor}">${o.cancelButtonText}</div><div class="u-dialog-button u-dialog-button_r" style="color: ${o.confirmButtonColor}">${o.confirmButtonText}</div>`}
+      </div>
+    `;
+          document.body.appendChild(div);
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              div.classList.add('u-dialog-active');
+            });
+          });
+          overlay().catch(() => {});
+          if (document.querySelector('.u-dialog-button_l')) {
+            document.querySelector('.u-dialog-button_l').onclick = function () {
+              div == null ? void 0 : div.classList.remove('u-dialog-active');
+              setTimeout(() => (div.remove(), reject()), 300);
+              setTimeout(() => overlay(false).catch(() => {}), 10);
+            };
+          }
+          if (document.querySelector('.u-dialog-button_r')) {
+            document.querySelector('.u-dialog-button_r').onclick = function () {
+              div == null ? void 0 : div.classList.remove('u-dialog-active');
+              setTimeout(() => (div.remove(), resolve()), 300);
+              setTimeout(() => overlay(false).catch(() => {}), 10);
+            };
+          }
+        });
+      }
+      let overlayTimeout1 = 0;
+      function overlay(show = true) {
+        return new Promise((resolve, reject) => {
+          const dom = document.querySelector('.u-overlay');
+          if (!document.querySelector('style[overlay="1"]')) {
+            const totalStyle = document.createElement('style');
+            totalStyle.setAttribute('overlay', '1');
+            totalStyle.innerHTML = `.u-overlay {position: fixed;top: 0;left: 0;width: 100%;height: 100%;z-index: 3000;background-color: rgba(0, 0, 0, 0.7);transition: 0.3s;opacity: 0;}.u-overlay-active {transform: scale(1);opacity: 1;}`;
+            document.head.appendChild(totalStyle);
+          }
+          if (show) {
+            clearTimeout(overlayTimeout1);
+            if (!dom) {
+              const div = document.createElement('div');
+              div.classList.add('u-overlay');
+              document.body.appendChild(div);
+            }
+            resolve();
+            setTimeout(() => document.querySelector('.u-overlay').classList.add('u-overlay-active'), 10);
+          }
+          if (!show && dom) {
+            dom == null ? void 0 : dom.classList.remove('u-overlay-active');
+            overlayTimeout1 = setTimeout(() => dom.remove(), 300);
+            reject();
+          }
+        });
+      }
+      function apikey() {
+        return { apikey: $apikey };
+      }
+      function setChannel() {
+        return { channel: $channel };
+      }
+      function mergeImages(images) {
+        return new Promise((resolve, reject) => {
+          if (images.length === 0) {
+            return reject(new Error('No images provided'));
+          }
+          const backgroundImage = images[0];
+          const canvas = document.createElement('canvas');
+          const context = canvas.getContext('2d');
+          const loadImage = img => {
+            return new Promise((resolve2, reject2) => {
+              const image = new Image();
+              image.crossOrigin = 'anonymous';
+              image.src = img.url;
+              image.onload = () => resolve2({ image, ...img });
+              image.onerror = e => reject2(e);
+            });
+          };
+          loadImage(backgroundImage)
+            .then(bgImg => {
+              canvas.width = bgImg.image.width;
+              canvas.height = bgImg.image.height;
+              context.drawImage(bgImg.image, bgImg.left || 0, bgImg.top || 0);
+              const promises = images.slice(1).map(img => loadImage(img));
+              return Promise.all(promises);
+            })
+            .then(imageElements => {
+              imageElements.forEach(imgElement => {
+                context.drawImage(imgElement.image, imgElement.left || 0, imgElement.top || 0, imgElement.width || imgElement.image.width, imgElement.height || imgElement.image.height);
+              });
+              try {
+                const mergedImage = canvas.toDataURL('image/png');
+                resolve(mergedImage);
+              } catch (e) {
+                reject('Failed to export canvas:' + e);
+              }
+            })
+            .catch(error => {
+              reject('Image loading failed:' + error);
+            });
+        });
+      }
+      function copyTokenTarget(param) {
+        const platform = param.platformType == 'dy' ? ce() && ue() : ce();
+        const successMsg = param.copySuccessMsg || (param.platformType == 'dy' ? '复制抖口令成功,请打开抖音APP下单' : '复制口令成功，请打开淘宝领取');
+        if (platform) {
+          dialog({
+            message: param.openPageTips || '是否跳转到下单页面',
+          })
+            .then(() => {
+              location.href = param.link;
+            })
+            .catch(() => {
+              copyText(param.token, successMsg);
+            });
+        } else {
+          copyText(param.token, successMsg);
+        }
+      }
+      const SfcMain = {
+        template: document.querySelector('#sfc-main'),
+        setup(__props, { expose: __expose }) {
+          __expose();
+          const akey = apikey();
+          const channel = setChannel();
+          const PlatformTypes = { tb: '1', jd: '2' };
+          const customParams = {
+            pid: '',
+            // 必填-淘宝PID
+            tb_name: '',
+            // 必填-淘宝昵称
+            union_id: '',
+            // 必填-京东unionid
+            jd_pid: '',
+            // 必填-京东pid
+          };
+          function pickByKeys(keys) {
+            const result = {};
+            keys.forEach(key => {
+              result[key] = customParams[key];
+            });
+            return result;
+          }
+          function getTransferParams(isJd) {
+            const keys = isJd ? ['apikey', 'union_id', 'jd_pid'] : ['apikey', 'pid', 'tb_name'];
+            return { get_taoword: 1, ...pickByKeys(keys) };
+          }
+          const banner = ref('http://img-haodanku-com.cdn.fudaiapp.com/FhRoRudSKzdJb902U9JPKQ693Qxz');
+          const nav = reactive({
+            list: [],
+            activeIndex: 0,
+          });
+          const listData = ref([]);
+          const loading = ref(false);
+          const pageLoading = ref(false);
+          const finished = ref(false);
+          const minId = ref(1);
+          const listRef = ref();
+          const searchValue = ref("");
+          const currentType = ref("index");
+          const tabPage = ref(1);
+          const suggest = reactive({ list: [], focus: false });
+          const mChannel = reactive({
+            list: [
+              { label: "首页", key: "index" },
+              { label: "风云榜", key: "rank" },
+              { label: "热榜", key: "hot" },
+              { label: "大牌", key: "brand" },
+              { label: "优惠券", key: "cheaps" }
+            ],
+            activeIndex: 0
+          });
+          const activeNav = computed(() => nav.list[nav.activeIndex]);
+          async function getCategory() {
+            try {
+              const { res } = await Get('{url($route="api/goods/hdkproxy", $params=array("_target"=>"weal_category"))}', {
+                ...pickByKeys(['apikey', 'pid', 'tb_name']),
+                ...akey,
+                type: 2,
+              });
+              nav.list = (res || []).map(i => ({
+                type_name: i.name,
+                type_id: i.category_id,
+              }));
+              fetchList(true);
+            } catch {}
+          }
+          function onNavChange(index) {
+            if (loading.value || nav.activeIndex === index) return;
+            nav.activeIndex = index;
+            reGetListData();
+          }
+          function reGetListData() {
+            listData.value = [];
+            loading.value = false;
+            finished.value = false;
+            minId.value = 1;
+            fetchList(true);
+          }
+          function onSearch() {
+            reGetListData();
+          }
+          function onSearchClear() {
+            searchValue.value = "";
+            reGetListData();
+          }
+          function goChannel(item, index) {
+            if (mChannel.activeIndex === index && currentType.value === item.key) { window.scrollTo(0,0); return; }
+            mChannel.activeIndex = index;
+            currentType.value = item.key;
+            tabPage.value = 1;
+            suggest.list = [];
+            window.scrollTo(0,0);
+            reGetListData();
+          }
+          function pickSuggest(w) {
+            searchValue.value = w;
+            suggest.list = [];
+            suggest.focus = false;
+            onSearch();
+          }
+          function onSuggestBlur() {
+            setTimeout(function() { suggest.focus = false; }, 200);
+          }
+          function hl(w) {
+            const q = (searchValue.value || "").trim();
+            w = String(w);
+            if (!q) return escapeHtml(w);
+            const idx = w.toLowerCase().indexOf(q.toLowerCase());
+            if (idx < 0) return escapeHtml(w);
+            return escapeHtml(w.slice(0, idx)) + '<em class="hl">' + escapeHtml(w.slice(idx, idx + q.length)) + "</em>" + escapeHtml(w.slice(idx + q.length));
+          }
+          function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, function(c) {
+              return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;""}[c];
+            });
+          }
+          function getSuggest() {
+            const q = searchValue.value;
+            if (!q) { suggest.list = []; return; }
+            Get('{url($route="api/goods/hdksuggest", $params=array())}&keyword=' + encodeURIComponent(q)).then(function(r){
+              const d = (r && r.res) || [];
+              suggest.list = d.map(function(it){ return it.keyword || it; }).slice(0, 10);
+            }).catch(function(){ suggest.list = []; });
+          }
+          async function getServerTabData(clean) {
+            if (pageLoading.value || loading.value || finished.value) return;
+            loading.value = true;
+            if (clean) pageLoading.value = true;
+            try {
+              const resp = await Get('/m.html', { act: 'tab', type: currentType.value, p: tabPage.value, keyword: searchValue.value });
+              const data = (resp && resp.res) || [];
+              if (clean) listData.value = data;
+              else listData.value = listData.value.concat(data);
+              finished.value = Boolean(resp && resp.finished) || !data.length;
+              tabPage.value = (resp && resp.next_page) ? resp.next_page : (tabPage.value + 1);
+            } catch (e) {
+              if (clean) listData.value = [];
+              finished.value = true;
+            } finally {
+              loading.value = false;
+              pageLoading.value = false;
+            }
+          }
+          async function fetchList(clean = false) {
+            if (currentType.value && currentType.value !== "index") {
+              return getServerTabData(clean);
+            }
+            var _a;
+            if (pageLoading.value || loading.value || finished.value) return;
+            loading.value = true;
+            if (clean) pageLoading.value = true;
+            try {
+              const { res, min_id } = await Get('{url($route="api/goods/hdkproxy", $params=array("_target"=>"wire_report_new"))}', {
+                label_id: ((_a = activeNav.value) == null ? void 0 : _a.type_id) || '0',
+                min_id: minId.value,
+                min_size: 10,
+                version: 'v2.1.0',
+                ...customParams,
+                ...akey,
+              });
+              const data = res || [];
+              if (clean) {
+                listData.value = data;
+              } else {
+                listData.value = listData.value.concat(data);
+              }
+              finished.value = minId.value == min_id || !data.length;
+              minId.value = min_id || minId.value;
+            } catch {
+              if (clean) listData.value = [];
+              finished.value = true;
+            } finally {
+              loading.value = false;
+              pageLoading.value = false;
+            }
+          }
+          function generateTransferParamAndUrl(listItem, goodsItem) {
+            const isJd = goodsItem.platform === PlatformTypes.jd;
+            const param = {
+              ...(isJd ? { material_id: listItem.value, type: PlatformTypes.jd } : { title: '好单线报', itemid: listItem.value, domain: window.location.host }),
+              ...getTransferParams(isJd),
+              ...akey,
+              ...channel,
+            };
+            const urlMap = {
+              [PlatformTypes.tb]: '{url($route="api/goods/transfer", $params=array("platform"=>"tb"))}',
+              [PlatformTypes.jd]: '{url($route="api/goods/transfer", $params=array("platform"=>"jd"))}',
+            };
+            return { param, url: isJd ? urlMap[PlatformTypes.jd] : urlMap[PlatformTypes.tb] };
+          }
+          async function handleGoodsTransfer(data) {
+            const { listItem, goodsItem, isCopy } = data;
+            const { param, url } = generateTransferParamAndUrl(listItem, goodsItem);
+            if (!isCopy) {
+              toast({ loading: true });
+            }
+            try {
+              const { res } = await Post(url, param, isCopy ? { showErr: false } : {});
+              if (isCopy) {
+                return res;
+              }
+              toastClear();
+              const isJd = goodsItem.platform === PlatformTypes.jd;
+              if (!isJd) {
+                const taoword = typeof res === 'object' ? res.taoword : res;
+                copyTokenTarget({
+                  link: res.item_url || res.link,
+                  token: '0' + taoword + '/',
+                  openPageTips: '是否跳转到下单页面?',
+                });
+              } else {
+                const shortUrl = res.short_url;
+                copyTokenTarget({
+                  link: shortUrl,
+                  token: shortUrl,
+                  openPageTips: '是否跳转到下单页面?',
+                  copySuccessMsg: '链接复制成功',
+                });
+              }
+            } catch (err) {
+              if (isCopy) throw err;
+            }
+          }
+          function onScroll() {
+            const st = document.documentElement.scrollTop || document.body.scrollTop;
+            const { scrollHeight, clientHeight } = document.documentElement;
+            if (scrollHeight - st - clientHeight < 100) {
+              fetchList();
+            }
+          }
+          onMounted(() => {
+            getCategory();
+            window.addEventListener('scroll', onScroll);
+          });
+          onUnmounted(() => {
+            window.removeEventListener('scroll', onScroll);
+          });
+          const __returned__ = {
+            akey,
+            channel,
+            PlatformTypes,
+            customParams,
+            pickByKeys,
+            getTransferParams,
+            banner,
+            nav,
+            listData,
+            loading,
+            pageLoading,
+            finished,
+            minId,
+            listRef,
+            searchValue,
+            currentType,
+            tabPage,
+            suggest,
+            mChannel,
+            activeNav,
+            getCategory,
+            onNavChange,
+            onSearch,
+            onSearchClear,
+            goChannel,
+            pickSuggest,
+            onSuggestBlur,
+            hl,
+            escapeHtml,
+            getSuggest,
+            getServerTabData,
+            reGetListData,
+            fetchList,
+            generateTransferParamAndUrl,
+            handleGoodsTransfer,
+            onScroll,
+          };
+          return __returned__;
+        },
+      };
+      const ProductItem = {
+        template: document.querySelector('#product-item'),
+        props: { item: Object, onTransfer: { type: Function } },
+        emits: ['buy'],
+      };
+      app.component('product-item', ProductItem);
+      app.component('sfc-main', SfcMain);
+      const ListItem = {
+        template: document.querySelector('#list-item'),
+        props: {
+          item: {},
+          title: {},
+          onTransfer: { type: Function },
+        },
+        emits: ['buy'],
+        setup(__props, { expose: __expose, emit: __emit }) {
+          __expose();
+          const ContentTypes = {
+            text: 'text',
+            coupon: 'coupon',
+            code: 'code',
+          };
+          const PlatformTypes = {
+            tb: '1',
+            jd: '2',
+          };
+          const props = __props;
+          const emit = __emit;
+          const startTime = computed(() => {
+            var _a;
+            if (!((_a = props.item) == null ? void 0 : _a.starttime)) return '';
+            const d = new Date(props.item.starttime * 1e3);
+            const pad = n => String(n).padStart(2, '0');
+            return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+          });
+          function getImage(img) {
+            if (!img) return '';
+            return img.replace(/https?:/, '');
+          }
+          const parsedList = computed(() => {
+            var _a;
+            const n = props.item;
+            if (!n) return [];
+            let arr;
+            if (Array.isArray(n.step) && n.step.length) {
+              arr = n.step;
+            } else {
+              arr = [{ content: n.list, image: (_a = n.images) == null ? void 0 : _a[0] }];
+            }
+            return arr.map(row => {
+              var _a2;
+              const content = [];
+              (_a2 = row.content) == null
+                ? void 0
+                : _a2.forEach(v => {
+                    const result = {
+                      value: v.content,
+                      type: ContentTypes.text,
+                      transfer: '',
+                    };
+                    content.push(result);
+                    if (v.item_id !== void 0) {
+                      result.type = ContentTypes.code;
+                      result.value = v.item_id;
+                    } else if (v.coupon_url !== void 0) {
+                      result.type = ContentTypes.coupon;
+                      result.value = v.coupon_url;
+                    }
+                  });
+              return { content, image: getImage(row.image) };
+            });
+          });
+          function previewImg(index) {
+            showImagePreview({
+              images: parsedList.value.map(it => it.image).filter(Boolean),
+              startPosition: index || 0,
+            });
+          }
+          function handleBuy(listItem) {
+            if (listItem.type === ContentTypes.coupon) {
+              const link = listItem.value;
+              dialog({ message: '是否打开领劵页面?' })
+                .then(() => {
+                  window.top.location.href = link;
+                })
+                .catch(() => {
+                  copyText(link, '复制优惠劵链接成功');
+                });
+              return;
+            }
+            emit('buy', { listItem, goodsItem: props.item });
+          }
+          async function transferAndCopy() {
+            const list = parsedList.value;
+            const strArr = [];
+            for (const it of list) {
+              const parts = [];
+              for (const item of it.content) {
+                if (item.type === ContentTypes.text || item.type === ContentTypes.coupon) {
+                  parts.push(item.value);
+                } else {
+                  try {
+                    const res = await props.onTransfer({ listItem: item, goodsItem: props.item, isCopy: true });
+                    if (res && typeof res === 'object') {
+                      const isJd = props.item.platform === PlatformTypes.jd;
+                      if (!isJd) {
+                        parts.push(typeof res.taoword !== void 0 ? res.taoword : res);
+                      } else {
+                        parts.push(res.short_url || '');
+                      }
+                    } else {
+                      parts.push(item.value);
+                    }
+                  } catch (err) {
+                    toast((err == null ? void 0 : err.msg) || (err == null ? void 0 : err.message) || '转链失败');
+                    return;
+                  }
+                }
+              }
+              strArr.push(parts.join('\n'));
+            }
+            copyText(strArr.join('\n\n'), '文案复制成功');
+          }
+          const __returned__ = { ContentTypes, PlatformTypes, props, emit, startTime, getImage, parsedList, previewImg, handleBuy, transferAndCopy };
+          return __returned__;
+        },
+      };
+      app.component('list-item', ListItem);
+      const vMoveable = {
+        mounted(el) {
+          el.style.touchAction = 'none';
+          let offsetX = 0;
+          let offsetY = 0;
+          let lastX = 0;
+          let lastY = 0;
+          let downX = 0;
+          let downY = 0;
+          let isDrag = false;
+          function onPointerDown(e) {
+            const pos = getXY(e);
+            downX = pos.x;
+            downY = pos.y;
+            isDrag = false;
+          }
+          function onPointerMove(e) {
+            if (!e.isTrusted) return;
+            const pos = getXY(e);
+            lastX = pos.x - downX + offsetX;
+            lastY = pos.y - downY + offsetY;
+            el.style.transform = `translate(${lastX}px,${lastY}px)`;
+            e.preventDefault();
+            e.stopPropagation();
+          }
+          function onPointerUp(e) {
+            offsetX = lastX;
+            offsetY = lastY;
+            const pos = getUpXY(e);
+            isDrag = Math.abs(downX - pos.x) > 10 || Math.abs(downY - pos.y) > 10;
+            if (isDrag) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }
+          el.addEventListener(
+            'click',
+            e => {
+              if (!isDrag) return;
+              e.preventDefault();
+              e.stopPropagation();
+            },
+            true,
+          );
+          el.addEventListener('touchstart', onPointerDown, { capture: true });
+          el.addEventListener('touchmove', onPointerMove, { capture: true });
+          el.addEventListener('touchend', onPointerUp, { capture: true });
+          el.addEventListener('mousedown', e => {
+            onPointerDown(e);
+            const onMouseMove = ev => onPointerMove(ev);
+            const onMouseUp = ev => {
+              onPointerUp(ev);
+              document.removeEventListener('mousemove', onMouseMove);
+              document.removeEventListener('mouseup', onMouseUp);
+            };
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+          });
+        },
+      };
+      function getXY(e) {
+        if ('touches' in e && e.touches.length) {
+          return { x: e.touches[0].screenX, y: e.touches[0].screenY };
+        }
+        return { x: e.screenX, y: e.screenY };
+      }
+      function getUpXY(e) {
+        if ('changedTouches' in e && e.changedTouches.length) {
+          return { x: e.changedTouches[0].screenX, y: e.changedTouches[0].screenY };
+        }
+        return { x: e.screenX, y: e.screenY };
+      }
+      const DraggableBackTop = {
+        template: document.querySelector('#draggable-back-top'),
+        props: {
+          threshold: { default: 200 },
+        },
+        setup(__props, { expose: __expose }) {
+          __expose();
+          const props = __props;
+          const showBackTop = ref(false);
+          const remToPx = rem => (rem * document.documentElement.clientWidth) / 750;
+          const handleScroll = () => {
+            showBackTop.value = window.scrollY > props.threshold;
+          };
+          const scrollToTop = () => {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          };
+          onMounted(() => {
+            window.addEventListener('scroll', handleScroll);
+            handleScroll();
+          });
+          onUnmounted(() => {
+            window.removeEventListener('scroll', handleScroll);
+          });
+          const __returned__ = {
+            props,
+            showBackTop,
+            remToPx,
+            handleScroll,
+            scrollToTop,
+            get vMoveable() {
+              return vMoveable;
+            },
+          };
+          return __returned__;
+        },
+      };
+      app.component('draggable-back-top', DraggableBackTop);
+      const AppShare = {
+        template: document.querySelector('#app-share'),
+        props: {
+          sharePrefix: { default: '' },
+        },
+        setup(__props, { expose: __expose }) {
+          __expose();
+          const env = 'sourceCode';
+          const props = __props;
+          const ishide = ref(false);
+          const isShareHide = ref(true);
+          const isMaskHide = ref(true);
+          const isPosterHide = ref(true);
+          const posterImg = ref('');
+          function shareClick() {
+            return copylink();
+          }
+          function copylink() {
+            copyText(props.sharePrefix + location.href, '复制成功，快去下单吧~');
+          }
+          function maskClose() {
+            isMaskHide.value = true;
+            isShareHide.value = true;
+            isPosterHide.value = true;
+          }
+          function createPoster() {
+            if (posterImg.value) {
+              isShareHide.value = true;
+              isPosterHide.value = false;
+              return;
+            }
+            toast({ message: '海报生成中...', loading: true });
+            Post('{url($route="api/goods/hdkproxy", $params=array("_target"=>"get_share_link"))}', { code: x().code, tmp: x().tmp, path: location.href })
+              .then(async ({ res }) => {
+                const url = await QRCode.toDataURL(res.share_url, {
+                  width: 180,
+                  margin: 0,
+                });
+                mergeImages([{ url: res.poster_url }, { url, width: 180, height: 180, left: 285, top: 1055 }])
+                  .then(mergedImage => {
+                    toastClear();
+                    posterImg.value = mergedImage;
+                    isShareHide.value = true;
+                    isPosterHide.value = false;
+                  })
+                  .catch(() => {
+                    toastClear();
+                    toast('海报生成失败，请重试');
+                  });
+              })
+              .catch(() => {
+                toastClear();
+                toast('获取分享链接失败');
+              });
+          }
+          window.addEventListener('scroll', scrollfn);
+          let lastScrollTop = 0;
+          function scrollfn() {
+            let scrollTop = document.documentElement.scrollTop;
+            if (scrollTop > lastScrollTop) {
+              ishide.value = true;
+            } else {
+              ishide.value = false;
+            }
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+          }
+          onUnmounted(() => window.removeEventListener('scroll', scrollfn));
+          const __returned__ = {
+            env,
+            props,
+            ishide,
+            isShareHide,
+            isMaskHide,
+            isPosterHide,
+            posterImg,
+            shareClick,
+            copylink,
+            maskClose,
+            createPoster,
+            get lastScrollTop() {
+              return lastScrollTop;
+            },
+            set lastScrollTop(v) {
+              lastScrollTop = v;
+            },
+            scrollfn,
+          };
+          return __returned__;
+        },
+      };
+      app.component('app-share', AppShare);
+
+      app.mount('#app');
+    </script>
+  </body>
+</html>

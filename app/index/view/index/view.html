@@ -1,0 +1,228 @@
+{include file="app/index/view/index/blog_header"}
+
+<article class="log-con">
+  <nav class="crumb">
+    <a href="{url($route='index/index/index', $params=array())}">首页</a>
+    {if $view['cid']} / <a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$view['cid']))}">{obj('index/global','controller')->Cid($view['cid'])}</a>{/if}
+  </nav>
+
+  <h1 class="log-title">{$view['title']}</h1>
+
+  <div class="log-meta">
+    <span class="log-meta-item">
+      <span class="post-avatar">{$view['authorInitial']}</span>{$view['authorName']}
+    </span>
+    <span class="log-meta-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+      <time>{obj('api/Api')->mdate($view['date'])}</time>
+    </span>
+    <span class="log-meta-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+      {$view['view']} 浏览
+    </span>
+    <span class="log-meta-item like-article-btn">
+      <a href="javascript:;" id="likeArticleBtn" data-id="{$view['id']}" class="{if $hasLiked}liked{/if}">
+        <svg viewBox="0 0 24 24" fill="{if $hasLiked}#ff6b6b{else}none{/if}" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+        <span id="likeArticleCount">{$likeCount}</span>
+      </a>
+    </span>
+    {if $view['cateName']}
+    <span class="log-meta-item post-sort"><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$view['cid']))}">{obj('index/global','controller')->Cid($view['cid'])}</a></span>
+    {/if}
+  </div>
+
+  <div class="log-content">{$newBody}</div>
+
+  <!-- 上下篇 -->
+  {if isset($neighbor)}
+  <nav class="neighbor-log">
+    {if $neighbor['prev']}
+    <div class="prev-log">
+      <a class="neighbor-link" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$neighbor['prev']['id']))}">
+        <span class="neighbor-dir">← 上一篇</span>
+        <span class="neighbor-title">{$neighbor['prev']['title']}</span>
+      </a>
+    </div>
+    {/if}
+    {if $neighbor['next']}
+    <div class="next-log">
+      <a class="neighbor-link" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$neighbor['next']['id']))}">
+        <span class="neighbor-dir">下一篇 →</span>
+        <span class="neighbor-title">{$neighbor['next']['title']}</span>
+      </a>
+    </div>
+    {/if}
+  </nav>
+  {/if}
+
+  <!-- 评论 -->
+  <div class="comment-header">评论 <b>{$commentCount}</b></div>
+
+  <!-- 评论表单 -->
+  <form class="comment-form" id="blogCommentForm">
+    <input type="hidden" name="pid" id="commentPid" value="0">
+    <input type="hidden" name="model" value="article">
+    <input type="hidden" name="id" value="{$view['id']}">
+    {if !$loginUser}
+    <div class="cf-visitor-row">
+      <input type="text" name="poster" id="commentPoster" placeholder="昵称" value="{$visitorName}" maxlength="30">
+      <input type="email" name="mail" id="commentMail" placeholder="邮箱（选填，不公开）" value="{$visitorMail}" maxlength="60">
+    </div>
+    {/if}
+    <div class="cf-reply-tip" id="replyTip" style="display:none;">
+      <span id="replyTipText"></span>
+      <a href="javascript:;" id="cancelReply">取消回复</a>
+    </div>
+    <textarea name="mybody" id="commentBody" placeholder="写下你的看法..."></textarea>
+    <div class="cf-row">
+      <button type="submit">发表评论</button>
+    </div>
+  </form>
+
+  <!-- 嵌套评论列表 -->
+  <ul class="comment-list" id="commentList">{$commentHtml}</ul>
+  {if $commentCount == 0}<div class="comment-empty" id="commentEmpty">还没有评论，快来抢沙发~</div>{/if}
+</article>
+
+{include file="app/index/view/index/blog_footer"}
+
+<style>
+.cf-visitor-row{display:flex;gap:10px;margin-bottom:8px}
+.cf-visitor-row input{flex:1;padding:8px 10px;border:1px solid #e0e0e0;border-radius:6px;font-size:13px}
+.cf-reply-tip{padding:6px 10px;background:#fff8e1;border-radius:6px;margin-bottom:8px;font-size:12px;color:#92700a;display:flex;justify-content:space-between;align-items:center}
+.cf-reply-tip a{color:#1976d2;text-decoration:none}
+.comment-list{list-style:none;padding:0;margin:0}
+.comment-children{margin-left:24px;border-left:2px solid #f0f0f0;padding-left:12px}
+.comment-item{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid #f5f5f5}
+.c-avatar{width:32px;height:32px;border-radius:50%;background:#1976d2;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.c-body{flex:1;min-width:0}
+.c-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.c-name{font-weight:600;color:#333;font-size:13px}
+.c-top{background:#ff6b6b;color:#fff;padding:1px 6px;border-radius:3px;font-size:10px}
+.c-time{color:#999;font-size:12px;margin-left:auto}
+.c-text{color:#444;line-height:1.6;word-break:break-word;font-size:14px}
+.c-actions{display:flex;gap:14px;margin-top:6px}
+.c-actions a{color:#999;font-size:12px;text-decoration:none;cursor:pointer}
+.c-actions a:hover{color:#1976d2}
+.c-like .like-icon{margin-right:3px}
+.c-like.liked .like-icon{color:#ff6b6b}
+.like-article-btn a{display:flex;align-items:center;gap:4px;color:#666;cursor:pointer;text-decoration:none}
+.like-article-btn a.liked{color:#ff6b6b}
+.like-article-btn a.liked svg{fill:#ff6b6b}
+</style>
+
+<script type="text/javascript">
+$(function(){
+  var articleId = "{$view['id']}";
+  var interactUrl = "{url($route='index/interact/comSend', $params=array())}";
+  var likeArticleUrl = "{url($route='index/interact/likeArticle', $params=array())}";
+  var likeCommentUrl = "{url($route='index/interact/likeComment', $params=array())}";
+
+  // 回复评论
+  $(document).on('click', '.c-reply', function(){
+    var cid = $(this).data('cid');
+    var name = $(this).data('name');
+    $('#commentPid').val(cid);
+    $('#replyTip').show();
+    $('#replyTipText').text('回复 @' + name + '：');
+    $('#commentBody').focus();
+    $('html,body').animate({scrollTop: $('#blogCommentForm').offset().top - 80}, 300);
+  });
+  $('#cancelReply').on('click', function(){
+    $('#commentPid').val(0);
+    $('#replyTip').hide();
+  });
+
+  // 提交评论
+  $('#blogCommentForm').on('submit', function(e){
+    e.preventDefault();
+    var $ta = $('#commentBody');
+    var body = $.trim($ta.val());
+    if (!body) { alert('请填写评论'); return; }
+    var postData = {
+      mybody: body,
+      model: 'article',
+      id: articleId,
+      pid: $('#commentPid').val()
+    };
+    if ($('#commentPoster').length) {
+      postData.poster = $('#commentPoster').val();
+      postData.mail = $('#commentMail').val();
+    }
+    var $btn = $(this).find('button[type=submit]');
+    $btn.prop('disabled', true).text('提交中...');
+    $.ajax({
+      type: 'POST',
+      url: interactUrl,
+      data: postData,
+      dataType: 'json',
+      success: function(r){
+        if (r.status === 'y') {
+          var html = '<li class="comment-item" id="comment-' + r.cid + '">'
+            + '<span class="c-avatar">' + (r.initial || '友') + '</span>'
+            + '<div class="c-body">'
+            + '<div class="c-head"><span class="c-name">' + $('<div>').text(r.username).html() + '</span>'
+            + '<span class="c-time">' + r.date + '</span></div>'
+            + '<div class="c-text">' + $('<div>').text(r.content).html() + '</div>'
+            + '<div class="c-actions">'
+            + '<a href="javascript:;" class="c-reply" data-cid="' + r.cid + '" data-name="' + $('<div>').text(r.username).html() + '">回复</a>'
+            + '<a href="javascript:;" class="c-like" data-cid="' + r.cid + '"><span class="like-icon">♡</span><span class="like-num"></span></a>'
+            + '</div></div></li>';
+          $('#commentList').prepend(html);
+          $('#commentEmpty').hide();
+          var $cnt = $('.comment-header b');
+          $cnt.text(parseInt($cnt.text(),10) + 1);
+          $ta.val('');
+          $('#commentPid').val(0);
+          $('#replyTip').hide();
+          if (r.hide === 'y') {
+            alert('评论已提交，审核后显示');
+          }
+        } else if (r.info) {
+          alert(r.info);
+        }
+      },
+      error: function(){ alert('提交失败，请稍后重试'); },
+      complete: function(){ $btn.prop('disabled', false).text('发表评论'); }
+    });
+  });
+
+  // 文章点赞
+  $('#likeArticleBtn').on('click', function(){
+    var $this = $(this);
+    if ($this.hasClass('liked')) { return; }
+    $.ajax({
+      type: 'POST',
+      url: likeArticleUrl,
+      data: { id: $this.data('id') },
+      dataType: 'json',
+      success: function(r){
+        if (r.status === 'y') {
+          $this.addClass('liked');
+          $this.find('svg').attr('fill', '#ff6b6b');
+          $('#likeArticleCount').text(r.count);
+        } else if (r.info) { alert(r.info); }
+      }
+    });
+  });
+
+  // 评论点赞
+  $(document).on('click', '.c-like', function(){
+    var $this = $(this);
+    if ($this.hasClass('liked')) { return; }
+    $.ajax({
+      type: 'POST',
+      url: likeCommentUrl,
+      data: { id: $this.data('cid') },
+      dataType: 'json',
+      success: function(r){
+        if (r.status === 'y') {
+          $this.addClass('liked');
+          $this.find('.like-icon').css('color', '#ff6b6b');
+          $this.find('.like-num').text(r.count > 0 ? r.count : '');
+        } else if (r.info) { alert(r.info); }
+      }
+    });
+  });
+});
+</script>

@@ -1,0 +1,16 @@
+{
+  "name": "www",
+  "version": "1.0.0",
+  "description": "ZhiCms是一款专业的值得买系统，程序支持国内值得买海淘值得买，程序内置淘点金、以及亿起发淘金链、多麦多金链等功能。 支持国内商城海淘商城 ，程序PHP+MYSQL小巧方便，SEO性强，前台模板制作简单，是您搭建一个值得买网站的首选程序。",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
+}

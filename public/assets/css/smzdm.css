@@ -1,0 +1,601 @@
+/* 什么值得买风格详情页样式 - 现代化配色v2 */
+
+/* ========================== 包屑导航 ========================== */
+.smzdm-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #718096;
+    flex-wrap: wrap;
+}
+
+.smzdm-breadcrumb-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    background: linear-gradient(135deg, #ff6b35 0%, #ff9f43 100%);
+    color: #fff !important;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+.smzdm-breadcrumb-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+    color: #fff !important;
+}
+
+.smzdm-breadcrumb-separator {
+    color: #cbd5e0;
+    font-weight: 300;
+}
+
+.smzdm-breadcrumb-platform {
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.smzdm-breadcrumb-current {
+    color: #2d3748;
+    font-weight: 600;
+}
+
+@media (max-width: 768px) {
+    .smzdm-breadcrumb {
+        font-size: 13px;
+        gap: 6px;
+    }
+    
+    .smzdm-breadcrumb-btn {
+        padding: 6px 12px;
+        font-size: 13px;
+    }
+}
+.smzdm-detail {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.smzdm-header {
+    background: #fff;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    margin-bottom: 24px;
+    border: 1px solid #f0f2f5;
+    position: relative;
+    overflow: hidden;
+}
+
+.smzdm-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: linear-gradient(90deg, #ff6b35, #ff9f43, #ffc048);
+}
+
+.smzdm-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 16px 0;
+    line-height: 1.4;
+    letter-spacing: -0.5px;
+}
+
+.smzdm-header .meta {
+    color: #718096;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+.smzdm-header .meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.smzdm-header .price {
+    color: #ff6b35;
+    font-size: 36px;
+    font-weight: 700;
+    margin: 20px 0;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.smzdm-header .price .original {
+    font-size: 18px;
+    color: #a0aec0;
+    text-decoration: line-through;
+    font-weight: 500;
+}
+
+.smzdm-header .price .discount {
+    font-size: 14px;
+    color: #2d3748;
+    background: #fed7d7;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+}
+
+.smzdm-content {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 24px;
+}
+
+.smzdm-main {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.smzdm-images {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid #f0f2f5;
+}
+
+.smzdm-images img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 12px;
+    margin-bottom: 16px;
+}
+
+.smzdm-description {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid #f0f2f5;
+}
+
+.smzdm-description h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 16px 0;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #ff6b35;
+    position: relative;
+}
+
+.smzdm-description h3::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, #ff6b35, #ff9f43);
+    border-radius: 2px;
+}
+
+.smzdm-description .desc-content {
+    line-height: 1.8;
+    color: #4a5568;
+    font-size: 15px;
+}
+
+.smzdm-cards {
+    margin-top: 24px;
+}
+
+.smzdm-cards > h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 20px 0;
+    padding-bottom: 16px;
+    border-bottom: 2px solid #ff6b35;
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.smzdm-card {
+    background: #ffffff;
+    border: 0;
+    border-radius: 18px;
+    padding: 0;
+    margin-bottom: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+}
+
+.smzdm-card-inner {
+    padding: 24px;
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+}
+
+.smzdm-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.smzdm-card-header .platform-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+    gap: 6px;
+}
+
+.smzdm-card-header .platform-badge.tb {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+}
+
+.smzdm-card-header .platform-badge.jd {
+    background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+}
+
+.smzdm-card-header .platform-badge.pdd {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+}
+
+.smzdm-card-header .platform-badge.vip {
+    background: linear-gradient(135deg, #cc3366 0%, #ff6b9d 100%);
+}
+
+.smzdm-card-content {
+    margin-bottom: 20px;
+}
+
+.smzdm-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+
+.smzdm-card-desc {
+    font-size: 14px;
+    color: #718096;
+    line-height: 1.6;
+}
+
+.smzdm-card-footer {
+    border-top: 1px solid #eaeaea;
+    padding-top: 20px;
+}
+
+.smzdm-card-footer .smzdm-buy-btn {
+    display: block;
+    width: 100%;
+    padding: 16px;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    text-align: center;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.smzdm-card-footer .smzdm-buy-btn span {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.smzdm-card-footer .smzdm-buy-btn.tb {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+    color: #ffffff;
+}
+
+.smzdm-card-footer .smzdm-buy-btn.jd {
+    background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+    color: #ffffff;
+}
+
+.smzdm-card-footer .smzdm-buy-btn.pdd {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+    color: #ffffff;
+}
+
+.smzdm-card-footer .smzdm-buy-btn.vip {
+    background: linear-gradient(135deg, #cc3366 0%, #ff6b9d 100%);
+    color: #ffffff;
+}
+
+.smzdm-card-footer .smzdm-buy-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+}
+
+.smzdm-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(180deg, #ff6b35, #ff9f43);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.smzdm-card:hover {
+    border-color: #ff6b35;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(255,107,53,0.25);
+}
+
+.smzdm-card:hover::before {
+    opacity: 1;
+}
+
+.smzdm-card-info {
+    flex: 1;
+}
+
+.smzdm-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a202c;
+    margin-bottom: 6px;
+}
+
+.smzdm-card-desc {
+    font-size: 13px;
+    color: #718096;
+    line-height: 1.6;
+    margin-bottom: 12px;
+}
+
+.smzdm-buy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #ff6b35 0%, #ff9f43 100%);
+    color: #ffffff;
+    padding: 14px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 8px;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.smzdm-buy-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg, rgba(255,255,255,0.2) 0%, transparent 50%, rgba(255,255,255,0.2) 100%);
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+}
+
+.smzdm-buy-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255,107,53,0.4);
+}
+
+.smzdm-buy-btn:hover::before {
+    transform: translateX(100%);
+    animation: shimmer 1s ease-in-out;
+}
+
+.smzdm-buy-btn .icon {
+    font-size: 16px;
+}
+
+.smzdm-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.smzdm-sidebar-section {
+    background: #fff;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid #f0f2f5;
+}
+
+.smzdm-sidebar-section h4 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1a202c;
+    margin: 0 0 16px 0;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.smzdm-sidebar-section h4::before {
+    content: '●';
+    color: #ff6b35;
+    font-size: 12px;
+}
+
+.smzdm-error {
+    background: linear-gradient(135deg, #fff 0%, #fafbfc 100%);
+    padding: 60px 40px;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid #f0f2f5;
+    text-align: center;
+    color: #718096;
+}
+
+.smzdm-error .error-icon {
+    font-size: 64px;
+    color: #ff6b35;
+    margin-bottom: 20px;
+}
+
+.smzdm-error .error-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 16px;
+}
+
+/* 特殊平台按钮样式 - 渐变色方案 */
+.smzdm-buy-btn.tb {
+    background: linear-gradient(135deg, #ff6b35 0%, #ff8c42 100%);
+}
+.smzdm-buy-btn.jd {
+    background: linear-gradient(135deg, #e53e3e 0%, #fc8181 100%);
+}
+.smzdm-buy-btn.pdd {
+    background: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+}
+.smzdm-buy-btn.vip {
+    background: linear-gradient(135deg, #cc3366 0%, #ff6b9d 100%);
+}
+
+.smzdm-buy-btn.tb:hover {
+    box-shadow: 0 6px 20px rgba(255,107,53,0.4);
+}
+.smzdm-buy-btn.jd:hover {
+    box-shadow: 0 6px 20px rgba(229,62,62,0.4);
+}
+.smzdm-buy-btn.pdd:hover {
+    box-shadow: 0 6px 20px rgba(255,65,108,0.4);
+}
+.smzdm-buy-btn.vip:hover {
+    box-shadow: 0 6px 20px rgba(204,51,102,0.4);
+}
+
+/* 响应式设计优化 */
+@media (max-width: 1024px) {
+    .smzdm-content {
+        grid-template-columns: 1fr 280px;
+        gap: 20px;
+    }
+}
+
+@media (max-width: 768px) {
+    .smzdm-detail {
+        padding: 16px;
+    }
+    
+    .smzdm-header {
+        padding: 20px;
+    }
+    
+    .smzdm-header h1 {
+        font-size: 24px;
+    }
+    
+    .smzdm-header .meta {
+        gap: 16px;
+    }
+    
+    .smzdm-content {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .smzdm-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 16px;
+        text-align: center;
+    }
+    
+    .smzdm-buy-btn {
+        margin-left: 0;
+        min-width: auto;
+    }
+    
+    .smzdm-price {
+        font-size: 28px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+/* 深色模式支持 */
+@media (prefers-color-scheme: dark) {
+    body {
+        background: #1a202c;
+    }
+    
+    .smzdm-header,
+    .smzdm-images,
+    .smzdm-description,
+    .smzdm-card,
+    .smzdm-sidebar-section,
+    .smzdm-error {
+        background: #2d3748;
+        border-color: #4a5568;
+        color: #e2e8f0;
+    }
+    
+    .smzdm-header h1,
+    .smzdm-description h3,
+    .smzdm-card-title,
+    .smzdm-sidebar-section h4 {
+        color: #f7fafc;
+    }
+    
+    .smzdm-header .meta,
+    .smzdm-card-desc {
+        color: #a0aec0;
+    }
+}
+
+/* 动画效果 */
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.smzdm-buy-btn:hover::before {
+    animation: shimmer 1s ease-in-out;
+}

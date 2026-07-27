@@ -1,0 +1,91 @@
+{include file="app/index/view/index/common_header"}
+
+<div class="blog-hotbar">
+  <span class="blog-hotbar-label">品牌中心</span>
+  <div class="blog-hotbar-list">
+    <span class="blog-hotbar-item"><b>🏷️</b>精选品牌</span>
+    <span class="blog-hotbar-item"><b>💎</b>品质保证</span>
+    <span class="blog-hotbar-item"><b>💰</b>品牌折扣</span>
+  </div>
+</div>
+
+{if !empty($tips)}
+<div style="background:#fff7f7;border:1px solid #ffd6d6;color:#c0392b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;">
+  ⚠️ {$tips}
+</div>
+{/if}
+
+<div class="row">
+  <div class="column-big">
+    {if !empty($Page['list'])}
+      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+      {foreach $Page['list'] as $vo}
+      <article class="shadow-theme" style="flex:1;min-width:280px;max-width:380px;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
+        <a href="{url($route='index/brand/view/id=<id>', $params=array('id'=>$vo['brandId']))}" target="_blank" style="display:block;">
+          <div style="position:relative;height:180px;overflow:hidden;">
+            {if !empty($vo['brandLogo'])}
+            <img src="{$vo['brandLogo']}" alt="{$vo['brandName']}" style="width:100%;height:100%;object-fit:cover;transition:transform 0.4s ease;">
+            {else}
+            <div style="width:100%;height:100%;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:48px;color:#fff;">🏷️</span>
+            </div>
+            {/if}
+            <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(transparent, rgba(0,0,0,0.5));"></div>
+            <div style="position:absolute;bottom:12px;left:12px;color:#fff;">
+              <h3 style="font-size:20px;font-weight:700;">{$vo['brandName']}</h3>
+            </div>
+          </div>
+        </a>
+          <div style="padding:16px;">
+          {if !empty($vo['brandFeatures'])}
+          <p style="color:#666;font-size:13px;line-height:1.6;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">{$vo['brandFeatures']}</p>
+          {/if}
+          {if !empty($vo['goodsList'])}
+          <div style="display:flex;gap:6px;margin-bottom:14px;overflow:hidden;">
+            {foreach $vo['goodsList'] as $g}
+            {if $n <= 3}
+            <a href="{url($route='index/view/detail', $params=array('id'=>$g['goodsId'], 'type'=>'taobao'))}" target="_blank" style="flex:1;min-width:0;">
+              <img src="{$g['mainPic']}" alt="{$g['title']}" style="width:100%;height:74px;object-fit:cover;border-radius:8px;background:#f5f5f5;">
+            </a>
+            {/if}
+            {/foreach}
+          </div>
+          {/if}
+          <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+            {if !empty($vo['sales'])}
+            <span style="background:#f0f5ff;color:#4080ff;padding:4px 10px;border-radius:6px;font-size:12px;">销量 {$vo['sales']}</span>
+            {/if}
+            {if !empty($vo['maxDiscountAmount'])}
+            <span style="background:#fff0f0;color:#ff4757;padding:4px 10px;border-radius:6px;font-size:12px;">最高减¥{$vo['maxDiscountAmount']}</span>
+            {/if}
+            {if !empty($vo['maxDiscount'])}
+            <span style="background:#fff8f0;color:#ff8c00;padding:4px 10px;border-radius:6px;font-size:12px;">{$vo['maxDiscount']}折</span>
+            {/if}
+            {if !empty($vo['commissionRate'])}
+            <span style="background:#f0fff0;color:#30b060;padding:4px 10px;border-radius:6px;font-size:12px;">佣金{$vo['commissionRate']}%</span>
+            {/if}
+          </div>
+          <a href="{url($route='index/brand/view/id=<id>', $params=array('id'=>$vo['brandId']))}" class="btn btn-buy" target="_blank" style="width:100%;padding:10px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;text-align:center;">查看品牌商品</a>
+        </div>
+      </article>
+      {/foreach}
+      </div>
+      
+      <div class="pagination" style="margin-top:24px;text-align:center;">{$Page['pages']}</div>
+    {else}
+      <div style="text-align:center;padding:80px 20px;background:var(--conBgcolor);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--borderColor);">
+        <div style="font-size:80px;margin-bottom:20px;">🏷️</div>
+        <h3 style="font-size:24px;margin-bottom:12px;color:var(--aColor);font-weight:700;">暂无品牌</h3>
+        <p style="color:var(--lightColor);margin-bottom:24px;font-size:15px;">
+          {if !empty($cid)}该分类暂时没有品牌，去看看其他分类吧！
+          {else}暂无品牌数据，请稍后再来查看！
+          {/if}
+        </p>
+        <a href="{url($route='index/brand/index', $params=array())}" class="btn btn-buy" style="padding:12px 32px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;">查看全部品牌</a>
+      </div>
+    {/if}
+  </div>
+  {include file="app/index/view/index/common_sidebar"}
+</div>
+
+{include file="app/index/view/index/common_footer"}

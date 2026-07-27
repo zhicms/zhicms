@@ -1,0 +1,818 @@
+
+<script src="{__PUBLIC__}web/js/jquery-1.9.1.0720.min.js"></script>
+<script>
+if (!window.jQuery) {
+//http://cdn.staticfile.org/jquery/1.9.1/jquery.js
+var script = document.createElement('script');
+script.src = "{__PUBLIC__}web/js/jquery-1.9.1.min.js";
+document.body.appendChild(script);
+}
+</script>
+<script src="{__PUBLIC__}web/js/jquery-ui-0720.min.js"></script>
+<script type='text/javascript'>
+
+setTimeout(function(){
+	$(".gooditem").removeClass("newfeed");
+},2000);
+
+$(function(){
+	$(".gooditem").hover(function(){
+		$(this).css("background-color","#f9f8f9");
+		$(this).find("a.abstractcontent").css("color","#666");
+		$(this).find("div.timeandfrom").css("color","#666");
+		$(this).find("a.goodname").css("color","#333");
+		$(this).find("a.mallname").css("background-color","#e9e9e9");
+		$(this).find("div.imgmask").show();
+　　},function(){
+		$(this).css("background-color","#ffffff");
+		$(this).find("a.abstractcontent").css("color","#959595");
+		$(this).find("div.timeandfrom").css("color","#959595");
+		$(this).find("a.goodname").css("color","#555");
+		$(this).find("a.mallname").css("background-color","#f1f1f1");
+		$(this).find("div.imgmask").hide();
+　　});
+
+	$(".cateitem").hover(function(){
+		$(this).css("background-color","#5db95b");
+		$(this).find(".cateitemword").css("color","#ffffff");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+		$(this).find(".cateitemword").css("color","#5db95b");
+　　});
+
+	$(".zdirectsquare").hover(function(){
+		$(this).css("background-color","#5db95b");
+		$(this).find(".zdirecttext").css("color","#ffffff");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+		$(this).find(".zdirecttext").css("color","#5db95b");
+　　});
+
+	$(".maintaghot").hover(function(){
+		$(this).find(".maintagtext").html('点我');
+　　},function(){
+		$(this).find(".maintagtext").html('热门');
+　　});
+
+	$(".cheapgotobuy").hover(function(){
+		$(this).css("background-color","#5db95b");
+		$(this).css("color","#ffffff");
+　　},function(){
+		$(this).css("background-color","#e5f4e5");
+		$(this).css("color","#5db95b");
+　　});
+
+	$(".cheapgotocoupon").hover(function(){
+		$(this).css("background-color","#ff998a");
+		$(this).css("color","#ffffff");
+　　},function(){
+		$(this).css("background-color","#ffefec");
+		$(this).css("color","#ff998a");
+　　});
+
+	$(".hotdealbaritem").hover(function(){
+		$(this).css("background-color","#f9f8f9");
+		$(this).find("div.hotdealbaritemword").css("color","#333");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+		$(this).find("div.hotdealbaritemword").css("color","#777");
+　　});
+
+	$(".hourrankitem").hover(function(){
+		$(this).css("background-color","#f9f8f9");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+　　});
+
+	$("a.gotobuybtn").hover(function(){
+		$(this).css("background-color","#5db95b");
+		$(this).find("span.buylink").css("color","#ffffff");
+　　},function(){
+		$(this).css("background-color","#dafad9");
+		$(this).find("span.buylink").css("color","#5db95b");
+　　});
+
+	$("a.innermoredetailbtn").hover(function(){
+		$(this).css("background-color","#dafad9");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+　　});
+
+	$("a.innergototobuybtn").hover(function(){
+		$(this).css("background-color","#54a852");
+　　},function(){
+		$(this).css("background-color","#5db95b");
+　　});
+
+	$("a.mallname").hover(function(){
+		$(this).css("background-color","#c4edc3");
+　　},function(){
+		$(this).css("background-color","#ededed");
+　　});
+
+	$("a.dmallname").hover(function(){
+		$(this).css("background-color","#c4edc3");
+　　},function(){
+		$(this).css("background-color","#ededed");
+　　});
+
+	$("a.hourrankmall").hover(function(){
+		$(this).css("background-color","#c4edc3");
+　　},function(){
+		$(this).css("background-color","#ededed");
+　　});
+
+	$(".rightreccitem").hover(function(){
+		$(this).css("background-color","#f9f8f9");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+　　});
+
+	$(".dgotobutton").hover(function(){
+		$(this).css("background-color","#54a852");
+　　},function(){
+		$(this).css("background-color","#5db95b");
+　　});
+
+	$(".eventname").hover(function(){
+		$(this).css("text-decoration","underline");
+		$(this).css("color","#5db95b");
+　　},function(){
+		$(this).css("text-decoration","none");
+		$(this).css("color","#777");
+　　});
+
+	$(".dtitle").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".drelated").hover(function(){
+		$(this).css("background-color","#f9f8f9");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+　　});
+
+	$(".hourranktitle").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".goodname").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".pandvrank").hover(function(){
+		$(this).css("color","#52a750");
+　　},function(){
+		$(this).css("color","#5db95b");
+　　});
+
+	$(".headpandvrank").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".goodname_event").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".gotodetail").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".navbaritem").hover(function(){
+		$(this).css("background-color","#378d35");
+　　},function(){
+		$(this).css("background-color","");
+　　});
+
+	$(".newhotitemword").hover(function(){
+		$(this).css("text-decoration","underline");
+		$(this).css("color","#5db95b");
+　　},function(){
+		$(this).css("text-decoration","none");
+		$(this).css("color","#888");
+　　});
+
+	$("#mallfilterarea").hover(function(){
+		$("#mallentrance").show();
+　　},function(){
+		$("#mallentrance").hide();
+　　});
+
+	$(".mallentrancelist").hover(function(){
+		$(this).css("background-color","#7ecb7c");
+　　},function(){
+		$(this).css("background-color","");
+　　});
+
+	$(".cateword").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".goodword").hover(function(){
+		$(this).css("text-decoration","underline");
+		$(this).css("color","#5db95b");
+　　},function(){
+		$(this).css("text-decoration","none");
+		$(this).css("color","#888");
+　　});
+
+	$(".newgdfeekbackword").hover(function(){
+		$(this).css("text-decoration","underline");
+		$(this).css("color","#5db95b");
+　　},function(){
+		$(this).css("text-decoration","none");
+		$(this).css("color","#888");
+　　});
+
+	$(".goodword").click(function(){
+		var q=$(this).html();
+		window.location.href='so.html?content='+q;
+　　});
+
+	$("#prevpage").hover(function(){
+		$(this).removeClass("prevpagestatic");
+	　　$(this).addClass("prevpagehover");
+　　},function(){
+		$(this).removeClass("prevpagehover");
+	　　$(this).addClass("prevpagestatic");
+　　});
+
+	$("#nextpage").hover(function(){
+		$(this).removeClass("nextpagestatic");
+	　　$(this).addClass("nextpagehover");
+　　},function(){
+		$(this).removeClass("nextpagehover");
+	　　$(this).addClass("nextpagestatic");
+　　});
+
+	$(".countrynormal").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".otherPageNum").hover(function(){
+		$(this).css("background-color","#4c994b");
+	　　//$(this).css("color","#ffffff");
+　　},function(){
+		$(this).css("background-color","#5db95b");
+	　　//$(this).css("color","#5db95b");
+　　});
+
+	$("#headsearchbutton").hover(function(){
+		$(this).removeClass("headsearchbutton");
+	　　$(this).addClass("headsearchbuttonhover");
+　　},function(){
+		$(this).removeClass("headsearchbuttonhover");
+	　　$(this).addClass("headsearchbutton");
+　　});
+
+	$(".sidenavitem").hover(function(){
+		$(this).css("background-color","#f9f9f9");
+		$(this).css("border-top","1px solid #9ed59d");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+		$(this).css("border-top","1px solid #eaeaea");
+　　});
+	
+	$("#headsearchfield").focus(function(){
+		if($(this).val()=='搜索全网折扣...')
+		{
+			$(this).val('');
+		}
+	});
+
+	$("#fixsearchfield").focus(function(){
+		if($(this).val()=='搜索全网折扣...')
+		{
+			$(this).val('');
+		}
+	});
+
+	$("#headsearchfield").blur(function(){
+		$('#headsuggest').hide();
+		if($(this).val()=='')
+		{
+			$(this).val('搜索全网折扣...');
+		}
+	});
+
+	$("#fixsearchfield").blur(function(){
+		if($(this).val()=='')
+		{
+			$(this).val('搜索全网折扣...');
+		}
+	});
+
+	//$("#headsearchbutton").click(function(){
+	//	sbscr();
+	//});
+	function gosbtn(){
+	sbscr();
+	}
+	function gosbtns(){
+	sbscrfix();
+	}
+
+
+
+	$("#feednotify").click(function(){
+		$(this).hide();
+		$(".dealheadnotifydot").hide();
+		$("#dealheadnotifydiv").hide();
+		$("#dealheadnotifyclose").hide();
+   		$(document).attr("title","{obj('base/Base')->SEO('index_title')}");
+		clearInterval(sh);
+	});
+
+	$("#dealheadnotifydiv").click(function(){
+		$(this).hide();
+		$(".dealheadnotifydot").hide();
+		$("#feednotify").hide();
+		$("#dealheadnotifyclose").hide();
+   		$(document).attr("title","{obj('base/Base')->SEO('index_title')}");
+		clearInterval(sh);
+	});
+
+	$("#dealheadnotifyclose").click(function(){
+		$(this).hide();
+		$("#dealheadnotifydiv").hide();
+		$(".dealheadnotifydot").hide();
+		$("#feednotify").hide();
+   		$(document).attr("title","{obj('base/Base')->SEO('index_title')}");
+		clearInterval(sh);
+	});
+
+	$("#countrytip").click(function(){
+		$("#countrytip").hide();
+		$.get("{url($route='index/index/welcomecookie', $params=array())}");
+		_hmt.push(['_trackEvent', 'countrytip', 'countrytip']);
+	});
+
+	var timeStrClick=new Date().getTime();
+	$("#welcomebanner").click(function(){
+		$("#welcomebanner").hide();
+		$.get("{url($route='index/index/welcomecookie', $params=array())}");
+		_hmt.push(['_trackEvent', 'welcomebanner', 'welcomebanner']);
+	});
+
+	$(window).scroll(function(){
+		if($(window).scrollTop()>1200)
+		{
+			$("#tofix").show();
+			$("#notfix").hide();
+			$("#gototop").fadeIn(200);
+		}
+		else
+		{
+			console.log('here');
+			$("#notfix").show();
+			$("#tofix").hide();
+			$("#gototop").hide();
+		}
+
+		if($(window).scrollTop()>200)
+		{
+			$(".dealheadfix").show();
+			fixsearchautocomplete();
+		}
+		else
+		{
+			$(".dealheadfix").hide();
+		}
+	});
+
+	$("#gototop").hover(function(){
+		$(this).removeClass("gototopstatic");
+	　　$(this).addClass("gototophover");
+　　},function(){
+		$(this).removeClass("gototophover");
+	　　$(this).addClass("gototopstatic");
+　　});
+
+	$("#watergototop").hover(function(){
+		$(this).removeClass("gototopstatic");
+	　　$(this).addClass("gototophover");
+　　},function(){
+		$(this).removeClass("gototophover");
+	　　$(this).addClass("gototopstatic");
+　　});
+
+	$("#feedback").hover(function(){
+		$(this).removeClass("feedbackstatic");
+	　　$(this).addClass("feedbackhover");
+　　},function(){
+		$(this).removeClass("feedbackhover");
+	　　$(this).addClass("feedbackstatic");
+　　});
+
+	$("#gototop").click(function(){
+		$('body,html').animate({scrollTop:0},200);
+	});
+
+	$("#watergototop").click(function(){
+		$('body,html').animate({scrollTop:0},200);
+	});
+
+	$(".inactivepage").hover(function(){
+		$(this).removeClass("inactivepage");
+	　　$(this).addClass("hoverpage");
+　　},function(){
+		$(this).removeClass("hoverpage");
+	　　$(this).addClass("inactivepage");
+　　});
+
+	$(".normalbk").hover(function(){
+		$(this).css("background-color","#56a655");
+　　},function(){
+		$(this).css("background-color","#5db95b");
+　　});
+
+	$(".layerword").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".feednotify").hover(function(){
+		$(this).css("background-color","#e1f0e1");
+　　},function(){
+		$(this).css("background-color","#e7f6e7");
+　　});
+
+	$(".dealheadnotifydiv").hover(function(){
+		$(this).css("background-color","#ffd3cc");
+　　},function(){
+		$(this).css("background-color","#ffe4e0");
+　　});
+
+	$(".dealheadnotifyclose").hover(function(){
+		$(this).css("background-color","#ffd3cc");
+　　},function(){
+		$(this).css("background-color","#ffe4e0");
+　　});
+
+	$(".sideproductitem").hover(function(){
+		$(this).css("background-color","#f9f8f9");
+　　},function(){
+		$(this).css("background-color","#ffffff");
+　　});
+
+	$(".catessmallitem").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+	
+	$(".hotsentrance").hover(function(){
+		$(this).css("text-decoration","underline");
+　　},function(){
+		$(this).css("text-decoration","none");
+　　});
+
+	$(".mobilelayerhover").hover(function(){
+		$("#mobileentrancelayer").show();
+		$("#mobileentrance").css("background-color","#59b157");
+　　},function(){
+		$("#mobileentrancelayer").hide();
+		$("#mobileentrance").css("background-color","#5db95b");
+　　});
+
+	$( "#headsearchfield" ).autocomplete({
+		source: function( request, response ) {
+			$.ajax({
+                url: "https://suggest.taobao.com/sug",
+                dataType: "jsonp",
+                data: {
+                    q: request.term,
+                    code: "utf-8"
+                },
+                success: function( data ) {
+                    var arr = (data && data.result) ? data.result : [];
+                    response( $.map( arr, function( item ) {
+                        var word = (typeof item === "string") ? item : (item[0] || "");
+                        return { label: word, value: word };
+                    }));
+                },
+                error: function() { response([]); }
+            });
+		},
+		minLength: 1,
+		select: function( event, ui ) {
+			dosearch( ui.item.value , "hsuggest" );
+		}
+	})
+	.data( "ui-autocomplete" )._renderItem = function( ul, item ) {
+		return $( "<li>" )
+		.data( "ui-autocomplete-item", item )
+		.append( "<span class=\"headsuggestitem\">" + item.label + "</span>" )
+		.appendTo( ul );
+	};
+}); // end of $
+
+function dosearch( message, keyfrom )
+{
+	window.location.href='so.html?content='+message;
+}
+
+
+function fixsearchautocomplete()
+{
+	if(window.location.pathname.indexOf("so.html")>0)
+	{
+		return 0;
+	}
+	if(window.location.pathname.indexOf("hots.html")>0)
+	{
+		return 0;
+	}
+	if(window.location.pathname.indexOf("detail.html")>0)
+	{
+		return 0;
+	}
+	$( "#fixsearchfield" ).autocomplete({
+		source: function( request, response ) {
+			$.ajax({
+                url: "https://suggest.taobao.com/sug",
+                dataType: "jsonp",
+                data: {
+                    q: request.term,
+                    code: "utf-8"
+                },
+                success: function( data ) {
+                    var arr = (data && data.result) ? data.result : [];
+                    response( $.map( arr, function( item ) {
+                        var word = (typeof item === "string") ? item : (item[0] || "");
+                        return { label: word, value: word };
+                    }));
+                },
+                error: function() { response([]); }
+            });
+		},
+		minLength: 1,
+		select: function( event, ui ) {
+			dosearch( ui.item.value , "fsuggest" );
+		}
+	})
+	.data( "ui-autocomplete" )._renderItem = function( ul, item ) {
+		return $( "<li>" )
+		.data( "ui-autocomplete-item", item )
+		.append( "<span class=\"headsuggestitem\">" + item.label + "</span>" )
+		.appendTo( ul );
+	};
+}
+
+
+function sbscr()
+{
+	var query=document.getElementById("headsearchfield").value;
+	if(query!="")
+	{
+		/*var reg = /^(\w|\-|\s|[\u4E00-\u9FA5])*$/;
+		if(arr=query.match(reg))
+		{*/
+			queryencode=encodeURIComponent(query);
+			_hmt.push(['_trackEvent', 'query', 'query-'+query]);
+			window.location.href='so.html?content='+queryencode;
+		/*}
+		else
+		{
+			$("#searchtip").html("只可查询中英文或数字");
+			$("#headsearchfield").focus();
+			$("#headsearchfield").select();
+			setTimeout(function(){
+				$("#searchtip").html("");
+			},1000);
+		}*/
+		
+	}
+}
+  function gosbtn(){
+	 var query=document.getElementById("headsearchfield").value;
+	if(query!="")
+	{
+		/*var reg = /^(\w|\-|\s|[\u4E00-\u9FA5])*$/;
+		if(arr=query.match(reg))
+		{*/
+			queryencode=encodeURIComponent(query);
+			//_hmt.push(['_trackEvent', 'query', 'query-'+query]);
+			window.location.href='so.html?content='+queryencode;
+		/*}
+		else
+		{
+			$("#searchtip").html("只可查询中英文或数字");
+			$("#headsearchfield").focus();
+			$("#headsearchfield").select();
+			setTimeout(function(){
+				$("#searchtip").html("");
+			},1000);
+		}*/
+		
+	}
+
+  }
+function sbscrfix()
+{
+	var query=document.getElementById("fixsearchfield").value;
+	if(query!="")
+	{
+		/*var reg = /^(\w|\-|\s|[\u4E00-\u9FA5])*$/;
+		if(arr=query.match(reg))
+		{*/
+			queryencode=encodeURIComponent(query);
+			_hmt.push(['_trackEvent', 'query', 'query-'+query]);
+			window.location.href='so.html?content='+queryencode;
+		/*}
+		else
+		{
+
+			$("#fixsearchtip").html("只可查询中英文或数字");
+			$("#fixsearchfield").focus();
+			$("#fixsearchfield").select();
+		}*/
+		
+	}
+}
+
+function clickButton(e) 
+{     
+	if (e.keyCode == 13) 
+	{      
+		sbscr();
+	}
+}
+
+function clickButtonFix(e) 
+{     
+	if (e.keyCode == 13) 
+	{      
+		sbscrfix();
+	}
+}
+
+function xlog(id,pos)
+{
+	$.ajax({  
+		type: "get",  
+		async: false,
+		url: "{url($route='index/index/log', $params=array())}",
+		data: { id: id, pos: pos },
+		dataType: "jsonp",  
+		success: function(data){
+		//alert(data.data);  
+		},  
+		error: function(){  
+		//alert('fail');  
+		}  
+	});
+}
+
+function cplog(id,pos)
+{
+	$.ajax({  
+		type: "get",  
+		async: false,
+		url: "{url($route='index/index/log', $params=array())}",
+		data: { id: id, pos: pos },
+		dataType: "jsonp",  
+		success: function(data){
+		//alert(data.data);  
+		},  
+		error: function(){  
+		//alert('fail');  
+		}  
+	});
+}
+
+function clog(id,pos)
+{
+	
+}
+
+function alog(pos,v)
+{
+
+}
+
+/* ---------- 列表页下拉加载（无限滚动） ---------- */
+function initFeedAutoLoad()
+{
+	var feed = document.querySelector('.smz-feed');
+	if(!feed) return;
+	var pager = feed.querySelector('.smz-pager');
+	if(!pager) return;
+
+	var loading = false, finished = false;
+
+	function getCurPage(){
+		var m = location.pathname.match(/page[-_](\d+)/i) || location.search.match(/[?&]page=(\d+)/);
+		if(m) return parseInt(m[1], 10);
+		var act = pager.querySelector('.active, .current, .cur, .currentPageNum, span.current');
+		if(act && /\d+/.test(act.textContent)) return parseInt(act.textContent, 10);
+		return 1;
+	}
+	function getNextUrl(){
+		var links = pager.querySelectorAll('a[href]');
+		var cur = getCurPage(), nextUrl = null, nextPage = cur;
+		for(var i=0;i<links.length;i++){
+			var href = links[i].getAttribute('href') || '';
+			if(href === '#' || href.indexOf('javascript:') === 0) continue;
+			var mm = href.match(/(?:[?&]page=|page[-_])(\d+)/i);
+			if(mm){
+				var p = parseInt(mm[1], 10);
+				if(p > cur && p > nextPage){ nextPage = p; nextUrl = href; }
+			}
+		}
+		if(nextUrl){
+			if(nextUrl.indexOf('?') < 0) nextUrl = nextUrl.replace('&page=', '?page=');
+			nextUrl = new URL(nextUrl, location.href).href;
+		}
+		return nextUrl;
+	}
+
+	function appendNext(){
+		if(loading || finished) return;
+		var nextUrl = getNextUrl();
+		if(!nextUrl){ finished = true; showTip('已经到底啦 ~'); return; }
+		loading = true;
+		showTip('加载中...');
+		fetch(nextUrl, { credentials: 'same-origin' })
+			.then(function(r){ return r.text(); })
+			.then(function(html){
+				var doc = new DOMParser().parseFromString(html, 'text/html');
+				var nextFeed = doc.querySelector('.smz-feed');
+				var nextPager = doc.querySelector('.smz-pager');
+				if(nextFeed){
+					var cards = nextFeed.querySelectorAll('.smz-card, .smz-brand, .smz-detail, .smz-article');
+					cards.forEach(function(n){ feed.insertBefore(n, pager); });
+				}
+				if(nextPager){
+					pager.innerHTML = nextPager.innerHTML;
+				}
+				if(!getNextUrl()){
+					finished = true;
+					showTip('已经到底啦 ~');
+				}else{
+					showTip('');
+				}
+				loading = false;
+			})
+			.catch(function(){
+				loading = false;
+				showTip('加载失败，下拉重试');
+			});
+	}
+
+	function showTip(text){
+		var tip = feed.querySelector('.smz-feed-tip');
+		if(!tip){
+			tip = document.createElement('div');
+			tip.className = 'smz-feed-tip';
+			feed.appendChild(tip);
+		}
+		tip.textContent = text || '';
+	}
+
+	var ticking = false;
+	window.addEventListener('scroll', function(){
+		if(finished || loading) return;
+		if(ticking) return;
+		ticking = true;
+		setTimeout(function(){
+			ticking = false;
+			var scrollPos = window.scrollY || document.documentElement.scrollTop;
+			var nearBottom = (window.innerHeight + scrollPos) >= (document.body.offsetHeight - 700);
+			if(nearBottom) appendNext();
+		}, 200);
+	});
+
+	// 首屏内容不足一屏时主动补一页
+	setTimeout(function(){
+		var scrollPos = window.scrollY || document.documentElement.scrollTop;
+		if((window.innerHeight + scrollPos) >= (document.body.offsetHeight - 700) && !finished){
+			appendNext();
+		}
+	}, 600);
+}
+if(document.readyState !== 'loading'){ initFeedAutoLoad(); }
+else { document.addEventListener('DOMContentLoaded', initFeedAutoLoad); }
+
+
+
+
+
+</script>

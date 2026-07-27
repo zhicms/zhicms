@@ -1,0 +1,24 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-cog"></i>
+    插件设置
+</h1>
+
+<!-- 面包屑导航 -->
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="index.php?r=manage/plugin/index"><i class="fas fa-puzzle-piece mr-1"></i>插件市场</a></li>
+        <li class="breadcrumb-item active" aria-current="page">设置</li>
+    </ol>
+</nav>
+
+<!-- 设置内容 -->
+<div class="card shadow mb-4">
+    <div class="card-body p-4">
+        <?php echo $settingContent; ?>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}

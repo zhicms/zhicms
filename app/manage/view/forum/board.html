@@ -1,0 +1,163 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-th-large"></i>
+    社区管理 - 板块管理
+</h1>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <button class="btn btn-primary" onclick="openBoardModal(0)">
+            <i class="fas fa-plus"></i> 新增板块
+        </button>
+        <button class="btn btn-outline-success" onclick="location.reload()">
+            <i class="fas fa-sync-alt"></i> 刷新
+        </button>
+    </div>
+    <div class="text-muted small">
+        <i class="fas fa-info-circle"></i> 板块是社区帖子的顶级分类，用于区分不同主题领域
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <i class="fas fa-table"></i> 板块列表
+        <span class="badge badge-info float-right mt-1"><?php echo count($boards); ?> 个板块</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width: 60px;">ID</th>
+                        <th style="width: 100px;">排序</th>
+                        <th>板块名称</th>
+                        <th style="width: 180px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($boards)): ?>
+                    <?php foreach ($boards as $row): ?>
+                    <tr id="board-row-<?php echo (int)$row['id']; ?>">
+                        <td><?php echo (int)$row['id']; ?></td>
+                        <td><input type="number" class="form-control form-control-sm" style="width: 80px;" value="<?php echo (int)($row['px'] ?? 0); ?>" onchange="updatePx(<?php echo (int)$row['id']; ?>, this.value, 'board')" readonly></td>
+                        <td><strong><?php echo htmlspecialchars($row['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></strong></td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <button class="btn btn-outline-primary" onclick="openBoardModal(<?php echo (int)$row['id']; ?>, '<?php echo htmlspecialchars($row['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?>', <?php echo (int)($row['px'] ?? 0); ?>)">
+                                    <i class="fas fa-edit"></i> 编辑
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="delBoard(<?php echo (int)$row['id']; ?>)">
+                                    <i class="fas fa-trash"></i> 删除
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="4" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-th-large fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无板块</h5>
+                                <p class="text-muted">点击"新增板块"按钮创建第一个板块</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 板块编辑弹窗 -->
+<div class="modal fade" id="boardModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form id="boardForm" onsubmit="return false;">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-edit"></i> <span id="boardModalTitle">新增板块</span></h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="boardId" name="id" value="0">
+                    <div class="form-group">
+                        <label class="font-weight-bold">板块名称 <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="boardName" name="name" maxlength="50" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">排序（数字越小越靠前）</label>
+                        <input type="number" class="form-control" id="boardPx" name="px" value="0" min="0">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" onclick="saveBoard()">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function openBoardModal(id, name, px) {
+    document.getElementById('boardId').value = id || 0;
+    document.getElementById('boardName').value = name || '';
+    document.getElementById('boardPx').value = px || 0;
+    document.getElementById('boardModalTitle').innerText = id > 0 ? '编辑板块' : '新增板块';
+    $('#boardModal').modal('show');
+}
+
+function saveBoard() {
+    var id = parseInt(document.getElementById('boardId').value) || 0;
+    var name = document.getElementById('boardName').value.trim();
+    var px = parseInt(document.getElementById('boardPx').value) || 0;
+    if (!name) { alert('请填写板块名称'); return; }
+
+    var data = 'id=' + id + '&name=' + encodeURIComponent(name) + '&px=' + px;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/forum/saveBoard', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    $('#boardModal').modal('hide');
+                    location.reload();
+                }
+            } catch (e) {
+                alert('保存失败: ' + xhr.responseText.substring(0, 200));
+            }
+        }
+    };
+    xhr.send(data);
+}
+
+function delBoard(id) {
+    if (!confirm('删除板块后，该板块下的帖子可能会无法分类，确定要删除吗？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/forum/deleteBoard&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                alert(r.info);
+                if (r.status === 'y') {
+                    var row = document.getElementById('board-row-' + id);
+                    if (row) row.style.display = 'none';
+                }
+            } catch (e) {
+                alert('删除失败');
+            }
+        }
+    };
+    xhr.send();
+}
+</script>

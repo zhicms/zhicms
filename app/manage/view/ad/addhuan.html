@@ -1,0 +1,98 @@
+{include file="app/manage/view/index/nav"}
+
+<div class="layui-container">
+    <div class="layui-row">
+        <div class="layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-header">
+                    <i class="layui-icon layui-icon-edit"></i> {$pagetext['1']}
+                </div>
+                <div class="layui-card-body">
+                    <form class="layui-form" id="form" action="" method="post">
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">标题</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="title" class="layui-input" placeholder="幻灯广告标题" value="{$ret['title']}">
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">显示平台</label>
+                            <div class="layui-input-block">
+                                <select name="type" class="layui-select">
+                                    <option {if $ret['type']=='0'} selected="selected" {/if} value="0">PC网站</option>
+                                    <option {if $ret['type']=='1'} selected="selected" {/if} value="1">移动端</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">封面</label>
+                            <div class="layui-input-block">
+                                <div class="layui-inline" style="width:calc(100% - 120px);">
+                                    <input type="text" name="pic" id="tupian" class="layui-input" placeholder="封面图片地址" value="{$ret['pic']}">
+                                </div>
+                                <button type="button" class="layui-btn layui-btn-sm" onclick="upthis()"><i class="layui-icon layui-icon-upload"></i> 上传</button>
+                                <input type="file" name="file" id="up_tupian" onChange="Uploadthis('tupian','up_tupian')" style="display:none">
+                                {if $ret['pic']}
+                                <img src="{$ret['pic']}" class="img-preview">
+                                {/if}
+                            </div>
+                            <p class="form-tip" style="margin-left:110px;">建议尺寸：1900*449</p>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">超级链接</label>
+                            <div class="layui-input-block">
+                                <input type="text" name="link" class="layui-input" placeholder="超级链接" value="{$ret['link']}">
+                            </div>
+                        </div>
+
+                        {$html}
+
+                        <div class="layui-form-item">
+                            <div class="layui-input-block">
+                                <button type="submit" class="layui-btn" id="save"><i class="layui-icon layui-icon-save"></i> 保存</button>
+                                <button type="button" class="layui-btn layui-btn-primary" onclick="window.location.href='index.php?r=manage/ad/huan'"><i class="layui-icon layui-icon-return"></i> 返回列表</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.staticfile.org/layui/2.9.10/layui.js"></script>
+<script src="/public/global/layer/layer.js"></script>
+<script src="/public/global/js/ajaxfileupload.js"></script>
+<script src="/public/global/js/index.js"></script>
+
+<script>
+layui.use(['form'], function(){
+    var form = layui.form;
+    ZhiForm("#form","index.php?r=manage/ad/huan","保存中","保存","null");
+});
+
+Uploadthis=function(obj,thisid){
+    layer.load(2);
+    $.ajaxFileUpload({  
+        url:'index.php?r=manage/File/huan',  
+        secureuri:false,  
+        fileElementId:thisid,
+        dataType: 'json',
+        success: function (data, status) {  
+            $("#"+obj).val(data.url);
+            layer.closeAll('loading');
+        }
+    });  	
+}
+
+function upthis(){
+    document.getElementById("up_tupian").click(); 	
+}
+</script>
+</body>
+</html>

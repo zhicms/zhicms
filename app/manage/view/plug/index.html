@@ -1,0 +1,50 @@
+{include file="app/manage/view/index/nav"}
+            
+            <div class="layui-container">
+                <div class="layui-row">
+                    <div class="layui-col-md12">
+                        <div class="layui-card">
+                            <div class="layui-card-header">
+                                <i class="layui-icon layui-icon-plug"></i> 插件管理
+                            </div>
+                            <div class="layui-card-body">
+                                <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:20px;">
+                                    <?php if (!empty($ret)) { foreach ($ret as $row) { ?>
+                                    <div class="layui-card" style="margin-bottom:0; border:1px solid #EBEEF5;">
+                                        <div class="layui-card-header" style="background:#F8FAFC; border-bottom:1px solid #EBEEF5; padding:15px;">
+                                            <div style="display:flex; align-items:center; gap:10px;">
+                                                <img src="<?php echo $row['pic']; ?>" width="40" height="40" style="border-radius:8px;" alt="">
+                                                <div>
+                                                    <div style="font-weight:600; color:#303133; font-size:14px;"><?php echo $row['title']; ?></div>
+                                                    <div style="font-size:12px; color:#909399; margin-top:2px;"><?php echo $row['author'] . ' | v' . $row['version']; ?></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="layui-card-body" style="padding:15px;">
+                                            <p style="font-size:13px; color:#606266; line-height:1.6; margin-bottom:15px;"><?php echo $row['info']; ?></p>
+                                            <div style="display:flex; gap:10px;">
+                                                <?php if ($row['manage']) { ?>
+                                                <a href="<?php echo $row['controller']; ?>" class="layui-btn layui-btn-sm"><i class="layui-icon layui-icon-set"></i> 设置</a>
+                                                <?php } ?>
+                                                <a href="<?php echo $row['controller']; ?>" class="layui-btn layui-btn-sm layui-btn-primary"><i class="layui-icon layui-icon-eye"></i> 预览</a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <?php } } else { ?>
+                                    <div style="text-align:center; padding:60px 20px; color:#909399; grid-column:1/-1;">
+                                        <i class="layui-icon layui-icon-plug" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
+                                        <p>暂无插件</p>
+                                    </div>
+                                    <?php } ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.staticfile.org/layui/2.9.10/layui.js"></script>
+</body>
+</html>

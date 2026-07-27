@@ -1,0 +1,143 @@
+{include file="app/index/view/index/common_header"}
+
+<div class="blog-hotbar">
+  <span class="blog-hotbar-label">品牌商品</span>
+  <div class="blog-hotbar-list">
+    {if !empty($brandInfo['brandName'])}
+    <span class="blog-hotbar-item">🏷️ {$brandInfo['brandName']}</span>
+    {/if}
+    {if !empty($brandInfo['sales'])}
+    <span class="blog-hotbar-item">📦 销量 {$brandInfo['sales']}</span>
+    {/if}
+    {if !empty($brandInfo['maxDiscountAmount'])}
+    <span class="blog-hotbar-item">💰 最高减¥{$brandInfo['maxDiscountAmount']}</span>
+    {/if}
+  </div>
+</div>
+
+{if !empty($tips)}
+<div style="background:#fff7f7;border:1px solid #ffd6d6;color:#c0392b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;">
+  ⚠️ {$tips}
+</div>
+{/if}
+
+<div class="row">
+  <div class="column-big">
+    {if !empty($brandInfo)}
+    <div class="shadow-theme" style="border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;margin-bottom:24px;">
+      <div style="display:flex;flex-wrap:wrap;">
+        <div style="flex:0 0 200px;position:relative;">
+          {if !empty($brandInfo['brandLogo'])}
+          <img src="{$brandInfo['brandLogo']}" alt="{$brandInfo['brandName']}" style="width:100%;height:200px;object-fit:cover;">
+          {else}
+          <div style="width:100%;height:200px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:64px;color:#fff;">🏷️</span>
+          </div>
+          {/if}
+        </div>
+        <div style="flex:1;min-width:300px;padding:24px;">
+          <h1 style="font-size:28px;font-weight:800;color:#1f2329;margin-bottom:12px;">{$brandInfo['brandName']}</h1>
+          {if !empty($brandInfo['brandDesc'])}
+          <p style="color:#666;font-size:15px;line-height:1.7;margin-bottom:16px;">{$brandInfo['brandDesc']}</p>
+          {/if}
+          {if !empty($brandInfo['brandFeatures'])}
+          <p style="color:#555;font-size:14px;line-height:1.6;margin-bottom:16px;">{$brandInfo['brandFeatures']}</p>
+          {/if}
+          <div style="display:flex;flex-wrap:wrap;gap:12px;">
+            {if !empty($brandInfo['sales'])}
+            <span class="card-tag" style="background:#f0f5ff;color:#4080ff;padding:6px 14px;border-radius:8px;font-size:13px;">📦 销量 {$brandInfo['sales']}</span>
+            {/if}
+            {if !empty($brandInfo['maxDiscountAmount'])}
+            <span class="card-tag" style="background:#fff0f0;color:#ff4757;padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;">💰 最高减¥{$brandInfo['maxDiscountAmount']}</span>
+            {/if}
+            {if !empty($brandInfo['maxDiscount'])}
+            <span class="card-tag" style="background:#fff8f0;color:#ff8c00;padding:6px 14px;border-radius:8px;font-size:13px;">🏷️ {$brandInfo['maxDiscount']}折</span>
+            {/if}
+            {if !empty($brandInfo['commissionRate'])}
+            <span class="card-tag" style="background:#f0fff0;color:#30b060;padding:6px 14px;border-radius:8px;font-size:13px;">💵 佣金{$brandInfo['commissionRate']}%</span>
+            {/if}
+          </div>
+        </div>
+      </div>
+    </div>
+    {/if}
+
+    {if !empty($fromSearch)}
+    <div style="background:#f0f7ff;border:1px solid #cfe3ff;color:#2b6cb0;padding:10px 16px;border-radius:10px;margin-bottom:16px;font-size:13px;">
+      🔍 该品牌官方商品暂缺，以下为按品牌名「{$brandInfo['brandName']}」搜索匹配的补齐商品
+    </div>
+    {/if}
+    
+    {if !empty($Page['list'])}
+      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+      {foreach $Page['list'] as $item}
+      <?php 
+        $detailId = !empty($item['id']) ? $item['id'] : (!empty($item['ID']) ? $item['ID'] : 0);
+        $itemTitle = !empty($item['title']) ? $item['title'] : (!empty($item['goods_name']) ? $item['goods_name'] : (!empty($item['name']) ? $item['name'] : '品牌商品'));
+        $goodsId = !empty($item['goodsId']) ? $item['goodsId'] : (!empty($item['goods_id']) ? $item['goods_id'] : $detailId);
+        $itemFrom = !empty($item['item_from']) ? $item['item_from'] : 'taobao';
+        $detailUrl = url('index/view/detail', ['id' => $goodsId, 'type' => $itemFrom]);
+        $couponVal = !empty($item['couponPrice']) ? $item['couponPrice'] : (!empty($item['coupon_price']) ? $item['coupon_price'] : (!empty($item['coupon']) ? $item['coupon'] : ''));
+        $actualPrice = !empty($item['actualPrice']) ? $item['actualPrice'] : (!empty($item['goodsVipPrice']) ? $item['goodsVipPrice'] : (!empty($item['price']) ? $item['price'] : (!empty($item['unit_price']) ? $item['unit_price'] : (!empty($item['now_price']) ? $item['now_price'] : ''))));
+        $originalPrice = !empty($item['originalPrice']) ? $item['originalPrice'] : (!empty($item['original_price']) ? $item['original_price'] : (!empty($item['originPrice']) ? $item['originPrice'] : (!empty($item['marketPrice']) ? $item['marketPrice'] : '')));
+        $couponUrl = url('index/redirect/go', ['platform' => $itemFrom, 'id' => $goodsId]);
+      ?>
+      <article class="shadow-theme" style="flex:1;min-width:300px;max-width:400px;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
+        <a href="{$detailUrl}" target="_blank" style="display:block;position:relative;overflow:hidden;">
+          {if !empty($item['mainPic'])}
+          <img src="<?php echo $item['mainPic']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" style="width:100%;height:200px;object-fit:cover;transition:transform 0.4s ease;">
+          {else}
+          <div style="width:100%;height:200px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
+            <span style="font-size:48px;color:#ccc;">📦</span>
+          </div>
+          {/if}
+          <?php if(!empty($couponVal)): ?>
+          <div style="position:absolute;top:10px;right:10px;background:linear-gradient(135deg,#ff4757,#ff6b35);color:#fff;padding:4px 12px;border-radius:15px;font-size:12px;font-weight:700;">
+            ¥<?php echo $couponVal; ?>券
+          </div>
+          <?php endif; ?>
+        </a>
+        <div style="padding:16px;">
+          <h3 style="font-size:15px;font-weight:600;color:#333;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+            <a href="{$detailUrl}" target="_blank" title="<?php echo htmlspecialchars($itemTitle); ?>" style="color:#333;">
+              <?php echo mb_substr(htmlspecialchars($itemTitle), 0, 50, 'UTF-8'); ?>
+            </a>
+          </h3>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+            <?php if(!empty($actualPrice)): ?>
+            <span style="font-size:22px;font-weight:800;color:#ff4757;">¥<?php echo $actualPrice; ?></span>
+            <?php endif; ?>
+            <?php if(!empty($originalPrice)): ?>
+            <span style="font-size:13px;color:#999;text-decoration:line-through;">¥<?php echo $originalPrice; ?></span>
+            <?php endif; ?>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              {if !empty($item['monthSales'])}
+              <span style="color:#666;font-size:12px;">月销 {$item['monthSales']}</span>
+              {/if}
+              {if !empty($item['shopName'])}
+              <span style="color:#999;font-size:12px;margin-left:8px;">· {$item['shopName']}</span>
+              {/if}
+            </div>
+            <a href="{$couponUrl}" class="btn btn-buy" target="_blank" style="padding:6px 16px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;">领券购买</a>
+          </div>
+        </div>
+      </article>
+      {/foreach}
+      </div>
+      
+      <div class="pagination" style="margin-top:24px;text-align:center;">{$Page['pages']}</div>
+    {else}
+      <div style="text-align:center;padding:80px 20px;background:var(--conBgcolor);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--borderColor);">
+        <div style="font-size:80px;margin-bottom:20px;">📦</div>
+        <h3 style="font-size:24px;margin-bottom:12px;color:var(--aColor);font-weight:700;">暂无商品</h3>
+        <p style="color:var(--lightColor);margin-bottom:24px;font-size:15px;">该品牌暂时没有商品，去看看其他品牌吧！</p>
+        <a href="{url($route='index/brand/index', $params=array())}" class="btn btn-buy" style="padding:12px 32px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;">查看全部品牌</a>
+      </div>
+    {/if}
+  </div>
+  {include file="app/index/view/index/common_sidebar"}
+</div>
+
+{include file="app/index/view/index/common_footer"}

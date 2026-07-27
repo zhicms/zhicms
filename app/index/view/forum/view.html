@@ -1,0 +1,341 @@
+{include file="app/index/view/index/blog_header"}
+
+<?php
+$forum = $forum ?? array();
+$group = $group ?? array();
+$board = $board ?? null;
+$forumUrl = '';
+$poster = $forum['poster'] ?? '访客';
+if (empty($poster) && !empty($forum['uid'])) $poster = 'UID:'.$forum['uid'];
+$initial = mb_substr($poster ?: '访', 0, 1, 'UTF-8');
+$imagesArr = $forum['imagesArr'] ?? array();
+$goodsCards = $forum['goodsCards'] ?? array();
+$pfNames = array('tb'=>'淘宝/天猫','jd'=>'京东','pdd'=>'拼多多','vip'=>'唯品会');
+?>
+
+<article class="log-con">
+    <nav class="crumb">
+        <a href="{url($route='index/index/index', $params=array())}">首页</a> /
+        <a href="{url($route='index/forum/index', $params=array())}">社区</a>
+        <?php if (!empty($board)): ?> /
+        <a href="{url($route='index/forum/index/bid=<bid>', $params=array('bid' => (int)$board['id']))}"><?php echo htmlspecialchars($board['name'], ENT_QUOTES, 'UTF-8'); ?></a>
+        <?php endif; ?>
+        <?php if (!empty($group)): ?> /
+        <a href="{url($route='index/forum/group/gid=<gid>', $params=array('gid' => (int)$group['id']))}"><?php echo htmlspecialchars($group['groupname'], ENT_QUOTES, 'UTF-8'); ?></a>
+        <?php endif; ?>
+    </nav>
+
+    <!-- 帖子主体 -->
+    <div class="forum-detail">
+        <div class="fc-header">
+            <span class="fc-avatar fc-avatar-lg"><?php echo htmlspecialchars($initial, ENT_QUOTES, 'UTF-8'); ?></span>
+            <div class="fc-user">
+                <strong><?php echo htmlspecialchars($poster ?: '访客', ENT_QUOTES, 'UTF-8'); ?></strong>
+                <small class="text-muted"><?php echo htmlspecialchars($forum['date'] ?? '', ENT_QUOTES, 'UTF-8'); ?> · IP <?php echo htmlspecialchars($forum['ip'] ?? '', ENT_QUOTES, 'UTF-8'); ?></small>
+            </div>
+        </div>
+
+        <?php if (!empty($forum['title'])): ?>
+        <h2 class="fd-title"><?php echo htmlspecialchars($forum['title'], ENT_QUOTES, 'UTF-8'); ?></h2>
+        <?php endif; ?>
+
+        <div class="fd-content"><?php echo $forum['content'] ?? ''; ?></div>
+
+        <!-- 图片九宫格 -->
+        <?php if (!empty($imagesArr)): ?>
+        <div class="fd-images <?php echo count($imagesArr) == 1 ? 'fd-images-single' : 'fd-images-grid'; ?>">
+            <?php foreach ($imagesArr as $imgUrl): ?>
+            <div class="fd-img-item">
+                <a href="<?php echo htmlspecialchars($imgUrl, ENT_QUOTES, 'UTF-8'); ?>" target="_blank">
+                    <img src="<?php echo htmlspecialchars($imgUrl, ENT_QUOTES, 'UTF-8'); ?>" alt="" loading="lazy">
+                </a>
+            </div>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
+
+        <!-- 商品卡片（多个） -->
+        <?php if (!empty($goodsCards)): ?>
+        <?php foreach ($goodsCards as $goodsCard): ?>
+        <?php
+        $pfName = $goodsCard['platformName'] ?? '';
+        if (empty($pfName)) {
+            $pfName = $pfNames[$goodsCard['platform']] ?? $goodsCard['platform'];
+        }
+        $buyUrl = url($route='index/link/jump/platform=<platform>/id=<id>', $params=array('platform' => $goodsCard['platform'], 'id' => $goodsCard['goodsId']));
+        ?>
+        <a href="<?php echo $buyUrl; ?>" target="_blank" class="fd-goods-card">
+            <?php if (!empty($goodsCard['pic'])): ?>
+            <img class="fd-goods-pic" src="<?php echo htmlspecialchars($goodsCard['pic'], ENT_QUOTES, 'UTF-8'); ?>" alt="">
+            <?php endif; ?>
+            <div class="fd-goods-info">
+                <div class="fd-goods-title"><?php echo htmlspecialchars($goodsCard['title'] ?? '', ENT_QUOTES, 'UTF-8'); ?></div>
+                <div class="fd-goods-price">
+                    <span class="fd-goods-platform"><?php echo htmlspecialchars($pfName, ENT_QUOTES, 'UTF-8'); ?></span>
+                    <?php if (!empty($goodsCard['actPrice'])): ?>
+                    <span class="fd-goods-act">¥<?php echo number_format($goodsCard['actPrice'], 2); ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($goodsCard['origPrice']) && $goodsCard['origPrice'] > $goodsCard['actPrice']): ?>
+                    <span class="fd-goods-orig">¥<?php echo number_format($goodsCard['origPrice'], 2); ?></span>
+                    <?php endif; ?>
+                    <?php if (!empty($goodsCard['coupon'])): ?>
+                    <span class="fd-goods-coupon">券 ¥<?php echo number_format($goodsCard['coupon'], 2); ?></span>
+                    <?php endif; ?>
+                </div>
+                <?php if (!empty($goodsCard['sales'])): ?>
+                <small class="text-muted">月销 <?php echo (int)$goodsCard['sales']; ?></small>
+                <?php endif; ?>
+                <span class="fd-goods-buy">立即去看看 →</span>
+            </div>
+        </a>
+        <?php endforeach; ?>
+        <?php endif; ?>
+
+        <!-- 操作栏 -->
+        <div class="fd-actions">
+            <span class="fd-stat"><i class="far fa-eye"></i> 浏览 <?php echo (int)$forum['view']; ?></span>
+            <span class="fd-stat"><i class="far fa-comment"></i> 回复 <?php echo (int)$forum['reply_count']; ?></span>
+            <a href="javascript:;" id="likeForumBtn" data-id="<?php echo (int)$forum['id']; ?>" class="fd-like-btn <?php echo !empty($hasLiked) ? 'liked' : ''; ?>">
+                <svg viewBox="0 0 24 24" fill="<?php echo !empty($hasLiked) ? '#ff6b6b' : 'none'; ?>" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                <span id="likeForumCount"><?php echo (int)$forum['like']; ?></span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 回复 -->
+    <div class="comment-header">回复 <b id="replyCount"><?php echo (int)$replyCount; ?></b></div>
+
+    <form class="comment-form" id="forumReplyForm">
+        <input type="hidden" name="pid" id="replyPid" value="0">
+        <?php if (empty($loginUser)): ?>
+        <div class="cf-visitor-row">
+            <input type="text" id="replyPoster" placeholder="昵称 *" value="<?php echo htmlspecialchars($visitorName ?? '', ENT_QUOTES, 'UTF-8'); ?>" maxlength="30">
+            <input type="email" id="replyMail" placeholder="邮箱（选填）" value="<?php echo htmlspecialchars($visitorMail ?? '', ENT_QUOTES, 'UTF-8'); ?>">
+        </div>
+        <?php endif; ?>
+        <textarea id="replyBody" placeholder="说点什么吧..." rows="3" maxlength="1000"></textarea>
+        <div class="cf-actions">
+            <span id="replyTip" class="cf-tip"></span>
+            <button type="button" class="btn btn-primary btn-sm" onclick="submitForumReply(<?php echo (int)$forum['id']; ?>)">回复</button>
+        </div>
+    </form>
+
+    <ul class="comment-list" id="replyList">
+        <?php echo $replyHtml ?? ''; ?>
+    </ul>
+</article>
+
+<style>
+.forum-detail {
+    background: #fff; border-radius: 10px; padding: 20px;
+    margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.fc-header { display: flex; align-items: center; margin-bottom: 14px; }
+.fc-avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border-radius: 50%;
+    font-size: 16px; font-weight: 600;
+}
+.fc-avatar-lg { width: 48px; height: 48px; font-size: 20px; }
+.fc-user { margin-left: 12px; flex: 1; }
+.fc-user strong { display: block; font-size: 14px; color: #333; }
+.fc-user small { color: #999; font-size: 12px; }
+
+.fd-title { font-size: 20px; color: #333; margin: 0 0 14px; line-height: 1.4; }
+.fd-content { font-size: 15px; color: #333; line-height: 1.8; word-break: break-word; margin-bottom: 16px; }
+.fd-content p { margin: 0 0 10px; }
+.fd-content img { max-width: 100%; height: auto; border-radius: 6px; }
+.fd-content a { color: #1890ff; }
+
+.fd-images { display: grid; gap: 8px; margin: 14px 0; }
+.fd-images-grid { grid-template-columns: repeat(3, 1fr); }
+.fd-images-single { grid-template-columns: minmax(0, 360px); }
+.fd-img-item {
+    padding-top: 100%; border-radius: 8px; overflow: hidden;
+    background: #f5f5f5; position: relative;
+}
+.fd-img-item img {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover; cursor: zoom-in; transition: transform 0.3s;
+}
+.fd-img-item:hover img { transform: scale(1.05); }
+.fd-images-single .fd-img-item { padding-top: 75%; }
+
+.fd-goods-card {
+    display: flex; gap: 14px; padding: 14px;
+    border: 1px solid #eee; border-radius: 10px;
+    background: linear-gradient(135deg, #fff, #fafbff);
+    text-decoration: none; color: inherit;
+    margin: 16px 0; transition: all 0.2s;
+}
+.fd-goods-card:hover { background: #f0f7ff; border-color: #91d5ff; transform: translateY(-1px); }
+.fd-goods-pic { width: 100px; height: 100px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+.fd-goods-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.fd-goods-title { font-size: 14px; color: #333; line-height: 1.5; font-weight: 500; }
+.fd-goods-price { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.fd-goods-platform { padding: 3px 8px; background: #e6f7ff; color: #1890ff; border-radius: 12px; font-size: 12px; }
+.fd-goods-act { color: #f5222d; font-size: 18px; font-weight: 700; }
+.fd-goods-orig { color: #999; text-decoration: line-through; font-size: 13px; }
+.fd-goods-coupon { padding: 3px 6px; background: #fff1f0; color: #f5222d; border-radius: 3px; font-size: 12px; }
+.fd-goods-buy { color: #1890ff; font-size: 13px; margin-top: 4px; }
+
+.fd-actions {
+    display: flex; gap: 20px;
+    padding: 12px 0 0;
+    border-top: 1px solid #f5f5f5;
+    margin-top: 16px;
+    align-items: center;
+}
+.fd-stat { color: #999; font-size: 13px; }
+.fd-stat i { margin-right: 4px; }
+.fd-like-btn {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 16px; border-radius: 20px;
+    background: #f5f5f5; color: #666;
+    text-decoration: none; transition: all 0.2s;
+    cursor: pointer;
+}
+.fd-like-btn:hover { background: #fff1f0; color: #f5222d; }
+.fd-like-btn.liked { background: #fff1f0; color: #f5222d; }
+.fd-like-btn svg { transition: transform 0.2s; }
+.fd-like-btn.liked svg { transform: scale(1.1); }
+
+.comment-header { font-size: 16px; color: #333; margin: 20px 0 12px; padding-bottom: 8px; border-bottom: 2px solid #1890ff; }
+.comment-form { background: #fff; padding: 14px; border-radius: 10px; margin-bottom: 14px; }
+.cf-visitor-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.cf-visitor-row input { flex: 1; min-width: 150px; padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 13px; }
+.comment-form textarea { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; resize: vertical; }
+.cf-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+.cf-tip { color: #999; font-size: 12px; }
+.cf-tip.success { color: #52c41a; }
+.cf-tip.error { color: #f5222d; }
+
+.comment-list { list-style: none; padding: 0; }
+.comment-item {
+    display: flex; gap: 10px; padding: 12px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+.c-avatar {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; background: linear-gradient(135deg, #667eea, #764ba2);
+    color: #fff; border-radius: 50%; font-size: 13px; font-weight: 600;
+    flex-shrink: 0;
+}
+.c-body { flex: 1; }
+.c-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.c-name { font-weight: 600; color: #333; font-size: 13px; }
+.c-time { color: #999; font-size: 12px; }
+.c-text { color: #444; line-height: 1.6; font-size: 14px; }
+.c-actions { margin-top: 4px; display: flex; gap: 12px; }
+.c-actions a { color: #999; font-size: 12px; text-decoration: none; }
+.c-actions a:hover { color: #1890ff; }
+.comment-children { margin-left: 20px; }
+</style>
+
+{include file="app/index/view/index/blog_footer"}
+
+<script>
+// 帖子点赞
+document.getElementById('likeForumBtn').addEventListener('click', function() {
+    var id = parseInt(this.dataset.id);
+    if (!id) return;
+    var self = this;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=index/forum/likeForum&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    self.classList.add('liked');
+                    var svg = self.querySelector('svg');
+                    if (svg) svg.setAttribute('fill', '#ff6b6b');
+                    document.getElementById('likeForumCount').textContent = r.count;
+                } else {
+                    alert(r.info);
+                }
+            } catch (e) { alert('请求异常'); }
+        }
+    };
+    xhr.send();
+});
+
+// 回复提交
+function submitForumReply(forumId) {
+    var pid = parseInt(document.getElementById('replyPid').value) || 0;
+    var body = document.getElementById('replyBody').value.trim();
+    var tip = document.getElementById('replyTip');
+    if (!body) { tip.className = 'cf-tip error'; tip.textContent = '请填写回复内容'; return; }
+    if (body.length > 1000) { tip.className = 'cf-tip error'; tip.textContent = '回复过长'; return; }
+
+    var formData = new URLSearchParams();
+    formData.append('pid', pid);
+    formData.append('mybody', body);
+    <?php if (empty($loginUser)): ?>
+    var poster = document.getElementById('replyPoster').value.trim();
+    if (!poster) { tip.className = 'cf-tip error'; tip.textContent = '请填写昵称'; return; }
+    formData.append('poster', poster);
+    formData.append('mail', document.getElementById('replyMail').value.trim());
+    <?php endif; ?>
+
+    tip.className = 'cf-tip'; tip.textContent = '提交中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=index/forum/replyForum&id=' + forumId, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    tip.className = 'cf-tip success';
+                    tip.textContent = r.info;
+                    document.getElementById('replyBody').value = '';
+                    document.getElementById('replyPid').value = 0;
+                    // 刷新页面以查看新回复（最简方案）
+                    setTimeout(function() { location.reload(); }, 800);
+                } else {
+                    tip.className = 'cf-tip error';
+                    tip.textContent = r.info;
+                }
+            } catch (e) {
+                tip.className = 'cf-tip error';
+                tip.textContent = '提交失败';
+            }
+        }
+    };
+    xhr.send(formData);
+}
+
+// 点击回复按钮，填充 pid
+document.querySelectorAll('.r-reply').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var rid = this.dataset.rid;
+        var name = this.dataset.name;
+        document.getElementById('replyPid').value = rid;
+        document.getElementById('replyBody').focus();
+        document.getElementById('replyBody').placeholder = '回复 @' + name + '：';
+    });
+});
+
+// 回复点赞
+document.querySelectorAll('.r-like').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+        var rid = this.dataset.rid;
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'index.php?r=index/interact/likeComment', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState === 4 && xhr.status === 200) {
+                try {
+                    var r = JSON.parse(xhr.responseText);
+                    alert(r.info);
+                } catch (e) {}
+            }
+        };
+        xhr.send('id=' + rid + '&model=forum_reply');
+    });
+});
+</script>
