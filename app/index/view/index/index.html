@@ -16,7 +16,7 @@
     <div class="blog-hotbar-list">
       {foreach $minute as $k=>$hotItem}
       <span class="blog-hotbar-item" style="{if $k < 3}color:#ff6b6b;font-weight:600;{else}color:rgba(255,255,255,0.8);{/if}">
-        <b style="background:{if $k == 0}#ff6b6b{elseif $k == 1}#ffa500{elseif $k == 2}#ffd700{else}rgba(255,255,255,0.2){/if};color:{if $k < 3}#fff{else}rgba(255,255,255,0.8){/if};padding:1px 6px;border-radius:4px;font-size:11px;margin-right:6px;">{$k+1}</b>{$hotItem['title']}
+        <b style="background:{if $k == 0}#ff6b6b{elseif $k == 1}#ffa500{elseif $k == 2}#ffd700{else}rgba(255,255,255,0.2){/if};color:{if $k < 3}#fff{else}rgba(255,255,255,0.8){/if};padding:1px 6px;border-radius:4px;font-size:11px;margin-right:6px;">{$n}</b>{$hotItem['title']}
       </span>
       {/foreach}
     </div>
