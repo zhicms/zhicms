@@ -1,4 +1,4 @@
-{include file="app/index/view/index/blog_header"}
+﻿{include file="app/index/view/public/header"}
 
 <article class="log-con">
     <nav class="crumb">
@@ -80,7 +80,7 @@
                 if (empty($pfName)) {
                     $pfName = $pfNames[$goodsCard['platform']] ?? $goodsCard['platform'];
                 }
-                $buyUrl = url($route='index/link/jump/platform=<platform>/id=<id>', $params=array('platform' => $goodsCard['platform'], 'id' => $goodsCard['goodsId']));
+                $buyUrl = url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform' => $goodsCard['platform'], 'id' => $goodsCard['goodsId']));
                 ?>
                 <a href="<?php echo $buyUrl; ?>" target="_blank" class="fc-goods-card">
                     <?php if (!empty($goodsCard['pic'])): ?>
@@ -237,7 +237,7 @@
 .pagination-box { text-align: center; margin-top: 20px; }
 </style>
 
-{include file="app/index/view/index/blog_footer"}
+{include file="app/index/view/public/footer"}
 
 <script>
 document.querySelectorAll('.fc-like-btn').forEach(function(btn) {

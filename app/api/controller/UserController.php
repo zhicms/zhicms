@@ -18,10 +18,7 @@ class UserController extends ApiBaseController {
     private function secret() {
         static $s = null;
         if ($s === null) {
-            $cfg = array();
-            if (file_exists(CONFIG_PATH . 'apiset.php')) {
-                $cfg = include CONFIG_PATH . 'apiset.php';
-            }
+            $cfg = \app\common\ConfigStore::load('api');
             $s = isset($cfg['secretkey']) && $cfg['secretkey'] !== '' ? $cfg['secretkey'] : 'zhangyuan';
         }
         return $s;

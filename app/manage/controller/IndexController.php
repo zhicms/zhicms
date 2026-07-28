@@ -21,7 +21,7 @@ class IndexController extends \app\base\controller\BaseController
         $goodsTodayWhere[] = "`couponEndTime` >= '{$today}'";
         $this->todayGoodsCount = obj("api/ApiData")->dataCount("yun_items", $goodsTodayWhere);
 
-        include CONFIG_PATH . 'version.php';
+        $v = \app\common\ConfigStore::load('version', 'version');
         $this->localVersion = $v;
 
         $updateUrl = 'https://www.zhicms.cc/update_check.php';
@@ -81,7 +81,7 @@ public function delDir($dir){
 
      $this->checkManageSession();
 
-        include CONFIG_PATH . 'version.php';
+        $v = \app\common\ConfigStore::load('version', 'version');
         
         $updateType = isset($_GET['type']) ? $_GET['type'] : 'hot';
         

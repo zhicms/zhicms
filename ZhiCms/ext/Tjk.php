@@ -41,20 +41,25 @@ class Tjk {
     }
     
     private function initWithLocalConfig() {
-        if (file_exists(CONFIG_PATH . 'apiset.php')) {
-            include CONFIG_PATH . 'apiset.php';
-            $dtkAppKey = $api['dtk_appkey'] ?? '';
-            $dtkAppSecret = $api['dtk_appsecret'] ?? '';
-            $hdkApiKey = $api['hdk_appkey'] ?? '';
-            $this->pid = $api['dtk_pid'] ?? '';
-            
-            if (!empty($dtkAppKey) && !empty($dtkAppSecret)) {
-                $this->dtk = new Dtk($dtkAppKey, $dtkAppSecret);
+        if (class_exists('\\app\\common\\ConfigStore')) {
+            $api = \app\common\ConfigStore::load('api');
+        } else {
+            $api = array();
+            if (file_exists(CONFIG_PATH . 'apiset.php')) {
+                include CONFIG_PATH . 'apiset.php';
             }
-            
-            if (!empty($hdkApiKey)) {
-                $this->hdk = new Hdk($hdkApiKey);
-            }
+        }
+        $dtkAppKey = $api['dtk_appkey'] ?? '';
+        $dtkAppSecret = $api['dtk_appsecret'] ?? '';
+        $hdkApiKey = $api['hdk_appkey'] ?? '';
+        $this->pid = $api['dtk_pid'] ?? '';
+        
+        if (!empty($dtkAppKey) && !empty($dtkAppSecret)) {
+            $this->dtk = new Dtk($dtkAppKey, $dtkAppSecret);
+        }
+        
+        if (!empty($hdkApiKey)) {
+            $this->hdk = new Hdk($hdkApiKey);
         }
     }
     

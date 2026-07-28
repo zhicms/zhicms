@@ -1,4 +1,4 @@
-{include file="app/manage/view/index/emlog_nav"}
+﻿{include file="app/manage/view/index/emlog_nav"}
 
 <!-- 页面标题 -->
 <h1 class="page-title">
@@ -84,15 +84,15 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <!-- Editor.md 本地集成（移植自 emlog 后台，避免 CDN 不可达与样式冲突） -->
-<link rel="stylesheet" href="/public/global/editormd/css/editormd.css" />
-<script src="/public/global/editormd/editormd.js"></script>
+<link rel="stylesheet" href="/public/manage/editormd/css/editormd.css" />
+<script src="/public/manage/editormd/editormd.js"></script>
 
 <script>
 $(function() {
     var testEditor = editormd("editor-md-container", {
         width: "100%",
         height: 550,
-        path: "/public/global/editormd/lib/",
+        path: "/public/manage/editormd/lib/",
         placeholder: "开始编写页面内容...",
         toolbarIcons: function() {
             return ["bold", "del", "italic", "quote", "|", "h1", "h2", "h3", "|", "list-ul", "list-ol", "hr", "|",

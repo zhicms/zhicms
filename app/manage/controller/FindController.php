@@ -39,7 +39,7 @@ class FindController extends \app\base\controller\BaseController
         $this->checkManageSession();
         set_time_limit(0);
 
-        include CONFIG_PATH . 'apiset.php';
+        $api = \app\common\ConfigStore::load('api');
         $dtkAppKey = $api['dtk_appkey'] ?? '';
         $dtkAppSecret = $api['dtk_appsecret'] ?? '';
         $hdkApiKey = $api['hdk_appkey'] ?? '';
@@ -188,7 +188,7 @@ class FindController extends \app\base\controller\BaseController
 	$this->checkManageSession();
 
 	    
-	    include CONFIG_PATH . 'siteconfig.php';
+	    $Siteinfo = \app\common\ConfigStore::load('site');
 	    $newData= new \ZhiCms\ext\Weixin;
     	if(!IS_POST){
 			$this->pageText=array("发现管理","发布文章");
@@ -285,7 +285,7 @@ class FindController extends \app\base\controller\BaseController
 
 	$this->checkManageSession();
 
-    include CONFIG_PATH . 'siteconfig.php';
+    $Siteinfo = \app\common\ConfigStore::load('site');
     $newData= new \ZhiCms\ext\Weixin;
 	if(!IS_POST){
     		$this->pageText=array("发现管理","编辑文章");

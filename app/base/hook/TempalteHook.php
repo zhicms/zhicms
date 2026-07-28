@@ -20,7 +20,7 @@ class TempalteHook {
                     {$user['name']} => <?php echo $user['name'];?>
                     {$user.name}    => <?php echo $user['name'];?>
                 */  
-                '/{(\\$[a-zA-Z_]\w*(?:\[[\w\.\"\'\[\]\$]+\])*)}/i' => "<?php echo $1; ?>",
+                '/{(\\$[a-zA-Z_]\w*(?:\[[\w\.\"\'\[\]\$]+\])*)}/i' => '<?php echo $1; ?>',
                 '/\$(\w+)\.(\w+)\.(\w+)\.(\w+)/is' => "\$\\1['\\2']['\\3']['\\4']",
                 '/\$(\w+)\.(\w+)\.(\w+)/is' => "\$\\1['\\2']['\\3']",
                 '/\$(\w+)\.(\w+)/is' => "\$\\1['\\2']",
@@ -35,7 +35,7 @@ class TempalteHook {
                 /**include label
                     {include file="test"}
                 */                              
-                '/{include\s*file=\"(.*)\"}/i' => "<?php \$__Template->display(\"$1\"); ?>",
+                '/{include\s*file=\"(.*)\"}/i' => '<?php $__Template->display("$1"); ?>',
                 
                 /**if label
                     {if $name==1}       =>  <?php if ($name==1){ ?>

@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{if isset($pageText['1'])}{$pageText['1']}{else}{$pageText['0']}{/if} - ZhiCms</title>
-    <link rel="stylesheet" href="/public/admin/emlog/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/public/admin/emlog/css/sb-admin-2.css">
-    <link rel="stylesheet" href="/public/admin/emlog/css/emlog-style.css">
+    <link rel="stylesheet" href="/public/manage/emlog/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/public/manage/emlog/css/sb-admin-2.css">
+    <link rel="stylesheet" href="/public/manage/emlog/css/emlog-style.css">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
 </head>
 <body id="page-top">
@@ -112,26 +112,26 @@
                 </a>
             </li>
 
-            <!-- Nav Item - Advertising -->
+            <!-- Nav Item - Advertising Collapse Menu -->
             <li class="nav-item {if CONTROLLER_NAME=='ad'}active{/if}">
-                <a class="nav-link" href="index.php?r=manage/ad/huan">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAd" aria-expanded="true" aria-controls="collapseAd">
                     <i class="fas fa-fw fa-ad"></i>
                     <span>广告管理</span>
                 </a>
+                <div id="collapseAd" class="collapse {if CONTROLLER_NAME=='ad'}show{/if}" aria-labelledby="headingAd" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item {if CONTROLLER_NAME=='ad' && ACTION_NAME=='huan'}active{/if}" href="index.php?r=manage/ad/huan">幻灯广告</a>
+                        <a class="collapse-item {if CONTROLLER_NAME=='ad' && ACTION_NAME=='link'}active{/if}" href="index.php?r=manage/ad/link">友情链接</a>
+                    </div>
+                </div>
             </li>
 
             <!-- Nav Item - Plugins -->
             <li class="nav-item {if CONTROLLER_NAME=='plug' || CONTROLLER_NAME=='plugin'}active{/if}">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePlugins" aria-expanded="true" aria-controls="collapsePlugins">
+                <a class="nav-link" href="index.php?r=manage/plugin/index">
                     <i class="fas fa-fw fa-puzzle-piece"></i>
                     <span>插件管理</span>
                 </a>
-                <div id="collapsePlugins" class="collapse {if CONTROLLER_NAME=='plug' || CONTROLLER_NAME=='plugin'}show{/if}" aria-labelledby="headingPlugins" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item {if CONTROLLER_NAME=='plugin' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/plugin/index"><i class="fas fa-store mr-1"></i>插件市场</a>
-                        <a class="collapse-item {if CONTROLLER_NAME=='plug' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/plug/index">插件模块</a>
-                    </div>
-                </div>
             </li>
 
             <!-- Nav Item - AI Platform -->

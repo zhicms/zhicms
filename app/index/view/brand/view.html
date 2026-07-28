@@ -1,4 +1,4 @@
-{include file="app/index/view/index/common_header"}
+﻿{include file="app/index/view/public/header"}
 
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">品牌商品</span>
@@ -25,7 +25,7 @@
   <div class="column-big">
     {if !empty($brandInfo)}
     <div class="shadow-theme" style="border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;margin-bottom:24px;">
-      <div style="display:flex;flex-wrap:wrap;">
+      <div class="brand-header-inner" style="display:flex;flex-wrap:wrap;">
         <div style="flex:0 0 200px;position:relative;">
           {if !empty($brandInfo['brandLogo'])}
           <img src="{$brandInfo['brandLogo']}" alt="{$brandInfo['brandName']}" style="width:100%;height:200px;object-fit:cover;">
@@ -35,7 +35,7 @@
           </div>
           {/if}
         </div>
-        <div style="flex:1;min-width:300px;padding:24px;">
+        <div class="mobile-card-full" style="flex:1;min-width:280px;padding:24px;">
           <h1 style="font-size:28px;font-weight:800;color:#1f2329;margin-bottom:12px;">{$brandInfo['brandName']}</h1>
           {if !empty($brandInfo['brandDesc'])}
           <p style="color:#666;font-size:15px;line-height:1.7;margin-bottom:16px;">{$brandInfo['brandDesc']}</p>
@@ -82,7 +82,7 @@
         $originalPrice = !empty($item['originalPrice']) ? $item['originalPrice'] : (!empty($item['original_price']) ? $item['original_price'] : (!empty($item['originPrice']) ? $item['originPrice'] : (!empty($item['marketPrice']) ? $item['marketPrice'] : '')));
         $couponUrl = url('index/redirect/go', ['platform' => $itemFrom, 'id' => $goodsId]);
       ?>
-      <article class="shadow-theme" style="flex:1;min-width:300px;max-width:400px;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
+      <article class="shadow-theme mobile-card-full" style="flex:1;min-width:280px;max-width:400px;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
         <a href="{$detailUrl}" target="_blank" style="display:block;position:relative;overflow:hidden;">
           {if !empty($item['mainPic'])}
           <img src="<?php echo $item['mainPic']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" style="width:100%;height:200px;object-fit:cover;transition:transform 0.4s ease;">
@@ -137,7 +137,7 @@
       </div>
     {/if}
   </div>
-  {include file="app/index/view/index/common_sidebar"}
+  {include file="app/index/view/public/sidebar"}
 </div>
 
-{include file="app/index/view/index/common_footer"}
+{include file="app/index/view/public/footer"}

@@ -460,7 +460,7 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        include CONFIG_PATH . 'apiset.php';
+        $api = \app\common\ConfigStore::load('api');
         header('Content-Type:text/html; charset=utf-8');
         //1.获取xml数据
         $xmlData = file_get_contents("https://www.duomai.com/api/ads.php?hash=".(isset($api['hash']) ? $api['hash'] : '')."&action=getApplyAds");
@@ -654,7 +654,7 @@ class UnionController extends \app\base\controller\BaseController
     }
 
     private function createTjkClient() {
-        include CONFIG_PATH . 'apiset.php';
+        $api = \app\common\ConfigStore::load('api');
         $dtkAppKey = $api['dtk_appkey'] ?? '';
         $dtkAppSecret = $api['dtk_appsecret'] ?? '';
         $hdkApiKey = $api['hdk_appkey'] ?? '';

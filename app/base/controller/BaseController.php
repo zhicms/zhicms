@@ -107,53 +107,94 @@ class BaseController extends \ZhiCms\base\Controller {
 	}
 
     /**
-     * 加载公共侧边栏数据
-     * 包括：热门文章、分类目录、站内统计
+     * 静态分类映射（对标 emlog 的全局缓存变量设计）
+     * emlog 将分类名硬编码为静态数组，避免每次请求查库
      */
-    protected function loadCommonSidebar() {
-        // 热门文章（按浏览量）
-        $whereHot[] = "1";
-        $hot = obj("api/ApiData")->dataSelect("yun_article", $whereHot, "`view` DESC LIMIT 0, 10");
-        if ($hot) { foreach ($hot as $i => &$h) { $h['rank'] = $i + 1; } unset($h); }
-        $this->hot = $hot ? $hot : array();
+    private static $categoryMap = [
+        1 => '女装', 2 => '母婴', 3 => '化妆品', 4 => '居家',
+        5 => '鞋包配饰', 6 => '美食', 7 => '文体车品', 8 => '数码家电',
+        9 => '男装', 10 => '内衣', 11 => '箱包', 12 => '配饰',
+        13 => '户外运动', 14 => '家装家纺',
+    ];
 
-        // 分类目录
-        $cats = array();
-        for ($i = 1; $i <= 14; $i++) {
-            $nav = $this->lists($i, 'y');
-            if ($nav) {
-                $p = explode(',', $nav);
-                if (count($p) == 2 && $p[0] !== '') {
-                    $cats[] = array('name' => $p[0], 'cid' => $p[1]);
-                }
-            }
+    /**
+     * 获取所有分类目录（带缓存，对标 emlog 的 $CACHE 全局变量）
+     */
+    public static function getCategories() {
+        $cats = [];
+        foreach (self::$categoryMap as $cid => $name) {
+            $cats[] = ['name' => $name, 'cid' => $cid];
         }
-        $this->cats = $cats;
-
-        // 站内速览报表数据
-        $today = date("Y-m-d");
-        $yesterday = date("Y-m-d", strtotime('-1 day'));
-        $monthStart = date("Y-m-01");
-
-        $todayWhere[] = "`date` >= '{$today} 00:00:00' AND `date` <= '{$today} 23:59:59'";
-        $this->todayCount = obj("api/ApiData")->dataCount("yun_article", $todayWhere);
-
-        $yesterdayWhere[] = "`date` >= '{$yesterday} 00:00:00' AND `date` <= '{$yesterday} 23:59:59'";
-        $this->yesterdayCount = obj("api/ApiData")->dataCount("yun_article", $yesterdayWhere);
-
-        $weekWhere[] = "`date` >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)";
-        $this->weekCount = obj("api/ApiData")->dataCount("yun_article", $weekWhere);
-
-        $monthWhere[] = "`date` >= '{$monthStart} 00:00:00'";
-        $this->monthCount = obj("api/ApiData")->dataCount("yun_article", $monthWhere);
-
-        $totalWhere[] = "1";
-        $this->totalCount = obj("api/ApiData")->dataCount("yun_article", $totalWhere);
+        return $cats;
     }
 
     /**
-     * 设置页面SEO信息
-     * @param string $title 页面标题
+     * 根据分类ID获取分类名（对标 emlog 的缓存读取）
+     */
+    public static function getCategoryName($cid) {
+        $cid = (int)$cid;
+        return isset(self::$categoryMap[$cid]) ? self::$categoryMap[$cid] : '';
+    }
+
+    /**
+     * 加载公共侧边栏数据
+     * 
+     * 优化要点（对标 emlog 大数据量设计）：
+     *   1. 5 次 COUNT 合并为 1 次 UNION 查询（减少 80% DB 往返）
+     *   2. 分类目录用静态映射（0 次 DB 查询）
+     *   3. 热门文章缓存 10 分钟（避免大表 ORDER BY view 扫描）
+     *   4. 统计数据缓存 5 分钟
+     */
+    protected function loadCommonSidebar() {
+        $cache = \app\common\CacheService::instance();
+
+        // 热门文章（缓存 10 分钟，emlog 也缓存热门区块）
+        $this->hot = $cache->remember('sidebar_hot', function () {
+            $whereHot = ['1'];
+            $hot = obj("api/ApiData")->dataSelect("yun_article", $whereHot, "`view` DESC LIMIT 0, 10");
+            if ($hot) {
+                foreach ($hot as $i => &$h) { $h['rank'] = $i + 1; }
+                unset($h);
+            }
+            return $hot ?: [];
+        }, 600);
+
+        // 分类目录：使用静态映射（对标 emlog 缓存设计，0 次 DB 查询）
+        $this->cats = self::getCategories();
+
+        // 站内速览：5 次 COUNT → 1 次 UNION（对标 emlog 的 site_stat 缓存）
+        $today = date("Y-m-d");
+        $yesterday = date("Y-m-d", strtotime('-1 day'));
+        $stats = $cache->remember('sidebar_stats', function () use ($today, $yesterday) {
+            $sql = "SELECT 'today' AS period, COUNT(*) AS cnt FROM `{pre}article` WHERE `date` >= '{$today} 00:00:00' AND `date` <= '{$today} 23:59:59'
+                    UNION ALL
+                    SELECT 'yesterday', COUNT(*) FROM `{pre}article` WHERE `date` >= '{$yesterday} 00:00:00' AND `date` <= '{$yesterday} 23:59:59'
+                    UNION ALL
+                    SELECT 'week', COUNT(*) FROM `{pre}article` WHERE `date` >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                    UNION ALL
+                    SELECT 'month', COUNT(*) FROM `{pre}article` WHERE `date` >= DATE_FORMAT(CURDATE(), '%Y-%m-01')
+                    UNION ALL
+                    SELECT 'total', COUNT(*) FROM `{pre}article`";
+            $rows = obj("api/ApiData")->thisQuery($sql);
+            $map = ['today' => 0, 'yesterday' => 0, 'week' => 0, 'month' => 0, 'total' => 0];
+            if ($rows) {
+                foreach ($rows as $r) {
+                    $map[$r['period']] = (int)$r['cnt'];
+                }
+            }
+            return $map;
+        }, 300);
+
+        $this->todayCount     = $stats['today'];
+        $this->yesterdayCount = $stats['yesterday'];
+        $this->weekCount      = $stats['week'];
+        $this->monthCount     = $stats['month'];
+        $this->totalCount     = $stats['total'];
+    }
+
+    /**
+     * 设置页面SEO信息（带三级兜底：页面指定 > 后台SEO设置 > 站点全局配置）
+     * @param string $title 页面标题（不含站点名，方法会自动追加 " - 站点名"）
      * @param string $keywords 页面关键字
      * @param string $description 页面描述
      */
@@ -163,32 +204,29 @@ class BaseController extends \ZhiCms\base\Controller {
         if ($title) {
             $this->pageTitle = $title . ' - ' . $siteName;
         } else {
-            $this->pageTitle = obj('base/Base')->SEO('index_title');
+            // 三级兜底：SEO(index_title) > sitename
+            $this->pageTitle = obj('base/Base')->SEO('index_title') ?: $siteName;
         }
         
-        $this->pageKeywords = $keywords ?: obj('base/Base')->SEO('index_keywords');
-        $this->pageDescription = $description ?: obj('base/Base')->SEO('index_dec');
+        // 三级兜底：$keywords > SEO(index_keywords) > SiteConfig(sitekeywords)
+        $this->pageKeywords = $keywords ?: (obj('base/Base')->SEO('index_keywords') ?: obj('base/Base')->SiteConfig('sitekeywords'));
+        
+        // 三级兜底：$description > SEO(index_dec) > SiteConfig(sitedescription)
+        $this->pageDescription = $description ?: (obj('base/Base')->SEO('index_dec') ?: obj('base/Base')->SiteConfig('sitedescription'));
     }
 
     /**
-     * 获取分类信息数据
+     * 获取分类信息数据（兼容旧模板调用）
      * @param int $cid 分类ID
      * @param string $lock 锁定模式
-     * @return string 分类名称和ID
+     * @return string
      */
     public function lists($cid, $lock = "n") {
-        $categories = [
-            1 => '女装', 2 => '母婴', 3 => '化妆品', 4 => '居家',
-            5 => '鞋包配饰', 6 => '美食', 7 => '文体车品', 8 => '数码家电',
-            9 => '男装', 10 => '内衣', 11 => '箱包', 12 => '配饰',
-            13 => '户外运动', 14 => '家装家纺'
-        ];
-        
-        if ($lock == "y" && isset($categories[$cid])) {
-            return "{$categories[$cid]},{$cid}";
+        $name = self::getCategoryName($cid);
+        if ($lock == "y" && $name !== '') {
+            return "{$name},{$cid}";
         }
-        
-        return isset($categories[$cid]) ? $categories[$cid] : '';
+        return $name;
     }
   
 }

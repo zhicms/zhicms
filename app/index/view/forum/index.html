@@ -1,4 +1,4 @@
-{include file="app/index/view/index/blog_header"}
+﻿{include file="app/index/view/public/header"}
 
 <article class="log-con">
     <nav class="crumb">
@@ -78,7 +78,7 @@
                 if (empty($pfName)) {
                     $pfName = $pfNames[$goodsCard['platform']] ?? $goodsCard['platform'];
                 }
-                $buyUrl = url($route='index/link/jump/platform=<platform>/id=<id>', $params=array('platform' => $goodsCard['platform'], 'id' => $goodsCard['goodsId']));
+                $buyUrl = url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform' => $goodsCard['platform'], 'id' => $goodsCard['goodsId']));
                 ?>
                 <a href="<?php echo $buyUrl; ?>" target="_blank" class="fc-goods-card">
                     <?php if (!empty($goodsCard['pic'])): ?>
@@ -283,9 +283,30 @@
 
 .empty-state { text-align: center; padding: 60px 20px; }
 .pagination-box { text-align: center; margin-top: 20px; }
+
+/* ====== 移动端适配 ====== */
+@media (max-width: 767px) {
+    .forum-tabs { gap: 6px; padding: 6px 0; margin-bottom: 12px; }
+    .forum-tab { padding: 5px 12px; font-size: 13px; }
+    .forum-list { gap: 10px; }
+    .forum-card { padding: 12px 14px; }
+    .fc-header { flex-wrap: wrap; }
+    .fc-avatar { width: 32px; height: 32px; font-size: 13px; }
+    .fc-stats { width: 100%; margin-top: 8px; text-align: right; }
+    .fc-stats span { margin-left: 6px; font-size: 11px; }
+    .fc-title { font-size: 14px; }
+    .fc-content { font-size: 13px; max-height: 150px; }
+    .fc-images-grid { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+    .fc-images-single { grid-template-columns: 1fr; }
+    .fc-goods-card { flex-direction: column; gap: 8px; }
+    .fc-goods-pic { width: 100%; height: auto; max-height: 180px; }
+    .fc-footer { justify-content: space-between; padding: 8px 4px 0; }
+    .fc-action { font-size: 12px; padding: 6px 10px; }
+    .pagination-box .pagination { font-size: 13px; }
+}
 </style>
 
-{include file="app/index/view/index/blog_footer"}
+{include file="app/index/view/public/footer"}
 
 <script>
 // 帖子点赞（列表页）

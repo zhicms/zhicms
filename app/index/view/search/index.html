@@ -1,4 +1,4 @@
-{include file="app/index/view/index/common_header"}
+﻿{include file="app/index/view/public/header"}
 
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">搜索中心</span>
@@ -11,7 +11,7 @@
 
 <div class="row">
   <div class="column-big">
-    <div style="background:linear-gradient(135deg,#ff6b6b 0%,#ff8e53 50%,#ffa500 100%);border-radius:24px;padding:40px;margin-bottom:24px;box-shadow:0 16px 48px rgba(255,107,107,0.35);">
+    <div class="search-hero" style="background:linear-gradient(135deg,#ff6b6b 0%,#ff8e53 50%,#ffa500 100%);border-radius:24px;padding:40px;margin-bottom:24px;box-shadow:0 16px 48px rgba(255,107,107,0.35);">
       <div style="text-align:center;margin-bottom:28px;">
         <h2 style="font-size:28px;color:#fff;font-weight:800;margin:0;letter-spacing:2px;">🔍 商品搜索</h2>
         <p style="color:rgba(255,255,255,0.9);font-size:15px;margin:10px 0 0;">支持淘宝、京东、拼多多、唯品会多平台搜索</p>
@@ -30,7 +30,7 @@
         <button type="submit" style="padding:18px 40px;background:rgba(255,255,255,0.28);backdrop-filter:blur(14px);color:#fff;border:1px solid rgba(255,255,255,0.45);border-radius:18px;font-size:16px;font-weight:700;cursor:pointer;transition:all 0.3s;">搜索</button>
       </form>
       
-      <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;justify-content:center;">
+      <div class="search-platform-tags" style="display:flex;gap:12px;flex-wrap:wrap;margin-top:24px;justify-content:center;">
         {foreach $platforms as $key => $pf}
         <a href="so.html?content={$q}&platform={$key}" 
            class="btn {if $platform == $key}btn-primary{else}btn-default{/if}"
@@ -183,7 +183,7 @@
       {/if}
     {/if}
   </div>
-  {include file="app/index/view/index/common_sidebar"}
+  {include file="app/index/view/public/sidebar"}
 </div>
 
-{include file="app/index/view/index/common_footer"}
+{include file="app/index/view/public/footer"}

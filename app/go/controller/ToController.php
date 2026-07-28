@@ -9,8 +9,8 @@ class ToController extends \app\base\controller\BaseController {
   	  $id=$this->arg('id');
   	  $type=$this->arg('type');
       if(!is_numeric($id)){ exit('error');}
-	  include CONFIG_PATH . 'apiset.php';
-	   include CONFIG_PATH . 'siteconfig.php';
+	  $api = \app\common\ConfigStore::load('api');
+	   $Siteinfo = \app\common\ConfigStore::load('site');
 	   $newData= new \ZhiCms\ext\Weixin;
 	 $host=$api['apiurl']."?s=App.getunionurl.hjk";
 	 $arr=array ( 
@@ -31,8 +31,8 @@ class ToController extends \app\base\controller\BaseController {
   
     public function url(){
   	  $url=$this->arg('url');
-	 include CONFIG_PATH . 'apiset.php';
-	   include CONFIG_PATH . 'siteconfig.php';
+	 $api = \app\common\ConfigStore::load('api');
+	   $Siteinfo = \app\common\ConfigStore::load('site');
 	   $newData= new \ZhiCms\ext\Weixin;
 	   $host=$api['apiurl']."?s=App.getunionurl.duomai";
 	   $arr=array ( 

@@ -1,4 +1,4 @@
-{include file="app/index/view/index/common_header"}
+﻿{include file="app/index/view/public/header"}
 
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">{$rankInfo['icon']} {$rankInfo['name']}</span>
@@ -45,7 +45,7 @@
         $actual     = !empty($item['actualPrice']) ? $item['actualPrice'] : '';
         $origin     = !empty($item['originalPrice']) ? $item['originalPrice'] : '';
       ?>
-      <article class="shadow-theme" style="flex:1;min-width:300px;max-width:400px;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
+      <article class="shadow-theme mobile-card-full" style="flex:1;min-width:280px;max-width:400px;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
         <a href="{$detailUrl}" target="_blank" style="display:block;position:relative;overflow:hidden;">
           <span style="position:absolute;top:10px;left:10px;z-index:2;min-width:30px;height:30px;padding:0 8px;border-radius:9px;background:<?php echo $badge; ?>;color:#fff;font-weight:800;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 3px 8px rgba(0,0,0,.2);"><?php echo $rankNo; ?></span>
           {if !empty($item['mainPic'])}
@@ -95,7 +95,7 @@
     {/if}
 
   </div>
-  {include file="app/index/view/index/common_sidebar"}
+  {include file="app/index/view/public/sidebar"}
 </div>
 
-{include file="app/index/view/index/common_footer"}
+{include file="app/index/view/public/footer"}

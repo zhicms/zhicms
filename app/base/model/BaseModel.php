@@ -4,40 +4,51 @@ namespace app\base\model;
 
 class BaseModel extends \ZhiCms\base\Model {
    
+   /**
+    * 所有网站配置已统一存入 {pre}config 表（JSON 格式），
+    * 通过 app\common\ConfigStore 读写，自动兼容旧文件兜底。
+    * 保留 db.php / global.php / rule.php 为文件（框架级引导配置）。
+    */
+
    /* 重写载入各种插件配置 */
-   public function SET($name,$obj) {
-    $data = array();
-    if (is_file(CONFIG_PATH . '/' . $name . '.php')) {
-        $data = include (CONFIG_PATH . '/' . $name . '.php');
-        if (empty($data)) {
-            $data = array();
-        }
-    }
-    return $data[$obj];
-}
+   public function SET($name, $obj) {
+       $data = \app\common\ConfigStore::load('plug_' . $name);
+       if (empty($data)) {
+           // 插件配置回退文件
+           if (is_file(CONFIG_PATH . '/' . $name . '.php')) {
+               $data = include(CONFIG_PATH . '/' . $name . '.php');
+           } else {
+               $data = [];
+           }
+       }
+       return isset($data[$obj]) ? $data[$obj] : null;
+   }
 
-
-   
-   /* 载入网站配置 */
+   /* 载入网站配置（从 DB，对标 emlog 的 Option::get） */
    public function SiteConfig($obj){
-   	  include(CONFIG_PATH.'/siteconfig.php');
-   	  return $Siteinfo[$obj];
-
+       $data = \app\common\ConfigStore::load('site');
+       return isset($data[$obj]) ? $data[$obj] : null;
    }
 
-    /* 载入seo配置 */
+   /* 载入seo配置（从 DB） */
    public function SEO($obj){
-      include(CONFIG_PATH.'/seo.php');
-      return $SEO[$obj];
-
+       $data = \app\common\ConfigStore::load('seo');
+       return isset($data[$obj]) ? $data[$obj] : null;
    }
-   
 
+   /* 载入seo推送配置（从 DB） */
+   public function SeoPush(){
+       return \app\common\ConfigStore::load('seopush');
+   }
 
-   /* 载入统计配置 */
-   public function Tj(){
-      $tongji=include(CONFIG_PATH.'/codejs/tongji.zhicms');
-      return $tongji;
+   /**
+    * 通用配置读取（按 group.key 格式）
+    * @param string $group 配置组名（site/seo/api/sms/aichat/seopush/weixin/ai）
+    * @param string|null $key 配置项，null 返回整组
+    * @return mixed
+    */
+   public function Config($group, $key = null) {
+       return \app\common\ConfigStore::load($group, $key);
    }
 
 

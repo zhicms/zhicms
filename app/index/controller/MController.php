@@ -9,7 +9,7 @@ class MController extends \app\base\controller\BaseController {
 			$this->tab();
 			return;
 		}
-		include CONFIG_PATH . 'siteconfig.php';
+		$Siteinfo = \app\common\ConfigStore::load('site');
 		$dev=self::getDeviceType();
 		$this->dev=$dev;
 	    $this->_renderMobile();
@@ -20,7 +20,7 @@ class MController extends \app\base\controller\BaseController {
 	 * 采用 readfile 原样输出，避免模板引擎解析 Vue 的 {{ }} 大括号导致语法错误
 	 */
 	private function _renderMobile(){
-		include CONFIG_PATH . 'siteconfig.php';
+		$Siteinfo = \app\common\ConfigStore::load('site');
 		$style = isset($Siteinfo['mobile_style']) ? trim($Siteinfo['mobile_style']) : 'super_search';
 		$allowed = array('super_search', 'tb_minishop', 'welfare_listing', 'rt_xb');
 		if (!in_array($style, $allowed, true)) { $style = 'super_search'; }
@@ -132,7 +132,7 @@ echo $html;
 //风云榜
 public function rank(){
 	header("Content-type: text/html; charset=utf-8"); 
-   include CONFIG_PATH . 'siteconfig.php';
+   $Siteinfo = \app\common\ConfigStore::load('site');
 		$newData= new \ZhiCms\ext\Weixin;
         $host=$Siteinfo['apiurl']."?s=App.taobao.times";
 		$cacheKey = 'm_rank_times_' . md5($host);
@@ -173,7 +173,7 @@ echo $html;
 
 //九块九
 public function cheaps(){
-		include CONFIG_PATH . 'siteconfig.php';
+		$Siteinfo = \app\common\ConfigStore::load('site');
         $page=$this->arg("p");
 
 		if(!$page || $page<=0){
@@ -223,7 +223,7 @@ echo $html;
 	// m 端频道 tab 切换：返回归一化商品 JSON，前端原地切换内容（不跳转页面）
 	public function tab(){
 		header('Content-Type: application/json; charset=utf-8');
-		include CONFIG_PATH . 'siteconfig.php';
+		$Siteinfo = \app\common\ConfigStore::load('site');
 		$type = $this->arg('type', 'index');
 		$p = intval($this->arg('p', 1));
 		if ($p < 1) $p = 1;
@@ -412,7 +412,7 @@ public function getDeviceType()
         $cacheKey = 'm_card_taobao_' . md5($url);
         return tcache($cacheKey, function() use ($url) {
             try {
-                include CONFIG_PATH . 'apiset.php';
+                $api = \app\common\ConfigStore::load('api');
                 $dtkAppKey = $api['dtk_appkey'] ?? '';
                 $dtkAppSecret = $api['dtk_appsecret'] ?? '';
                 if (empty($dtkAppKey) || empty($dtkAppSecret)) return null;

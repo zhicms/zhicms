@@ -1,77 +1,117 @@
-{include file="app/manage/view/index/nav"}
-            
-            <div class="layui-container">
-                <div class="layui-row">
-                    <div class="layui-col-md12">
-                        <div class="layui-card">
-                            <div class="layui-card-header">
-                                <i class="layui-icon layui-icon-ad"></i> 广告管理
-                                <button class="layui-btn" onclick="location.href='index.php?r=manage/ad/addhuan'"><i class="layui-icon layui-icon-add"></i> 添加广告</button>
-                            </div>
-                            <div class="layui-card-body">
-                                <table class="layui-table">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>标题</th>
-                                            <th>显示平台</th>
-                                            <th>广告图片</th>
-                                            <th>链接</th>
-                                            <th>添加时间</th>
-                                            <th>操作</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <?php if (!empty($page['list'])) { foreach ($page['list'] as $row) { ?>
-                                        <tr>
-                                            <td><?php echo $row['id']; ?></td>
-                                            <td><?php echo $row['title']; ?></td>
-                                            <td><?php echo $row['type'] == 0 ? 'PC网站' : '移动端'; ?></td>
-                                            <td><img src="<?php echo $row['pic']; ?>" width="80" height="40" alt="" style="border-radius:4px;"></td>
-                                            <td><?php echo mb_substr($row['link'], 0, 30, 'UTF-8'); ?></td>
-                                            <td><?php echo $row['date']; ?></td>
-                                            <td>
-                                                <a href="index.php?r=manage/ad/edithuan&id=<?php echo $row['id']; ?>" class="layui-btn layui-btn-xs"><i class="layui-icon layui-icon-edit"></i> 编辑</a>
-                                                <button class="layui-btn layui-btn-xs layui-btn-danger" onclick="del(<?php echo $row['id']; ?>)"><i class="layui-icon layui-icon-delete"></i> 删除</button>
-                                            </td>
-                                        </tr>
-                                        <?php } } else { ?>
-                                        <tr><td colspan="7" style="text-align:center;" class="empty-state"><i class="layui-icon layui-icon-ad"></i><p>暂无数据</p></td></tr>
-                                        <?php } ?>
-                                    </tbody>
-                                </table>
-                                
-                                <div class="layui-page">
-                                    <?php echo $page['page']; ?>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+{include file="app/manage/view/index/emlog_nav"}
 
-    <script src="https://cdn.staticfile.org/layui/2.9.10/layui.js"></script>
-    <script>
-        function del(id) {
-            if(confirm('确定要删除这个广告吗？')) {
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', 'index.php?r=manage/ad/deletehuan&id=' + id, true);
-                xhr.onreadystatechange = function() {
-                    if (xhr.readyState == 4 && xhr.status == 200) {
-                        var result = JSON.parse(xhr.responseText);
-                        if (result.status === 'y') {
-                            alert(result.info);
-                            location.reload();
-                        } else {
-                            alert(result.info);
-                        }
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-images"></i>
+    幻灯广告管理
+</h1>
+
+<!-- 操作栏 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <a href="index.php?r=manage/ad/addhuan" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 添加广告
+        </a>
+    </div>
+</div>
+
+<!-- 广告列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-table"></i> 广告列表</h5>
+        <small class="text-muted">共 <?php echo isset($page['total']) ? $page['total'] : 0; ?> 条</small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width:70px;" class="text-center">ID</th>
+                        <th>标题</th>
+                        <th style="width:100px;" class="text-center">平台</th>
+                        <th style="width:160px;">广告图片</th>
+                        <th style="width:200px;">链接</th>
+                        <th style="width:130px;" class="text-center">添加时间</th>
+                        <th style="width:150px;" class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($page['list'])): ?>
+                    <?php foreach ($page['list'] as $row): ?>
+                    <tr>
+                        <td class="text-center font-weight-bold"><?php echo $row['id']; ?></td>
+                        <td class="font-weight-600"><?php echo $row['title']; ?></td>
+                        <td class="text-center">
+                            <span class="badge badge-<?php echo $row['type'] == 0 ? 'primary' : 'info'; ?>">
+                                <?php echo $row['type'] == 0 ? 'PC网站' : '移动端'; ?>
+                            </span>
+                        </td>
+                        <td>
+                            <img src="<?php echo $row['pic']; ?>" style="max-width:120px;max-height:40px;border-radius:4px;" alt="">
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width:180px;">
+                                <a href="<?php echo $row['link']; ?>" target="_blank"><?php echo htmlspecialchars($row['link']); ?></a>
+                            </div>
+                        </td>
+                        <td class="text-center small text-muted"><?php echo $row['date']; ?></td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="index.php?r=manage/ad/edithuan&id=<?php echo $row['id']; ?>" class="btn btn-outline-primary" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-outline-danger" onclick="del(<?php echo $row['id']; ?>)" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="7" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-images fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无广告数据</h5>
+                                <p class="text-muted">点击上方"添加广告"按钮创建第一个广告</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <!-- 分页 -->
+        <?php if(isset($page['page']) && $page['page']): ?>
+        <div class="text-center mt-3">
+            <?php echo $page['page']; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function del(id) {
+    if(confirm('确定要删除这个广告吗？')) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/ad/deletehuan&id=' + id, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        location.reload();
+                    } else {
+                        alert(result.info);
                     }
-                };
-                xhr.send();
+                } catch(e) {
+                    location.reload();
+                }
             }
-        }
-    </script>
-</body>
-</html>
+        };
+        xhr.send();
+    }
+}
+</script>

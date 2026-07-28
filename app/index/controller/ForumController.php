@@ -44,9 +44,13 @@ class ForumController extends \app\base\controller\BaseController {
     }
 
     /**
-     * 加载侧边栏：热门帖子 + 板块列表
+     * 加载侧边栏：热门帖子 + 板块列表（同时继承父级分类/热门文章等）
      */
     protected function loadCommonSidebar() {
+        // 先调用父级方法，加载分类目录、热门文章、站点统计等公共数据
+        parent::loadCommonSidebar();
+
+        // 再加载论坛特有的侧边栏数据
         $hotForums = obj("api/ApiData")->thisQuery(
             "SELECT `id`,`title`,`pic`,`images`,`view`,`reply_count`,`like`,`date` FROM `{pre}forum` WHERE `status` = 1 ORDER BY `view` DESC LIMIT 5"
         );
@@ -147,6 +151,16 @@ class ForumController extends \app\base\controller\BaseController {
         $this->maxImages = (int)$this->getSwitch('forum_max_images', '6');
         $this->maxLinks = (int)$this->getSwitch('forum_max_links', '3');
         $this->loadCommonSidebar();
+
+        // SEO：社区首页
+        $siteName = obj('base/Base')->SiteConfig('sitename');
+        $boardName = '';
+        foreach ($boards ?: [] as $b) { if ((int)$b['id'] === $bid) { $boardName = $b['name']; break; } }
+        $this->pageTitle = ($bid > 0 && $boardName ? $boardName . ' - ' : '') . '社区 - ' . $siteName;
+        $this->pageKeywords = '社区,好物分享,种草' . ($boardName ? ',' . $boardName : '');
+        $this->pageDescription = '好物分享社区，发现全网高性价比商品' . ($boardName ? '，' . $boardName . '专区' : '');
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'index.php?r=index/forum/index' . ($bid > 0 ? '/bid/' . $bid : '');
+
         $this->display();
     }
 
@@ -182,6 +196,15 @@ class ForumController extends \app\base\controller\BaseController {
         $this->maxImages = (int)$this->getSwitch('forum_max_images', '6');
         $this->maxLinks = (int)$this->getSwitch('forum_max_links', '3');
         $this->loadCommonSidebar();
+
+        // SEO：小组页
+        $groupName = $group[0]['name'] ?? '小组';
+        $groupDesc = $group[0]['des'] ?? '';
+        $this->pageTitle = $groupName . ' - 社区 - ' . obj('base/Base')->SiteConfig('sitename');
+        $this->pageKeywords = $groupName . ',社区,好物分享';
+        $this->pageDescription = $groupDesc ? mb_substr(strip_tags($groupDesc), 0, 180, 'UTF-8') : ($groupName . '小组，发现好物分享');
+        $this->canonicalUrl = url($route='index/forum/group/gid=<gid>', $params=array('gid'=>$gid));
+
         $this->display();
     }
 
@@ -260,6 +283,21 @@ class ForumController extends \app\base\controller\BaseController {
         $this->visitorMail = isset($_COOKIE['zhicms_comment_mail']) ? $_COOKIE['zhicms_comment_mail'] : '';
 
         $this->loadCommonSidebar();
+
+        // SEO：帖子详情页
+        $postTitle = isset($forum['title']) ? trim($forum['title']) : '';
+        $postContent = isset($forum['content']) ? strip_tags($forum['content']) : '';
+        $siteName = obj('base/Base')->SiteConfig('sitename');
+        $groupName = isset($this->group['name']) ? $this->group['name'] : '';
+        $this->pageTitle = ($postTitle ?: '帖子详情') . ' - ' . ($groupName ? $groupName . ' - ' : '') . '社区 - ' . $siteName;
+        $this->pageKeywords = $postTitle . ',社区,好物分享' . ($groupName ? ',' . $groupName : '');
+        $this->pageDescription = mb_substr($postContent, 0, 180, 'UTF-8') ?: ($postTitle ?: '社区好物分享帖子');
+        $this->canonicalUrl = url($route='index/forum/view/id=<id>', $params=array('id'=>$id));
+        // Open Graph 图片：帖子第一张图
+        if (!empty($forum['pic'])) {
+            $this->ogImage = $forum['pic'];
+        }
+
         $this->display();
     }
 
@@ -533,7 +571,7 @@ class ForumController extends \app\base\controller\BaseController {
         }
 
         try {
-            include CONFIG_PATH . 'apiset.php';
+            $api = \app\common\ConfigStore::load('api');
             $tjk = new \ZhiCms\ext\Tjk(array(
                 'DtkappKey' => $api['dtk_appkey'] ?? '',
                 'DtkappSecret' => $api['dtk_appsecret'] ?? '',

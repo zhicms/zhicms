@@ -1,80 +1,82 @@
-{include file="app/manage/view/index/nav"}
+﻿{include file="app/manage/view/index/emlog_nav"}
 
-<div class="layui-container">
-    <div class="layui-row">
-        <div class="layui-col-md12">
-            <div class="layui-card">
-                <div class="layui-card-header">
-                    <i class="layui-icon layui-icon-edit"></i> {$pagetext['1']}
-                </div>
-                <div class="layui-card-body">
-                    <form class="layui-form" id="form" action="" method="post">
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">标题</label>
-                            <div class="layui-input-block">
-                                <input type="text" name="title" class="layui-input" placeholder="幻灯广告标题" value="{$ret['title']}">
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-images"></i>
+    {$pagetext['1']}
+    <a href="index.php?r=manage/ad/huan" class="btn btn-sm btn-outline-secondary float-right">
+        <i class="fas fa-arrow-left mr-1"></i>返回列表
+    </a>
+</h1>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-edit"></i> {$pagetext['1']}</h5>
+            </div>
+            <div class="card-body">
+                <form class="layui-form" id="form" action="" method="post">
+                    <div class="form-group">
+                        <label class="font-weight-bold">标题 <span class="text-danger">*</span></label>
+                        <input type="text" name="title" class="form-control" placeholder="幻灯广告标题" value="{$ret['title']}">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">显示平台</label>
+                        <select name="type" class="form-control" style="max-width:200px;">
+                            <option {if $ret['type']=='0'} selected{/if} value="0">PC网站</option>
+                            <option {if $ret['type']=='1'} selected{/if} value="1">移动端</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">封面图片</label>
+                        <div class="input-group">
+                            <input type="text" name="pic" id="tupian" class="form-control" placeholder="封面图片地址" value="{$ret['pic']}">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" onclick="upthis()">
+                                    <i class="fas fa-upload"></i> 上传
+                                </button>
                             </div>
                         </div>
-
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">显示平台</label>
-                            <div class="layui-input-block">
-                                <select name="type" class="layui-select">
-                                    <option {if $ret['type']=='0'} selected="selected" {/if} value="0">PC网站</option>
-                                    <option {if $ret['type']=='1'} selected="selected" {/if} value="1">移动端</option>
-                                </select>
-                            </div>
+                        <input type="file" name="file" id="up_tupian" onChange="Uploadthis('tupian','up_tupian')" style="display:none">
+                        <small class="form-text text-muted">建议尺寸：1900×449</small>
+                        {if $ret['pic']}
+                        <div class="mt-2">
+                            <img src="{$ret['pic']}" class="img-thumbnail" style="max-width:300px;max-height:80px;">
                         </div>
+                        {/if}
+                    </div>
 
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">封面</label>
-                            <div class="layui-input-block">
-                                <div class="layui-inline" style="width:calc(100% - 120px);">
-                                    <input type="text" name="pic" id="tupian" class="layui-input" placeholder="封面图片地址" value="{$ret['pic']}">
-                                </div>
-                                <button type="button" class="layui-btn layui-btn-sm" onclick="upthis()"><i class="layui-icon layui-icon-upload"></i> 上传</button>
-                                <input type="file" name="file" id="up_tupian" onChange="Uploadthis('tupian','up_tupian')" style="display:none">
-                                {if $ret['pic']}
-                                <img src="{$ret['pic']}" class="img-preview">
-                                {/if}
-                            </div>
-                            <p class="form-tip" style="margin-left:110px;">建议尺寸：1900*449</p>
-                        </div>
+                    <div class="form-group">
+                        <label class="font-weight-bold">超级链接</label>
+                        <input type="text" name="link" class="form-control" placeholder="https:// 或 http:// 开头" value="{$ret['link']}">
+                    </div>
 
-                        <div class="layui-form-item">
-                            <label class="layui-form-label">超级链接</label>
-                            <div class="layui-input-block">
-                                <input type="text" name="link" class="layui-input" placeholder="超级链接" value="{$ret['link']}">
-                            </div>
-                        </div>
+                    {$html}
 
-                        {$html}
-
-                        <div class="layui-form-item">
-                            <div class="layui-input-block">
-                                <button type="submit" class="layui-btn" id="save"><i class="layui-icon layui-icon-save"></i> 保存</button>
-                                <button type="button" class="layui-btn layui-btn-primary" onclick="window.location.href='index.php?r=manage/ad/huan'"><i class="layui-icon layui-icon-return"></i> 返回列表</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+                    <div class="form-group border-top pt-3 mt-4">
+                        <button type="submit" class="btn btn-primary btn-lg px-5" id="save">
+                            <i class="fas fa-save"></i> 保存
+                        </button>
+                        <a href="index.php?r=manage/ad/huan" class="btn btn-outline-secondary btn-lg ml-2">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 </div>
-</div>
-</div>
 
-<script src="https://cdn.staticfile.org/layui/2.9.10/layui.js"></script>
-<script src="/public/global/layer/layer.js"></script>
-<script src="/public/global/js/ajaxfileupload.js"></script>
-<script src="/public/global/js/index.js"></script>
+{include file="app/manage/view/index/emlog_footer"}
 
+<script src="/public/manage/layer/layer.js"></script>
+<script src="/public/manage/js/ajaxfileupload.js"></script>
+<script src="/public/manage/js/index.js"></script>
 <script>
-layui.use(['form'], function(){
-    var form = layui.form;
-    ZhiForm("#form","index.php?r=manage/ad/huan","保存中","保存","null");
-});
+ZhiForm("#form","index.php?r=manage/ad/huan","保存中","保存","null");
 
 Uploadthis=function(obj,thisid){
     layer.load(2);
@@ -94,5 +96,3 @@ function upthis(){
     document.getElementById("up_tupian").click(); 	
 }
 </script>
-</body>
-</html>

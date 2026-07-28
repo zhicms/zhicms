@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{$pageText['0']} - ZhiCms</title>
     <link rel="stylesheet" href="https://cdn.staticfile.org/layui/2.9.10/css/layui.css">
-    <link rel="stylesheet" href="/public/admin/layui/admin.css">
+    <link rel="stylesheet" href="/public/manage/layui/admin.css">
     <?php zhi_hook('admin_head'); ?>
 </head>
 <body class="layui-layout-body">
@@ -78,13 +78,7 @@
                             <?php } ?>
                         </dl>
                     </li>
-                    <li class="layui-nav-item {if CONTROLLER_NAME=='caiji'}layui-nav-itemed{/if}">
-                        <a href="javascript:;"><i class="layui-icon layui-icon-search"></i> 数据采集</a>
-                        <dl class="layui-nav-child">
-                            <dd {if CONTROLLER_NAME=='caiji' && ACTION_NAME=='index'}class="layui-this"{/if}><a href="index.php?r=manage/caiji/index">宝贝采集</a></dd>
-                            <dd {if CONTROLLER_NAME=='caiji' && ACTION_NAME=='find'}class="layui-this"{/if}><a href="index.php?r=manage/caiji/find">文案采集</a></dd>
-                        </dl>
-                    </li>
+
                 </ul>
                 <?php zhi_hook('admin_menu'); ?>
             </div>

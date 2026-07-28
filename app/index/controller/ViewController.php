@@ -81,9 +81,11 @@ class ViewController extends \app\base\controller\BaseController
         $this->platformIcon = $platformIcon;
         $this->platformClass = $platformClass;
         $this->errmsg='商品信息获取失败，请稍后重试';
-        $this->pageTitle = '商品详情 - ' . obj('base/Base')->SiteConfig('sitename');
-        $this->pageKeywords = obj('base/Base')->SEO('cheaps_keywords');
-        $this->pageDescription = obj('base/Base')->SEO('cheaps_dec');
+        $siteName = obj('base/Base')->SiteConfig('sitename');
+        $this->pageTitle = '商品详情 - ' . (obj('base/Base')->SEO('view_title') ?: $siteName);
+        $this->pageKeywords = obj('base/Base')->SEO('view_keywords') ?: obj('base/Base')->SiteConfig('sitekeywords');
+        $this->pageDescription = obj('base/Base')->SEO('view_dec') ?: obj('base/Base')->SiteConfig('sitedescription');
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'detail-' . $goodsId . '.html';
         $this->loadCommonSidebar();
         $this->display('app/index/view/view/smzdm_detail');
     }
@@ -93,9 +95,15 @@ class ViewController extends \app\base\controller\BaseController
         $platformName = ['taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会'][$platform] ?? '商城';
         $platformIcon = ['taobao' => '🛒', 'jd' => '🔴', 'pdd' => '🟠', 'vip' => '💝'][$platform] ?? '🛒';
         $platformClass = ['taobao' => 'tb', 'jd' => 'jd', 'pdd' => 'pdd', 'vip' => 'vip'][$platform] ?? 'tb';
-        $this->pageTitle = $title . ' - ' . $platformName . '优惠券 - ' . obj('base/Base')->SiteConfig('sitename');
-        $this->pageKeywords = ($item['dtitle'] ?? '') . ',' . obj('base/Base')->SEO('cheaps_keywords');
-        $this->pageDescription = mb_substr(strip_tags($item['content'] ?? $item['dtitle'] ?? $title), 0, 120, 'UTF-8');
+        $siteName = obj('base/Base')->SiteConfig('sitename');
+        $this->pageTitle = $title . ' - ' . $platformName . '优惠券 - ' . $siteName;
+        $this->pageKeywords = ($item['dtitle'] ?? '') . ',' . obj('base/Base')->SEO('view_keywords') . ',' . $platformName;
+        $this->pageDescription = mb_substr(strip_tags($item['content'] ?? $item['dtitle'] ?? $title), 0, 180, 'UTF-8') ?: ($title . '|' . $platformName . '优惠券');
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'detail-' . ($item['goodsId'] ?? '') . '.html';
+        // Open Graph 图片
+        if (!empty($item['mainPic'])) {
+            $this->ogImage = $item['mainPic'];
+        }
         $this->platformName = $platformName;
         $this->platformIcon = $platformIcon;
         $this->platformClass = $platformClass;
@@ -133,7 +141,7 @@ class ViewController extends \app\base\controller\BaseController
         if(!$id){
            exit;
         }
-    	include CONFIG_PATH . 'siteconfig.php';
+    	$Siteinfo = \app\common\ConfigStore::load('site');
 		$newData= new \ZhiCms\ext\Weixin;
         foreach ($id as $value) {
            preg_match_all('/[1-9]\d*/', $value, $itemsId);

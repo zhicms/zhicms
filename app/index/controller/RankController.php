@@ -45,6 +45,16 @@ class RankController extends \app\base\controller\BaseController {
         $this->cid       = $cid;
         $this->title     = self::$rankTypes[$type]['name'];
 
+        // SEO：榜单页
+        $rankTitle = self::$rankTypes[$type]['name'];
+        $this->pageTitle = $rankTitle . ' - ' . (obj('base/Base')->SEO('rank_title') ?: '风云榜') . ' - ' . obj('base/Base')->SiteConfig('sitename');
+        $this->pageKeywords = $rankTitle . ',' . (obj('base/Base')->SEO('rank_keywords') ?: '');
+        $this->pageDescription = self::$rankTypes[$type]['desc'] ?? (obj('base/Base')->SEO('rank_dec') ?: '');
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'rank.html';
+
+        // 加载公共侧边栏（分类 + 热门文章等）
+        $this->loadCommonSidebar();
+
         // 强制使用榜单视图，确保 HotController 复用时模板一致
         $this->display('app/index/view/rank/index');
     }

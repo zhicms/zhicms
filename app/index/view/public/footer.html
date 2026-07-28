@@ -1,0 +1,189 @@
+</main>
+
+<footer class="blog-footer">
+  <div class="container foot-main">
+    <div class="foot-col foot-about">
+      <div class="foot-logo">{obj('base/Base')->SiteConfig('sitename')}</div>
+      <p class="foot-desc">{obj('base/Base')->SiteConfig('about')}</p>
+    </div>
+    <div class="foot-col">
+      <h4>快捷导航</h4>
+      <ul class="unstyle-li foot-links">
+        <li><a href="{url($route='index/index/index', $params=array())}">网站首页</a></li>
+        <li><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>1))}">折扣精选</a></li>
+        <li><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>8))}">数码家电</a></li>
+      </ul>
+    </div>
+    <div class="foot-col">
+      <h4>站点信息</h4>
+      <ul class="unstyle-li foot-links">
+        {if obj('base/Base')->SiteConfig('banquan')}<li>{obj('base/Base')->SiteConfig('banquan')}</li>{/if}
+        {if obj('base/Base')->SiteConfig('beian')}<li><a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow">{obj('base/Base')->SiteConfig('beian')}</a></li>{/if}
+      </ul>
+    </div>
+  </div>
+  <div class="foot-bar">
+    <div class="container">
+      &copy; <span id="foot-year"></span> {obj('base/Base')->SiteConfig('sitename')} &middot; Powered by <a href="https://github.com/" target="_blank" rel="nofollow">ZhiCms</a>
+    </div>
+  </div>
+</footer>
+
+<div class="side-toolbar">
+  {if isset($showBack) && $showBack}
+  <div class="side-btn" id="back-to-prev" title="返回上一页" onclick="history.go(-1);">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+  </div>
+  {/if}
+  <div class="side-btn" id="back-to-top" title="返回顶部" style="display:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+  </div>
+  <div class="side-btn" id="theme-toggle" title="切换主题">
+    <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+  </div>
+</div>
+
+<script>
+(function () {
+  var toggle = document.getElementById('blogNavToggle');
+  var nav = document.getElementById('blogNav');
+  var overlay = document.getElementById('blogNavOverlay');
+  function closeNav() { if (nav) nav.classList.remove('show'); if (overlay) overlay.classList.remove('show'); }
+  if (toggle && nav) {
+    toggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      nav.classList.toggle('show');
+      if (overlay) overlay.classList.toggle('show', nav.classList.contains('show'));
+    });
+    nav.addEventListener('click', function (e) { if (e.target.tagName === 'A') closeNav(); });
+    if (overlay) overlay.addEventListener('click', closeNav);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeNav(); });
+    document.addEventListener('click', function (e) {
+      if (nav.classList.contains('show') && !nav.contains(e.target) && e.target !== toggle) closeNav();
+    });
+  }
+
+  var top = document.getElementById('back-to-top');
+  if (top) {
+    window.addEventListener('scroll', function () {
+      top.style.display = window.scrollY > 300 ? 'flex' : 'none';
+    });
+    top.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+  }
+
+  var tbtn = document.getElementById('theme-toggle');
+  if (tbtn) {
+    var moon = tbtn.querySelector('.icon-moon'), sun = tbtn.querySelector('.icon-sun');
+    function syncIcon() {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      if (moon) moon.style.display = dark ? 'none' : 'block';
+      if (sun) sun.style.display = dark ? 'block' : 'none';
+    }
+    syncIcon();
+    tbtn.addEventListener('click', function () {
+      var dark = document.documentElement.getAttribute('data-theme') === 'dark';
+      var next = dark ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      syncIcon();
+    });
+  }
+
+  var fy = document.getElementById('foot-year');
+  if (fy) fy.textContent = new Date().getFullYear();
+
+  window.initTbSuggest = function (input, onPick) {
+    if (!input) return;
+    var box = document.createElement('div');
+    box.className = 'tb-suggest';
+    input.parentNode.style.position = 'relative';
+    input.parentNode.insertBefore(box, input.nextSibling);
+    var timer = null;
+    function hide() { box.style.display = 'none'; box.innerHTML = ''; }
+    function show(list) {
+      if (!list.length) { hide(); return; }
+      box.innerHTML = '';
+      list.forEach(function (w) {
+        var d = document.createElement('a');
+        d.className = 'tb-suggest-item';
+        d.href = 'javascript:;';
+        d.textContent = w;
+        d.addEventListener('mousedown', function (e) { e.preventDefault(); onPick(w); });
+        box.appendChild(d);
+      });
+      box.style.display = 'block';
+    }
+    input.addEventListener('input', function () {
+      var q = input.value.trim();
+      clearTimeout(timer);
+      if (q.length < 1) { hide(); return; }
+      timer = setTimeout(function () {
+        var cb = 'tbsug_' + Date.now() + Math.floor(Math.random() * 1e4);
+        window[cb] = function (data) {
+          try {
+            var arr = (data && data.result) ? data.result : [];
+            show(arr.map(function (i) { return typeof i === 'string' ? i : (i[0] || ''); }));
+          } catch (e) {}
+          delete window[cb];
+          var s = document.getElementById(cb); if (s) s.parentNode.removeChild(s);
+        };
+        var s = document.createElement('script');
+        s.id = cb;
+        s.src = 'https://suggest.taobao.com/sug?code=utf-8&q=' + encodeURIComponent(q) + '&callback=' + cb;
+        document.body.appendChild(s);
+      }, 250);
+    });
+    input.addEventListener('keydown', function (e) {
+      if (e.keyCode === 13) { e.preventDefault(); onPick(input.value.trim()); }
+    });
+    input.addEventListener('blur', function () { setTimeout(hide, 150); });
+    document.addEventListener('click', function (e) {
+      if (!box.contains(e.target) && e.target !== input) hide();
+    });
+  };
+
+  var sInp = document.querySelector('.widget-search-input');
+  if (sInp) {
+    window.initTbSuggest(sInp, function (word) {
+      if (word) window.location.href = 'so.html?content=' + encodeURIComponent(word);
+    });
+    var sBtn = document.querySelector('.widget-search-btn');
+    if (sBtn) sBtn.addEventListener('click', function () {
+      var v = sInp.value.trim();
+      if (v) window.location.href = 'so.html?content=' + encodeURIComponent(v);
+    });
+  }
+})();
+</script>
+
+{include file="app/index/view/index/ai_widget"}
+
+<!-- 移动端底部导航栏（类似 emlog 风格，≤767px 显示） -->
+<nav class="mobile-bottom-nav">
+    <div class="mbn-inner">
+        <a href="{url($route='index/index/index', $params=array())}" class="mbn-item {if $act == 'index' && $method == 'index'}active{/if}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <span>首页</span>
+        </a>
+        <a href="{url($route='index/search/index', $params=array())}" class="mbn-item {if $act == 'search'}active{/if}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <span>搜索</span>
+        </a>
+        <a href="{url($route='index/cheaps/index', $params=array())}" class="mbn-item {if $act == 'cheaps'}active{/if}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            <span>优惠券</span>
+        </a>
+        <a href="{url($route='index/rank/index', $params=array())}" class="mbn-item {if $act == 'rank' || $act == 'hot'}active{/if}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+            <span>风云榜</span>
+        </a>
+        <a href="{url($route='index/forum/index', $params=array())}" class="mbn-item {if $act == 'forum'}active{/if}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+            <span>社区</span>
+        </a>
+    </div>
+</nav>
+
+</body>
+</html>

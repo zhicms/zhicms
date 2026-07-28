@@ -37,6 +37,19 @@ class SearchController extends \app\base\controller\BaseController
         $this->platform = $platform;
         $this->platforms = $this->platforms;
 
+        // SEO：搜索页
+        if (!empty($content)) {
+            $this->pageTitle = '"' . $content . '" 的搜索结果 - ' . obj('base/Base')->SiteConfig('sitename');
+            $this->pageDescription = '搜索"' . $content . '"的相关商品和优惠信息';
+        } else {
+            $this->setPageSEO(
+                obj('base/Base')->SEO('search_title') ?: '搜索',
+                obj('base/Base')->SEO('search_keywords'),
+                obj('base/Base')->SEO('search_dec')
+            );
+        }
+        $this->pageKeywords = !empty($content) ? $content . ',搜索,' . obj('base/Base')->SEO('search_keywords') : obj('base/Base')->SEO('search_keywords');
+
         $this->loadCommonSidebar();
 
         if (empty($content)) {
@@ -346,7 +359,7 @@ class SearchController extends \app\base\controller\BaseController
     }
 
     private function createTjkClient() {
-        include CONFIG_PATH . 'apiset.php';
+        $api = \app\common\ConfigStore::load('api');
         $dtkAppKey = $api['dtk_appkey'] ?? '';
         $dtkAppSecret = $api['dtk_appsecret'] ?? '';
         $hdkApiKey = $api['hdk_appkey'] ?? '';
@@ -366,7 +379,7 @@ class SearchController extends \app\base\controller\BaseController
         $cacheKey = 'search_tb_gid_' . md5($url);
         return tcache($cacheKey, function() use ($url) {
             try {
-                include CONFIG_PATH . 'apiset.php';
+                $api = \app\common\ConfigStore::load('api');
                 $dtkAppKey = $api['dtk_appkey'] ?? '';
                 $dtkAppSecret = $api['dtk_appsecret'] ?? '';
                 if (empty($dtkAppKey) || empty($dtkAppSecret)) return null;

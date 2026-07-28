@@ -1,4 +1,4 @@
-{include file="app/index/view/index/common_header"}
+﻿{include file="app/index/view/public/header"}
 
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">品牌中心</span>
@@ -20,7 +20,7 @@
     {if !empty($Page['list'])}
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
       {foreach $Page['list'] as $vo}
-      <article class="shadow-theme" style="flex:1;min-width:280px;max-width:380px;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
+      <article class="shadow-theme mobile-card-full" style="flex:1;min-width:280px;max-width:380px;border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
         <a href="{url($route='index/brand/view/id=<id>', $params=array('id'=>$vo['brandId']))}" target="_blank" style="display:block;">
           <div style="position:relative;height:180px;overflow:hidden;">
             {if !empty($vo['brandLogo'])}
@@ -85,7 +85,7 @@
       </div>
     {/if}
   </div>
-  {include file="app/index/view/index/common_sidebar"}
+  {include file="app/index/view/public/sidebar"}
 </div>
 
-{include file="app/index/view/index/common_footer"}
+{include file="app/index/view/public/footer"}

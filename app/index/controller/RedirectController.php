@@ -5,13 +5,14 @@ namespace app\index\controller;
 class RedirectController extends \app\base\controller\BaseController
 {
     private $platformConfig = [
-        'tb' => ['name' => '淘宝', 'api_platform' => 'taobao'],
-        'taobao' => ['name' => '淘宝', 'api_platform' => 'taobao'],
-        'jd' => ['name' => '京东', 'api_platform' => 'jd'],
-        'pdd' => ['name' => '拼多多', 'api_platform' => 'pdd'],
-        'vip' => ['name' => '唯品会', 'api_platform' => 'vip']
+        'tb'     => ['name' => '淘宝',   'api_platform' => 'taobao'],
+        'taobao' => ['name' => '淘宝',   'api_platform' => 'taobao'],
+        'jd'     => ['name' => '京东',   'api_platform' => 'jd'],
+        'pdd'    => ['name' => '拼多多', 'api_platform' => 'pdd'],
+        'vip'    => ['name' => '唯品会', 'api_platform' => 'vip']
     ];
 
+    /* ========== go() — Tjk 本地 SDK 转链跳转（原 RedirectController） ========== */
     public function go()
     {
         $platform = strtolower($this->arg('platform'));
@@ -21,24 +22,124 @@ class RedirectController extends \app\base\controller\BaseController
             header('Location: /');
             exit;
         }
-
         if (!isset($this->platformConfig[$platform])) {
             header('Location: /');
             exit;
         }
 
-        $config = $this->platformConfig[$platform];
-        $apiPlatform = $config['api_platform'];
-
+        $apiPlatform = $this->platformConfig[$platform]['api_platform'];
         $redirectUrl = $this->getRedirectUrl($apiPlatform, $id);
 
-        if (!empty($redirectUrl)) {
-            header('Location: ' . $redirectUrl);
-        } else {
-            header('Location: /');
-        }
+        header('Location: ' . (!empty($redirectUrl) ? $redirectUrl : '/'));
         exit;
     }
+
+    /* ========== jump() — 带缓存 + 降级兜底的转链跳转（原 LinkController） ========== */
+    public function jump()
+    {
+        $platform = strtolower(trim($this->arg('platform', '')));
+        $id       = trim($this->arg('id', ''));
+
+        $allow = array('tb', 'jd', 'pdd', 'vip');
+        if (!in_array($platform, $allow) || empty($id)) {
+            header('HTTP/1.1 400 Bad Request');
+            echo '参数错误：platform 和 id 不能为空';
+            exit;
+        }
+
+        $cacheKey = 'link_redirect_' . $platform . '_' . md5($id);
+        $redirectUrl = tcache($cacheKey, function () use ($platform, $id) {
+            return $this->resolveLink($platform, $id);
+        }, 1800);
+
+        if (empty($redirectUrl)) {
+            $redirectUrl = $this->buildFallbackUrl($platform, $id);
+        }
+
+        header('HTTP/1.1 302 Moved Temporarily');
+        header('Location: ' . $redirectUrl);
+        exit;
+    }
+
+    private function resolveLink($platform, $id)
+    {
+        try {
+            $tjk = new \ZhiCms\ext\Tjk();
+
+            if ($platform === 'tb') {
+                $url = $this->resolveTbLink($tjk, $id);
+                if (!empty($url)) return $url;
+            } else {
+                $url = $this->resolveHdkLink($tjk, $id);
+                if (!empty($url)) return $url;
+            }
+            return '';
+        } catch (\Exception $e) {
+            return '';
+        }
+    }
+
+    private function resolveTbLink($tjk, $id)
+    {
+        $result = $tjk->getPrivilegeLink($id, '', 'dtk');
+        if (isset($result['code']) && $result['code'] == 1) {
+            $url = $result['data']['shortUrl']
+                ?? $result['data']['couponClickUrl']
+                ?? $result['data']['clickUrl']
+                ?? $result['data']['url']
+                ?? $result['data']['itemUrl']
+                ?? '';
+            if (!empty($url)) return $url;
+        }
+        $dtk = $tjk->getDtk();
+        if ($dtk) {
+            $raw = $dtk->GetPrivilegeLink($id);
+            if (isset($raw['code']) && $raw['code'] == 0) {
+                $url = $raw['data']['shortUrl']
+                    ?? $raw['data']['couponClickUrl']
+                    ?? '';
+                if (!empty($url)) return $url;
+            }
+        }
+        return '';
+    }
+
+    private function resolveHdkLink($tjk, $id)
+    {
+        $hdk = $tjk->getHdk();
+        if ($hdk) {
+            $raw = $hdk->RatesUrl($id);
+            if (isset($raw['code']) && ($raw['code'] == 1 || $raw['code'] == 200)) {
+                $url = $raw['data']['shortUrl']
+                    ?? $raw['data']['couponClickUrl']
+                    ?? $raw['data']['clickUrl']
+                    ?? $raw['data']['url']
+                    ?? $raw['data']['itemUrl']
+                    ?? '';
+                if (!empty($url)) return $url;
+            }
+            if (isset($raw['url']) && !empty($raw['url'])) {
+                return $raw['url'];
+            }
+        }
+        return '';
+    }
+
+    private function buildFallbackUrl($platform, $id)
+    {
+        if (preg_match('#^https?://#i', $id)) {
+            return $id;
+        }
+        $maps = array(
+            'tb'  => 'https://detail.tmall.com/item.htm?id=',
+            'jd'  => 'https://item.jd.com/',
+            'pdd' => 'https://mobile.yangkeduo.com/goods.html?goods_id=',
+            'vip' => 'https://detail.vip.com/detail-',
+        );
+        return isset($maps[$platform]) ? ($maps[$platform] . $id) : 'https://www.taobao.com/';
+    }
+
+    /* ========== 私有方法 ========== */
 
     private function getRedirectUrl($platform, $goodsId)
     {
@@ -57,7 +158,6 @@ class RedirectController extends \app\base\controller\BaseController
             }
         } catch (\Exception $e) {
         }
-
         return $this->getDefaultUrl($platform);
     }
 
@@ -65,9 +165,9 @@ class RedirectController extends \app\base\controller\BaseController
     {
         $urls = [
             'taobao' => 'https://www.taobao.com',
-            'jd' => 'https://www.jd.com',
-            'pdd' => 'https://mobile.yangkeduo.com',
-            'vip' => 'https://www.vip.com'
+            'jd'     => 'https://www.jd.com',
+            'pdd'    => 'https://mobile.yangkeduo.com',
+            'vip'    => 'https://www.vip.com'
         ];
         return $urls[$platform] ?? $urls['taobao'];
     }

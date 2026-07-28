@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title>{if isset($pageTitle) && $pageTitle != ''}{$pageTitle}{elseif obj('base/Base')->SEO('index_title')}{obj('base/Base')->SEO('index_title')}{else}{obj('base/Base')->SiteConfig('sitename')}{/if}</title>
+<meta name="keywords" content="{if isset($pageKeywords) && $pageKeywords != ''}{$pageKeywords}{elseif obj('base/Base')->SEO('index_keywords')}{obj('base/Base')->SEO('index_keywords')}{else}{obj('base/Base')->SiteConfig('sitekeywords')}{/if}">
+<meta name="description" content="{if isset($pageDescription) && $pageDescription != ''}{$pageDescription}{elseif obj('base/Base')->SEO('index_dec')}{obj('base/Base')->SEO('index_dec')}{else}{obj('base/Base')->SiteConfig('sitedescription')}{/if}">
+{if isset($canonicalUrl)}
+<link rel="canonical" href="{$canonicalUrl}">
+{else}
+<link rel="canonical" href="{obj('base/Base')->SiteConfig('hosturl')}">
+{/if}
+<meta property="og:type" content="{if CONTROLLER_NAME=='index' && ACTION_NAME=='view'}article{else}website{/if}">
+<meta property="og:site_name" content="{obj('base/Base')->SiteConfig('sitename')}">
+<meta property="og:title" content="{if isset($pageTitle) && $pageTitle != ''}{$pageTitle}{else}{obj('base/Base')->SiteConfig('sitename')}{/if}">
+<meta property="og:description" content="{if isset($pageDescription) && $pageDescription != ''}{$pageDescription}{else}{obj('base/Base')->SiteConfig('sitedescription')}{/if}">
+<meta property="og:url" content="{if isset($canonicalUrl)}{$canonicalUrl}{else}{obj('base/Base')->SiteConfig('hosturl')}{/if}">
+{if isset($ogImage)}<meta property="og:image" content="{$ogImage}">{/if}
+<script type="application/ld+json"><?php
+$siteName = json_encode(obj('base/Base')->SiteConfig('sitename'), JSON_UNESCAPED_UNICODE);
+$hostUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
+echo '{"@context":"https://schema.org","@type":"WebSite","name":' . $siteName . ',"url":' . json_encode($hostUrl) . ',"potentialAction":{"@type":"SearchAction","target":"' . $hostUrl . '/so.html?content={search_term_string}","query-input":"required name=search_term_string"}}';
+?></script>
+<link rel="icon" href="{obj('base/Base')->SiteConfig('hosturl')}favicon.ico">
+<link rel="stylesheet" href="{__PUBLIC__}web/css/blog.css">
+<script src="{__PUBLIC__}web/js/jquery-1.9.1.0720.min.js"></script>
+<script>
+/* 防闪烁：渲染前确定主题，优先级 localStorage > 系统偏好 */
+(function () {
+  try {
+    var t = localStorage.getItem('theme');
+    if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<nav class="blog-header">
+  <div class="blog-header-c container">
+    <a class="blog-brand" href="{url($route='index/index/index', $params=array())}" title="{obj('base/Base')->SiteConfig('sitename')}">
+      {if obj('base/Base')->SiteConfig('logo')}
+      <img src="{obj('base/Base')->SiteConfig('logo')}" alt="{obj('base/Base')->SiteConfig('sitename')}">
+      {else}
+      <span class="blog-brand-text">
+        <span class="blog-header-title">{obj('base/Base')->SiteConfig('sitename')}</span>
+        <span class="blog-header-subtitle">{obj('base/Base')->SiteConfig('about')}</span>
+      </span>
+      {/if}
+    </a>
+
+    <div class="blog-header-toggle" id="blogNavToggle" aria-label="菜单">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </div>
+
+    <div class="blog-header-nav" id="blogNav">
+      <ul class="nav-list">
+        <li><a class="nav-link {if CONTROLLER_NAME=='index' && ACTION_NAME=='index' && !isset($_GET['list']) && !isset($_GET['id'])}active{/if}" href="{url($route='index/index/index', $params=array())}">首页</a></li>
+        <li><a class="nav-link {if CONTROLLER_NAME=='cheaps'}active{/if}" href="{url($route='index/cheaps/index', $params=array())}">优惠券</a></li>
+        <li><a class="nav-link {if CONTROLLER_NAME=='brand'}active{/if}" href="{url($route='index/brand/index', $params=array())}">大牌</a></li>
+        <li><a class="nav-link {if CONTROLLER_NAME=='rank'}active{/if}" href="{url($route='index/rank/index', $params=array())}">风云榜</a></li>
+        <li><a class="nav-link {if CONTROLLER_NAME=='hot'}active{/if}" href="{url($route='index/hot/index', $params=array())}">热榜</a></li>
+        <li><a class="nav-link {if CONTROLLER_NAME=='forum'}active{/if}" href="{url($route='index/forum/index', $params=array())}">社区</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+<div class="nav-overlay" id="blogNavOverlay"></div>
+
+<main class="container blog-container">

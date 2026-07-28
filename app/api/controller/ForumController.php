@@ -54,10 +54,7 @@ class ForumController extends ApiBaseController {
     private function secret() {
         static $s = null;
         if ($s === null) {
-            $cfg = array();
-            if (file_exists(CONFIG_PATH . 'apiset.php')) {
-                $cfg = include CONFIG_PATH . 'apiset.php';
-            }
+            $cfg = \app\common\ConfigStore::load('api');
             $s = isset($cfg['secretkey']) && $cfg['secretkey'] !== '' ? $cfg['secretkey'] : 'zhangyuan';
         }
         return $s;
@@ -551,7 +548,7 @@ class ForumController extends ApiBaseController {
         else $this->fail('暂不支持该链接，仅支持淘宝/京东/拼多多/唯品会');
 
         try {
-            include CONFIG_PATH . 'apiset.php';
+            $api = \app\common\ConfigStore::load('api');
             $tjk = new \ZhiCms\ext\Tjk(array(
                 'DtkappKey' => $api['dtk_appkey'] ?? '',
                 'DtkappSecret' => $api['dtk_appsecret'] ?? '',

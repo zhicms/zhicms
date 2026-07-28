@@ -1,4 +1,4 @@
-{include file="app/index/view/index/common_header"}
+﻿{include file="app/index/view/public/header"}
 
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">值得买精选</span>
@@ -38,7 +38,7 @@
         <div class="card-tags" style="margin-bottom:12px;">
           {if $vo['cid']}
           <span class="card-tag" style="background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">
-            <a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$vo['cid']))}" style="color:inherit;text-decoration:none;">{obj('index/global','controller')->Cid($vo['cid'])}</a>
+            <a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$vo['cid']))}" style="color:inherit;text-decoration:none;">{$vo['cateName']}</a>
           </span>
           {/if}
         </div>
@@ -71,7 +71,7 @@
 
     <div class="pagination" style="margin-top:24px;">{$page['page']}</div>
   </div>
-  {include file="app/index/view/index/common_sidebar"}
+  {include file="app/index/view/public/sidebar"}
 </div>
 
-{include file="app/index/view/index/common_footer"}
+{include file="app/index/view/public/footer"}

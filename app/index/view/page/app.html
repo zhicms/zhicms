@@ -1,31 +1,19 @@
-<!DOCTYPE html>
-<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="keywords" content="{obj('base/Base')->SEO('index_keywords')}" />
-<meta name="description" content="{obj('base/Base')->SEO('index_dec')}" />
-<title>{obj('base/Base')->SEO('short_title')}手机APP - {obj('base/Base')->SEO('index_title')}</title>
-<link rel="stylesheet" href="{__PUBLIC__}web/css/smzdm.css">
-</head>
-<body>
-{include file="app/index/view/index/topheader"}
+{include file="app/index/view/public/header"}
 
-<div class="smz-main">
-  <div class="smz-feed">
-    <div class="smz-page">
-      <h1>手机APP</h1>
-      <p>随时随地狂刷折扣。嗯，刷了又刷。</p>
-      <p><a class="smz-detail-buy" href="{obj('base/Base')->SiteConfig('download')}" target="_blank">下载 iPhone 版</a></p>
-      <p><a class="smz-detail-buy" href="{obj('base/Base')->SiteConfig('download')}" target="_blank">下载 Android 版</a></p>
-      <p>功能：</p>
-      <p>1、国内折扣、海淘折扣、全网折扣搜索，手机版原汁原味呈现。</p>
-      <p>2、小时风云榜、进站 top9 热榜，都在。</p>
+<div class="row">
+  <div class="column-big">
+    <div class="shadow-theme" style="padding:30px;border-radius:16px;">
+      <h1 style="margin-bottom:20px;font-size:22px;">手机APP</h1>
+      <p style="margin-bottom:12px;line-height:1.8;">随时随地狂刷折扣。嗯，刷了又刷。</p>
+      <p style="margin-bottom:12px;"><a class="btn" href="{obj('base/Base')->SiteConfig('download')}" target="_blank" style="padding:10px 24px;background:#ff6b6b;color:#fff;border-radius:8px;text-decoration:none;">下载 iPhone 版</a></p>
+      <p style="margin-bottom:12px;"><a class="btn" href="{obj('base/Base')->SiteConfig('download')}" target="_blank" style="padding:10px 24px;background:#667eea;color:#fff;border-radius:8px;text-decoration:none;">下载 Android 版</a></p>
+      <p style="margin-top:20px;font-weight:600;">功能：</p>
+      <p style="margin-bottom:8px;">1、国内折扣、海淘折扣、全网折扣搜索，手机版原汁原味呈现。</p>
+      <p style="margin-bottom:8px;">2、小时风云榜、进站 top9 热榜，都在。</p>
       <p>3、未读折扣条目数量提示，不扰民，知道你会自己打开看。</p>
     </div>
   </div>
-  {include file="app/index/view/index/sidemod"}
+  {include file="app/index/view/public/sidebar"}
 </div>
 
-{include file="app/index/view/index/footerjs"}
-{include file="app/index/view/index/footer"}
+{include file="app/index/view/public/footer"}

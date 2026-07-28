@@ -278,12 +278,17 @@ function cdn_url($path) {
     static $hostUrl = null;
     
     if ($cdnUrl === null) {
-        if (file_exists(CONFIG_PATH . 'siteconfig.php')) {
+        // 优先从 DB 读取（通过 ConfigStore），自动兼容旧文件兜底
+        if (class_exists('\\app\\common\\ConfigStore')) {
+            $siteConfig = \app\common\ConfigStore::load('site');
+            $cdnUrl  = !empty($siteConfig['cdnurl']) ? rtrim($siteConfig['cdnurl'], '/') : '';
+            $hostUrl = !empty($siteConfig['hosturl']) ? rtrim($siteConfig['hosturl'], '/') : '';
+        } elseif (file_exists(CONFIG_PATH . 'siteconfig.php')) {
             include CONFIG_PATH . 'siteconfig.php';
-            $cdnUrl = !empty($Siteinfo['cdnurl']) ? rtrim($Siteinfo['cdnurl'], '/') : '';
+            $cdnUrl  = !empty($Siteinfo['cdnurl']) ? rtrim($Siteinfo['cdnurl'], '/') : '';
             $hostUrl = !empty($Siteinfo['hosturl']) ? rtrim($Siteinfo['hosturl'], '/') : '';
         } else {
-            $cdnUrl = '';
+            $cdnUrl  = '';
             $hostUrl = '';
         }
     }

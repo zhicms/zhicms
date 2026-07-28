@@ -6,12 +6,10 @@ class SavewebController extends \app\base\controller\BaseController
 
 	public function index(){
 
-		include CONFIG_PATH . 'siteconfig.php';
+		$Siteinfo = \app\common\ConfigStore::load('site');
         $seoTitle = '';
-        if (is_file(CONFIG_PATH . 'seo.php')) {
-            include CONFIG_PATH . 'seo.php';
-            $seoTitle = $SEO['index_title'] ?? '';
-        }
+        $SEO = \app\common\ConfigStore::load('seo');
+        $seoTitle = $SEO['index_title'] ?? '';
 
 		self::createShortCut($seoTitle.'.url',$Siteinfo['hosturl'],$Siteinfo['hosturl'].'/favicon.ico');
 

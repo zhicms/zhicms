@@ -34,6 +34,18 @@ class BrandController extends \app\base\controller\BaseController
         $this->Page = $array;
 
         $this->cid = $cid;
+
+        // SEO：品牌中心
+        $this->setPageSEO(
+            obj('base/Base')->SEO('brand_title') ?: '大牌风尚',
+            obj('base/Base')->SEO('brand_keywords'),
+            obj('base/Base')->SEO('brand_dec')
+        );
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'brand.html';
+
+        // 加载公共侧边栏（分类 + 热门文章等）
+        $this->loadCommonSidebar();
+
         $this->display();
     }
 
@@ -76,6 +88,21 @@ class BrandController extends \app\base\controller\BaseController
         $this->title = $brandInfo['brandName'] ?? '品牌商品';
         $this->desc = $brandInfo['brandDesc'] ?? '';
         $this->brandInfo = $brandInfo;
+
+        // SEO：品牌详情页
+        $brandName = $brandInfo['brandName'] ?? '';
+        $brandDesc = $brandInfo['brandDesc'] ?? '';
+        if ($brandName) {
+            $this->pageTitle = $brandName . ' - 大牌风尚 - ' . obj('base/Base')->SiteConfig('sitename');
+            $this->pageKeywords = $brandName;
+            $this->pageDescription = $brandDesc ? mb_substr(strip_tags($brandDesc), 0, 180, 'UTF-8') : ($brandName . '品牌旗下商品推荐');
+        } else {
+            $this->setPageSEO('品牌商品', obj('base/Base')->SEO('brand_keywords'), obj('base/Base')->SEO('brand_dec'));
+        }
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'brand-' . $brandId . '.html';
+
+        // 加载公共侧边栏（分类 + 热门文章等）
+        $this->loadCommonSidebar();
 
         $this->display();
     }

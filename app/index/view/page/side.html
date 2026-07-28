@@ -1,35 +1,23 @@
-<!DOCTYPE html>
-<html lang="zh-CN" xmlns="http://www.w3.org/1999/xhtml">
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="keywords" content="{obj('base/Base')->SEO('index_keywords')}" />
-<meta name="description" content="{obj('base/Base')->SEO('index_dec')}" />
-<title>浏览器插件 - {obj('base/Base')->SEO('index_title')}</title>
-<link rel="stylesheet" href="{__PUBLIC__}web/css/smzdm.css">
-</head>
-<body>
-{include file="app/index/view/index/topheader"}
+{include file="app/index/view/public/header"}
 
-<div class="smz-main">
-  <div class="smz-feed">
-    <div class="smz-page">
-      <h1>{obj('base/Base')->SEO('short_title')}浏览器插件</h1>
-      <p>让每天 1000 条折扣一直在窗口右上角陪伴您。</p>
-      <p><a class="smz-detail-buy" href="{obj('base/Base')->SiteConfig('crx')}" target="_blank">点此安装（Chrome）</a></p>
-      <p>适用浏览器：Chrome。其它浏览器安装地址：
+<div class="row">
+  <div class="column-big">
+    <div class="shadow-theme" style="padding:30px;border-radius:16px;">
+      <h1 style="margin-bottom:20px;font-size:22px;">浏览器插件</h1>
+      <p style="margin-bottom:12px;line-height:1.8;">让每天 1000 条折扣一直在窗口右上角陪伴您。</p>
+      <p style="margin-bottom:16px;"><a class="btn" href="{obj('base/Base')->SiteConfig('crx')}" target="_blank" style="padding:10px 24px;background:#667eea;color:#fff;border-radius:8px;text-decoration:none;">点此安装（Chrome）</a></p>
+      <p style="margin-bottom:8px;">适用浏览器：Chrome。其它浏览器安装地址：
         <a href="{obj('base/Base')->SiteConfig('crx')}" target="_blank">360极速浏览器</a>、
         <a href="{obj('base/Base')->SiteConfig('crx')}" target="_blank">猎豹浏览器</a>、
         <a href="{obj('base/Base')->SiteConfig('crx')}" target="_blank">世界之窗极速版</a>
       </p>
-      <p>什么？Chrome 点击按钮没反应？安装不成功？Google 在国内你懂的，咱们这么来：</p>
-      <p>1、点此下载该插件的安装包（或右键链接「链接另存为...」）</p>
-      <p>2、打开 Chrome 扩展管理页面（右上角菜单 → 工具 → 扩展程序）</p>
+      <p style="margin-top:20px;">安装失败？Google 在国内你懂的，咱们这么来：</p>
+      <p style="margin-bottom:8px;">1、点此下载该插件的安装包（或右键链接「链接另存为...」）</p>
+      <p style="margin-bottom:8px;">2、打开 Chrome 扩展管理页面（右上角菜单 → 工具 → 扩展程序）</p>
       <p>3、将下载的安装包拖到扩展管理页面中完成安装。</p>
     </div>
   </div>
-  {include file="app/index/view/index/sidemod"}
+  {include file="app/index/view/public/sidebar"}
 </div>
 
-{include file="app/index/view/index/footerjs"}
-{include file="app/index/view/index/footer"}
+{include file="app/index/view/public/footer"}

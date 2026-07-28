@@ -1,4 +1,21 @@
-{include file="app/index/view/index/blog_header"}
+﻿{include file="app/index/view/public/header"}
+
+<script type="application/ld+json"><?php
+$article = array(
+  '@context' => 'https://schema.org',
+  '@type' => 'Article',
+  'headline' => $view['title'] ?? '',
+  'datePublished' => obj('api/Api')->mdate($view['date'] ?? ''),
+  'dateModified' => obj('api/Api')->mdate($view['date'] ?? ''),
+  'author' => array('@type' => 'Person', 'name' => $view['authorName'] ?? ''),
+  'publisher' => array(
+    '@type' => 'Organization',
+    'name' => obj('base/Base')->SiteConfig('sitename')
+  ),
+  'description' => $pageDescription ?? ''
+);
+echo json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?></script>
 
 <article class="log-con">
   <nav class="crumb">
@@ -84,7 +101,7 @@
   {if $commentCount == 0}<div class="comment-empty" id="commentEmpty">还没有评论，快来抢沙发~</div>{/if}
 </article>
 
-{include file="app/index/view/index/blog_footer"}
+{include file="app/index/view/public/footer"}
 
 <style>
 .cf-visitor-row{display:flex;gap:10px;margin-bottom:8px}

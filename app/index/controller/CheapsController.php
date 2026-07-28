@@ -8,7 +8,7 @@ class CheapsController extends \app\base\controller\BaseController
      */
     public function index()
     {
-        include CONFIG_PATH . 'siteconfig.php';
+        $Siteinfo = \app\common\ConfigStore::load('site');
         
         // 获取请求参数并过滤
         $categoryId = max(0, intval($this->arg("id")));
@@ -118,11 +118,12 @@ class CheapsController extends \app\base\controller\BaseController
         } elseif ($searchKey) {
             $this->pageTitle = "'{$searchKey}' 搜索结果 - " . $baseTitle;
         } else {
-            $this->pageTitle = $baseTitle;
+            $this->pageTitle = $baseTitle ?: ('优惠券 - ' . $siteName);
         }
         
-        $this->pageKeywords = obj('base/Base')->SEO('cheaps_keywords');
-        $this->pageDescription = obj('base/Base')->SEO('cheaps_dec');
+        $this->pageKeywords = obj('base/Base')->SEO('cheaps_keywords') ?: obj('base/Base')->SiteConfig('sitekeywords');
+        $this->pageDescription = obj('base/Base')->SEO('cheaps_dec') ?: obj('base/Base')->SiteConfig('sitedescription');
         $this->siteTitle = $siteName;
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'cheaps.html';
     }
 }

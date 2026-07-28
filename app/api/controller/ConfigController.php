@@ -11,11 +11,7 @@ class ConfigController extends ApiBaseController {
     public function index() {
         $this->options();
 
-        $site = array();
-        if (file_exists(CONFIG_PATH . 'siteconfig.php')) {
-            include CONFIG_PATH . 'siteconfig.php';
-            $site = $Siteinfo ?? array();
-        }
+        $site = \app\common\ConfigStore::load('site');
 
         $ai = $this->loadAiConfig();
 

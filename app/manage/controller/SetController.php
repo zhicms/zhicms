@@ -1,6 +1,8 @@
 <?php
 namespace app\manage\controller;
 use \app\base\controller\ManageControllerTrait;
+use \app\common\ConfigStore;
+
 class SetController extends \app\base\controller\BaseController
 {
     use ManageControllerTrait;
@@ -13,13 +15,19 @@ class SetController extends \app\base\controller\BaseController
 
 		if(!IS_POST){
 			$this->pageText=array("基础设置","网站设置");
-			include CONFIG_PATH . 'siteconfig.php';
-			include CONFIG_PATH . 'seo.php';
+			// 所有网站配置统一从 ConfigStore（DB）读取
+			$siteConfig  = ConfigStore::load('site');
+			$seoConfig   = ConfigStore::load('seo');
+			$apiConfig   = ConfigStore::load('api');
+			$smsConfig   = ConfigStore::load('sms');
+			$aichatCfg   = ConfigStore::load('aichat');
+			$seopushCfg  = ConfigStore::load('seopush');
+			// rule 保持文件
 			include CONFIG_PATH . 'rule.php';
-			include CONFIG_PATH . 'apiset.php';
-			include CONFIG_PATH . 'sms.php';
-			include CONFIG_PATH . 'aichat.php';
-			$this->ret=array_merge($Siteinfo, $SEO, $api, $sms, $ai);
+			// 推送日志保持文件
+			$logFile = CONFIG_PATH . 'seopush_log.json';
+			$this->pushLog = is_file($logFile) ? json_decode(file_get_contents($logFile), true) : array();
+			$this->ret = array_merge($siteConfig, $seoConfig, $apiConfig, $smsConfig, $aichatCfg, $seopushCfg);
 			$this->DEBUG=(int)$rule['DEBUG'];
 			$this->REWRITE_ON=(int)$rule['REWRITE_ON'];
 			$this->moren=$rule['moren'];
@@ -44,37 +52,34 @@ class SetController extends \app\base\controller\BaseController
 
 		    $this->display();
 		}else{
-			include CONFIG_PATH . 'siteconfig.php';
-			$Siteinfo['sitename'] = isset($_POST['sitename']) ? $_POST['sitename'] : $Siteinfo['sitename'];
-			$Siteinfo['hosturl'] = isset($_POST['hosturl']) ? $_POST['hosturl'] : $Siteinfo['hosturl'];
-			$Siteinfo['logo'] = isset($_POST['logo']) ? $_POST['logo'] : $Siteinfo['logo'];
-			$Siteinfo['ewm'] = isset($_POST['ewm']) ? $_POST['ewm'] : $Siteinfo['ewm'];
-			$Siteinfo['apiurl'] = isset($_POST['apiurl']) ? $_POST['apiurl'] : $Siteinfo['apiurl'];
-			$Siteinfo['download'] = isset($_POST['download']) ? $_POST['download'] : $Siteinfo['download'];
-			$Siteinfo['sitekeywords'] = isset($_POST['sitekeywords']) ? $_POST['sitekeywords'] : $Siteinfo['sitekeywords'];
-			$Siteinfo['sitedescription'] = isset($_POST['sitedescription']) ? $_POST['sitedescription'] : $Siteinfo['sitedescription'];
-			$Siteinfo['closed'] = isset($_POST['closed']) ? $_POST['closed'] : $Siteinfo['closed'];
-			$Siteinfo['closemsg'] = isset($_POST['closemsg']) ? $_POST['closemsg'] : $Siteinfo['closemsg'];
-			$Siteinfo['cachetime'] = isset($_POST['cachetime']) ? $_POST['cachetime'] : $Siteinfo['cachetime'];
-			$Siteinfo['pagelimit'] = isset($_POST['pagelimit']) ? $_POST['pagelimit'] : $Siteinfo['pagelimit'];
-			$Siteinfo['defaultimg'] = isset($_POST['defaultimg']) ? $_POST['defaultimg'] : $Siteinfo['defaultimg'];
-			$Siteinfo['cdnurl'] = isset($_POST['cdnurl']) ? $_POST['cdnurl'] : $Siteinfo['cdnurl'];
-			$Siteinfo['watermark'] = isset($_POST['watermark']) ? $_POST['watermark'] : $Siteinfo['watermark'];
-			$Siteinfo['watermarktext'] = isset($_POST['watermarktext']) ? $_POST['watermarktext'] : $Siteinfo['watermarktext'];
-			$Siteinfo['banquan'] = isset($_POST['banquan']) ? $_POST['banquan'] : $Siteinfo['banquan'];
-			$Siteinfo['about'] = isset($_POST['about']) ? $_POST['about'] : $Siteinfo['about'];
-			$Siteinfo['beian'] = isset($_POST['beian']) ? $_POST['beian'] : $Siteinfo['beian'];
-			$Siteinfo['model'] = isset($_POST['model']) ? $_POST['model'] : $Siteinfo['model'];
-			$Siteinfo['key'] = isset($_POST['key']) ? $_POST['key'] : $Siteinfo['key'];
-			$Siteinfo['mobile_style'] = isset($_POST['mobile_style']) ? trim($_POST['mobile_style']) : $Siteinfo['mobile_style'];
-       
-         $content = "<?php\r\n\$Siteinfo=" . var_export($Siteinfo, true) . ";\n";
-           $of = fopen(CONFIG_PATH . 'siteconfig.php', 'w');
-              if ($of) {
-                  fwrite($of, $content);
-              }
-              fclose($of);
-              echo json_encode(array("info" => "设置成功", "status" => "y"));
+			// 保存网站基础配置到 DB
+			$Siteinfo = array(
+				'sitename'       => $_POST['sitename']       ?? '',
+				'hosturl'        => $_POST['hosturl']        ?? '',
+				'logo'           => $_POST['logo']           ?? '',
+				'ewm'            => $_POST['ewm']            ?? '',
+				'apiurl'         => $_POST['apiurl']         ?? '',
+				'download'       => $_POST['download']       ?? '',
+				'sitekeywords'   => $_POST['sitekeywords']   ?? '',
+				'sitedescription'=> $_POST['sitedescription']?? '',
+				'closed'         => $_POST['closed']         ?? '0',
+				'closemsg'       => $_POST['closemsg']       ?? '',
+				'cachetime'      => $_POST['cachetime']      ?? '3600',
+				'pagelimit'      => $_POST['pagelimit']      ?? '20',
+				'defaultimg'     => $_POST['defaultimg']     ?? '',
+				'cdnurl'         => $_POST['cdnurl']         ?? '',
+				'watermark'      => $_POST['watermark']      ?? '0',
+				'watermarktext'  => $_POST['watermarktext']  ?? '',
+				'banquan'        => $_POST['banquan']        ?? '',
+				'about'          => $_POST['about']          ?? '',
+				'beian'          => $_POST['beian']          ?? '',
+				'model'          => $_POST['model']          ?? '',
+				'key'            => $_POST['key']            ?? '',
+				'mobile_style'   => isset($_POST['mobile_style']) ? trim($_POST['mobile_style']) : '',
+			);
+			ConfigStore::save('site', $Siteinfo);
+			ConfigStore::clearCache('site');
+			echo json_encode(array("info" => "设置成功", "status" => "y"));
 		}
 
 	}
@@ -135,19 +140,15 @@ class SetController extends \app\base\controller\BaseController
 			);
 
 			$content = "<?php\r\n\$rule=" . var_export($rule, true) . ";\n";
-
 			$content = str_replace("'ROOT_PATH . \\'data/log/\\''", 'ROOT_PATH . \'data/log/\'', $content);
 			
-	  $of = fopen(CONFIG_PATH . 'rule.php', 'w');
+			$of = fopen(CONFIG_PATH . 'rule.php', 'w');
             if ($of) {
                 fwrite($of, $content);
             }
             fclose($of);
 
-       echo json_encode(array("info" => "设置成功", "status" => "y"));
-     
-
-
+			echo json_encode(array("info" => "设置成功", "status" => "y"));
 		}
 	}
 
@@ -161,44 +162,36 @@ class SetController extends \app\base\controller\BaseController
 
 		if(!IS_POST){
 			$this->pagetext=array("基础设置","SEO设置");
-			include CONFIG_PATH . 'seo.php';
-			$this->ret=$SEO;
+			$this->ret=ConfigStore::load('seo');
 			$this->display();
 			exit;
 		}else{
-			 $SEO = array(
-              'index_title' => isset($_POST['index_title']) ? $_POST['index_title'] : '',
-              'index_keywords' => isset($_POST['index_keywords']) ? $_POST['index_keywords'] : '',
-              'index_dec' => isset($_POST['index_dec']) ? $_POST['index_dec'] : '',
-              'brand_title' => isset($_POST['brand_title']) ? $_POST['brand_title'] : '',
-              'brand_keywords' => isset($_POST['brand_keywords']) ? $_POST['brand_keywords'] : '',
-              'brand_dec' => isset($_POST['brand_dec']) ? $_POST['brand_dec'] : '',
-              'rank_title' => isset($_POST['rank_title']) ? $_POST['rank_title'] : '',
-              'rank_keywords' => isset($_POST['rank_keywords']) ? $_POST['rank_keywords'] : '',
-              'rank_dec' => isset($_POST['rank_dec']) ? $_POST['rank_dec'] : '',
-              'cheaps_title' => isset($_POST['cheaps_title']) ? $_POST['cheaps_title'] : '',
-              'cheaps_keywords' => isset($_POST['cheaps_keywords']) ? $_POST['cheaps_keywords'] : '',
-              'cheaps_dec' => isset($_POST['cheaps_dec']) ? $_POST['cheaps_dec'] : '',
-              'view_title' => isset($_POST['view_title']) ? $_POST['view_title'] : '',
-              'view_keywords' => isset($_POST['view_keywords']) ? $_POST['view_keywords'] : '',
-              'view_dec' => isset($_POST['view_dec']) ? $_POST['view_dec'] : '',
-              'search_title' => isset($_POST['search_title']) ? $_POST['search_title'] : '',
-              'search_keywords' => isset($_POST['search_keywords']) ? $_POST['search_keywords'] : '',
-              'search_dec' => isset($_POST['search_dec']) ? $_POST['search_dec'] : '',
-              'm_title' => isset($_POST['m_title']) ? $_POST['m_title'] : '',
-              'm_keywords' => isset($_POST['m_keywords']) ? $_POST['m_keywords'] : '',
-              'm_dec' => isset($_POST['m_dec']) ? $_POST['m_dec'] : ''
-        );
-        $content = "<?php\r\n\$SEO=" . var_export($SEO, true) . ";\n";
-
-        $of = fopen(CONFIG_PATH . 'seo.php', 'w');
-            if ($of) {
-                fwrite($of, $content);
-            }
-            fclose($of);
-
-       echo json_encode(array("info" => "设置成功", "status" => "y"));
-
+			$SEO = array(
+				'index_title' => $_POST['index_title'] ?? '',
+				'index_keywords' => $_POST['index_keywords'] ?? '',
+				'index_dec' => $_POST['index_dec'] ?? '',
+				'brand_title' => $_POST['brand_title'] ?? '',
+				'brand_keywords' => $_POST['brand_keywords'] ?? '',
+				'brand_dec' => $_POST['brand_dec'] ?? '',
+				'rank_title' => $_POST['rank_title'] ?? '',
+				'rank_keywords' => $_POST['rank_keywords'] ?? '',
+				'rank_dec' => $_POST['rank_dec'] ?? '',
+				'cheaps_title' => $_POST['cheaps_title'] ?? '',
+				'cheaps_keywords' => $_POST['cheaps_keywords'] ?? '',
+				'cheaps_dec' => $_POST['cheaps_dec'] ?? '',
+				'view_title' => $_POST['view_title'] ?? '',
+				'view_keywords' => $_POST['view_keywords'] ?? '',
+				'view_dec' => $_POST['view_dec'] ?? '',
+				'search_title' => $_POST['search_title'] ?? '',
+				'search_keywords' => $_POST['search_keywords'] ?? '',
+				'search_dec' => $_POST['search_dec'] ?? '',
+				'm_title' => $_POST['m_title'] ?? '',
+				'm_keywords' => $_POST['m_keywords'] ?? '',
+				'm_dec' => $_POST['m_dec'] ?? ''
+			);
+			ConfigStore::save('seo', $SEO);
+			ConfigStore::clearCache('seo');
+			echo json_encode(array("info" => "设置成功", "status" => "y"));
 		}
 	}
 
@@ -212,54 +205,30 @@ class SetController extends \app\base\controller\BaseController
 
       if(!IS_POST){
         $this->pagetext=array("基础设置","生成高佣API");
-        include CONFIG_PATH . 'apiset.php';
-        $this->ret=$api;
+        $this->ret=ConfigStore::load('api');
         $this->display();
         exit;
       }else{
-        $tb_appkey = isset($_POST['tb_appkey']) ? $_POST['tb_appkey'] : '';
-        $tb_secretKey = isset($_POST['tb_secretKey']) ? $_POST['tb_secretKey'] : '';
-        $tb_pid = isset($_POST['tb_pid']) ? $_POST['tb_pid'] : '';
-        $ali_appid = isset($_POST['ali_appid']) ? $_POST['ali_appid'] : '';
-        $ali_appsecretKey = isset($_POST['ali_appsecretKey']) ? $_POST['ali_appsecretKey'] : '';
-        $apiurl = isset($_POST['apiurl']) ? $_POST['apiurl'] : 'https://open.zhicms.vip/';
-        $appid = isset($_POST['appid']) ? $_POST['appid'] : '';
-        $secretkey = isset($_POST['secretkey']) ? $_POST['secretkey'] : '';
-        $zhuan = isset($_POST['zhuan']) ? $_POST['zhuan'] : 'dtk';
-        $dtk_appkey = isset($_POST['dtk_appkey']) ? $_POST['dtk_appkey'] : '';
-        $dtk_appsecret = isset($_POST['dtk_appsecret']) ? $_POST['dtk_appsecret'] : '';
-        $hdk_appkey = isset($_POST['hdk_appkey']) ? $_POST['hdk_appkey'] : '';
-
        $api = array(
-              'tb_appkey' => $tb_appkey,
-              'tb_secretKey' => $tb_secretKey,
-              'tb_pid' => $tb_pid,
-              'ali_appid' => $ali_appid,
-              'ali_appsecretKey' => $ali_appsecretKey,
-              'apiurl' => $apiurl,
-              'appid' => $appid,
-              'secretkey' => $secretkey,
-              'zhuan' => $zhuan,
-              'dtk_appkey' => $dtk_appkey,
-              'dtk_appsecret' => $dtk_appsecret,
-              'hdk_appkey' => $hdk_appkey,
+              'tb_appkey' => $_POST['tb_appkey'] ?? '',
+              'tb_secretKey' => $_POST['tb_secretKey'] ?? '',
+              'tb_pid' => $_POST['tb_pid'] ?? '',
+              'ali_appid' => $_POST['ali_appid'] ?? '',
+              'ali_appsecretKey' => $_POST['ali_appsecretKey'] ?? '',
+              'apiurl' => $_POST['apiurl'] ?? 'https://open.zhicms.vip/',
+              'appid' => $_POST['appid'] ?? '',
+              'secretkey' => $_POST['secretkey'] ?? '',
+              'zhuan' => $_POST['zhuan'] ?? 'dtk',
+              'dtk_appkey' => $_POST['dtk_appkey'] ?? '',
+              'dtk_appsecret' => $_POST['dtk_appsecret'] ?? '',
+              'hdk_appkey' => $_POST['hdk_appkey'] ?? '',
         );
-        $content = "<?php\r\n\$api=" . var_export($api, true) . ";\n";
-
-        $of = fopen(CONFIG_PATH . 'apiset.php', 'w');
-            if ($of) {
-                fwrite($of, $content);
-            }
-            fclose($of);
-
-        include CONFIG_PATH . 'siteconfig.php';
-        $Siteinfo['apiurl'] = $apiurl;
-        $siteContent = "<?php\r\n\$Siteinfo=" . var_export($Siteinfo, true) . ";\n";
-        $siteOf = fopen(CONFIG_PATH . 'siteconfig.php', 'w');
-        if ($siteOf) {
-            fwrite($siteOf, $siteContent);
-        }
-        fclose($siteOf);
+        ConfigStore::save('api', $api);
+        ConfigStore::clearCache('api');
+        // 同步 apiurl 到 site 配置
+        $siteConfig = ConfigStore::load('site');
+        $siteConfig['apiurl'] = $api['apiurl'];
+        ConfigStore::save('site', $siteConfig);
 
        echo json_encode(array("info" => "设置成功", "status" => "y"));
 
@@ -268,7 +237,7 @@ class SetController extends \app\base\controller\BaseController
 
     /**
      * AI 对话（智能导购）配置
-     * 表单 POST 到 manage/set/aichat，写入 data/config/aichat.php
+     * 表单 POST 到 manage/set/aichat，写入 DB
      */
     public function aichat() {
 
@@ -293,13 +262,8 @@ class SetController extends \app\base\controller\BaseController
             'token'         => isset($_POST['token']) ? trim($_POST['token']) : '',
         );
 
-        $content = "<?php\r\nreturn " . var_export($cfg, true) . ";\n";
-        $of = fopen(CONFIG_PATH . 'aichat.php', 'w');
-        if ($of) {
-            fwrite($of, $content);
-            fclose($of);
-        }
-
+        ConfigStore::save('aichat', $cfg);
+        ConfigStore::clearCache('aichat');
         echo json_encode(array("info" => "AI 设置保存成功", "status" => "y"));
     }
 
@@ -311,23 +275,17 @@ class SetController extends \app\base\controller\BaseController
 
       if(!IS_POST){
         $this->pagetext=array("基础设置","短信通道");
-        include CONFIG_PATH . 'sms.php';
-        $this->ret=$sms;
+        $this->ret=ConfigStore::load('sms');
         $this->display();
         exit;
       }else{
 
         $sms = array(
-            'smsurl' => isset($_POST['smsurl']) ? $_POST['smsurl'] : '',
-            'reg_sms' => isset($_POST['reg_sms']) ? $_POST['reg_sms'] : '',
+            'smsurl' => $_POST['smsurl'] ?? '',
+            'reg_sms' => $_POST['reg_sms'] ?? '',
       );
-       $content = "<?php\r\n\$sms=" . var_export($sms, true) . ";\n";
-
-        $of = fopen(CONFIG_PATH . 'sms.php', 'w');
-            if ($of) {
-                fwrite($of, $content);
-            }
-            fclose($of);
+       ConfigStore::save('sms', $sms);
+       ConfigStore::clearCache('sms');
 
        echo json_encode(array("info" => "设置成功", "status" => "y"));
 
@@ -404,9 +362,10 @@ class SetController extends \app\base\controller\BaseController
                 }
             }
             
-            include CONFIG_PATH . 'siteconfig.php';
-            $cdnUrl = !empty($Siteinfo['cdnurl']) ? rtrim($Siteinfo['cdnurl'], '/') : '';
-            $baseUrl = !empty($cdnUrl) ? $cdnUrl : rtrim($Siteinfo['hosturl'], '/');
+            // 从 ConfigStore 读取站点配置
+            $siteConfig = ConfigStore::load('site');
+            $cdnUrl = !empty($siteConfig['cdnurl']) ? rtrim($siteConfig['cdnurl'], '/') : '';
+            $baseUrl = !empty($cdnUrl) ? $cdnUrl : rtrim($siteConfig['hosturl'] ?? '', '/');
             $url = $baseUrl . '/data/uploadfile/' . $filename;
             
             echo json_encode(array("info" => "上传成功", "status" => "y", "url" => $url));
@@ -415,29 +374,103 @@ class SetController extends \app\base\controller\BaseController
         }
     }
 
-    /*生成 js代码*/
+    /**
+     * 兼容旧路由：js → seopush
+     */
     public function js(){
+        $this->seopush();
+    }
+
+    public function seopush(){
 
     $this->checkManageSession();
 
         if (!IS_POST) {
-            $this->pagetext=array("基础设置","统计代码");
-            header("Content-Type:text/html;charset=utf-8");
-
-            $this->tongji = file_get_contents(CONFIG_PATH . 'codejs/tongji.zhicms');
-
+            $this->pagetext = array("基础设置", "SEO推送");
+            $this->ret = ConfigStore::load('seopush');
+            // 最近推送记录
+            $logFile = CONFIG_PATH . 'seopush_log.json';
+            $this->pushLog = is_file($logFile) ? json_decode(file_get_contents($logFile), true) : array();
             $this->display();
             exit;
-        } else {
-
-            $tongji = fopen(CONFIG_PATH . 'codejs/tongji.zhicms', 'w');
-            if ($tongji) {
-                fwrite($tongji, $_POST['tongji']);
-            }
-
-            fclose($tongji);
-            echo json_encode(array("info" => "设置成功", "status" => "y"));
         }
+
+        // 处理推送操作（手动推送 URL）
+        if (isset($_POST['action']) && $_POST['action'] === 'push') {
+            $push = new \app\common\SeoPush();
+            $result = $push->pushUrls();
+            echo json_encode($result);
+            return;
+        }
+
+        // 推送最近 50 篇文章
+        if (isset($_POST['action']) && $_POST['action'] === 'push_recent') {
+            $push = new \app\common\SeoPush();
+            $result = $push->pushRecentArticles(50);
+            $total = $result['total'] ?? 0;
+            echo json_encode(array(
+                'info'   => "已推送最近的 {$total} 篇文章到各搜索引擎（详情见日志）",
+                'status' => 'y',
+                'detail' => $result['results'] ?? array(),
+            ));
+            return;
+        }
+
+        // 推送全站核心页面
+        if (isset($_POST['action']) && $_POST['action'] === 'push_all') {
+            $push = new \app\common\SeoPush();
+            $result = $push->pushAll();
+            $total = $result['total'] ?? 0;
+            echo json_encode(array(
+                'info'   => "已推送全站 {$total} 个页面到各搜索引擎（详情见日志）",
+                'status' => 'y',
+                'detail' => $result['results'] ?? array(),
+            ));
+            return;
+        }
+
+        // 清空推送日志
+        if (isset($_POST['action']) && $_POST['action'] === 'clear_log') {
+            $logFile = CONFIG_PATH . 'seopush_log.json';
+            file_put_contents($logFile, '[]');
+            echo json_encode(array('info' => '推送日志已清空', 'status' => 'y'));
+            return;
+        }
+
+        // 保存设置
+        $pu = array(
+            'baidu_token' => isset($_POST['baidu_token']) ? trim($_POST['baidu_token']) : '',
+            'baidu_enabled' => isset($_POST['baidu_enabled']) ? '1' : '0',
+            'bing_apikey' => isset($_POST['bing_apikey']) ? trim($_POST['bing_apikey']) : '',
+            'bing_enabled' => isset($_POST['bing_enabled']) ? '1' : '0',
+            'weibo_token' => isset($_POST['weibo_token']) ? trim($_POST['weibo_token']) : '',
+            'weibo_enabled' => isset($_POST['weibo_enabled']) ? '1' : '0',
+            'auto_push' => isset($_POST['auto_push']) ? '1' : '0',
+            'push_on_save' => isset($_POST['push_on_save']) ? '1' : '0',
+        );
+
+        ConfigStore::save('seopush', $pu);
+        ConfigStore::clearCache('seopush');
+        echo json_encode(array("info" => "SEO推送设置保存成功", "status" => "y"));
+    }
+
+    /**
+     * 配置迁移：将旧 data/config/*.php 文件一次性导入 DB
+     * 访问：index.php?r=manage/set/migrateConfig
+     */
+    public function migrateConfig() {
+        $this->checkManageSession();
+        require_once CONFIG_PATH . 'migrate_to_db.php';
+        $result = migrate_all_to_db();
+        
+        $success = $result['success'];
+        $skipped = $result['skipped'];
+        $errors  = !empty($result['errors']) ? ' 错误：' . implode('; ', $result['errors']) : '';
+        
+        echo json_encode(array(
+            'info'   => "迁移完成：成功导入 {$success} 组，跳过 {$skipped} 组。{$errors}",
+            'status' => empty($result['errors']) ? 'y' : 'n',
+        ));
     }
 
     /**
@@ -488,7 +521,7 @@ class SetController extends \app\base\controller\BaseController
             obj("api/ApiData")->executeQuery(
                 "CREATE TABLE IF NOT EXISTS `{pre}config` (
                   `id` int(11) NOT NULL AUTO_INCREMENT,
-                  `key` varchar(50) NOT NULL DEFAULT '',
+                  `key` varchar(100) NOT NULL DEFAULT '',
                   `value` text,
                   `desc` varchar(255) NOT NULL DEFAULT '',
                   PRIMARY KEY (`id`),

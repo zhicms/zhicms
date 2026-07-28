@@ -35,7 +35,7 @@ class weixin
 
  //获取登录信息
   public function GetUserInfo(){
-      include CONFIG_PATH . 'apicache/weixin.php';
+      $weixin = \app\common\ConfigStore::load('weixin');
       $appid = $weixin['appid'];  
       $secret = $weixin['appsecret'];  
       $code = $_GET["code"];  
@@ -88,7 +88,7 @@ class weixin
        if($lock!='lock'){
          exit('error');
         }
-        include CONFIG_PATH . 'apicache/weixin.php';
+        $weixin = \app\common\ConfigStore::load('weixin');
         $array=array("appid"=>"{$weixin['appid']}","redirect_uri"=>$redirect_uri,"secret"=>"{$weixin['appsecret']}");
         return $array;
     

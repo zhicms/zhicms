@@ -471,7 +471,7 @@ class GoodsController extends ApiBaseController {
             $this->json(array('code' => 0, 'msg' => '缺少 _target 参数'), 400);
         }
 
-        include CONFIG_PATH . 'apiset.php';
+        $api = \app\common\ConfigStore::load('api');
         $hdkApiKey = $api['hdk_apikey'] ?? ($api['hdk_appkey'] ?? '');
         if (empty($hdkApiKey)) {
             $this->json(array('code' => 0, 'msg' => '好单库API未配置'), 500);

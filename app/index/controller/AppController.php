@@ -69,8 +69,17 @@ class AppController extends \app\base\controller\BaseController {
 		if(empty($ret)){
 			exit("nodata");
 		}
+		// 预加载所有涉及到的 mall（消除 N+1 查询）
+		$mallIds = array_unique(array_filter(array_column($ret, 'mallb')));
+		$mallMap = [];
+		if (!empty($mallIds)) {
+			$mallList = obj("api/ApiData")->dataSelect("yun_mall", ['`id` IN (' . implode(',', $mallIds) . ')'], '`id` ASC');
+			if ($mallList) {
+				foreach ($mallList as $m) { $mallMap[$m['id']] = $m['name'] ?? ''; }
+			}
+		}
 		foreach ($ret as $key => $value) {
-	    $mall= obj("index/global", "controller")->type("y", $value['mallb'], "mall", "id");
+	    $mallName = $mallMap[$value['mallb']] ?? '';
 	    $date=obj("api/Api")->mdate($value['date']);
 
 	    if($keywords){
@@ -87,7 +96,7 @@ class AppController extends \app\base\controller\BaseController {
 			   <div class="itemsleftimg">'.$shtml.'<img src="'.$value['pic'].'"></div>
 			   <div class="itemsright">
 			      <div class="itemstitle">'.$value['title'].'</div>
-			      <div class="itemstps"><span class="itemsmall haitaomall">'.$mall['name'].'</span><span class="itemstime">'.$date.' - '.$value['ly'].'</span></div>
+			      <div class="itemstps"><span class="itemsmall haitaomall">'.$mallName.'</span><span class="itemstime">'.$date.' - '.$value['ly'].'</span></div>
 			   </div>
 			 </div>';
 
@@ -105,14 +114,23 @@ class AppController extends \app\base\controller\BaseController {
         }
         foreach ($retTime as $key => $value) {
         $key=$key+1;
-	    $mall= obj("index/global", "controller")->type("y", $value['mallb'], "mall", "id");
+        if (!isset($mallMapTime)) {
+            // 预加载所有 mall（消除 N+1）
+            $timeIds = array_unique(array_filter(array_column($retTime, 'mallb')));
+            $mallMapTime = [];
+            $timeMallList = obj("api/ApiData")->dataSelect("yun_mall", ['`id` IN (' . implode(',', $timeIds) . ')'], '`id` ASC');
+            if ($timeMallList) {
+                foreach ($timeMallList as $m) { $mallMapTime[$m['id']] = $m['name'] ?? ''; }
+            }
+        }
+	    $mallName = $mallMapTime[$value['mallb']] ?? '';
 	    $date=obj("api/Api")->mdate($value['date']);
 	    $shtml='<div class="qufen xiaoshicss">No.'.$key.'</div>';
 	    $html='<div class="itemsli" onclick="openview('.$value['id'].')" >
 			   <div class="itemsleftimg">'.$shtml.'<img src="'.$value['pic'].'"></div>
 			   <div class="itemsright">
 			      <div class="itemstitle">'.$value['title'].'</div>
-			      <div class="itemstps"><span class="itemsmall fengyun">'.$mall['name'].'</span><span class="itemstime">'.$date.' - '.$value['ly'].'</span></div>
+			      <div class="itemstps"><span class="itemsmall fengyun">'.$mallName.'</span><span class="itemstime">'.$date.' - '.$value['ly'].'</span></div>
 			   </div>
 			 </div>';
 
@@ -141,8 +159,8 @@ class AppController extends \app\base\controller\BaseController {
 		if(empty($ret)){
 			exit("nodata");
 		}
+		$api = \app\common\ConfigStore::load('api');
 		foreach ($ret as $key => $value) {
-			include CONFIG_PATH . 'apiset.php';
 			$quanLink="http://uland.taobao.com/coupon/edetail?activityId={$value['Quan_id']}&pid={$api['tb_pid']}&itemId={$value['GoodsID']}&dx=1";
 			$html='<div class="itemsli" onclick=\'openquanlink("'.$quanLink.'")\'>
    <div class="itemsleftimg"><img src="'.$value['Pic'].'"></div>

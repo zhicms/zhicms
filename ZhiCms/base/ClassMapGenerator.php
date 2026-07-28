@@ -9,6 +9,7 @@ class ClassMapGenerator {
             'ZhiCms/base',
             'ZhiCms/ext',
             'app/base',
+            'app/common',
             'app/api',
             'app/index',
             'app/manage',
