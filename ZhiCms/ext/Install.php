@@ -20,8 +20,8 @@ class Install{
         $content = file_get_contents($sql_path);   //读取sql文件
         $content = str_replace(array($old_prefix, "\r"), array($new_prefix, "\n"), $content);//替换前缀
 		
-        //通过sql语法的语句分割符进行分割
-        $segment = explode($separator,trim($content)); 
+        // 使用状态机分割 SQL，正确处理字符串值内的分号
+        $segment = self::splitSql($content);
 
         //去掉注释和多余的空行
 		$data=array();
@@ -65,5 +65,49 @@ class Install{
 			}
         }	
 		return $result;
+    }
+
+    /**
+     * 按分号分割 SQL 语句，正确处理字符串值内的分号
+     * 只在字符串外部识别分号作为语句结束符
+     */
+    private static function splitSql($content)
+    {
+        $statements = array();
+        $current = '';
+        $inString = false;
+        $escaped = false;
+
+        for ($i = 0, $len = strlen($content); $i < $len; $i++) {
+            $ch = $content[$i];
+            $current .= $ch;
+
+            if ($escaped) {
+                $escaped = false;
+                continue;
+            }
+            if ($ch === '\\' && $inString) {
+                $escaped = true;
+                continue;
+            }
+            if ($ch === "'") {
+                $inString = !$inString;
+                continue;
+            }
+            if ($ch === ';' && !$inString) {
+                $stmt = trim($current);
+                if ($stmt !== '' && $stmt !== ';') {
+                    $statements[] = $stmt;
+                }
+                $current = '';
+            }
+        }
+
+        $stmt = trim($current);
+        if ($stmt !== '' && $stmt !== ';') {
+            $statements[] = $stmt;
+        }
+
+        return $statements;
     }
 }

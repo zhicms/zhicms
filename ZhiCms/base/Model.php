@@ -227,7 +227,7 @@ class Model{
 		return $data;
 	}
 
-	protected function _pager($page, $pageSize = 10, $scope = 10, $total){		
+	protected function _pager($page, $pageSize = 10, $scope = 10, $total = 0){		
 		$page = max(intval($page), 1);
 		$totalPage = ceil( $total / $pageSize );
 		

@@ -25,6 +25,8 @@ class IndexController
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $step = $this->handlePost();
+            // handlePost 内部已直接输出 HTML（renderSuccess/renderError），不再重复渲染
+            if ($step >= 2) exit;
         }
 
         $this->renderStep($step);
@@ -89,17 +91,16 @@ class IndexController
         }
 
         $sqlContent = file_get_contents($sqlFile);
-        $sqlContent = str_replace('yun_', $dbPrefix, $sqlContent);
+        $sqlContent = str_replace('__PREFIX__', $dbPrefix, $sqlContent);
         $sqlContent = str_replace("\r", "\n", $sqlContent);
 
-        $segments = explode(";\n", trim($sqlContent));
+        // 使用状态机分割 SQL：只在字符串外部识别分号作为语句分隔符
+        // 避免数据内含分号（如"收录大于10000;已交换友链"）导致错误切割
+        $segments = $this->splitSql($sqlContent);
         $successCount = 0;
         $errorSql = array();
 
         foreach ($segments as $sql) {
-            $sql = trim($sql);
-            if (empty($sql)) continue;
-
             // 跳过注释行
             $lines = explode("\n", $sql);
             $cleanLines = array();
@@ -127,7 +128,7 @@ class IndexController
 
         // 更新管理员密码
         try {
-            $hashedPwd = md5($adminPwd);
+            $hashedPwd = md5($adminPwd . 'yun_manage');
             $stmt = $pdo->prepare("UPDATE `{$dbPrefix}manage` SET `username` = ?, `password` = ? WHERE `id` = 1");
             $stmt->execute(array($adminUser, $hashedPwd));
             // 如果管理员表为空，插入默认管理员
@@ -529,5 +530,49 @@ HTML;
         $script = $_SERVER['SCRIPT_NAME'];
         $path   = rtrim(dirname($script), '/\\');
         return $scheme . '://' . $host . $path . '/';
+    }
+
+    /**
+     * 按分号分割 SQL 语句，正确处理字符串值内的分号
+     * 只在字符串外部识别分号作为语句结束符
+     */
+    private function splitSql($content)
+    {
+        $statements = array();
+        $current = '';
+        $inString = false;
+        $escaped = false;
+
+        for ($i = 0, $len = strlen($content); $i < $len; $i++) {
+            $ch = $content[$i];
+            $current .= $ch;
+
+            if ($escaped) {
+                $escaped = false;
+                continue;
+            }
+            if ($ch === '\\' && $inString) {
+                $escaped = true;
+                continue;
+            }
+            if ($ch === "'") {
+                $inString = !$inString;
+                continue;
+            }
+            if ($ch === ';' && !$inString) {
+                $stmt = trim($current);
+                if ($stmt !== '' && $stmt !== ';') {
+                    $statements[] = $stmt;
+                }
+                $current = '';
+            }
+        }
+
+        $stmt = trim($current);
+        if ($stmt !== '' && $stmt !== ';') {
+            $statements[] = $stmt;
+        }
+
+        return $statements;
     }
 }

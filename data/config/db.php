@@ -2,7 +2,7 @@
 // 数据库配置 - 安装时自动生成
 // 手动配置请参考下方格式
 
-return array(
+$db=array(
     'DB'=>array(
         'default'=>array(
             'DB_TYPE'    => 'MysqlPdo',

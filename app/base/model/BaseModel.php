@@ -53,7 +53,7 @@ class BaseModel extends \ZhiCms\base\Model {
 
 
    /* 中文字符截取 */
-   public function msubstr($str, $start=0, $length, $charset="utf-8", $suffix=true){
+   public function msubstr($str, $start=0, $length=0, $charset="utf-8", $suffix=true){
     if(mb_strlen($str,$charset)>$length)
     {
         if(function_exists("mb_substr")){

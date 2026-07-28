@@ -524,7 +524,7 @@ class IndexController extends \app\base\controller\BaseController
         return $html;
     }
     
-    public function lists($cid, $lock) {
+    public function lists($cid, $lock = "n") {
         if ($lock == "y") {
             $name = obj("api/Api")->cid($cid);
             return $name . "," . $cid;

@@ -32,7 +32,7 @@ class Util{
 	}
 
 	//中文字符串截取
-	public static function msubstr($str, $start=0, $length, $charset="utf-8", $suffix=true){
+	public static function msubstr($str, $start=0, $length=0, $charset="utf-8", $suffix=true){
 		switch($charset){
 			case 'utf-8':$char_len=3;break;
 			case 'UTF8':$char_len=3;break;
