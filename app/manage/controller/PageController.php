@@ -40,6 +40,8 @@ class PageController extends \app\base\controller\BaseController
 			exit;
 		}else{
 			 $data = obj('api/Api')->Form($this->POSTarg());
+			 // 过滤 EditorMD 编辑器产生的额外字段
+			 unset($data['editor-md-container-html-code']);
 			 $data['date']=date("Y-m-d H:i:s",time());
 			 $data['body']=$_POST['body'];
 			 obj('api/ApiData')->insertData('yun_page', $data);
@@ -77,6 +79,8 @@ class PageController extends \app\base\controller\BaseController
 			 $id=intval($this->arg("id"));
 			 $where['id'] = $id;
 			 $data = obj('api/Api')->Form($this->POSTarg());
+			 // 过滤 EditorMD 编辑器产生的额外字段
+			 unset($data['editor-md-container-html-code']);
 			 $data['body']=$_POST['body'];
              obj("api/ApiData")->dataUpdate("yun_page",$data,$where);
              $url="index.php?r=manage/page/index";
