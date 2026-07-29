@@ -1,0 +1,15 @@
+{
+    "alias": "static_cache",
+    "name": "全站静态化",
+    "version": "1.0.0",
+    "author": "ZhiCms",
+    "description": "将动态页面自动缓存为静态HTML文件，提升访问速度和SEO效果",
+    "hasSetting": true,
+    "menu": [
+        {
+            "title": "静态化设置",
+            "url": "index.php?r=manage/plugin/setting&alias=static_cache"
+        }
+    ],
+    "requires": "5.0.0"
+}

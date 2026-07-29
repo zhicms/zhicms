@@ -1,0 +1,218 @@
+<?php
+namespace plugins\static_cache;
+
+use ZhiCms\base\plugin\BasePlugin;
+use ZhiCms\base\Hook;
+use ZhiCms\base\Config;
+
+class Plugin extends BasePlugin
+{
+    protected $cacheDir = '';
+    
+    public function __construct($meta = array())
+    {
+        parent::__construct($meta);
+        $this->cacheDir = BASE_PATH . 'runtime/static_cache/';
+    }
+    
+    public function register()
+    {
+        Hook::add('appBegin', array($this, 'checkCache'));
+        Hook::add('appEnd', array($this, 'writeCache'));
+    }
+    
+    public function install()
+    {
+        if (!is_dir($this->cacheDir)) {
+            @mkdir($this->cacheDir, 0755, true);
+        }
+    }
+    
+    public function uninstall()
+    {
+        $this->clearAllCache();
+        @rmdir($this->cacheDir);
+    }
+    
+    public function enable()
+    {
+        if (!is_dir($this->cacheDir)) {
+            @mkdir($this->cacheDir, 0755, true);
+        }
+    }
+    
+    public function checkCache()
+    {
+        $config = $this->getConfig();
+        
+        if (empty($config['enabled'])) {
+            return;
+        }
+        
+        if (!IS_GET) {
+            return;
+        }
+        
+        if (REQUEST_METHOD !== 'GET') {
+            return;
+        }
+        
+        if ($this->isExcluded()) {
+            return;
+        }
+        
+        $cacheFile = $this->getCacheFilePath();
+        
+        if (file_exists($cacheFile)) {
+            $expire = intval($config['expire'] ?? 3600);
+            
+            if ($expire > 0 && (time() - filemtime($cacheFile)) > $expire) {
+                @unlink($cacheFile);
+            } else {
+                $content = file_get_contents($cacheFile);
+                if ($content !== false) {
+                    header('Content-Type: text/html; charset=utf-8');
+                    header('X-Static-Cache: HIT');
+                    echo $content;
+                    exit;
+                }
+            }
+        }
+        
+        ob_start();
+    }
+    
+    public function writeCache()
+    {
+        $config = $this->getConfig();
+        
+        if (empty($config['enabled'])) {
+            return;
+        }
+        
+        if (!IS_GET) {
+            return;
+        }
+        
+        if ($this->isExcluded()) {
+            return;
+        }
+        
+        if (ob_get_level() < 1) {
+            return;
+        }
+        
+        $content = ob_get_contents();
+        
+        if ($content !== false && !empty($content)) {
+            $cacheFile = $this->getCacheFilePath();
+            
+            $dir = dirname($cacheFile);
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            
+            $content .= "\n<!-- Static Cache: " . date('Y-m-d H:i:s') . " -->";
+            @file_put_contents($cacheFile, $content, LOCK_EX);
+        }
+    }
+    
+    protected function isExcluded()
+    {
+        $config = $this->getConfig();
+        
+        if (!empty($config['exclude_admin']) && APP_NAME === 'manage') {
+            return true;
+        }
+        
+        $excludedPaths = array();
+        if (!empty($config['exclude_paths'])) {
+            $excludedPaths = array_filter(array_map('trim', explode("\n", $config['exclude_paths'])));
+        }
+        
+        $currentPath = isset($_GET['r']) ? $_GET['r'] : '';
+        
+        foreach ($excludedPaths as $path) {
+            if (!empty($path) && strpos($currentPath, $path) === 0) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
+    protected function getCacheFilePath()
+    {
+        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+        
+        $urlPath = parse_url($uri, PHP_URL_PATH) ?: '/';
+        $query = parse_url($uri, PHP_URL_QUERY);
+        
+        $pathHash = md5($urlPath);
+        $queryHash = $query ? md5($query) : 'index';
+        
+        $firstChar = substr($pathHash, 0, 2);
+        $secondChar = substr($pathHash, 2, 2);
+        
+        return $this->cacheDir . $firstChar . '/' . $secondChar . '/' . $queryHash . '.html';
+    }
+    
+    public function clearAllCache()
+    {
+        if (!is_dir($this->cacheDir)) {
+            return true;
+        }
+        
+        $this->removeDirectory($this->cacheDir);
+        @mkdir($this->cacheDir, 0755, true);
+        return true;
+    }
+    
+    public function getCacheStats()
+    {
+        $stats = array(
+            'file_count' => 0,
+            'total_size' => 0,
+            'dir_count' => 0,
+        );
+        
+        if (!is_dir($this->cacheDir)) {
+            return $stats;
+        }
+        
+        $iterator = new \RecursiveIteratorIterator(
+            new \RecursiveDirectoryIterator($this->cacheDir, \RecursiveDirectoryIterator::SKIP_DOTS)
+        );
+        
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $stats['file_count']++;
+                $stats['total_size'] += $file->getSize();
+            } elseif ($file->isDir()) {
+                $stats['dir_count']++;
+            }
+        }
+        
+        return $stats;
+    }
+    
+    protected function removeDirectory($dir)
+    {
+        if (!is_dir($dir)) {
+            return;
+        }
+        
+        $items = array_diff(scandir($dir), array('.', '..'));
+        
+        foreach ($items as $item) {
+            $path = $dir . '/' . $item;
+            if (is_dir($path)) {
+                $this->removeDirectory($path);
+            } else {
+                @unlink($path);
+            }
+        }
+        
+        @rmdir($dir);
+    }
+}
