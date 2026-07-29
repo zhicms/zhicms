@@ -1,15 +1,18 @@
 <?php
 /**
  * ZhiCms 安装向导控制器
+ * 兼容 PHP 5.6 - 8.4，支持 PDO 和 mysqli 双驱动
  */
 namespace app\install\controller;
 
 class IndexController
 {
-    private $phpMinVersion = '7.0.0';
-    private $requiredExts = array('pdo', 'pdo_mysql', 'curl', 'gd', 'mbstring', 'json');
+    private $phpMinVersion = '5.6.0';
+    private $requiredExts = array('pdo', 'curl', 'gd', 'mbstring', 'json');
     private $writeDirs = array('data', 'data/config', 'data/cache', 'data/log', 'upload');
     private $configPath;
+    private $dbConnection = null;   // 存储数据库连接（PDO 或 mysqli）
+    private $dbDriver = '';         // 'pdo' 或 'mysqli'
 
     public function index()
     {
@@ -23,7 +26,7 @@ class IndexController
 
         $step = isset($_GET['step']) ? intval($_GET['step']) : 1;
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $step = $this->handlePost();
             // handlePost 内部已直接输出 HTML（renderSuccess/renderError），不再重复渲染
             if ($step >= 2) exit;
@@ -40,6 +43,223 @@ class IndexController
             return $this->doInstall();
         }
         return 1;
+    }
+
+    /**
+     * 获取可用的数据库驱动（PDO 优先，mysqli 回退）
+     */
+    private function getAvailableDriver()
+    {
+        // 优先检查 PDO
+        if (class_exists('PDO')) {
+            try {
+                $drivers = \PDO::getAvailableDrivers();
+                if (is_array($drivers) && in_array('mysql', $drivers)) {
+                    return 'pdo';
+                }
+            } catch (\Exception $e) {
+                // PDO 检查失败，继续尝试 mysqli
+            }
+        }
+
+        // 回退到 mysqli
+        if (function_exists('mysqli_connect')) {
+            return 'mysqli';
+        }
+
+        return '';
+    }
+
+    /**
+     * 测试数据库连接
+     */
+    private function connectDatabase($dbHost, $dbPort, $dbUser, $dbPwd)
+    {
+        $driver = $this->getAvailableDriver();
+
+        if ($driver === 'pdo') {
+            $dsn = "mysql:host={$dbHost};port={$dbPort};charset=utf8mb4";
+            try {
+                // PHP 5.6 兼容：不使用 ATTR_TIMEOUT（PHP 7.0+ 才有）
+                $options = array(
+                    \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
+                    \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                );
+
+                // PHP 7.0+ 支持 ATTR_TIMEOUT
+                if (version_compare(PHP_VERSION, '7.0.0', '>=')) {
+                    $options[\PDO::ATTR_TIMEOUT] = 5;
+                }
+
+                $pdo = new \PDO($dsn, $dbUser, $dbPwd, $options);
+                $this->dbConnection = $pdo;
+                $this->dbDriver = 'pdo';
+                return true;
+            } catch (\PDOException $e) {
+                $this->dbConnection = null;
+                $this->dbDriver = '';
+                return false;
+            }
+        } elseif ($driver === 'mysqli') {
+            // mysqli 连接（兼容 PHP 5.6+）
+            if (function_exists('mysqli_init')) {
+                $mysqli = \mysqli_init();
+                if ($mysqli) {
+                    // 设置超时
+                    @mysqli_options($mysqli, MYSQLI_OPT_CONNECT_TIMEOUT, 5);
+                    $connected = @mysqli_real_connect($mysqli, $dbHost, $dbUser, $dbPwd, '', (int)$dbPort);
+                    if ($connected) {
+                        mysqli_set_charset($mysqli, 'utf8mb4');
+                        $this->dbConnection = $mysqli;
+                        $this->dbDriver = 'mysqli';
+                        return true;
+                    }
+                    @mysqli_close($mysqli);
+                }
+            } else {
+                // PHP 5.6 旧版 mysqli 过程式接口
+                $conn = @mysqli_connect($dbHost, $dbUser, $dbPwd, '', (int)$dbPort);
+                if ($conn) {
+                    mysqli_set_charset($conn, 'utf8mb4');
+                    $this->dbConnection = $conn;
+                    $this->dbDriver = 'mysqli';
+                    return true;
+                }
+            }
+            $this->dbConnection = null;
+            $this->dbDriver = '';
+            return false;
+        }
+
+        return false;
+    }
+
+    /**
+     * 执行 SQL（自动适配 PDO 或 mysqli）
+     */
+    private function execSql($sql)
+    {
+        if ($this->dbDriver === 'pdo') {
+            try {
+                $this->dbConnection->exec($sql);
+                return true;
+            } catch (\PDOException $e) {
+                return false;
+            }
+        } elseif ($this->dbDriver === 'mysqli') {
+            $conn = $this->dbConnection;
+            if ($conn) {
+                $result = @mysqli_query($conn, $sql);
+                // 释放结果集（如果是 SELECT 等）
+                if ($result && $result !== true) {
+                    @mysqli_free_result($result);
+                }
+                return $result !== false;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 执行 SQL 并返回错误信息
+     */
+    private function execSqlWithError($sql)
+    {
+        if ($this->dbDriver === 'pdo') {
+            try {
+                $this->dbConnection->exec($sql);
+                return array('success' => true, 'error' => '');
+            } catch (\PDOException $e) {
+                return array('success' => false, 'error' => $e->getMessage());
+            }
+        } elseif ($this->dbDriver === 'mysqli') {
+            $conn = $this->dbConnection;
+            if ($conn) {
+                $result = @mysqli_query($conn, $sql);
+                if ($result === false) {
+                    return array('success' => false, 'error' => mysqli_error($conn));
+                }
+                if ($result !== true) {
+                    @mysqli_free_result($result);
+                }
+                return array('success' => true, 'error' => '');
+            }
+        }
+        return array('success' => false, 'error' => '未知数据库驱动');
+    }
+
+    /**
+     * 查询并获取单个值
+     */
+    private function fetchOne($sql)
+    {
+        if ($this->dbDriver === 'pdo') {
+            try {
+                $stmt = $this->dbConnection->query($sql);
+                $row = $stmt->fetch(\PDO::FETCH_NUM);
+                return $row ? $row[0] : null;
+            } catch (\PDOException $e) {
+                return null;
+            }
+        } elseif ($this->dbDriver === 'mysqli') {
+            $conn = $this->dbConnection;
+            if ($conn) {
+                $result = @mysqli_query($conn, $sql);
+                if ($result) {
+                    $row = mysqli_fetch_row($result);
+                    @mysqli_free_result($result);
+                    return $row ? $row[0] : null;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 预处理并执行（用于 UPDATE/INSERT 等带参数的查询）
+     */
+    private function prepareAndExecute($sql, $params)
+    {
+        if ($this->dbDriver === 'pdo') {
+            try {
+                $stmt = $this->dbConnection->prepare($sql);
+                $stmt->execute($params);
+                return true;
+            } catch (\PDOException $e) {
+                return false;
+            }
+        } elseif ($this->dbDriver === 'mysqli') {
+            $conn = $this->dbConnection;
+            if ($conn) {
+                // 将 ? 占位符替换为 %s，然后用 vsprintf 填入转义后的参数
+                $safeParams = array();
+                foreach ($params as $v) {
+                    if (is_int($v)) {
+                        $safeParams[] = (string)$v;
+                    } else {
+                        $safeParams[] = "'" . mysqli_real_escape_string($conn, $v) . "'";
+                    }
+                }
+                $sql = str_replace('?', '%s', $sql);
+                $fullSql = vsprintf($sql, $safeParams);
+                if ($fullSql === false) {
+                    // 参数数量与占位符数量不匹配，回退手动替换
+                    $fullSql = $sql;
+                    foreach ($safeParams as $val) {
+                        $pos = strpos($fullSql, '%s');
+                        if ($pos !== false) {
+                            $fullSql = substr_replace($fullSql, $val, $pos, 2);
+                        }
+                    }
+                }
+                $result = @mysqli_query($conn, $fullSql);
+                if ($result && $result !== true) {
+                    @mysqli_free_result($result);
+                }
+                return $result !== false;
+            }
+        }
+        return false;
     }
 
     private function doInstall()
@@ -67,19 +287,40 @@ class IndexController
             return 2;
         }
 
-        // 测试数据库连接
-        try {
-            $dsn = "mysql:host={$dbHost};port={$dbPort};charset=utf8mb4";
-            $pdo = new \PDO($dsn, $dbUser, $dbPwd, array(
-                \PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_TIMEOUT => 5,
-            ));
+        // 检查驱动可用性
+        $driver = $this->getAvailableDriver();
+        if (empty($driver)) {
+            $this->renderError(array('未检测到可用的数据库驱动，请安装 PDO 或 mysqli 扩展'));
+            return 2;
+        }
 
-            // 尝试创建数据库
-            $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-            $pdo->exec("USE `{$dbName}`");
-        } catch (\PDOException $e) {
-            $this->renderError(array('数据库连接失败：' . $e->getMessage()));
+        // 测试数据库连接
+        if (!$this->connectDatabase($dbHost, $dbPort, $dbUser, $dbPwd)) {
+            $errorMsg = ($this->dbDriver === 'mysqli' && $this->dbConnection) 
+                ? mysqli_error($this->dbConnection) 
+                : '连接失败，请检查数据库配置';
+            $this->renderError(array('数据库连接失败：' . $errorMsg));
+            return 2;
+        }
+
+        // 尝试创建数据库
+        $createDbSql = "CREATE DATABASE IF NOT EXISTS `{$dbName}` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci";
+        $result = $this->execSqlWithError($createDbSql);
+        if (!$result['success']) {
+            // 尝试不指定 COLLATE（兼容旧版 MySQL）
+            $createDbSql2 = "CREATE DATABASE IF NOT EXISTS `{$dbName}` DEFAULT CHARACTER SET utf8mb4";
+            $result2 = $this->execSqlWithError($createDbSql2);
+            if (!$result2['success']) {
+                $this->renderError(array('创建数据库失败：' . $result['error']));
+                return 2;
+            }
+        }
+
+        // 选择数据库
+        $useDbSql = "USE `{$dbName}`";
+        $result = $this->execSqlWithError($useDbSql);
+        if (!$result['success']) {
+            $this->renderError(array('选择数据库失败：' . $result['error']));
             return 2;
         }
 
@@ -91,11 +332,15 @@ class IndexController
         }
 
         $sqlContent = file_get_contents($sqlFile);
+        if ($sqlContent === false) {
+            $this->renderError(array('无法读取数据库安装文件'));
+            return 2;
+        }
+
         $sqlContent = str_replace('__PREFIX__', $dbPrefix, $sqlContent);
         $sqlContent = str_replace("\r", "\n", $sqlContent);
 
-        // 使用状态机分割 SQL：只在字符串外部识别分号作为语句分隔符
-        // 避免数据内含分号（如"收录大于10000;已交换友链"）导致错误切割
+        // 分割并执行 SQL
         $segments = $this->splitSql($sqlContent);
         $successCount = 0;
         $errorSql = array();
@@ -114,30 +359,74 @@ class IndexController
             $sql = implode("\n", $cleanLines);
             if (empty($sql)) continue;
 
-            try {
-                $pdo->exec($sql);
+            $execResult = $this->execSqlWithError($sql);
+            if ($execResult['success']) {
                 $successCount++;
-            } catch (\PDOException $e) {
-                // ALTER TABLE ADD COLUMN 可能字段已存在，忽略
-                if (strpos($e->getMessage(), 'Duplicate column name') !== false) {
+            } else {
+                // 非致命错误可忽略（重复安装或部分 SQL 已存在时）
+                $errMsg = $execResult['error'];
+                $skipErrors = array(
+                    'Duplicate column name',
+                    'Duplicate entry',
+                    'Table already exists',
+                    'Key already exists',
+                    'already exists',
+                    'Duplicate',
+                );
+                $isSkippable = false;
+                foreach ($skipErrors as $skipPattern) {
+                    if (strpos($errMsg, $skipPattern) !== false) {
+                        $isSkippable = true;
+                        break;
+                    }
+                }
+                if ($isSkippable) {
                     continue;
                 }
-                $errorSql[] = substr($sql, 0, 80) . '... => ' . $e->getMessage();
+                $errorSql[] = substr($sql, 0, 80) . '... => ' . $errMsg;
             }
         }
 
         // 更新管理员密码
+        $hashedPwd = md5($adminPwd . 'yun_manage');
+        $adminTable = $dbPrefix . 'manage';
+
         try {
-            $hashedPwd = md5($adminPwd . 'yun_manage');
-            $stmt = $pdo->prepare("UPDATE `{$dbPrefix}manage` SET `username` = ?, `password` = ? WHERE `id` = 1");
-            $stmt->execute(array($adminUser, $hashedPwd));
-            // 如果管理员表为空，插入默认管理员
-            $check = $pdo->query("SELECT COUNT(*) FROM `{$dbPrefix}manage`")->fetchColumn();
-            if ($check == 0) {
-                $stmt = $pdo->prepare("INSERT INTO `{$dbPrefix}manage` (`username`, `password`) VALUES (?, ?)");
-                $stmt->execute(array($adminUser, $hashedPwd));
+            // 检查管理员表是否存在
+            $tableCheckSql = "SHOW TABLES LIKE '{$adminTable}'";
+            $tableExists = false;
+
+            if ($this->dbDriver === 'pdo') {
+                $stmt = $this->dbConnection->query($tableCheckSql);
+                $tableExists = $stmt->fetch() !== false;
+            } elseif ($this->dbDriver === 'mysqli') {
+                $result = @mysqli_query($this->dbConnection, $tableCheckSql);
+                $tableExists = $result && mysqli_num_rows($result) > 0;
+                if ($result) @mysqli_free_result($result);
             }
-        } catch (\PDOException $e) {
+
+            if (!$tableExists) {
+                $this->renderError(array('管理员表不存在，请检查 SQL 是否正确导入'));
+                return 2;
+            }
+
+            // 检查管理员表是否有 id=1 的记录
+            $count = $this->fetchOne("SELECT COUNT(*) FROM `{$adminTable}`");
+
+            if ($count == 0) {
+                // 插入默认管理员
+                $this->prepareAndExecute(
+                    "INSERT INTO `{$adminTable}` (`id`, `username`, `password`) VALUES (?, ?, ?)",
+                    array(1, $adminUser, $hashedPwd)
+                );
+            } else {
+                // 更新管理员密码
+                $this->prepareAndExecute(
+                    "UPDATE `{$adminTable}` SET `username` = ?, `password` = ? WHERE `id` = 1",
+                    array($adminUser, $hashedPwd)
+                );
+            }
+        } catch (\Exception $e) {
             $this->renderError(array('创建管理员账号失败：' . $e->getMessage()));
             return 2;
         }
@@ -169,8 +458,7 @@ class IndexController
         $siteConfigPath = $this->configPath . 'siteconfig.php';
         if (file_exists($siteConfigPath)) {
             $content = file_get_contents($siteConfigPath);
-            // 尝试替换 site_name 或 siteurl
-            if (preg_match('/"site_name"\s*=>\s*"[^"]*"/', $content)) {
+            if ($content !== false && preg_match('/"site_name"\s*=>\s*"[^"]*"/', $content)) {
                 $content = preg_replace('/("site_name"\s*=>\s*)"[^"]*"/', '$1"' . addslashes($siteName) . '"', $content);
                 @file_put_contents($siteConfigPath, $content);
             }
@@ -179,9 +467,24 @@ class IndexController
         // 创建安装锁文件
         @file_put_contents($this->configPath . 'install.lock', date('Y-m-d H:i:s'));
 
+        // 关闭数据库连接
+        $this->closeConnection();
+
         // 安装成功
         $this->renderSuccess($adminUser, $adminPwd, $siteName, $errorSql);
         return 3;
+    }
+
+    /**
+     * 关闭数据库连接
+     */
+    private function closeConnection()
+    {
+        if ($this->dbDriver === 'mysqli' && $this->dbConnection) {
+            @mysqli_close($this->dbConnection);
+        }
+        $this->dbConnection = null;
+        $this->dbDriver = '';
     }
 
     private function renderStep($step)
@@ -211,7 +514,7 @@ class IndexController
             $sugg   = $item['pass'] ? '' : '<span class="suggest">' . $item['suggest'] . '</span>';
             $rows  .= '<tr class="' . $cls . '"><td>' . $item['name'] . '</td>'
                     . '<td>' . $item['current'] . '</td>'
-                    . '<td>' . ($item['pass'] ? $item['required'] : $item['required']) . '</td>'
+                    . '<td>' . $item['required'] . '</td>'
                     . '<td><span class="icon">' . $icon . '</span> ' . $sugg . '</td></tr>';
         }
 
@@ -304,7 +607,7 @@ HTML;
     {
         $list = '';
         foreach ($errors as $e) {
-            $list .= '<li>' . htmlspecialchars($e) . '</li>';
+            $list .= '<li>' . htmlspecialchars($e, ENT_QUOTES, 'UTF-8') . '</li>';
         }
         $html = $this->getHeader(2);
         $html .= '<div class="step-box"><h2>安装出错</h2><ul class="error-list">' . $list
@@ -319,7 +622,7 @@ HTML;
         if (!empty($errorSql)) {
             $sqlWarn = '<div class="warn-box"><strong>部分 SQL 执行异常（已跳过，不影响使用）：</strong><ul>';
             foreach ($errorSql as $se) {
-                $sqlWarn .= '<li>' . htmlspecialchars($se) . '</li>';
+                $sqlWarn .= '<li>' . htmlspecialchars($se, ENT_QUOTES, 'UTF-8') . '</li>';
             }
             $sqlWarn .= '</ul></div>';
         }
@@ -480,17 +783,29 @@ HTML;
             'current'  => $phpVer,
             'required' => '>= ' . $this->phpMinVersion,
             'pass'     => $phpPass,
-            'suggest'  => '请升级 PHP 到 ' . $this->phpMinVersion . ' 或更高版本',
+            'suggest'  => '请升级 PHP 到 ' . $this->phpMinVersion . ' 或更高版本（支持 PHP 5.6 - 8.4）',
         );
 
         // PHP 扩展
-        foreach ($this->requiredExts as $ext) {
+        $driverInfo = $this->getAvailableDriver();
+        $items[] = array(
+            'name'     => '数据库驱动 (PDO / MySQLi)',
+            'current'  => $driverInfo === 'pdo' ? 'PDO (推荐)' : ($driverInfo === 'mysqli' ? 'MySQLi' : '未安装'),
+            'required' => '至少安装一个',
+            'pass'     => !empty($driverInfo),
+            'suggest'  => '请在 php.ini 中启用 pdo_mysql 或 mysqli 扩展',
+        );
+        if (empty($driverInfo)) $allPass = false;
+
+        // 其他必要扩展
+        $otherExts = array('curl', 'gd', 'mbstring', 'json');
+        foreach ($otherExts as $ext) {
             $loaded = extension_loaded($ext);
             if (!$loaded) $allPass = false;
             $items[] = array(
                 'name'     => 'PHP 扩展 - ' . $ext,
                 'current'  => $loaded ? '已安装' : '未安装',
-                'required' => '必须安装',
+                'required' => '建议安装',
                 'pass'     => $loaded,
                 'suggest'  => '请在 php.ini 中启用 ' . $ext . ' 扩展',
             );
@@ -502,7 +817,7 @@ HTML;
             'name'     => 'allow_url_fopen',
             'current'  => $fopen ? '开启' : '关闭',
             'required' => '建议开启',
-            'pass'     => true, // 不强制
+            'pass'     => true,
             'suggest'  => '建议开启，部分 API 功能需要',
         );
 
@@ -526,8 +841,8 @@ HTML;
     private function getSiteUrl()
     {
         $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-        $host   = $_SERVER['HTTP_HOST'];
-        $script = $_SERVER['SCRIPT_NAME'];
+        $host   = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+        $script = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '/index.php';
         $path   = rtrim(dirname($script), '/\\');
         return $scheme . '://' . $host . $path . '/';
     }
@@ -543,7 +858,8 @@ HTML;
         $inString = false;
         $escaped = false;
 
-        for ($i = 0, $len = strlen($content); $i < $len; $i++) {
+        $len = strlen($content);
+        for ($i = 0; $i < $len; $i++) {
             $ch = $content[$i];
             $current .= $ch;
 

@@ -1,4 +1,4 @@
-﻿{include file="app/manage/view/index/emlog_nav"}
+{include file="app/manage/view/index/emlog_nav"}
 
 <!-- 页面标题 -->
 <h1 class="page-title">
@@ -32,10 +32,9 @@
 
                         <div class="form-group">
                             <label for="body">页面内容</label>
-                            <div id="editor-md-container">
-                                <textarea name="body">{$ret['body']}</textarea>
-                            </div>
-                            <small class="form-text text-muted">支持 Markdown 语法和 HTML，可使用多媒体元素丰富页面内容</small>
+                            <!-- TinyMCE 编辑器容器 -->
+                            <textarea id="page-editor" name="body" data-editor data-upload-type="page" data-height="550">{$ret['body']}</textarea>
+                            <small class="form-text text-muted">支持富文本编辑，可使用[插入商品链接]功能添加电商产品链接</small>
                         </div>
 
                     {$html}
@@ -83,90 +82,33 @@
 
 {include file="app/manage/view/index/emlog_footer"}
 
-<!-- Editor.md 本地集成（移植自 emlog 后台，避免 CDN 不可达与样式冲突） -->
-<link rel="stylesheet" href="/public/manage/editormd/css/editormd.css" />
-<script src="/public/manage/editormd/editormd.js"></script>
+<!-- TinyMCE 编辑器加载 -->
+<script src="https://tinymce.vt5.cn/tinymce.min.js"></script>
+<script src="/public/manage/js/tinymce-init.js"></script>
 
 <script>
 $(function() {
-    var testEditor = editormd("editor-md-container", {
-        width: "100%",
-        height: 550,
-        path: "/public/manage/editormd/lib/",
-        placeholder: "开始编写页面内容...",
-        toolbarIcons: function() {
-            return ["bold", "del", "italic", "quote", "|", "h1", "h2", "h3", "|", "list-ul", "list-ol", "hr", "|",
-                "link", "image", "code", "code-block", "table", "|", "search", "preview", "fullscreen"]
-        },
-        watch: false,
-        lineNumbers: false,
-        htmlDecode: true,
-        emoji: true,
-        taskList: true,
-        tocm: true,
-        imageUpload: true,
-        imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
-        imageUploadURL: "index.php?r=manage/File/editor&type=page",
-        theme: "default",
-        editorTheme: "default",
-        previewTheme: "default",
-        saveHTMLToTextarea: true,
-        syncScrolling: "single",
-        autoFocus: false,
-        onload: function() {
-            var content = $("textarea[name='body']").val();
-            if (content) {
-                this.setContent(content);
-            }
-        },
-        onchange: function() {
-            this.sync();
-        }
-    });
+    // 初始化 TinyMCE 编辑器
+    if (typeof initZhiCmsEditor === 'function') {
+        initZhiCmsEditor('#page-editor', {
+            uploadType: 'page',
+            height: 550
+        });
+    }
 
+    // 表单提交前处理
     $('#form').on('submit', function() {
-        if (testEditor) {
-            testEditor.sync();
-        }
-    });
-
-    // 编辑预览中把 [ZhiCmsUrl]链接[/ZhiCmsUrl] 渲染为可点击的「去购买」链接，
-    // 避免预览区显示原始标记文本（前端展示时会自动渲染成站内商品卡片）
-    function getPlatformStyle(url) {
-        if (/pinduoduo\.com|yangkeduo\.com/i.test(url)) return {color:'#e02e24',text:'去拼多多购买'};
-        if (/jd\.com/i.test(url)) return {color:'#e4393c',text:'去京东购买'};
-        if (/vip\.com|vipshop\.com/i.test(url)) return {color:'#cd2e6b',text:'去唯品会购买'};
-        if (/taobao\.com|tmall\.com/i.test(url)) return {color:'#ff2e54',text:'去淘宝购买'};
-        return {color:'#ff5000',text:'去购买'};
-    }
-    function renderZhiCmsUrlInPreview() {
-        var preview = document.querySelector('.editormd-preview');
-        if (!preview) return;
-        var walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT, null, false);
-        var node;
-        while (node = walker.nextNode()) {
-            var m = node.nodeValue.match(/\[ZhiCmsUrl\]([\s\S]+?)\[\/ZhiCmsUrl\]/);
-            if (m) {
-                var url = m[1].trim();
-                var ps = getPlatformStyle(url);
-                var a = document.createElement('a');
-                a.href = url;
-                a.target = '_blank';
-                a.className = 'zhicms-url-preview';
-                a.textContent = '🛒 ' + ps.text;
-                a.setAttribute('style', 'display:inline-block;margin:8px 0;padding:6px 16px;background:' + ps.color + ';color:#fff;border-radius:20px;text-decoration:none;font-size:13px;');
-                var span = document.createElement('span');
-                span.appendChild(a);
-                node.parentNode.replaceChild(span, node);
+        if (typeof tinymce !== 'undefined') {
+            const editor = tinymce.get('page-editor');
+            if (editor) {
+                // 将商品链接转换回 [ZhiCmsUrl] 标签
+                if (typeof convertHtmlToZhiCmsUrlTags === 'function') {
+                    convertHtmlToZhiCmsUrlTags(editor);
+                }
+                // 同步到 textarea
+                editor.save();
             }
         }
-    }
-
-    var previewEl = document.querySelector('.editormd-preview');
-    if (previewEl && typeof MutationObserver !== 'undefined') {
-        var obs = new MutationObserver(renderZhiCmsUrlInPreview);
-        obs.observe(previewEl, { childList: true, subtree: true, characterData: true });
-        renderZhiCmsUrlInPreview();
-    }
+    });
 });
 </script>

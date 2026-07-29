@@ -83,27 +83,27 @@ class BaseController extends \ZhiCms\base\Controller {
         }
     }
    
-   /*通用上传*/
+   /*通用上传（已弃用，请使用 FileController 代替）*/
 	public function upload(){
-		$upload=new \ZhiCms\ext\Upload();
-		$upload->maxSize=1024*1024*2;
-		$upload->allowExts  = explode(',','png');
-		$upload_dir = '';
-		$upload->savePath =ROOT_PATH.'/upload/file/images/'.$upload_dir."/";
-
-		if(!$upload->upload())
-		       {
-		        //捕获上传异常
-		       print_r($upload->getErrorMsg());
-		       exit;
-		      }
-		      else 
-		      {
-		        //取得成功上传的文件信息
-		       $file= $upload->getUploadFileInfo();
-		       $File=$this->file=$file['0']['savename'];
-		       return $File; 
-		      }		
+		$file = isset($_FILES['file']) ? $_FILES['file'] : null;
+		if (!$file || $file['error'] !== UPLOAD_ERR_OK) {
+			return false;
+		}
+		$ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+		if (!in_array($ext, ['png', 'jpg', 'jpeg', 'gif', 'webp'])) {
+			return false;
+		}
+		$fileName = substr(md5($file['name']), 0, 4) . time() . '.' . $ext;
+		$dateDir = date('Ymd');
+		$uploadDir = ROOT_PATH . '/upload/file/images/' . $dateDir;
+		if (!is_dir($uploadDir)) {
+			@mkdir($uploadDir, 0777, true);
+		}
+		$targetPath = $uploadDir . '/' . $fileName;
+		if (!@move_uploaded_file($file['tmp_name'], $targetPath)) {
+			return false;
+		}
+		return $dateDir . '/' . $fileName;
 	}
 
     /**

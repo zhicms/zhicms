@@ -1,4 +1,4 @@
-﻿                </div>
+                </div>
                 <!-- /.container-fluid -->
             </div>
             <!-- End of Main Content -->
@@ -28,17 +28,20 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Core plugin JavaScript-->
-    <script src="https://cdn.jsdelivr.net/npm/jquery-easing@1.4.1/jquery.easing.min.js"></script>
 
     <!-- Custom scripts for all pages-->
     <script src="/public/manage/emlog/js/sb-admin-2.min.js"></script>
 
+    <!-- MyMessage 消息提示库 -->
+    <link rel="stylesheet" href="/public/manage/message/css/jquery.my-message.1.1.css" />
+    <script src="/public/manage/message/js/jquery.my-message.1.1.js"></script>
+
     <!-- Page level plugins -->
-    <script src="/public/manage/js/index.js"></script>
+    <script src="/public/manage/js/index.js?v=20260729"></script>
 
     <!-- AI 开放平台 -->
     <link rel="stylesheet" href="/public/manage/emlog/css/ai-chat.css">
-    <script src="/public/manage/editormd/lib/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/public/manage/emlog/js/ai-chat.js"></script>
 
     <!-- AI Chat Modal -->
@@ -119,7 +122,7 @@
             var $anchor = $(this);
             $('html, body').stop().animate({
                 scrollTop: ($($anchor.attr('href')).offset().top)
-            }, 1000, 'easeInOutExpo');
+            }, 1000, 'swing');
             e.preventDefault();
         });
     });

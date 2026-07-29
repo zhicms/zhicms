@@ -166,7 +166,7 @@
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
-                        <small class="form-text text-muted">建议尺寸 200x200，支持 jpg/png/webp。仅接受 /data/uploadfile/ 路径或 http(s):// 开头</small>
+                        <small class="form-text text-muted">建议尺寸 200x200，支持 jpg/png/webp。仅接受 upload/ 路径或 http(s):// 开头</small>
                     </div>
                     <div class="form-group">
                         <label class="font-weight-bold">小组简介</label>
@@ -237,23 +237,23 @@ function uploadGroupIcon() {
     input.onchange = function(e) {
         var file = e.target.files[0];
         if (!file) return;
-        if (file.size > 5 * 1024 * 1024) {
-            alert('图片不能超过 5MB');
+        if (file.size > 10 * 1024 * 1024) {
+            alert('图片不能超过 10MB');
             return;
         }
         var formData = new FormData();
         formData.append('file', file);
         var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'index.php?r=manage/set/upload', true);
+        xhr.open('POST', 'index.php?r=manage/File/upload&type=forum', true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4 && xhr.status == 200) {
                 try {
                     var r = JSON.parse(xhr.responseText);
-                    if (r.status === 'y') {
+                    if (r.error === 0 && r.url) {
                         document.getElementById('groupIcon').value = r.url;
                         refreshIconPreview(r.url);
                     } else {
-                        alert(r.info || '上传失败');
+                        alert(r.message || '上传失败');
                     }
                 } catch (e) {
                     alert('上传失败: ' + xhr.responseText.substring(0, 200));

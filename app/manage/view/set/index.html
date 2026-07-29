@@ -933,28 +933,36 @@ function uploadImage(field) {
 
         var formData = new FormData();
         formData.append('file', file);
-        formData.append('hash', document.getElementById('hash_field') ? document.getElementById('hash_field').value : '');
 
-        var xhr = new XMLHttpRequest();
-        xhr.open('POST', 'index.php?r=manage/set/upload', true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4 && xhr.status == 200) {
-                try {
-                    var result = JSON.parse(xhr.responseText);
-                    if (result.status === 'y') {
-                        document.getElementById(field + '-input').value = result.url;
-                        showToast('图片上传成功', 'success');
-                        // 刷新图片预览
-                        location.reload();
-                    } else {
-                        showToast(result.info, 'danger');
+        // 使用统一上传接口
+        fetch('index.php?r=manage/File/upload&type=manage', {
+            method: 'POST',
+            body: formData
+        })
+        .then(function(response) { return response.text(); })
+        .then(function(text) {
+            console.log('[uploadImage response]', text ? text.substring(0, 300) : '(empty)');
+            try {
+                var result = JSON.parse(text);
+                if (result.error === 0 && result.url) {
+                    document.getElementById(field + '-input').value = result.url;
+                    showToast('图片上传成功', 'success');
+                    // 就地更新图片预览，不刷新页面
+                    var preview = document.querySelector('#' + field + '-input').closest('.form-group').querySelector('img');
+                    if (preview) {
+                        preview.src = result.url;
+                        preview.style.display = '';
                     }
-                } catch(e) {
-                    showToast('上传失败', 'danger');
+                } else {
+                    showToast(result.message || '上传失败', 'danger');
                 }
+            } catch(e) {
+                showToast('上传失败', 'danger');
             }
-        };
-        xhr.send(formData);
+        })
+        .catch(function(error) {
+            showToast('上传失败', 'danger');
+        });
     };
 
     input.click();

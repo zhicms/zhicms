@@ -127,7 +127,7 @@ class Upload {
             case -7: $str .= "上传路径包含非法字符，可能存在路径遍历攻击风险"; break;
             default: $str .= "未知错误";
         }
-        return json_encode(array("url" => $str));
+        return $str;
     }
 
     private function setFiles($name="", $tmp_name="", $size=0, $error=0) {

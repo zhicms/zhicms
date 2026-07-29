@@ -211,7 +211,7 @@ class FindController extends \app\base\controller\BaseController
     		$this->display();
 			exit;
 		}else{
-			// 过滤 EditorMD 编辑器产生的额外字段
+			// 清理可能的编辑器额外字段
 			unset($_POST['editor-md-container-html-code']);
 			unset($_POST['editor-md-container-article-html-code']);
  
@@ -304,7 +304,7 @@ class FindController extends \app\base\controller\BaseController
 			$this->display('app/manage/view/find/addarticle');
 			exit;
 		}else{
-			// 过滤 EditorMD 编辑器产生的额外字段
+			// 清理可能的编辑器额外字段
 			unset($_POST['editor-md-container-html-code']);
 			unset($_POST['editor-md-container-article-html-code']);
 

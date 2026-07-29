@@ -293,85 +293,11 @@ class SetController extends \app\base\controller\BaseController
    }
 
     public function upload(){
-
-
-    $this->checkManageSession();
-
-        error_reporting(0);
-        if($_FILES['file']['error'] == 0){
-            $upload_dir = ROOT_PATH . 'data/uploadfile/';
-            if(!is_dir($upload_dir)){
-                mkdir($upload_dir, 0777, true);
-            }
-            
-            $ext = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
-            $imageTypes = array('jpg', 'jpeg', 'png', 'gif', 'bmp');
-            
-            if (function_exists('imagewebp') && in_array(strtolower($ext), $imageTypes)) {
-                $filename = date('YmdHis') . '_' . mt_rand(1000, 9999) . '.webp';
-                $tempPath = $upload_dir . 'temp_' . date('YmdHis') . '_' . mt_rand(1000, 9999) . '.' . $ext;
-                
-                if (!move_uploaded_file($_FILES['file']['tmp_name'], $tempPath)) {
-                    echo json_encode(array("info" => "上传失败", "status" => "n"));
-                    return;
-                }
-                
-                $info = getimagesize($tempPath);
-                if ($info !== false) {
-                    $mime = $info['mime'];
-                    switch ($mime) {
-                        case 'image/jpeg':
-                            $src = imagecreatefromjpeg($tempPath);
-                            break;
-                        case 'image/png':
-                            $src = imagecreatefrompng($tempPath);
-                            imagealphablending($src, true);
-                            imagesavealpha($src, true);
-                            break;
-                        case 'image/gif':
-                            $src = imagecreatefromgif($tempPath);
-                            break;
-                        case 'image/bmp':
-                            $src = imagecreatefrombmp($tempPath);
-                            break;
-                        default:
-                            $src = false;
-                    }
-                    
-                    if ($src !== false) {
-                        $filepath = $upload_dir . $filename;
-                        imagewebp($src, $filepath, 80);
-                        imagedestroy($src);
-                        @unlink($tempPath);
-                    } else {
-                        $filepath = $upload_dir . date('YmdHis') . '_' . mt_rand(1000, 9999) . '.' . $ext;
-                        move_uploaded_file($_FILES['file']['tmp_name'], $filepath);
-                        $filename = basename($filepath);
-                    }
-                } else {
-                    $filepath = $upload_dir . date('YmdHis') . '_' . mt_rand(1000, 9999) . '.' . $ext;
-                    move_uploaded_file($_FILES['file']['tmp_name'], $filepath);
-                    $filename = basename($filepath);
-                }
-            } else {
-                $filename = date('YmdHis') . '_' . mt_rand(1000, 9999) . '.' . $ext;
-                $filepath = $upload_dir . $filename;
-                if (!move_uploaded_file($_FILES['file']['tmp_name'], $filepath)) {
-                    echo json_encode(array("info" => "上传失败", "status" => "n"));
-                    return;
-                }
-            }
-            
-            // 从 ConfigStore 读取站点配置
-            $siteConfig = ConfigStore::load('site');
-            $cdnUrl = !empty($siteConfig['cdnurl']) ? rtrim($siteConfig['cdnurl'], '/') : '';
-            $baseUrl = !empty($cdnUrl) ? $cdnUrl : rtrim($siteConfig['hosturl'] ?? '', '/');
-            $url = $baseUrl . '/data/uploadfile/' . $filename;
-            
-            echo json_encode(array("info" => "上传成功", "status" => "y", "url" => $url));
-        }else{
-            echo json_encode(array("info" => "文件错误", "status" => "n"));
-        }
+        // 统一转发到 FileController 上传接口
+        $_GET['type'] = 'manage';
+        $_GET['field'] = 'file';
+        $fileCtrl = new \app\manage\controller\FileController();
+        $fileCtrl->upload();
     }
 
     /**

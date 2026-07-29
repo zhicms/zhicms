@@ -1,4 +1,4 @@
-﻿{include file="app/manage/view/index/emlog_nav"}
+{include file="app/manage/view/index/emlog_nav"}
 
 <!-- 页面标题 -->
 <h1 class="page-title">
@@ -49,11 +49,9 @@
                     
                         <div class="form-group">
                             <label for="body">文章内容</label>
-                            <!-- 使用emlog风格的容器结构 -->
-                            <div id="editor-md-container-article">
-                                <textarea name="body">{$ret['content']}</textarea>
-                            </div>
-                            <small class="form-text text-muted">发布文章支持天猫淘宝/京东/拼多多/唯品会产品链接，手动添加格式[ZhiCmsUrl]产品链接[/ZhiCmsUrl]</small>
+                            <!-- TinyMCE 编辑器容器 -->
+                            <textarea id="article-editor" name="body" data-editor data-upload-type="article" data-height="550">{$ret['content']}</textarea>
+                            <small class="form-text text-muted">发布文章支持天猫淘宝/京东/拼多多/唯品会产品链接，点击工具栏[商品链接]按钮可插入</small>
                         </div>
                     
                     <div class="form-group">
@@ -173,91 +171,34 @@
 
 {include file="app/manage/view/index/emlog_footer"}
 
-<!-- Editor.md 本地集成（移植自 emlog 后台，避免 CDN 不可达与样式冲突） -->
-<link rel="stylesheet" href="/public/manage/editormd/css/editormd.css" />
-<script src="/public/manage/editormd/editormd.js"></script>
+<!-- TinyMCE 编辑器加载 -->
+<script src="https://tinymce.vt5.cn/tinymce.min.js"></script>
+<script src="/public/manage/js/tinymce-init.js"></script>
 
 <script>
 $(function() {
-    var testEditor = editormd("editor-md-container-article", {
-        width: "100%",
-        height: 550,
-        path: "/public/manage/editormd/lib/",
-        placeholder: "开始编写文章内容...",
-        toolbarIcons: function() {
-            return ["bold", "del", "italic", "quote", "|", "h1", "h2", "h3", "|", "list-ul", "list-ol", "hr", "|",
-                "link", "image", "code", "code-block", "table", "|", "search", "preview", "fullscreen"]
-        },
-        watch: false,
-        lineNumbers: false,
-        htmlDecode: true,
-        emoji: true,
-        taskList: true,
-        tocm: true,
-        imageUpload: true,
-        imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
-        imageUploadURL: "index.php?r=manage/File/editor&type=article",
-        theme: "default",
-        editorTheme: "default",
-        previewTheme: "default",
-        saveHTMLToTextarea: true,
-        syncScrolling: "single",
-        autoFocus: false,
-        onload: function() {
-            var content = $("textarea[name='body']").val();
-            if (content) {
-                this.setContent(content);
-            }
-        },
-        onchange: function() {
-            this.sync();
-        }
-    });
+    // 初始化 TinyMCE 编辑器
+    if (typeof initZhiCmsEditor === 'function') {
+        initZhiCmsEditor('#article-editor', {
+            uploadType: 'article',
+            height: 550
+        });
+    }
 
+    // 表单提交前处理
     $('#form').on('submit', function() {
-        if (testEditor) {
-            testEditor.sync();
-        }
-    });
-
-    // 编辑预览中把 [ZhiCmsUrl]链接[/ZhiCmsUrl] 渲染为可点击的「去购买」链接，
-    // 避免预览区显示原始标记文本（前端展示时会自动渲染成站内商品卡片）
-    function getPlatformStyle(url) {
-        if (/pinduoduo\.com|yangkeduo\.com/i.test(url)) return {color:'#e02e24',text:'去拼多多购买'};
-        if (/jd\.com/i.test(url)) return {color:'#e4393c',text:'去京东购买'};
-        if (/vip\.com|vipshop\.com/i.test(url)) return {color:'#cd2e6b',text:'去唯品会购买'};
-        if (/taobao\.com|tmall\.com/i.test(url)) return {color:'#ff2e54',text:'去淘宝购买'};
-        return {color:'#ff5000',text:'去购买'};
-    }
-    function renderZhiCmsUrlInPreview() {
-        var preview = document.querySelector('.editormd-preview');
-        if (!preview) return;
-        var walker = document.createTreeWalker(preview, NodeFilter.SHOW_TEXT, null, false);
-        var node;
-        while (node = walker.nextNode()) {
-            var m = node.nodeValue.match(/\[ZhiCmsUrl\]([\s\S]+?)\[\/ZhiCmsUrl\]/);
-            if (m) {
-                var url = m[1].trim();
-                var ps = getPlatformStyle(url);
-                var a = document.createElement('a');
-                a.href = url;
-                a.target = '_blank';
-                a.className = 'zhicms-url-preview';
-                a.textContent = '🛒 ' + ps.text;
-                a.setAttribute('style', 'display:inline-block;margin:8px 0;padding:6px 16px;background:' + ps.color + ';color:#fff;border-radius:20px;text-decoration:none;font-size:13px;');
-                var span = document.createElement('span');
-                span.appendChild(a);
-                node.parentNode.replaceChild(span, node);
+        if (typeof tinymce !== 'undefined') {
+            const editor = tinymce.get('article-editor');
+            if (editor) {
+                // 将商品链接转换回 [ZhiCmsUrl] 标签
+                if (typeof convertHtmlToZhiCmsUrlTags === 'function') {
+                    convertHtmlToZhiCmsUrlTags(editor);
+                }
+                // 同步到 textarea
+                editor.save();
             }
         }
-    }
-
-    var previewEl = document.querySelector('.editormd-preview');
-    if (previewEl && typeof MutationObserver !== 'undefined') {
-        var obs = new MutationObserver(renderZhiCmsUrlInPreview);
-        obs.observe(previewEl, { childList: true, subtree: true, characterData: true });
-        renderZhiCmsUrlInPreview();
-    }
+    });
 });
 
 function upthis(){
@@ -266,33 +207,9 @@ function upthis(){
 
 function upimg() {
     var fileInput = document.getElementById("up_file");
-    var file = fileInput.files[0];
-    if (file) {
-        var formData = new FormData();
-        formData.append('file', file);
-        $.ajax({
-            url: 'index.php?r=manage/File/articlepic',
-            type: 'POST',
-            data: formData,
-            processData: false,
-            contentType: false,
-            success: function(res) {
-                try {
-                    var data = JSON.parse(res);
-                    if (data.url) {
-                        $('#picbox').val(data.url);
-                        $('#showimg').attr('src', data.url).show();
-                    } else {
-                        alert('上传失败');
-                    }
-                } catch(e) {
-                    alert('上传失败，请重试');
-                }
-            },
-            error: function() {
-                alert('上传失败，请检查网络连接');
-            }
-        });
-    }
+    zhicmsUpload('articlepic', 'up_file', function(url) {
+        $('#picbox').val(url);
+        $('#showimg').attr('src', url).show();
+    });
 }
 </script>

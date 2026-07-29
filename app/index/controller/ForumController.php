@@ -354,8 +354,8 @@ class ForumController extends \app\base\controller\BaseController {
                 $imgs = array_slice($imgs, 0, $maxImages);
                 $clean = array();
                 foreach ($imgs as $url) {
-                    $url = filter_var($url, FILTER_VALIDATE_URL);
-                    if ($url && strpos($url, '/data/uploadfile/') !== false) {
+                    $url = trim($url);
+                    if ($url && strpos($url, 'upload/forum/') !== false) {
                         $clean[] = $url;
                     }
                 }
@@ -484,8 +484,54 @@ class ForumController extends \app\base\controller\BaseController {
     }
 
     /**
-     * AJAX：图片上传
-     * 接收 multipart/form-data，存到 data/uploadfile/，返回 URL
+     * 图片转 WebP 格式
+     */
+    private function convertToWebP($sourcePath, $targetPath) {
+        $imageInfo = @getimagesize($sourcePath);
+        if (!$imageInfo) {
+            return false;
+        }
+
+        $mime = $imageInfo['mime'];
+        $srcImage = false;
+
+        switch ($mime) {
+            case 'image/jpeg':
+                $srcImage = @imagecreatefromjpeg($sourcePath);
+                break;
+            case 'image/png':
+                $srcImage = @imagecreatefrompng($sourcePath);
+                if ($srcImage) {
+                    imagealphablending($srcImage, true);
+                    imagesavealpha($srcImage, true);
+                }
+                break;
+            case 'image/gif':
+                $srcImage = @imagecreatefromgif($sourcePath);
+                break;
+            case 'image/bmp':
+                $srcImage = @imagecreatefrombmp($sourcePath);
+                break;
+            case 'image/webp':
+                @copy($sourcePath, $targetPath);
+                return true;
+            default:
+                return false;
+        }
+
+        if (!$srcImage) {
+            return false;
+        }
+
+        $result = @imagewebp($srcImage, $targetPath, 85);
+        imagedestroy($srcImage);
+
+        return $result;
+    }
+
+    /**
+     * AJAX：图片上传（统一接口 + WebP 转换）
+     * 接收 multipart/form-data，存到 upload/forum/{dateDir}/，自动转 WebP
      */
     public function uploadImage() {
         if ($this->getSwitch('forum_on', '1') !== '1') {
@@ -498,14 +544,14 @@ class ForumController extends \app\base\controller\BaseController {
         if ($file['error'] !== UPLOAD_ERR_OK) {
             exit(json_encode(array("info" => "上传失败错误码：" . $file['error'], "status" => "n")));
         }
-        // 大小限制 5MB
-        if ($file['size'] > 5 * 1024 * 1024) {
-            exit(json_encode(array("info" => "图片不能超过 5MB", "status" => "n")));
+        // 大小限制 10MB
+        if ($file['size'] > 10485760) {
+            exit(json_encode(array("info" => "图片不能超过 10MB", "status" => "n")));
         }
         // 后缀白名单
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, array('jpg', 'jpeg', 'png', 'gif', 'webp'))) {
-            exit(json_encode(array("info" => "仅支持 jpg/png/gif/webp", "status" => "n")));
+        if (!in_array($ext, array('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'))) {
+            exit(json_encode(array("info" => "仅支持 jpg/png/gif/webp/bmp", "status" => "n")));
         }
         // 检查真实图片类型
         $imgInfo = @getimagesize($file['tmp_name']);
@@ -513,20 +559,30 @@ class ForumController extends \app\base\controller\BaseController {
             exit(json_encode(array("info" => "图片格式不正确", "status" => "n")));
         }
 
-        $dir = ROOT_PATH . 'data/uploadfile/';
+        // 生成目录路径（按日期组织，统一到 upload/forum/{dateDir}/）
+        $dateDir = date('Ymd');
+        $dir = ROOT_PATH . 'upload/forum/' . $dateDir;
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
-        $filename = 'forum_' . date('Ymd') . '_' . substr(md5(uniqid('', true)), 0, 16) . '.' . $ext;
-        $target = $dir . $filename;
-        if (!move_uploaded_file($file['tmp_name'], $target)) {
+        // 生成文件名
+        $fileName = substr(md5($file['name']), 0, 4) . time();
+
+        // 先保存为临时文件
+        $tempPath = $dir . '/' . $fileName . '.' . $ext;
+        if (!move_uploaded_file($file['tmp_name'], $tempPath)) {
             exit(json_encode(array("info" => "保存失败", "status" => "n")));
         }
 
-        // TODO: 接入微信内容安全 img_sec_check（目前直接放行）
-        // $safe = $this->checkImageSafety($target);
-        // if (!$safe) { unlink($target); exit(json_encode(array("info"=>"图片含违规内容","status"=>"n"))); }
+        // 转换为 WebP
+        $webpPath = $dir . '/' . $fileName . '.webp';
+        if ($this->convertToWebP($tempPath, $webpPath)) {
+            @unlink($tempPath); // 删除临时文件
+            $url = '/upload/forum/' . $dateDir . '/' . $fileName . '.webp';
+        } else {
+            // 转换失败，保留原格式
+            $url = '/upload/forum/' . $dateDir . '/' . $fileName . '.' . $ext;
+        }
 
-        $url = '/data/uploadfile/' . $filename;
         exit(json_encode(array(
             "info" => "上传成功",
             "status" => "y",

@@ -187,8 +187,8 @@ class ForumController extends \app\base\controller\BaseController
         if ($name === '') exit(json_encode(array("info" => "请填写小组名", "status" => "n")));
         $name = htmlspecialchars($name, ENT_QUOTES, 'UTF-8');
         $desc = htmlspecialchars($desc, ENT_QUOTES, 'UTF-8');
-        // icon 仅接受 /data/uploadfile/ 路径或 http(s):// 开头
-        if ($icon !== '' && !preg_match('#^https?://#i', $icon) && strpos($icon, '/data/uploadfile/') !== 0) {
+        // icon 仅接受 upload/ 路径或 http(s):// 开头
+        if ($icon !== '' && !preg_match('#^https?://#i', $icon) && strpos($icon, 'upload/') !== 0) {
             $icon = '';
         }
 

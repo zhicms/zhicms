@@ -332,9 +332,9 @@ class ForumController extends ApiBaseController {
                 $imgs = array_slice($imgs, 0, $maxImages);
                 $clean = array();
                 foreach ($imgs as $url) {
-                    $url = filter_var($url, FILTER_VALIDATE_URL);
-                    if ($url && strpos($url, $this->base() . '/data/uploadfile/') === 0) {
-                        $clean[] = parse_url($url, PHP_URL_PATH);
+                    $url = trim($url);
+                    if ($url && strpos($url, 'upload/forum/') !== false) {
+                        $clean[] = $url;
                     }
                 }
                 if (!empty($clean)) $imagesJson = json_encode($clean);
@@ -504,6 +504,52 @@ class ForumController extends ApiBaseController {
 
     /* ============ 图片上传 ============ */
 
+    /**
+     * 图片转 WebP 格式
+     */
+    private function convertToWebP($sourcePath, $targetPath) {
+        $imageInfo = @getimagesize($sourcePath);
+        if (!$imageInfo) {
+            return false;
+        }
+
+        $mime = $imageInfo['mime'];
+        $srcImage = false;
+
+        switch ($mime) {
+            case 'image/jpeg':
+                $srcImage = @imagecreatefromjpeg($sourcePath);
+                break;
+            case 'image/png':
+                $srcImage = @imagecreatefrompng($sourcePath);
+                if ($srcImage) {
+                    imagealphablending($srcImage, true);
+                    imagesavealpha($srcImage, true);
+                }
+                break;
+            case 'image/gif':
+                $srcImage = @imagecreatefromgif($sourcePath);
+                break;
+            case 'image/bmp':
+                $srcImage = @imagecreatefrombmp($sourcePath);
+                break;
+            case 'image/webp':
+                @copy($sourcePath, $targetPath);
+                return true;
+            default:
+                return false;
+        }
+
+        if (!$srcImage) {
+            return false;
+        }
+
+        $result = @imagewebp($srcImage, $targetPath, 85);
+        imagedestroy($srcImage);
+
+        return $result;
+    }
+
     public function upload() {
         $this->options();
         $this->needOn();
@@ -511,18 +557,32 @@ class ForumController extends ApiBaseController {
 
         $file = $_FILES['file'];
         if ($file['error'] !== UPLOAD_ERR_OK) $this->fail('上传失败错误码：' . $file['error']);
-        if ($file['size'] > 5 * 1024 * 1024) $this->fail('图片不能超过 5MB');
+        if ($file['size'] > 10485760) $this->fail('图片不能超过 10MB');
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        if (!in_array($ext, array('jpg', 'jpeg', 'png', 'gif', 'webp'))) $this->fail('仅支持 jpg/png/gif/webp');
+        if (!in_array($ext, array('jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'))) $this->fail('仅支持 jpg/png/gif/webp/bmp');
         if (!@getimagesize($file['tmp_name'])) $this->fail('图片格式不正确');
 
-        $dir = ROOT_PATH . 'data/uploadfile/';
+        // 生成目录路径（按日期组织，统一到 upload/forum/{dateDir}/）
+        $dateDir = date('Ymd');
+        $dir = ROOT_PATH . 'upload/forum/' . $dateDir;
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
-        $filename = 'forum_' . date('Ymd') . '_' . substr(md5(uniqid('', true)), 0, 16) . '.' . $ext;
-        $target = $dir . $filename;
-        if (!move_uploaded_file($file['tmp_name'], $target)) $this->fail('保存失败');
 
-        $url = '/data/uploadfile/' . $filename;
+        // 生成文件名
+        $fileName = substr(md5($file['name']), 0, 4) . time();
+
+        // 先保存为临时文件
+        $tempPath = $dir . '/' . $fileName . '.' . $ext;
+        if (!move_uploaded_file($file['tmp_name'], $tempPath)) $this->fail('保存失败');
+
+        // 转换为 WebP
+        $webpPath = $dir . '/' . $fileName . '.webp';
+        if ($this->convertToWebP($tempPath, $webpPath)) {
+            @unlink($tempPath);
+            $url = '/upload/forum/' . $dateDir . '/' . $fileName . '.webp';
+        } else {
+            $url = '/upload/forum/' . $dateDir . '/' . $fileName . '.' . $ext;
+        }
+
         $this->ok(array('url' => $url), '上传成功');
     }
 

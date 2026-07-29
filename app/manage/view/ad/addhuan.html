@@ -1,4 +1,4 @@
-﻿{include file="app/manage/view/index/emlog_nav"}
+{include file="app/manage/view/index/emlog_nav"}
 
 <!-- 页面标题 -->
 <h1 class="page-title">
@@ -73,24 +73,11 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <script src="/public/manage/layer/layer.js"></script>
-<script src="/public/manage/js/ajaxfileupload.js"></script>
-<script src="/public/manage/js/index.js"></script>
 <script>
 ZhiForm("#form","index.php?r=manage/ad/huan","保存中","保存","null");
 
-Uploadthis=function(obj,thisid){
-    layer.load(2);
-    $.ajaxFileUpload({  
-        url:'index.php?r=manage/File/huan',  
-        secureuri:false,  
-        fileElementId:thisid,
-        dataType: 'json',
-        success: function (data, status) {  
-            $("#"+obj).val(data.url);
-            layer.closeAll('loading');
-        }
-    });  	
-}
+// 指定上传类型为 huan
+window.ZhiCmsUploadType = 'huan';
 
 function upthis(){
     document.getElementById("up_tupian").click(); 	
