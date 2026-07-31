@@ -48,7 +48,7 @@ class IndexController extends \app\base\controller\BaseController
             }
         }
 
-        $page = obj('api/ApiData')->page("10", "yun_article", $where, "`featured` DESC, `id` DESC", $baseUrl);
+        $page = obj('api/ApiData')->page("10", "yun_article", $where, "`id` DESC", $baseUrl);
         if ($page && !empty($page['list'])) {
             foreach ($page['list'] as &$item) {
                 $item['cateName'] = \app\base\controller\BaseController::getCategoryName($item['cid'] ?? 0);

@@ -302,8 +302,17 @@ function cdn_url($path) {
     }
     
     $baseUrl = !empty($cdnUrl) ? $cdnUrl : $hostUrl;
+
+    // 如果 CDN 和 hosturl 都未配置，使用当前请求的域名作为兜底
+    if (empty($baseUrl) && isset($_SERVER['HTTP_HOST'])) {
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443)
+            ? 'https' : 'http';
+        $baseUrl = $scheme . '://' . $_SERVER['HTTP_HOST'];
+    }
+
     $path = ltrim($path, '/');
-    
+
     return $baseUrl . '/' . $path;
 }
 

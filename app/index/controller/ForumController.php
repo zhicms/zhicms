@@ -487,6 +487,9 @@ class ForumController extends \app\base\controller\BaseController {
      * 图片转 WebP 格式
      */
     private function convertToWebP($sourcePath, $targetPath) {
+        if (!function_exists('imagewebp')) {
+            return false;
+        }
         $imageInfo = @getimagesize($sourcePath);
         if (!$imageInfo) {
             return false;

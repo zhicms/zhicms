@@ -508,6 +508,9 @@ class ForumController extends ApiBaseController {
      * 图片转 WebP 格式
      */
     private function convertToWebP($sourcePath, $targetPath) {
+        if (!function_exists('imagewebp')) {
+            return false;
+        }
         $imageInfo = @getimagesize($sourcePath);
         if (!$imageInfo) {
             return false;

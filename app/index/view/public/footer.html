@@ -11,8 +11,8 @@
       <ul class="unstyle-li foot-links">
         <!-- 调用后台设置的友情链接 -->
         {if !empty($links)}
-          {foreach from=$links item=link}
-            <li><a href="{$link.link}" target="_blank" rel="nofollow">{$link.name}</a></li>
+          {foreach $links as $link}
+            <li><a href="{$link['link']}" target="_blank" rel="nofollow">{$link['name']}</a></li>
           {/foreach}
         {else}
           <li><a href="{url($route='index/index/index', $params=array())}">网站首页</a></li>

@@ -50,6 +50,9 @@ class FileController extends BaseController
      */
     private function convertToWebP($sourcePath, $targetPath)
     {
+        if (!function_exists('imagewebp')) {
+            return false;
+        }
         $imageInfo = @getimagesize($sourcePath);
         if (!$imageInfo) {
             return false;

@@ -74,6 +74,10 @@ class FileController extends \app\base\controller\BaseController
      */
     private function convertToWebP($sourcePath, $targetPath)
     {
+        if (!function_exists('imagewebp')) {
+            return false;
+        }
+
         $imageInfo = @getimagesize($sourcePath);
         if (!$imageInfo) {
             return false;
@@ -142,6 +146,15 @@ class FileController extends \app\base\controller\BaseController
      * @return array
      */
     private function doUpload($uploadDir, $fieldName = 'file')
+    {
+        try {
+        return $this->_doUploadInner($uploadDir, $fieldName);
+        } catch (\Throwable $e) {
+            return ['error' => 1, 'message' => '上传异常: ' . $e->getMessage(), 'url' => ''];
+        }
+    }
+
+    private function _doUploadInner($uploadDir, $fieldName = 'file')
     {
         $file = isset($_FILES[$fieldName]) ? $_FILES[$fieldName] : null;
         
@@ -301,18 +314,27 @@ class FileController extends \app\base\controller\BaseController
         // 这行必须在最前面，因为 App::init() 可能设置了 display_errors=On
         error_reporting(0);
         ini_set('display_errors', 0);
-        
+
         $this->checkSession();
 
         $type = isset($_GET['type']) ? $_GET['type'] : 'article';
         $fieldName = isset($_GET['field']) ? $_GET['field'] : 'file';
 
-        $result = $this->doUpload($type, $fieldName);
+        try {
+            $result = $this->doUpload($type, $fieldName);
+        } catch (\Throwable $e) {
+            $this->jsonExit([
+                'error'   => 1,
+                'url'     => '',
+                'message' => '上传异常: ' . $e->getMessage(),
+            ]);
+        }
 
         // 返回统一格式
         $this->jsonExit([
-            'error' => $result['error'],
-            'url'   => $result['url'],
+            'error'   => $result['error'],
+            'url'     => $result['url'],
+            'message' => $result['message'] ?? '',
         ]);
     }
 
