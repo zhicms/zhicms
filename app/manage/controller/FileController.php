@@ -196,7 +196,7 @@ class FileController extends \app\base\controller\BaseController
             $webpPath = $targetDir . '/' . $fileName . '.webp';
             if ($this->convertToWebP($tempPath, $webpPath)) {
                 @unlink($tempPath); // 删除临时文件
-                $url = "/upload/{$uploadDir}/{$dateDir}/{$fileName}.webp";
+                $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}.webp");
                 
                 // 获取图片信息
                 $imageInfo = @getimagesize($webpPath);
@@ -205,7 +205,7 @@ class FileController extends \app\base\controller\BaseController
                 $mimeType = 'image/webp';
             } else {
                 // 转换失败，保留原格式
-                $url = "/upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext;
+                $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext);
                 $imageInfo = @getimagesize($tempPath);
                 $width = $imageInfo ? $imageInfo[0] : 0;
                 $height = $imageInfo ? $imageInfo[1] : 0;
@@ -218,7 +218,7 @@ class FileController extends \app\base\controller\BaseController
                 @unlink($file['tmp_name']);
                 return ['error' => 1, 'message' => '保存文件失败', 'url' => ''];
             }
-            $url = "/upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext;
+            $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext);
             $width = 0;
             $height = 0;
             $mimeType = $ext;

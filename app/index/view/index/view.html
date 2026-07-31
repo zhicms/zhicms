@@ -73,6 +73,7 @@ echo json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   {/if}
 
   <!-- 评论 -->
+  {if $view['allow_comment'] == 1}
   <div class="comment-header">评论 <b>{$commentCount}</b></div>
 
   <!-- 评论表单 -->
@@ -99,6 +100,11 @@ echo json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   <!-- 嵌套评论列表 -->
   <ul class="comment-list" id="commentList">{$commentHtml}</ul>
   {if $commentCount == 0}<div class="comment-empty" id="commentEmpty">还没有评论，快来抢沙发~</div>{/if}
+  {else}
+  <div class="comment-closed-tip" style="text-align:center;padding:40px 20px;color:#999;font-size:14px;background:#f9f9f9;border-radius:8px;margin-top:20px;">
+    本文已关闭评论功能
+  </div>
+  {/if}
 </article>
 
 {include file="app/index/view/public/footer"}
@@ -131,9 +137,14 @@ echo json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 <script type="text/javascript">
 $(function(){
   var articleId = "{$view['id']}";
+  var canComment = {if $view['allow_comment'] == 1}true{else}false{/if};
   var interactUrl = "{url($route='index/interact/comSend', $params=array())}";
   var likeArticleUrl = "{url($route='index/interact/likeArticle', $params=array())}";
   var likeCommentUrl = "{url($route='index/interact/likeComment', $params=array())}";
+
+  if (!canComment) {
+    return;
+  }
 
   // 回复评论
   $(document).on('click', '.c-reply', function(){

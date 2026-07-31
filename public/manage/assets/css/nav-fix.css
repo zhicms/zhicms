@@ -1,0 +1,19 @@
+/* 修复侧边栏折叠子菜单白色背景白色字体的问题 */
+.bg-white .collapse-inner .collapse-item,
+.bg-white .collapse-inner .collapse-item:link,
+.bg-white .collapse-inner .collapse-item:visited {
+    color: #333333 !important;
+}
+
+.bg-white .collapse-inner .collapse-item:hover,
+.bg-white .collapse-inner .collapse-item:focus {
+    color: #1677CB !important;
+    background-color: #E8F4FF !important;
+}
+
+.bg-white .collapse-inner .collapse-item:active,
+.bg-white .collapse-inner .collapse-item.active {
+    color: #1677CB !important;
+    background-color: #E8F4FF !important;
+    font-weight: bold !important;
+}

@@ -47,7 +47,7 @@
 													<div class="widget-main">
 												
 											</div>
-                  <form class="form-horizontal"  id="form" action="" method="post">
+                  <form class="form-horizontal"  id="form" action="index.php?r=manage/manage/addmanage" method="post">
                  	<div class="widget-body">
 													<div class="widget-main">
 														<div>
@@ -171,19 +171,59 @@
 		<!-- inline scripts related to this page -->
         <link rel="stylesheet" href="{__PUBLIC__}manage/message/css/jquery.my-message.1.1.css" />
 		<script type="text/javascript" src="{__PUBLIC__}manage/message/js/jquery.my-message.1.1.js"></script>
-        <script src="{__PUBLIC__}manage/layer/layer.js"></script>
         <script src="{__PUBLIC__}manage/js/Validform_v5.3.2_min.js"></script>
         <script src="{__PUBLIC__}manage/js/index.js?v=20260729"></script>
 		<script>
-		ZhiForm("#form","index.php?r=manage/manage/index","保存中","保存","null");
-		
+jQuery(function($){
+    $('#form').on('submit', function(e){
+        e.preventDefault();
+        var btn = $('#save'), text = btn.val();
+        btn.prop('disabled', true).val('保存中...');
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(res){
+                if(res.status == 'y'){
+                    showToast(res.info, 'success');
+                    setTimeout(function(){ window.location.href = 'index.php?r=manage/manage/index'; }, 1500);
+                } else {
+                    showToast(res.info || '保存失败', 'danger');
+                    btn.prop('disabled', false).val(text);
+                }
+            },
+            error: function(){
+                showToast('请求异常', 'danger');
+                btn.prop('disabled', false).val(text);
+            }
+        });
+    });
+});
+
+function showToast(message, type) {
+  type = type || 'success';
+  var toast = document.createElement('div');
+  toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+  toast.setAttribute('role', 'alert');
+  toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+  var icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+  toast.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="fas fa-' + icon + ' mr-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button></div>';
+  document.body.appendChild(toast);
+  setTimeout(function() {
+    toast.style.opacity = '0';
+    setTimeout(function() {
+      if(toast.parentNode) toast.parentNode.removeChild(toast);
+    }, 350);
+  }, 3000);
+}
+
 		// 指定上传类型为 manageuser
 		window.ZhiCmsUploadType = 'manageuser';
 		
 		function upthis(){
-			document.getElementById("up_tupian").click(); 	
+			document.getElementById("up_tupian").click();	
 		}
-
 		</script>
 		
 	</body>

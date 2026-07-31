@@ -4,7 +4,7 @@
     </div>
     <div class="content-box-content">
         <form method="post" action="">
-            <input type="hidden" name="csrf_token" value="<?php echo $csrf_token ?? ''; ?>">
+            <input type="hidden" name="_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
             
             <div class="form-group">
                 <label class="form-label">启用静态化</label>

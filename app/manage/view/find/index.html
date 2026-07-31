@@ -58,6 +58,7 @@
                         <th style="width: 60px;">ID</th>
                         <th>文章标题</th>
                         <th style="width: 120px;">分类</th>
+                        <th style="width: 60px;">推荐</th>
                         <th style="width: 100px;">状态</th>
                         <th style="width: 80px;">浏览量</th>
                         <th style="width: 160px;">发布时间</th>
@@ -87,6 +88,11 @@
                             </span>
                         </td>
                         <td>
+                            <?php if (!empty($row['featured'])): ?>
+                            <span class="badge badge-warning">⭐ 推荐</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
                             <span class="text-muted">
                                 <i class="fas fa-eye mr-1"></i>
                                 <?php echo $row['view']; ?>
@@ -114,7 +120,7 @@
                     <?php endforeach; ?>
                     <?php else: ?>
                     <tr>
-                        <td colspan="8" class="text-center py-5">
+                        <td colspan="9" class="text-center py-5">
                             <div class="empty-state">
                                 <i class="fas fa-file-alt fa-3x text-muted mb-3"></i>
                                 <h5 class="text-muted">暂无文章数据</h5>

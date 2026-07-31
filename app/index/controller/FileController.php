@@ -162,9 +162,9 @@ class FileController extends BaseController
             $webpPath = $targetDir . '/' . $fileName . '.webp';
             if ($this->convertToWebP($tempPath, $webpPath)) {
                 @unlink($tempPath);
-                $url = "/upload/{$uploadDir}/{$dateDir}/{$fileName}.webp";
+                $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}.webp");
             } else {
-                $url = "/upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext;
+                $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext);
             }
         } else {
             $targetPath = $targetDir . '/' . $fileName . '.' . $ext;
@@ -172,7 +172,7 @@ class FileController extends BaseController
                 @unlink($file['tmp_name']);
                 return ['error' => 1, 'message' => '保存文件失败', 'url' => ''];
             }
-            $url = "/upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext;
+            $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext);
         }
 
         return ['error' => 0, 'url' => $url];

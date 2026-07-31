@@ -17,43 +17,6 @@
     </a>
 </div>
 <?php } ?>
-
-<!-- 统计卡片 -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stats-card primary">
-            <div class="stats-icon"><i class="fas fa-plug"></i></div>
-            <div class="stats-title">已安装</div>
-            <div class="stats-value"><?php echo count((array)$list); ?></div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card success">
-            <div class="stats-icon"><i class="fas fa-check-circle"></i></div>
-            <div class="stats-title">已启用</div>
-            <div class="stats-value"><?php
-                $enabled = 0;
-                if (!empty($list)) { foreach ($list as $row) { if (($row['status'] ?? 0) == 1) $enabled++; } }
-                echo $enabled;
-            ?></div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card warning">
-            <div class="stats-icon"><i class="fas fa-pause-circle"></i></div>
-            <div class="stats-title">已停用</div>
-            <div class="stats-value"><?php echo count((array)$list) - $enabled; ?></div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card danger">
-            <div class="stats-icon"><i class="fas fa-box-open"></i></div>
-            <div class="stats-title">待安装</div>
-            <div class="stats-value"><?php echo count((array)$available); ?></div>
-        </div>
-    </div>
-</div>
-
 <!-- 上传插件 -->
 <div class="card shadow mb-4">
     <div class="card-header">

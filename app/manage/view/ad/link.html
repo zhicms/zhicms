@@ -6,46 +6,6 @@
     链接管理
 </h1>
 
-<!-- 统计卡片 -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stats-card primary">
-            <div class="stats-icon">
-                <i class="fas fa-link"></i>
-            </div>
-            <div class="stats-title">总链接数</div>
-            <div class="stats-value"><?php echo isset($total_links) ? number_format($total_links) : count($Page['list']); ?></div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card success">
-            <div class="stats-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stats-title">有效链接</div>
-            <div class="stats-value"><?php echo isset($active_links) ? number_format($active_links) : count($Page['list']); ?></div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card warning">
-            <div class="stats-icon">
-                <i class="fas fa-exclamation-triangle"></i>
-            </div>
-            <div class="stats-title">失效链接</div>
-            <div class="stats-value">0</div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card info">
-            <div class="stats-icon">
-                <i class="fas fa-tags"></i>
-            </div>
-            <div class="stats-title">分类标签</div>
-            <div class="stats-value">0</div>
-        </div>
-    </div>
-</div>
-
 <!-- 操作栏 -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div class="action-buttons">

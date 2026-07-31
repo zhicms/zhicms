@@ -114,6 +114,17 @@ class InteractController extends \app\base\controller\BaseController {
         }
         $id = (int)$id;
 
+        // 4.5 文章级别评论开关检查
+        if ($model === '2') {
+            $articleRow = obj("api/ApiData")->thisQuery(
+                "SELECT `allow_comment` FROM `{pre}article` WHERE `id` = ? LIMIT 1",
+                array($id)
+            );
+            if (!empty($articleRow) && isset($articleRow[0]['allow_comment']) && $articleRow[0]['allow_comment'] == 0) {
+                exit(json_encode(array("info" => "本文已关闭评论功能", "status" => "n")));
+            }
+        }
+
         // 5. pid 回复校验
         $pid = isset($_POST['pid']) ? (int)$_POST['pid'] : 0;
         if ($pid < 0) $pid = 0;

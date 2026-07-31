@@ -48,7 +48,7 @@ class IndexController extends \app\base\controller\BaseController
             }
         }
 
-        $page = obj('api/ApiData')->page("10", "yun_article", $where, "`id` DESC", $baseUrl);
+        $page = obj('api/ApiData')->page("10", "yun_article", $where, "`featured` DESC, `id` DESC", $baseUrl);
         if ($page && !empty($page['list'])) {
             foreach ($page['list'] as &$item) {
                 $item['cateName'] = \app\base\controller\BaseController::getCategoryName($item['cid'] ?? 0);
@@ -60,6 +60,14 @@ class IndexController extends \app\base\controller\BaseController
         // 最大 ID（用于前端轮询检查新文章，缓存 60 秒）
         $maxidResult = obj("api/ApiData")->thisQuery("SELECT MAX(id) as maxid FROM `{pre}article`");
         $this->maxid = isset($maxidResult['0']['maxid']) ? $maxidResult['0']['maxid'] : 0;
+
+        // 幻灯片banner（PC）
+        $pcBanners = obj('api/ApiData')->dataSelect('yun_huan', ['type'=>0], '`id` DESC LIMIT 0,10');
+        $this->banners = $pcBanners ? $pcBanners : [];
+
+        // 友情链接
+        $links = obj('api/ApiData')->dataSelect('yun_link', [], '`id` DESC LIMIT 0,10');
+        $this->links = $links ? $links : [];
 
         // ===== SEO：首页/分类/归档页 =====
         $pageNum = max(1, intval($this->arg('page', 1)));

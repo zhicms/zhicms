@@ -9,6 +9,23 @@
     <link rel="stylesheet" href="/public/manage/emlog/css/sb-admin-2.css">
     <link rel="stylesheet" href="/public/manage/emlog/css/emlog-style.css">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/public/manage/assets/css/nav-fix.css">
+    <style type="text/css">
+        /* 覆盖内联style强制修复子导航白色字体问题 */
+        .collapse-inner .collapse-item[style],
+        .collapse-inner .collapse-item.active[style],
+        .bg-white .collapse-inner .collapse-item[style] {
+            color: #333333 !important;
+            background: #E8F4FF !important;
+            border-left-color: #1677CB !important;
+        }
+        .collapse-inner .collapse-item:hover[style],
+        .collapse-inner .collapse-item:focus[style],
+        .collapse-inner .collapse-item.active:hover[style] {
+            color: #1677CB !important;
+            background: #C7E5FF !important;
+        }
+    </style>
 </head>
 <body id="page-top">
     <div id="wrapper">
@@ -41,31 +58,31 @@
             </div>
 
             <!-- Nav Item - Articles Collapse Menu -->
-            <li class="nav-item {if CONTROLLER_NAME=='find'}active{/if}">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseArticles" aria-expanded="true" aria-controls="collapseArticles">
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseArticles" aria-expanded="false" aria-controls="collapseArticles">
                     <i class="fas fa-fw fa-edit"></i>
                     <span>发现管理</span>
                 </a>
-                <div id="collapseArticles" class="collapse {if CONTROLLER_NAME=='find'}show{/if}" aria-labelledby="headingArticles" data-parent="#accordionSidebar">
+                <div id="collapseArticles" class="collapse" aria-labelledby="headingArticles" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item {if CONTROLLER_NAME=='find' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/find/index">发现列表</a>
-                        <a class="collapse-item {if CONTROLLER_NAME=='find' && ACTION_NAME=='addarticle'}active{/if}" href="index.php?r=manage/find/addarticle">发布线索</a>
+                        <a class="collapse-item" href="index.php?r=manage/find/index">发现列表</a>
+                        <a class="collapse-item" href="index.php?r=manage/find/addarticle">发布线索</a>
                     </div>
                 </div>
             </li>
 
             <!-- Nav Item - Forum Collapse Menu -->
-            <li class="nav-item {if CONTROLLER_NAME=='forum'}active{/if}">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseForum" aria-expanded="true" aria-controls="collapseForum">
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseForum" aria-expanded="false" aria-controls="collapseForum">
                     <i class="fas fa-fw fa-comments"></i>
                     <span>社区管理</span>
                 </a>
-                <div id="collapseForum" class="collapse {if CONTROLLER_NAME=='forum'}show{/if}" aria-labelledby="headingForum" data-parent="#accordionSidebar">
+                <div id="collapseForum" class="collapse" aria-labelledby="headingForum" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/forum/index">帖子列表</a>
-                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='comment'}active{/if}" href="index.php?r=manage/forum/comment">评论管理</a>
-                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='board'}active{/if}" href="index.php?r=manage/forum/board">板块管理</a>
-                        <a class="collapse-item {if CONTROLLER_NAME=='forum' && ACTION_NAME=='group'}active{/if}" href="index.php?r=manage/forum/group">小组管理</a>
+                        <a class="collapse-item" href="index.php?r=manage/forum/index">帖子列表</a>
+                        <a class="collapse-item" href="index.php?r=manage/forum/comment">评论管理</a>
+                        <a class="collapse-item" href="index.php?r=manage/forum/board">板块管理</a>
+                        <a class="collapse-item" href="index.php?r=manage/forum/group">小组管理</a>
                     </div>
                 </div>
             </li>
@@ -111,15 +128,15 @@
             </li>
 
             <!-- Nav Item - Advertising Collapse Menu -->
-            <li class="nav-item {if CONTROLLER_NAME=='ad'}active{/if}">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAd" aria-expanded="true" aria-controls="collapseAd">
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseAd" aria-expanded="false" aria-controls="collapseAd">
                     <i class="fas fa-fw fa-ad"></i>
                     <span>广告管理</span>
                 </a>
-                <div id="collapseAd" class="collapse {if CONTROLLER_NAME=='ad'}show{/if}" aria-labelledby="headingAd" data-parent="#accordionSidebar">
+                <div id="collapseAd" class="collapse" aria-labelledby="headingAd" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item {if CONTROLLER_NAME=='ad' && ACTION_NAME=='huan'}active{/if}" href="index.php?r=manage/ad/huan">幻灯广告</a>
-                        <a class="collapse-item {if CONTROLLER_NAME=='ad' && ACTION_NAME=='link'}active{/if}" href="index.php?r=manage/ad/link">友情链接</a>
+                        <a class="collapse-item" href="index.php?r=manage/ad/huan">幻灯广告</a>
+                        <a class="collapse-item" href="index.php?r=manage/ad/link">友情链接</a>
                     </div>
                 </div>
             </li>
@@ -140,13 +157,7 @@
                 </a>
             </li>
 
-            <!-- Divider -->
-            <hr class="sidebar-divider d-none d-md-block">
-
-            <!-- Sidebar Toggler (Sidebar) -->
-            <div class="text-center d-none d-md-inline">
-                <button class="rounded-circle border-0" id="sidebarToggle"></button>
-            </div>
+            
         </ul>
         <!-- End of Sidebar -->
 

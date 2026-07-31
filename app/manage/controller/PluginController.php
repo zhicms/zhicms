@@ -185,7 +185,7 @@ class PluginController extends \app\base\controller\BaseController
 		$alias = $this->arg('alias');
 		if (empty($alias)) $this->alert('参数错误');
 
-		// 尝试原生格式元信息
+		// 先尝试原生格式元信息（供 Setting 构造器/页面展示使用）
 		$meta = \ZhiCms\base\PluginManager::readMeta($alias);
 
 		// 兼容格式插件：尝试用 Compat 读取
@@ -228,14 +228,130 @@ class PluginController extends \app\base\controller\BaseController
 
 		if ($this->isPost()) {
 			$this->checkCsrfToken();
-			$cfg = $setting->save($_POST);
-			\ZhiCms\base\PluginManager::setConfig($alias, $cfg);
-			$this->alert('保存成功', 'index.php?r=manage/plugin/index');
+			$clearCache = !empty($_POST['clear_cache']);
+			try {
+				$cfg = $setting->save($_POST);
+
+				// 特殊处理：wxapp_packer插件的打包下载
+				if ($alias === 'wxapp_packer' && !empty($_POST['action']) && $_POST['action'] === 'build') {
+					// 如果指定了 return_json，说明前端希望 AJAX 返回 JSON，然后再 window.open 下载
+					if (!empty($_POST['return_json'])) {
+						// 不在此处 exit，继续走后续 JSON 处理逻辑
+					} else {
+						// 直接文件流输出（iframe 表单提交会走这里）
+						if (!empty($cfg['_download_path'])) {
+							$filePath = $cfg['_download_path'];
+							$fileName = $cfg['_download_file'] ?? basename($filePath);
+							
+							if (file_exists($filePath)) {
+								$fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+								$mimeTypes = array('zip' => 'application/zip');
+								$contentType = $mimeTypes[$fileExtension] ?? 'application/octet-stream';
+								
+								if (ob_get_level()) ob_end_clean();
+								header('Content-Description: File Transfer');
+								header('Content-Type: ' . $contentType);
+								header('Content-Disposition: attachment; filename="' . $fileName . '"');
+								header('Expires: 0');
+								header('Cache-Control: must-revalidate');
+								header('Pragma: public');
+								header('Content-Length: ' . filesize($filePath));
+								
+								set_time_limit(0);
+								$handle = fopen($filePath, 'rb');
+								if ($handle === false) {
+									header('HTTP/1.1 500 Internal Server Error');
+									echo '无法读取文件';
+									exit;
+								}
+								while (!feof($handle)) {
+									echo fread($handle, 1024 * 1024);
+									flush();
+									if (connection_status() != 0) {
+										fclose($handle);
+										exit;
+									}
+								}
+								fclose($handle);
+								exit;
+							}
+						}
+
+						header('Content-Type: text/html; charset=utf-8');
+						echo '<!DOCTYPE html><html><head><title>打包失败</title><meta charset="utf-8"></head><body>';
+						echo '<h2>打包失败</h2><p>请重试</p><p><a href="javascript:history.go(-1)">返回</a></p>';
+						echo '</body></html>';
+						exit;
+					}
+				}
+				
+				// 剥离 Setting.save() 附加的「仅用于返回前端的临时字段」，不写入数据库
+				$tempKeys = array();
+				foreach (array('_download_url', '_download_file', '_download_path', '_extra') as $k) {
+					if (array_key_exists($k, $cfg)) {
+						$tempKeys[$k] = $cfg[$k];
+						unset($cfg[$k]);
+					}
+				}
+
+				\ZhiCms\base\PluginManager::setConfig($alias, $cfg);
+				
+				// 返回JSON给前端AJAX
+				$response = array('info' => '保存成功', 'status' => 'y');
+				
+				// 如果是 wxapp_packer 打包操作，返回下载信息供前端触发下载
+				if ($alias === 'wxapp_packer' && !empty($_POST['action']) && $_POST['action'] === 'build') {
+					if (!empty($tempKeys['_download_url'])) {
+						$response['download_url'] = $tempKeys['_download_url'];
+					}
+					if (!empty($tempKeys['_download_file'])) {
+						$response['download_file'] = $tempKeys['_download_file'];
+					}
+				}
+				
+				header('Content-Type: application/json; charset=utf-8');
+				echo json_encode($response, JSON_UNESCAPED_UNICODE);
+				exit;
+			} catch (\Throwable $e) {
+				header('Content-Type: application/json; charset=utf-8');
+				echo json_encode(array('info' => '保存失败：' . $e->getMessage(), 'status' => 'n'), JSON_UNESCAPED_UNICODE);
+				exit;
+			}
 		}
 
 		$this->settingContent = $setting->view();
 		$this->pageText = array("插件管理", ($meta['name'] ?? $alias) . " 设置");
 		$this->display();
+	}
+
+	/**
+	 * 插件文件下载（供 wxapp_packer 等插件输出打包文件）
+	 * 路由：index.php?r=manage/plugin/download&alias=xxx&file=xxx.zip
+	 */
+	public function download(){
+		$this->checkManageSession();
+		$alias = $this->arg('alias');
+		if (empty($alias)) {
+			header('HTTP/1.1 400 Bad Request');
+			echo '缺少 alias 参数';
+			exit;
+		}
+		// 只允许白名单中的插件使用该接口
+		$allowed = array('wxapp_packer');
+		if (!in_array($alias, $allowed, true)) {
+			header('HTTP/1.1 403 Forbidden');
+			echo '该插件不允许下载文件';
+			exit;
+		}
+
+		$plugin = \ZhiCms\base\PluginManager::instance($alias);
+		if (!$plugin || !method_exists($plugin, 'serveDownload')) {
+			header('HTTP/1.1 404 Not Found');
+			echo '插件未安装或不支持下载';
+			exit;
+		}
+		$fileName = $this->arg('file');
+		$plugin->serveDownload($fileName);
 	}
 
 	/**

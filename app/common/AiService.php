@@ -143,7 +143,7 @@ class AiService
         $response = self::sendRequest($messages);
         $result = self::parseResponse($response);
 
-        if ($useHistory && !empty($result) && strpos($result, 'AI 模型未配置') !== 0 && strpos($result, '大模型处理异常') !== 0) {
+        if ($useHistory && !self::isErrorResult($result)) {
             self::saveHistory($prompt, $result);
         }
 
@@ -365,21 +365,38 @@ class AiService
      */
     private static function parseResponse($response)
     {
-        // 特殊错误信息（非 JSON）
+        // 内部错误：AI 模型未配置（sendRequest 返回的）
         if (strpos($response, 'AI 模型未配置') === 0) {
             return $response;
         }
 
         $data = json_decode($response, true);
+
+        // API 返回错误（模型名错误、限流、网络错误等）
         if (isset($data['error'])) {
-            return 'AI 模型未配置';
+            $error = $data['error'];
+            if (is_array($error) && isset($error['message'])) {
+                return '大模型API错误：' . $error['message'];
+            }
+            if (is_string($error)) {
+                return '大模型API错误：' . $error;
+            }
+            return '大模型API错误：未知错误';
         }
+
+        // 正常响应
         if (isset($data['choices'][0]['message']['content'])) {
             return $data['choices'][0]['message']['content'];
         }
+        if (isset($data['choices'][0]['text'])) {
+            return $data['choices'][0]['text'];
+        }
+
+        // 纯文本响应
         if (is_string($data) && !empty($data)) {
             return $data;
         }
+
         return '大模型处理异常，请稍后再试，错误信息：' . $response;
     }
 
@@ -476,5 +493,233 @@ class AiService
     public static function getHistoryPublic()
     {
         return self::getHistory();
+    }
+
+    /**
+     * 检查 AI 对话模型是否可用
+     * @return bool
+     */
+    public static function isChatAvailable()
+    {
+        $info = self::getChatModelInfo();
+        return !empty($info) && !empty($info['api_url']) && !empty($info['api_key']);
+    }
+
+    /**
+     * 检查 AI 返回结果是否为错误
+     * @param string $result
+     * @return bool
+     */
+    private static function isErrorResult($result)
+    {
+        if (empty($result)) return true;
+        if (strpos($result, 'AI 模型未配置') === 0) return true;
+        if (strpos($result, '大模型处理异常') === 0) return true;
+        if (strpos($result, '大模型API错误') === 0) return true;
+        return false;
+    }
+
+    // ==================== AI 辅助写作 ====================
+
+    /**
+     * AI 提取文章关键词
+     * @param string $title 文章标题
+     * @param string $content 文章内容
+     * @return string 逗号分隔的关键词
+     */
+    public static function extractKeywords($title, $content = '')
+    {
+        if (!self::isChatAvailable()) {
+            return self::extractKeywordsFallback($title, $content);
+        }
+
+        $prompt = "请从以下文章标题和内容中提取3-5个最相关的关键词，用英文逗号分隔，只输出关键词，不要其他解释：\n\n标题：{$title}";
+        if (!empty($content)) {
+            $contentText = strip_tags($content);
+            if (mb_strlen($contentText) > 500) {
+                $contentText = mb_substr($contentText, 0, 500);
+            }
+            $prompt .= "\n\n内容摘要：{$contentText}";
+        }
+
+        $systemPrompt = '你是一个SEO专家，擅长提取文章关键词。';
+        $result = self::chat($prompt, $systemPrompt, false);
+
+        if (self::isErrorResult($result)) {
+            return self::extractKeywordsFallback($title, $content);
+        }
+
+        $result = trim($result);
+        $result = preg_replace('/^[^\p{Han}a-zA-Z0-9,，、\s]+|[^\p{Han}a-zA-Z0-9,，、\s]+$/u', '', $result);
+        $result = str_replace(array('，', '、'), ',', $result);
+        $parts = array_filter(array_map('trim', explode(',', $result)));
+        $parts = array_slice(array_unique($parts), 0, 5);
+
+        if (empty($parts)) {
+            return self::extractKeywordsFallback($title, $content);
+        }
+
+        return implode(',', $parts);
+    }
+
+    /**
+     * 本地规则提取关键词（AI 不可用时的降级方案）
+     */
+    private static function extractKeywordsFallback($title, $content = '')
+    {
+        $keywords = array();
+
+        $title = trim($title);
+        if (!empty($title)) {
+            $len = mb_strlen($title, 'UTF-8');
+            if ($len > 15) {
+                $keywords[] = mb_substr($title, 0, 15, 'UTF-8');
+            } else {
+                $keywords[] = $title;
+            }
+        }
+
+        if (!empty($content)) {
+            $text = strip_tags($content);
+            $text = preg_replace('/[\s\p{P}]+/u', ' ', $text);
+            $text = trim($text);
+            if (mb_strlen($text) > 10) {
+                $segments = preg_split('/\s+/u', $text);
+                if (is_array($segments)) {
+                    $keywords = array_merge($keywords, array_slice($segments, 0, 3));
+                }
+            }
+        }
+
+        $keywords = array_slice(array_unique(array_filter($keywords)), 0, 5);
+        return implode(',', $keywords);
+    }
+
+    /**
+     * AI 生成文章描述
+     * @param string $title 文章标题
+     * @param string $content 文章内容
+     * @return string 120字以内的描述
+     */
+    public static function generateDec($title, $content = '')
+    {
+        if (!self::isChatAvailable()) {
+            return self::generateDecFallback($title, $content);
+        }
+
+        $contentText = strip_tags($content);
+        if (mb_strlen($contentText) > 800) {
+            $contentText = mb_substr($contentText, 0, 800);
+        }
+
+        $prompt = "请为以下文章生成一段简短的SEO描述（不超过120字），要求准确概括文章主题，吸引读者点击，只输出描述文本：\n\n标题：{$title}";
+        if (!empty($contentText)) {
+            $prompt .= "\n\n内容：{$contentText}";
+        }
+
+        $systemPrompt = '你是一个SEO专家，擅长撰写吸引人的网页描述。';
+        $result = self::chat($prompt, $systemPrompt, false);
+
+        if (self::isErrorResult($result)) {
+            return self::generateDecFallback($title, $content);
+        }
+
+        $result = trim($result);
+        $result = preg_replace('/^[^\p{Han}a-zA-Z0-9]+|[^\p{Han}a-zA-Z0-9]+$/u', '', $result);
+
+        if (mb_strlen($result) > 120) {
+            $result = rtrim(mb_substr($result, 0, 118, 'UTF-8'), '，,。.!！？?…') . '…';
+        }
+
+        return $result;
+    }
+
+    /**
+     * 本地规则生成描述（AI 不可用时的降级方案）
+     */
+    private static function generateDecFallback($title, $content = '')
+    {
+        $text = strip_tags($content);
+        $text = preg_replace('/\s+/u', ' ', $text);
+        $text = trim($text);
+
+        if (empty($text)) {
+            return $title;
+        }
+
+        if (mb_strlen($text) > 120) {
+            return rtrim(mb_substr($text, 0, 118, 'UTF-8'), '，,。.!！？?…') . '…';
+        }
+
+        return $text;
+    }
+
+    /**
+     * AI 匹配商品
+     * 使用 AI 分析文章内容提取商品关键词，然后通过 TJK 搜索匹配商品
+     * @param string $title 文章标题
+     * @param string $content 文章内容
+     * @param string $platform 平台 taobao|pdd|jd|vip
+     * @return array
+     */
+    public static function matchGoodsByAi($title, $content = '', $platform = 'taobao')
+    {
+        $keyword = '';
+
+        if (self::isChatAvailable()) {
+            $contentText = strip_tags($content);
+            if (mb_strlen($contentText) > 500) {
+                $contentText = mb_substr($contentText, 0, 500);
+            }
+
+            $prompt = "请根据以下文章标题和内容，提取一个最适合搜索商品的关键词（如商品名称、品牌、品类等），只输出关键词，不要其他解释：\n\n标题：{$title}";
+            if (!empty($contentText)) {
+                $prompt .= "\n\n内容：{$contentText}";
+            }
+
+            $systemPrompt = '你是一个电商选品专家，擅长根据文章内容提取精准的商品搜索关键词。';
+            $aiResult = self::chat($prompt, $systemPrompt, false);
+
+            if (!self::isErrorResult($aiResult)) {
+                $keyword = trim($aiResult);
+                $keyword = preg_replace('/^[^\p{Han}a-zA-Z0-9]+|[^\p{Han}a-zA-Z0-9]+$/u', '', $keyword);
+                $keyword = preg_replace('/\s+/u', ' ', $keyword);
+            }
+        }
+
+        if (empty($keyword)) {
+            $keyword = self::extractSearchKeywordFallback($title, $content);
+        }
+
+        if (empty($keyword)) {
+            return array('code' => 0, 'message' => '无法提取有效关键词', 'keyword' => '', 'items' => array());
+        }
+
+        $tjk = new \ZhiCms\ext\Tjk();
+        $result = $tjk->searchGoods($keyword, $platform, 1, 10);
+
+        $result['keyword'] = $keyword;
+        return $result;
+    }
+
+    /**
+     * 本地规则提取搜索关键词
+     */
+    private static function extractSearchKeywordFallback($title, $content = '')
+    {
+        $text = trim($title);
+        if (empty($text) && !empty($content)) {
+            $text = strip_tags($content);
+        }
+
+        $text = preg_replace('/[^\p{Han}a-zA-Z0-9\s]/u', ' ', $text);
+        $text = preg_replace('/\s+/u', ' ', $text);
+        $text = trim($text);
+
+        if (mb_strlen($text) > 20) {
+            $text = mb_substr($text, 0, 20, 'UTF-8');
+        }
+
+        return $text;
     }
 }

@@ -3,7 +3,7 @@
 <!-- 页面标题 -->
 <h1 class="page-title">
     <i class="fas fa-images"></i>
-    {$pagetext['1']}
+    编辑广告
     <a href="index.php?r=manage/ad/huan" class="btn btn-sm btn-outline-secondary float-right">
         <i class="fas fa-arrow-left mr-1"></i>返回列表
     </a>
@@ -13,27 +13,28 @@
     <div class="col-lg-8">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-edit"></i> {$pagetext['1']}</h5>
+                <h5 class="mb-0"><i class="fas fa-edit"></i> 编辑广告</h5>
             </div>
             <div class="card-body">
-                <form class="layui-form" id="form" action="index.php?r=manage/ad/addhuan" method="post">
+                <form class="layui-form" id="form" action="index.php?r=manage/ad/editHuan" method="post">
+                    <input type="hidden" name="id" value="<?php echo $ret['id']; ?>">
                     <div class="form-group">
                         <label class="font-weight-bold">标题 <span class="text-danger">*</span></label>
-                        <input type="text" name="title" class="form-control" placeholder="幻灯广告标题" value="{$ret['title']}">
+                        <input type="text" name="title" class="form-control" placeholder="幻灯广告标题" value="<?php echo $ret['title']; ?>">
                     </div>
 
                     <div class="form-group">
                         <label class="font-weight-bold">显示平台</label>
                         <select name="type" class="form-control" style="max-width:200px;">
-                            <option {if $ret['type']=='0'} selected{/if} value="0">PC网站</option>
-                            <option {if $ret['type']=='1'} selected{/if} value="1">移动端</option>
+                            <option value="0" <?php echo $ret['type']=='0' ? 'selected' : ''; ?>>PC网站</option>
+                            <option value="1" <?php echo $ret['type']=='1' ? 'selected' : ''; ?>>移动端</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label class="font-weight-bold">封面图片</label>
                         <div class="input-group">
-                            <input type="text" name="pic" id="tupian" class="form-control" placeholder="封面图片地址" value="{$ret['pic']}">
+                            <input type="text" name="pic" id="tupian" class="form-control" placeholder="封面图片地址" value="<?php echo $ret['pic']; ?>">
                             <div class="input-group-append">
                                 <button type="button" class="btn btn-outline-secondary" onclick="upthis()">
                                     <i class="fas fa-upload"></i> 上传
@@ -42,19 +43,17 @@
                         </div>
                         <input type="hidden" name="file" value="0">
                         <small class="form-text text-muted">建议尺寸：1900×449</small>
-                        {if $ret['pic']}
+                        <?php if($ret['pic']): ?>
                         <div class="mt-2">
-                            <img src="{$ret['pic']}" class="img-thumbnail" style="max-width:300px;max-height:80px;">
+                            <img src="<?php echo $ret['pic']; ?>" class="img-thumbnail" style="max-width:300px;max-height:80px;">
                         </div>
-                        {/if}
+                        <?php endif; ?>
                     </div>
 
                     <div class="form-group">
                         <label class="font-weight-bold">超级链接</label>
-                        <input type="text" name="link" class="form-control" placeholder="https:// 或 http:// 开头" value="{$ret['link']}">
+                        <input type="text" name="link" class="form-control" placeholder="https:// 或 http:// 开头" value="<?php echo $ret['link']; ?>">
                     </div>
-
-                    {$html}
 
                     <div class="form-group border-top pt-3 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg px-5" id="save">
@@ -121,6 +120,6 @@ function showToast(message, type) {
 window.ZhiCmsUploadType = 'huan';
 
 function upthis(){
-    document.getElementById("up_tupian").click();	
+    document.getElementById("up_tupian").click();
 }
 </script>

@@ -17,7 +17,14 @@
             <div class="card-body">
                     <div class="form-group">
                         <label for="title">文章标题</label>
-                        <input type="text" class="form-control" name="title" id="title" placeholder="请输入文章标题" value="{$ret['title']}">
+                        <div class="input-group">
+                            <input type="text" class="form-control" name="title" id="title" placeholder="请输入文章标题" value="{$ret['title']}">
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-info" id="ai-generate-btn" title="AI 一键生成关键词和描述">
+                                    <i class="fas fa-magic"></i> AI 生成
+                                </button>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -85,10 +92,24 @@
                         <label>SEO设置</label>
                         <div class="form-row">
                             <div class="col-md-6">
-                                <input type="text" class="form-control" name="keywords" placeholder="关键词" value="{if $ret['keywords']!=""}{$ret['keywords']} {else}{$ret['dtitle']}{/if}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="keywords" id="keywords-input" placeholder="关键词" value="{$ret['keywords']}">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-info btn-sm ai-single-btn" data-target="keywords" title="AI 生成关键词">
+                                            <i class="fas fa-sparkles"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-6">
-                                <input type="text" class="form-control" name="dec" placeholder="描述信息" value="{if $ret['dec']!=""}{$ret['dec']} {else}{$ret['desc']}{/if}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="dec" id="dec-input" placeholder="描述信息" value="{$ret['dec']}">
+                                    <div class="input-group-append">
+                                        <button type="button" class="btn btn-outline-info btn-sm ai-single-btn" data-target="dec" title="AI 生成描述">
+                                            <i class="fas fa-sparkles"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <small class="form-text text-muted mt-1">用于搜索引擎优化，提高文章曝光度</small>
@@ -110,6 +131,24 @@
     
     <!-- 侧边栏 -->
     <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <i class="fas fa-robot"></i> AI 发布助手
+            </div>
+            <div class="card-body">
+                <button type="button" class="btn btn-info btn-block mb-2" id="ai-publish-btn">
+                    <i class="fas fa-wand-magic-sparkles"></i> 一键 AI 发布
+                </button>
+                <button type="button" class="btn btn-outline-info btn-block mb-2" id="ai-match-goods-btn">
+                    <i class="fas fa-search-dollar"></i> AI 匹配商品
+                </button>
+                <small class="form-text text-muted">
+                    自动提取关键词、生成描述、匹配商品，无需手动填写
+                </small>
+                <div id="ai-match-result" class="mt-3" style="display: none;"></div>
+            </div>
+        </div>
+        
         <div class="card">
             <div class="card-header">
                 <i class="fas fa-image"></i> 图片设置
@@ -152,13 +191,13 @@
                     </label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="allow_comment">
+                    <input class="form-check-input" type="checkbox" name="allow_comment" id="allow_comment" value="1" {if !isset($ret['allow_comment']) || $ret['allow_comment'] == 1}checked{/if}>
                     <label class="form-check-label" for="allow_comment">
                         允许评论
                     </label>
                 </div>
                 <div class="form-check">
-                    <input class="form-check-input" type="checkbox" id="featured_post">
+                    <input class="form-check-input" type="checkbox" name="featured" id="featured_post" value="1" {if isset($ret['featured']) && $ret['featured'] == 1}checked{/if}>
                     <label class="form-check-label" for="featured_post">
                         推荐文章
                     </label>
@@ -185,6 +224,9 @@ $(function() {
         });
     }
 
+    // AI 状态检查
+    checkAiStatus();
+
     // 表单提交前处理
     $('#form').on('submit', function() {
         if (typeof tinymce !== 'undefined') {
@@ -199,7 +241,223 @@ $(function() {
             }
         }
     });
+
+    // AI 一键生成按钮
+    $('#ai-generate-btn').on('click', function() {
+        var title = $('#title').val().trim();
+        if (!title) {
+            alert('请先填写文章标题');
+            return;
+        }
+        aiGenerate(title, 'all');
+    });
+
+    // AI 单独生成按钮（关键词/描述）
+    $('.ai-single-btn').on('click', function() {
+        var target = $(this).data('target');
+        var title = $('#title').val().trim();
+        if (!title) {
+            alert('请先填写文章标题');
+            return;
+        }
+        aiGenerate(title, target);
+    });
+
+    // AI 一键发布（完整流程）
+    $('#ai-publish-btn').on('click', function() {
+        var title = $('#title').val().trim();
+        if (!title) {
+            alert('请先填写文章标题');
+            return;
+        }
+        aiPublishAssistant(title);
+    });
+
+    // AI 匹配商品
+    $('#ai-match-goods-btn').on('click', function() {
+        var title = $('#title').val().trim();
+        if (!title) {
+            alert('请先填写文章标题');
+            return;
+        }
+        aiMatchGoods(title);
+    });
 });
+
+// 获取编辑器内容
+function getEditorContent() {
+    if (typeof tinymce !== 'undefined') {
+        var editor = tinymce.get('article-editor');
+        if (editor) {
+            return editor.getContent();
+        }
+    }
+    return $('#article-editor').val();
+}
+
+// 设置编辑器内容（追加商品卡片）
+function appendEditorContent(content) {
+    if (typeof tinymce !== 'undefined') {
+        var editor = tinymce.get('article-editor');
+        if (editor) {
+            editor.setContent(editor.getContent() + content);
+            return;
+        }
+    }
+    var current = $('#article-editor').val();
+    $('#article-editor').val(current + content);
+}
+
+// AI 状态检查
+function checkAiStatus() {
+    $.get('index.php?r=manage/ai/status', function(res) {
+        if (res.code === 0 && res.data.chat) {
+            $('#ai-publish-btn').prop('disabled', false);
+            $('#ai-generate-btn').prop('disabled', false);
+            $('#ai-match-goods-btn').prop('disabled', false);
+        }
+    });
+}
+
+// AI 生成（关键词/描述）
+function aiGenerate(title, target) {
+    var $btn = (target === 'all') ? $('#ai-generate-btn') : $('.ai-single-btn').filter('[data-target="' + target + '"]');
+    var originalHtml = $btn.html();
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 生成中...');
+
+    $.post('index.php?r=manage/ai/autoGenerate', {
+        title: title,
+        content: getEditorContent()
+    }, function(res) {
+        if (res.code === 0) {
+            if (target === 'all' || target === 'keywords') {
+                $('#keywords-input').val(res.data.keywords);
+            }
+            if (target === 'all' || target === 'dec') {
+                $('#dec-input').val(res.data.dec);
+            }
+            var msg = res.isFallback ? 'AI未配置，已使用本地规则生成' : '生成成功';
+            showToast(msg, 'success');
+        } else {
+            showToast(res.msg || '生成失败', 'error');
+        }
+        $btn.prop('disabled', false).html(originalHtml);
+    }).fail(function() {
+        showToast('请求失败，请重试', 'error');
+        $btn.prop('disabled', false).html(originalHtml);
+    });
+}
+
+// AI 发布助手
+function aiPublishAssistant(title) {
+    var $btn = $('#ai-publish-btn');
+    var originalHtml = $btn.html();
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> AI 处理中...');
+
+    $.post('index.php?r=manage/ai/publishAssistant', {
+        title: title,
+        content: getEditorContent(),
+        needGoods: 1
+    }, function(res) {
+        if (res.code === 0) {
+            $('#keywords-input').val(res.data.keywords);
+            $('#dec-input').val(res.data.dec);
+
+            // 如果匹配到商品
+            if (res.data.goods && res.data.goods.items && res.data.goods.items.length > 0) {
+                var item = res.data.goods.items[0];
+                var itemUrl = item.itemUrl || item.itemurl || '';
+                if (itemUrl) {
+                    var marker = '\n[ZhiCmsUrl]' + itemUrl + '[/ZhiCmsUrl]\n';
+                    appendEditorContent(marker);
+                }
+                $('#picbox').val(item.pic || item.itemPic || '');
+                if (item.pic || item.itemPic) {
+                    $('#showimg').attr('src', item.pic || item.itemPic).show();
+                }
+                showToast('AI 已生成关键词、描述，并匹配到商品！', 'success');
+            } else {
+                showToast('AI 已生成关键词和描述（未匹配到商品）', 'success');
+            }
+        } else {
+            showToast(res.msg || '生成失败', 'error');
+        }
+        $btn.prop('disabled', false).html(originalHtml);
+    }).fail(function() {
+        showToast('请求失败，请重试', 'error');
+        $btn.prop('disabled', false).html(originalHtml);
+    });
+}
+
+// AI 匹配商品
+function aiMatchGoods(title) {
+    var $btn = $('#ai-match-goods-btn');
+    var originalHtml = $btn.html();
+    $btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 匹配中...');
+
+    $.post('index.php?r=manage/ai/matchGoods', {
+        title: title,
+        content: getEditorContent(),
+        platform: 'taobao'
+    }, function(res) {
+        var $result = $('#ai-match-result');
+        $result.show();
+
+        if (res.code === 0 && res.items && res.items.length > 0) {
+            var html = '<div class="alert alert-success"><strong>找到 ' + res.items.length + ' 个商品：</strong></div>';
+            html += '<div class="list-group">';
+            $.each(res.items.slice(0, 5), function(i, item) {
+                var itemTitle = item.itemTitle || item.title || '未知商品';
+                var itemPrice = item.actualPrice || item.price || '';
+                var itemUrl = item.itemUrl || item.itemurl || '';
+                var itemPic = item.pic || item.itemPic || '';
+                html += '<div class="list-group-item d-flex align-items-center">';
+                if (itemPic) {
+                    html += '<img src="' + itemPic + '" class="mr-3" style="width:50px;height:50px;object-fit:cover;">';
+                }
+                html += '<div class="flex-grow-1">';
+                html += '<small>' + itemTitle + '</small>';
+                if (itemPrice) {
+                    html += '<div class="text-danger">¥' + itemPrice + '</div>';
+                }
+                html += '</div>';
+                html += '<button type="button" class="btn btn-sm btn-primary ml-2 use-goods-btn" data-url="' + itemUrl + '">使用</button>';
+                html += '</div>';
+            });
+            html += '</div>';
+            $result.html(html);
+
+            // 绑定使用按钮
+            $('.use-goods-btn').on('click', function() {
+                var url = $(this).data('url');
+                if (url) {
+                    appendEditorContent('\n[ZhiCmsUrl]' + url + '[/ZhiCmsUrl]\n');
+                    showToast('已添加商品到文章', 'success');
+                }
+            });
+        } else {
+            $result.html('<div class="alert alert-warning">未找到匹配商品，保存时会自动尝试匹配</div>');
+        }
+        $btn.prop('disabled', false).html(originalHtml);
+    }).fail(function() {
+        showToast('请求失败，请重试', 'error');
+        $btn.prop('disabled', false).html(originalHtml);
+    });
+}
+
+// Toast 提示
+function showToast(msg, type) {
+    type = type || 'info';
+    var colorMap = { success: '#28a745', error: '#dc3545', info: '#17a2b8', warning: '#ffc107' };
+    var color = colorMap[type] || '#17a2b8';
+
+    var $toast = $('<div style="position:fixed;top:20px;right:20px;padding:12px 24px;background:' + color + ';color:#fff;border-radius:6px;z-index:9999;box-shadow:0 4px 12px rgba(0,0,0,0.15);transition:opacity 0.3s;">' + msg + '</div>');
+    $('body').append($toast);
+    setTimeout(function() {
+        $toast.css('opacity', '0');
+        setTimeout(function() { $toast.remove(); }, 300);
+    }, 3000);
+}
 
 function upthis(){
     document.getElementById("up_file").click(); 	

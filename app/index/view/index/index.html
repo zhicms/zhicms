@@ -1,5 +1,141 @@
-﻿{include file="app/index/view/public/header"}
+{include file="app/index/view/public/header"}
 
+<!-- PC幻灯banner：值得买精选上方 -->
+{if !empty($banners)}
+<div class="pc_slider" style="width:100%;margin-bottom:20px;overflow:hidden;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.08);position:relative;">
+  <input type="radio" name="pc-slider" id="pc-slide-0" checked style="display:none;">
+  {foreach $banners as $k=>$banner}
+    <input type="radio" name="pc-slider" id="pc-slide-{$k+1}" style="display:none;">
+  {/foreach}
+  <div class="slides" style="width:100%;height:0;padding-bottom:33.33%;position:relative;overflow:hidden;">
+    <div class="slide-track" style="width:100%;height:100%;position:absolute;top:0;left:0;display:flex;align-items:center;transition:transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);transform:translateX(0);">
+      {foreach $banners as $k=>$banner}
+        <div class="slide" style="width:100%;height:100%;flex-shrink:0;position:relative;overflow:hidden;">
+          <a href="{$banner['link']}" target="_blank" rel="noopener" style="display:block;width:100%;height:100%;position:relative;">
+            <img src="{$banner['pic']}" alt="{$banner['title']}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;transition:filter 0.3s ease;">
+          </a>
+        </div>
+      {/foreach}
+    </div>
+  </div>
+  <div class="controls" style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;z-index:10;">
+    {foreach $banners as $k=>$banner}
+        <label for="pc-slide-{if $k==0}{count($banners)}{else}{$k-1}{/if}" class="prev"
+      <label for="pc-slide-{$k+1}" class="next" style="cursor:pointer;pointer-events:auto;width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2);color:#fff;border-radius:50%;margin-right:20px;transition:all 0.3s ease;opacity:0.7;">›</label>
+    {/foreach}
+  </div>
+  <div class="dots" style="position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:10px;pointer-events:none;z-index:10;">
+    {foreach $banners as $k=>$banner}
+      <label for="pc-slide-{$k+1}" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.6);cursor:pointer;pointer-events:auto;transition:all 0.3s ease;border:2px solid transparent;display:block;"></label>
+    {/foreach}
+  </div>
+  <style>
+    .pc_slider input:nth-of-type(1):checked ~ .slide-track { transform: translateX(0%); }
+    .pc_slider input:nth-of-type(2):checked ~ .slide-track { transform: translateX(-100%); }
+    .pc_slider input:nth-of-type(3):checked ~ .slide-track { transform: translateX(-200%); }
+    .pc_slider input:nth-of-type(4):checked ~ .slide-track { transform: translateX(-300%); }
+    .pc_slider input:nth-of-type(5):checked ~ .slide-track { transform: translateX(-400%); }
+    .pc_slider input:nth-of-type(6):checked ~ .slide-track { transform: translateX(-500%); }
+    .pc_slider input:nth-of-type(7):checked ~ .slide-track { transform: translateX(-600%); }
+    .pc_slider input:nth-of-type(8):checked ~ .slide-track { transform: translateX(-700%); }
+    .pc_slider input:nth-of-type(9):checked ~ .slide-track { transform: translateX(-800%); }
+    .pc_slider input:nth-of-type(10):checked ~ .slide-track { transform: translateX(-900%); }
+    .pc_slider input:nth-of-type(1):checked ~ .dots label:nth-child(1),
+    .pc_slider input:nth-of-type(2):checked ~ .dots label:nth-child(2),
+    .pc_slider input:nth-of-type(3):checked ~ .dots label:nth-child(3),
+    .pc_slider input:nth-of-type(4):checked ~ .dots label:nth-child(4),
+    .pc_slider input:nth-of-type(5):checked ~ .dots label:nth-child(5),
+    .pc_slider input:nth-of-type(6):checked ~ .dots label:nth-child(6),
+    .pc_slider input:nth-of-type(7):checked ~ .dots label:nth-child(7),
+    .pc_slider input:nth-of-type(8):checked ~ .dots label:nth-child(8),
+    .pc_slider input:nth-of-type(9):checked ~ .dots label:nth-child(9),
+    .pc_slider input:nth-of-type(10):checked ~ .dots label:nth-child(10) {
+      background: #fff;
+      border: 2px solid #1677CB;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+    .pc_slider input:nth-of-type(1):checked ~ .controls label:nth-child(1),
+    .pc_slider input:nth-of-type(2):checked ~ .controls label:nth-child(2),
+    .pc_slider input:nth-of-type(3):checked ~ .controls label:nth-child(3),
+    .pc_slider input:nth-of-type(4):checked ~ .controls label:nth-child(4),
+    .pc_slider input:nth-of-type(5):checked ~ .controls label:nth-child(5),
+    .pc_slider input:nth-of-type(6):checked ~ .controls label:nth-child(6),
+    .pc_slider input:nth-of-type(7):checked ~ .controls label:nth-child(7),
+    .pc_slider input:nth-of-type(8):checked ~ .controls label:nth-child(8),
+    .pc_slider input:nth-of-type(9):checked ~ .controls label:nth-child(9),
+    .pc_slider input:nth-of-type(10):checked ~ .controls label:nth-child(10) {
+      opacity: 1;
+      background: rgba(22,119,203,0.4);
+    }
+    .slide-track:hover img {
+      filter: brightness(0.95);
+    }
+    @media (max-width: 768px) {
+      .pc_slider {
+        border-radius: 10px;
+        margin-bottom: 15px;
+      }
+      .slide-track {
+        padding-bottom: 45%;
+      }
+      .controls {
+        gap: 10px;
+      }
+      .controls label {
+        width: 40px;
+        height: 40px;
+        margin: 0 10px;
+        font-size: 20px;
+      }
+      .dots {
+        bottom: 12px;
+        gap: 8px;
+      }
+      .dots label {
+        width: 10px;
+        height: 10px;
+      }
+    }
+    @media (max-width: 480px) {
+      .slide-track {
+        padding-bottom: 50%;
+      }
+      .controls label {
+        width: 36px;
+        height: 36px;
+        margin: 0 8px;
+        font-size: 18px;
+      }
+    }
+    label.prev, label.next {
+      font-size: 28px;
+      font-weight: 600;
+      backdrop-filter: blur(4px);
+      border: 2px solid rgba(255,255,255,0.2);
+      -webkit-backdrop-filter: blur(4px);
+    }
+  </style>
+  <script>
+    // 自动播放逻辑（纯JS，无依赖）
+    (function() {
+      var radios = document.querySelectorAll('input[name="pc-slider"]');
+      var current = 0;
+      var interval = setInterval(nextSlide, 5000);
+      function nextSlide() {
+        current = (current + 1) % radios.length;
+        radios[current].checked = true;
+      }
+      // 鼠标悬停暂停
+      document.querySelector('.pc_slider').addEventListener('mouseenter', function() {
+        clearInterval(interval);
+      });
+      document.querySelector('.pc_slider').addEventListener('mouseleave', function() {
+        interval = setInterval(nextSlide, 5000);
+      });
+    })();
+  </script>
+</div>
+{/if}
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">值得买精选</span>
   <div class="blog-hotbar-list">
@@ -36,6 +172,11 @@
       {/if}
       <div class="card-padding" style="padding:20px;">
         <div class="card-tags" style="margin-bottom:12px;">
+          {if $vo['featured']}
+          <span class="card-tag" style="background:linear-gradient(135deg,#ff9a00,#ff6a00);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-right:6px;">
+            ⭐ 推荐
+          </span>
+          {/if}
           {if $vo['cid']}
           <span class="card-tag" style="background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">
             <a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$vo['cid']))}" style="color:inherit;text-decoration:none;">{$vo['cateName']}</a>

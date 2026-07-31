@@ -94,6 +94,16 @@ class Route {
 		$action_name = empty($routeArr[2]) ? Config::get('DEFAULT_ACTION') : $routeArr[2];
 		$_REQUEST['r'] = $app_name .'/'. $controller_name .'/'. $action_name;
 		
+		// 将 action 名称转为驼峰命名
+		$action_name = strtolower($action_name);
+		if (strpos($action_name, '_') !== false) {
+			// 有下划线：add_link -> addLink
+			$action_name = preg_replace_callback('/_([a-z])/', function($m) {
+				return strtoupper($m[1]);
+			}, $action_name);
+		}
+		// 无下划线：addlink -> Addlink (首字母大写)
+		$action_name = ucfirst($action_name);
 		if( !defined('APP_NAME') ) define('APP_NAME', strtolower($app_name));
 		if( !defined('CONTROLLER_NAME') ) define('CONTROLLER_NAME', ucfirst($controller_name));
 		if( !defined('ACTION_NAME') ) define('ACTION_NAME', $action_name);

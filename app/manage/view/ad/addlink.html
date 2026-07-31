@@ -1,4 +1,4 @@
-﻿{include file="app/manage/view/index/emlog_nav"}
+﻿﻿{include file="app/manage/view/index/emlog_nav"}
 
 <!-- 页面标题 -->
 <h1 class="page-title">
@@ -16,7 +16,7 @@
                 <h5 class="mb-0"><i class="fas fa-edit"></i> {$pagetext['1']}</h5>
             </div>
             <div class="card-body">
-                <form id="form" action="" method="post">
+                <form id="form" action="index.php?r=manage/ad/addlink" method="post">
                     <div class="form-group">
                         <label class="font-weight-bold">标题 <span class="text-danger">*</span></label>
                         <input type="text" name="title" class="form-control" value="{$ret['title']}" placeholder="链接标题">
@@ -51,5 +51,47 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <script>
-ZhiForm("#form","index.php?r=manage/ad/link","保存中","保存","null");
+        jQuery(function($){
+            $('#form').on('submit', function(e){
+                e.preventDefault();
+                var btn = $('#save'), text = btn.html();
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中...');
+                $.ajax({
+                    url: $(this).attr('action'),
+                    type: 'POST',
+                    data: $(this).serialize(),
+                    dataType: 'json',
+                    success: function(res){
+                        if(res.status == 'y'){
+                            showToast(res.info, 'success');
+                            setTimeout(function(){ window.location.href = 'index.php?r=manage/ad/link'; }, 1500);
+                        } else {
+                            showToast(res.info || '保存失败', 'danger');
+                            btn.prop('disabled', false).html(text);
+                        }
+                    },
+                    error: function(){
+                        showToast('请求异常', 'danger');
+                        btn.prop('disabled', false).html(text);
+                    }
+                });
+            });
+        });
+
+        function showToast(message, type) {
+          type = type || 'success';
+          var toast = document.createElement('div');
+          toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+          toast.setAttribute('role', 'alert');
+          toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+          var icon = type === 'success' ? 'check-circle' : 'exclamation-circle';
+          toast.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="fas fa-' + icon + ' mr-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button></div>';
+          document.body.appendChild(toast);
+          setTimeout(function() {
+            toast.style.opacity = '0';
+            setTimeout(function() {
+              if(toast.parentNode) toast.parentNode.removeChild(toast);
+            }, 350);
+          }, 3000);
+        }
 </script>

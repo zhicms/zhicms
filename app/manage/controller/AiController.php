@@ -342,6 +342,132 @@ class AiController extends \app\base\controller\BaseController
         ), JSON_UNESCAPED_UNICODE);
     }
 
+    // ==================== AI 辅助写作 API ====================
+
+    /**
+     * AI 一键生成（关键词 + 描述）
+     * POST: index.php?r=manage/ai/autoGenerate
+     */
+    public function autoGenerate()
+    {
+        $this->checkManageSession();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $title   = isset($_POST['title']) ? trim($_POST['title']) : '';
+        $content = isset($_POST['content']) ? $_POST['content'] : '';
+
+        if (empty($title)) {
+            echo json_encode(array('code' => -1, 'msg' => '标题不能为空'));
+            return;
+        }
+
+        set_time_limit(120);
+
+        $keywords = AiService::extractKeywords($title, $content);
+        $dec      = AiService::generateDec($title, $content);
+
+        $isFallback = !AiService::isChatAvailable();
+
+        echo json_encode(array(
+            'code'       => 0,
+            'data'       => array(
+                'keywords' => $keywords,
+                'dec'      => $dec,
+            ),
+            'isFallback' => $isFallback,
+            'msg'        => $isFallback ? 'AI未配置，使用本地规则生成' : '生成成功',
+        ), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * AI 匹配商品
+     * POST: index.php?r=manage/ai/matchGoods
+     */
+    public function matchGoods()
+    {
+        $this->checkManageSession();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $title    = isset($_POST['title']) ? trim($_POST['title']) : '';
+        $content  = isset($_POST['content']) ? $_POST['content'] : '';
+        $platform = isset($_POST['platform']) ? trim($_POST['platform']) : 'taobao';
+
+        if (empty($title)) {
+            echo json_encode(array('code' => -1, 'msg' => '标题不能为空'));
+            return;
+        }
+
+        set_time_limit(120);
+
+        $result = AiService::matchGoodsByAi($title, $content, $platform);
+
+        echo json_encode($result, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * AI 发布文章助手 - 完整流程
+     * 自动提取关键词、生成描述、匹配商品
+     * POST: index.php?r=manage/ai/publishAssistant
+     */
+    public function publishAssistant()
+    {
+        $this->checkManageSession();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $title    = isset($_POST['title']) ? trim($_POST['title']) : '';
+        $content  = isset($_POST['content']) ? $_POST['content'] : '';
+        $platform = isset($_POST['platform']) ? trim($_POST['platform']) : 'taobao';
+        $needGoods = isset($_POST['needGoods']) ? intval($_POST['needGoods']) : 1;
+
+        if (empty($title)) {
+            echo json_encode(array('code' => -1, 'msg' => '标题不能为空'));
+            return;
+        }
+
+        set_time_limit(180);
+
+        $keywords = AiService::extractKeywords($title, $content);
+        $dec      = AiService::generateDec($title, $content);
+        $isFallback = !AiService::isChatAvailable();
+
+        $goodsResult = array('code' => 0, 'items' => array(), 'keyword' => '');
+        if ($needGoods) {
+            $goodsResult = AiService::matchGoodsByAi($title, $content, $platform);
+        }
+
+        echo json_encode(array(
+            'code'       => 0,
+            'data'       => array(
+                'keywords' => $keywords,
+                'dec'      => $dec,
+                'goods'    => $goodsResult,
+            ),
+            'isFallback' => $isFallback,
+            'msg'        => $isFallback ? 'AI未配置，使用本地规则生成' : '生成成功',
+        ), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * 检查 AI 状态
+     * GET: index.php?r=manage/ai/status
+     */
+    public function status()
+    {
+        $this->checkManageSession();
+        header('Content-Type: application/json; charset=utf-8');
+
+        $chatAvailable = AiService::isChatAvailable();
+        $imageAvailable = (bool)AiService::getImageModelInfo();
+
+        echo json_encode(array(
+            'code' => 0,
+            'data' => array(
+                'chat'  => $chatAvailable,
+                'image' => $imageAvailable,
+            ),
+        ), JSON_UNESCAPED_UNICODE);
+    }
+
     // ==================== 私有辅助方法 ====================
 
     /**

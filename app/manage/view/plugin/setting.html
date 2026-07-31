@@ -21,4 +21,134 @@
     </div>
 </div>
 
+<script>
+/**
+ * 插件设置页 - 统一 AJAX 表单提交 + MyMessage 提示
+ * 拦截 <form method="post"> 的提交动作，以 FormData 方式异步提交，
+ * 返回 JSON {info, status}，成功/失败均用全局 success()/error() 显示小 tips。
+ */
+(function() {
+    'use strict';
+
+    function bindForms() {
+        var $ = window.jQuery;
+        var forms = document.querySelectorAll('div.card form[method="post"]');
+        for (var i = 0; i < forms.length; i++) {
+            var form = forms[i];
+            // 避免重复绑定或特殊插件（如wxapp_packer直接文件下载）
+            if (form.getAttribute('data-ajax-bound') === '1') continue;
+            if (form.getAttribute('data-no-ajax') === '1') continue;
+            form.setAttribute('data-ajax-bound', '1');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                var f = e.currentTarget;
+                var submitBtns = f.querySelectorAll('button[type="submit"], input[type="submit"]');
+                // 找出触发按钮（用于判断是"保存配置"还是"清空缓存"）
+                var triggerName = null;
+                var triggerVal = null;
+                if (e.submitter && (e.submitter.tagName === 'BUTTON' || e.submitter.tagName === 'INPUT')) {
+                    triggerName = e.submitter.getAttribute('name');
+                    triggerVal = e.submitter.getAttribute('value');
+                }
+
+                // 禁用按钮防重复提交
+                for (var k = 0; k < submitBtns.length; k++) {
+                    submitBtns[k].disabled = true;
+                    submitBtns[k].setAttribute('data-ori-text', submitBtns[k].innerHTML || submitBtns[k].value || '');
+                    var isBtn = submitBtns[k].tagName === 'BUTTON';
+                    var origText = submitBtns[k].getAttribute('data-ori-text');
+                    if (isBtn) {
+                        submitBtns[k].innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中...';
+                    } else {
+                        submitBtns[k].value = '保存中...';
+                    }
+                }
+
+                var formData = new FormData(f);
+                if (triggerName && triggerVal !== null) {
+                    formData.append(triggerName, triggerVal);
+                }
+
+                var actionUrl = f.getAttribute('action') || '';
+                if (!actionUrl) actionUrl = window.location.href;
+
+                var onDone = function() {
+                    for (var j = 0; j < submitBtns.length; j++) {
+                        submitBtns[j].disabled = false;
+                        var isBtn2 = submitBtns[j].tagName === 'BUTTON';
+                        var origText2 = submitBtns[j].getAttribute('data-ori-text');
+                        if (isBtn2 && origText2) {
+                            submitBtns[j].innerHTML = origText2;
+                        } else if (origText2) {
+                            submitBtns[j].value = origText2;
+                        }
+                    }
+                };
+
+                if ($) {
+                    $.ajax({
+                        url: actionUrl,
+                        type: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        dataType: 'json'
+                    }).done(function(data) {
+                        onDone();
+                        if (data && data.status === 'y') {
+                            if (typeof window.success === 'function') {
+                                window.success(data.info || '操作成功');
+                            } else {
+                                alert(data.info || '操作成功');
+                            }
+                            // 清空缓存后刷新页面更新缓存统计
+                            if (triggerName === 'clear_cache') {
+                                setTimeout(function() { window.location.reload(); }, 1500);
+                            }
+                            // 如果有下载链接，触发浏览器下载
+                            if (data.download_url) {
+                                setTimeout(function() {
+                                    window.open(data.download_url, '_blank');
+                                }, 500);
+                            }
+                        } else {
+                            if (typeof window.error === 'function') {
+                                window.error(data && data.info ? data.info : '操作失败');
+                            } else {
+                                alert(data && data.info ? data.info : '操作失败');
+                            }
+                        }
+                    }).fail(function(xhr) {
+                        onDone();
+                        var msg = '操作失败（网络错误）';
+                        if (xhr && xhr.responseText) {
+                            try {
+                                var d = JSON.parse(xhr.responseText);
+                                if (d && d.info) msg = d.info;
+                            } catch(_) {}
+                        }
+                        if (typeof window.error === 'function') {
+                            window.error(msg);
+                        } else {
+                            alert(msg);
+                        }
+                    });
+                } else {
+                    // 无 jQuery 兜底：传统提交
+                    onDone();
+                    f.submit();
+                }
+            });
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindForms);
+    } else {
+        bindForms();
+    }
+})();
+</script>
+
 {include file="app/manage/view/index/emlog_footer"}

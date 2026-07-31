@@ -7,11 +7,16 @@
       <p class="foot-desc">{obj('base/Base')->SiteConfig('about')}</p>
     </div>
     <div class="foot-col">
-      <h4>快捷导航</h4>
+      <h4>友情链接</h4>
       <ul class="unstyle-li foot-links">
-        <li><a href="{url($route='index/index/index', $params=array())}">网站首页</a></li>
-        <li><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>1))}">折扣精选</a></li>
-        <li><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>8))}">数码家电</a></li>
+        <!-- 调用后台设置的友情链接 -->
+        {if !empty($links)}
+          {foreach from=$links item=link}
+            <li><a href="{$link.link}" target="_blank" rel="nofollow">{$link.name}</a></li>
+          {/foreach}
+        {else}
+          <li><a href="{url($route='index/index/index', $params=array())}">网站首页</a></li>
+        {/if}
       </ul>
     </div>
     <div class="foot-col">

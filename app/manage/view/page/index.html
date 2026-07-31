@@ -6,37 +6,6 @@
     页面管理
 </h1>
 
-<!-- 统计卡片 -->
-<div class="row mb-4">
-    <div class="col-md-4">
-        <div class="card stats-card primary">
-            <div class="stats-icon">
-                <i class="fas fa-file-alt"></i>
-            </div>
-            <div class="stats-title">总页面数</div>
-            <div class="stats-value"><?php echo isset($total_pages) ? number_format($total_pages) : count($ret); ?></div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card stats-card success">
-            <div class="stats-icon">
-                <i class="fas fa-check-circle"></i>
-            </div>
-            <div class="stats-title">已发布</div>
-            <div class="stats-value"><?php echo isset($published_pages) ? number_format($published_pages) : count($ret); ?></div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card stats-card warning">
-            <div class="stats-icon">
-                <i class="fas fa-clock"></i>
-            </div>
-            <div class="stats-title">草稿</div>
-            <div class="stats-value">0</div>
-        </div>
-    </div>
-</div>
-
 <!-- 操作栏 -->
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div class="action-buttons">

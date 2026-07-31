@@ -18,20 +18,18 @@ class AdController extends \app\base\controller\BaseController
  	$this->display();
  }
 
- public function link(){
-
-
- $this->checkManageSession();
+ public function Link(){
+    $this->checkManageSession();
 
  	$this->pageText=array("友情链接","友情链接管理");
  	$where[] = "1";
     $baseUrl = "index.php?r=manage/ad/link";
-    $page = obj('api/ApiData')->page("50", "yun_link", $where, "`id` DESC", $baseUrl);
-    $this->page = $page;
+    $Page = obj('api/ApiData')->page("50", "yun_link", $where, "`id` DESC", $baseUrl);
+    $this->Page = $Page;
  	$this->display();
  }
 
-public function addLink(){
+public function AddLink(){
 
 
 $this->checkManageSession();
@@ -41,15 +39,20 @@ $this->checkManageSession();
 
     		$this->display();
 			exit;
-		}else{
-			 $data = obj('api/Api')->Form($this->POSTarg());
-			 obj('api/ApiData')->insertData('yun_link', $data);
-			echo json_encode(array("info" => "保存成功", "status" => "y"));
-
+        }else{
+			 try {
+			     $data = obj('api/Api')->Form($this->POSTarg());
+			     // 默认排序
+			     if(!isset($data['px']) || $data['px'] === '') $data['px'] = 0;
+			     obj('api/ApiData')->insertData('yun_link', $data);
+			     echo json_encode(array("info" => "保存成功", "status" => "y"));
+			 } catch(\Exception $e) {
+			     echo json_encode(array("info" => "保存失败: " . $e->getMessage(), "status" => "n"));
+			 }
 		}
 	}
 
-	public function editLink(){
+	public function Editorlink(){
 
 
 	$this->checkManageSession();
@@ -76,7 +79,7 @@ $this->checkManageSession();
 
 	}
 
-public function deleteLink(){
+public function DeleteLink(){
 
 
 $this->checkManageSession();
@@ -101,6 +104,8 @@ $this->checkManageSession();
 			exit;
 		}else{
 			 $data = obj('api/Api')->Form($this->POSTarg());
+			 $data['file'] = isset($data['file']) ? intval($data['file']) : 0;
+			 $data['type'] = isset($data['type']) && $data['type'] !== '' ? intval($data['type']) : 0;
 			 $data['date']=date("Y-m-d H:i:s",time());
 			 obj('api/ApiData')->insertData('yun_huan', $data);
 			echo json_encode(array("info" => "保存成功", "status" => "y"));
@@ -118,19 +123,19 @@ $this->checkManageSession();
 		if(!IS_POST){
     		$this->pageText=array("幻灯广告","编辑幻灯");
             $id=intval($this->arg("id"));
-            $where[]="`id` = ?";
+            $where['id'] = $id;
             $ret=obj("api/ApiData")->dataSelect("yun_huan",$where);
             $this->ret=$ret;
-            $this->html='<input type="hidden" name="id" value="'.$ret['id'].'" />';
-			$this->display('app/manage/view/ad/addhuan');
+            $this->display('app/manage/view/ad/editHuan');
 			exit;
 		}else{
 
 			 $id=intval($this->arg("id"));
-			 $where[]="`id` = ?";
-			 $data = obj('api/Api')->Form($this->POSTarg());
-
-             obj("api/ApiData")->dataUpdate("yun_huan",$data,$where);
+        $where['id'] = $id;
+        $data = obj('api/Api')->Form($this->POSTarg());
+        $data['file'] = isset($data['file']) ? intval($data['file']) : 0;
+        $data['type'] = isset($data['type']) && $data['type'] !== '' ? intval($data['type']) : 0;
+        obj("api/ApiData")->dataUpdate("yun_huan",$data,$where);
              echo json_encode(array("info" => "保存成功", "status" => "y"));
 
 		}

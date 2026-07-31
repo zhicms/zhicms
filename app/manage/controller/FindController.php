@@ -231,8 +231,37 @@ class FindController extends \app\base\controller\BaseController
     		$hits=intval($this->arg("hits", 0));
     		$bili=intval($this->arg("bili", 0));
     		$sheng=$this->arg("sheng", '');
-    		
-    		
+    		$allow_comment=$this->arg("allow_comment", 1);
+    		$featured=$this->arg("featured", 0);
+
+		// AI 自动生成关键词和描述（未填写时）
+		if (empty($keywords)) {
+			$keywords = \app\common\AiService::extractKeywords($title, $content);
+		}
+		if (empty($dec)) {
+			$dec = \app\common\AiService::generateDec($title, $content);
+		}
+
+		// AI 自动匹配商品（无 goodsId 且内容不含 ZhiCmsUrl 卡片时）
+		$itemLink = '';
+		if (empty($goodsId) && strpos($content, '[ZhiCmsUrl]') === false) {
+			$matchedGoods = $this->aiMatchAndBuildGoods($title, $content);
+			if (!empty($matchedGoods)) {
+				if (!empty($matchedGoods['goodsId'])) {
+					$goodsId = $matchedGoods['goodsId'];
+				}
+				if (!empty($matchedGoods['marker'])) {
+					$content .= $matchedGoods['marker'];
+				}
+				if (!empty($matchedGoods['itemLink'])) {
+					$itemLink = $matchedGoods['itemLink'];
+				}
+				if (!empty($matchedGoods['pic']) && empty($pic)) {
+					$pic = $matchedGoods['pic'];
+				}
+			}
+		}
+
     		 $startTime=strtotime(date("Y-m-d",time()));
              $endTime=$startTime+60*60*24*7;
     		 $data['goodsId']=null;
@@ -252,6 +281,8 @@ class FindController extends \app\base\controller\BaseController
     		  $data['itemLink']=$datas['itemLink'];
     		  $data['cid']=$datas['cid'];
     		  $data['couponEndTime']=$datas['couponEndTime'];
+    		} elseif (!empty($itemLink)) {
+    			$data['itemLink'] = $itemLink;
     		}
     		
   
@@ -267,6 +298,8 @@ class FindController extends \app\base\controller\BaseController
     		 $data['hits']=$hits;
     		 $data['bili']=$bili;
     		 $data['sheng']=$sheng;
+    		 $data['allow_comment']=$allow_comment ? 1 : 0;
+    		 $data['featured']=$featured ? 1 : 0;
     		 $data['mainPic']=$pic;
     		 $data['keywords']=$keywords;
     		 $data['dec']=$dec;
@@ -323,6 +356,8 @@ class FindController extends \app\base\controller\BaseController
     		$hits=intval($this->arg("hits", 0));
     		$bili=intval($this->arg("bili", 0));
     		$sheng=$this->arg("sheng", '');
+    		$allow_comment=$this->arg("allow_comment", 1);
+    		$featured=$this->arg("featured", 0);
             
 
 
@@ -335,6 +370,8 @@ class FindController extends \app\base\controller\BaseController
     		 $data['hits']=$hits;
     		 $data['bili']=$bili;
     		 $data['sheng']=$sheng;
+    		 $data['allow_comment']=$allow_comment ? 1 : 0;
+    		 $data['featured']=$featured ? 1 : 0;
     		 $data['mainPic']=$pic;
     		 $data['keywords']=$keywords;
     		 $data['dec']=$dec;
@@ -542,12 +579,45 @@ class FindController extends \app\base\controller\BaseController
 
 	public function diyColor(){
 
-
+	
 
 	$this->checkManageSession();
 
 
 		$array=array("#ac725e","#d06b64","#f83a22","#fa573c","#ff7537","#ffad46","#42d692","#16a765","#7bd148","#b3dc6c","#fbe983","#fad165","#92e1c0","#9fe1e7","#9fc6e7","#4986e7","#9a9cff","#c2c2c2","#cabdbf","#cca6ac","#f691b2","#cd74e6","#a47ae2","#555","#4600e4");
 		return $array;
+	}
+
+	/**
+	 * AI 匹配商品并构建卡片标记
+	 * @param string $title 文章标题
+	 * @param string $content 文章内容
+	 * @return array
+	 */
+	private function aiMatchAndBuildGoods($title, $content)
+	{
+		$result = \app\common\AiService::matchGoodsByAi($title, $content, 'taobao');
+
+		if ($result['code'] != 0 || empty($result['items'])) {
+			return array();
+		}
+
+		$item = $result['items'][0];
+		$itemId = isset($item['itemId']) ? $item['itemId'] : (isset($item['itemid']) ? $item['itemid'] : '');
+		$itemUrl = isset($item['itemUrl']) ? $item['itemUrl'] : (isset($item['itemurl']) ? $item['itemurl'] : '');
+		$pic = isset($item['pic']) ? $item['pic'] : (isset($item['itemPic']) ? $item['itemPic'] : '');
+
+		if (empty($itemId)) {
+			return array();
+		}
+
+		$marker = "\n[ZhiCmsUrl]" . $itemUrl . "[/ZhiCmsUrl]\n";
+
+		return array(
+			'goodsId'  => $itemId,
+			'itemLink' => $itemUrl,
+			'marker'   => $marker,
+			'pic'      => $pic,
+		);
 	}
 }
