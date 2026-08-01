@@ -15,7 +15,10 @@ class PageController extends \app\base\controller\BaseController {
         if (empty($viewRet)) {
             exit('404');
         }
-		$this->display('app/index/view/page/'.$viewRet['display']);
+        $this->title = $viewRet['title'] ?? '';
+        $this->body = $viewRet['body'] ?? '';
+        $display = !empty($viewRet['display']) ? $viewRet['display'] : 'page';
+		$this->display('app/index/view/page/'.$display);
 	}
 		public function app(){
         $siteName = obj('base/Base')->SiteConfig('sitename');

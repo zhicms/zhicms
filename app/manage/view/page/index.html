@@ -96,7 +96,7 @@
                                 <a href="index.php?r=manage/page/edit&id=<?php echo $row['id']; ?>" class="btn btn-outline-primary" title="编辑页面">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="../page/<?php echo $row['en_title'] ?? $row['id']; ?>.html" target="_blank" class="btn btn-outline-info" title="预览页面">
+                                <a href="index.php?r=page/index&id=<?php echo $row['id']; ?>" target="_blank" class="btn btn-outline-info" title="预览页面">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 <button class="btn btn-outline-danger" onclick="deletePage(<?php echo $row['id']; ?>)" title="删除页面">
