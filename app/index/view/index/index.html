@@ -177,9 +177,9 @@
             ⭐ 推荐
           </span>
           {/if}
-          {if $vo['cid']}
+          {if $vo['cateId']}
           <span class="card-tag" style="background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">
-            <a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$vo['cid']))}" style="color:inherit;text-decoration:none;">{$vo['cateName']}</a>
+            <a href="{url($route='index/index/index/nav=<nav>', $params=array('nav'=>$vo['cateId']))}" style="color:inherit;text-decoration:none;">{$vo['cateName']}</a>
           </span>
           {/if}
         </div>

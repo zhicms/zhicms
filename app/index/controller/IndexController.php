@@ -25,9 +25,18 @@ class IndexController extends \app\base\controller\BaseController
         $where[] = "1";
         $baseUrl = url($route='index/index/index', $params=array());
         $listId = 0;
+        $navId = 0;
         $ym = '';
 
-        if ($this->arg("list")) {
+        // 文章资讯分类(navid，发现分类)：首页右侧"分类目录"使用
+        if ($this->arg("nav")) {
+            $navId = intval($this->arg('nav'));
+            if ($navId > 0) {
+                $where[] = "`navid` = '{$navId}'";
+            }
+            $baseUrl = url($route='index/index/index/nav=<nav>', $params=array("nav" => $navId));
+        } elseif ($this->arg("list")) {
+            // 兼容旧链接：按商品分类 cid（仅部分文章带有商品分类时生效）
             $listId = $this->arg('list');
             if (ctype_digit($listId) && $listId > 0) {
                 $where[] = "`cid` = '{$listId}'";
@@ -51,7 +60,9 @@ class IndexController extends \app\base\controller\BaseController
         $page = obj('api/ApiData')->page("10", "yun_article", $where, "`id` DESC", $baseUrl);
         if ($page && !empty($page['list'])) {
             foreach ($page['list'] as &$item) {
-                $item['cateName'] = \app\base\controller\BaseController::getCategoryName($item['cid'] ?? 0);
+                // 文章卡片分类标签使用「文章资讯分类」(navid / 发现分类)，而非商品分类(cid)
+                $item['cateName'] = \app\base\controller\BaseController::getNavName($item['navid'] ?? 0);
+                $item['cateId']   = (int)($item['navid'] ?? 0);
             }
             unset($item);
         }
@@ -71,14 +82,22 @@ class IndexController extends \app\base\controller\BaseController
 
         // ===== SEO：首页/分类/归档页 =====
         $pageNum = max(1, intval($this->arg('page', 1)));
-        if (!empty($listId)) {
+        if (!empty($navId)) {
+            // 文章资讯分类页 SEO
+            $cateName = \app\base\controller\BaseController::getNavName($navId);
+            $siteName = obj('base/Base')->SiteConfig('sitename');
+            $this->pageTitle = ($cateName ?: '分类') . ' - 第' . $pageNum . '页 - ' . $siteName;
+            $this->pageKeywords = ($cateName ?: '') . ',资讯,文章';
+            $this->pageDescription = ($cateName ?: '') . '分类下的最新资讯文章第' . $pageNum . '页';
+            $this->canonicalUrl = url($route='index/index/index/nav=<nav>', $params=array('nav' => $navId));
+        } elseif (!empty($listId)) {
             // 分类页 SEO
             $cateName = \app\base\controller\BaseController::getCategoryName($listId);
             $siteName = obj('base/Base')->SiteConfig('sitename');
             $this->pageTitle = ($cateName ?: '分类') . ' - 第' . $pageNum . '页 - ' . $siteName;
             $this->pageKeywords = ($cateName ?: '') . ',优惠,折扣';
             $this->pageDescription = ($cateName ?: '') . '分类下的最新折扣信息第' . $pageNum . '页';
-            $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'index.html?list=' . $listId;
+            $this->canonicalUrl = url($route='index/index/index/list=<list>', $params=array('list' => $listId));
         } elseif (!empty($ym)) {
             // 归档页 SEO
             $y = (int)substr($ym, 0, 4);

@@ -159,7 +159,9 @@ class ForumController extends \app\base\controller\BaseController {
         $this->pageTitle = ($bid > 0 && $boardName ? $boardName . ' - ' : '') . '社区 - ' . $siteName;
         $this->pageKeywords = '社区,好物分享,种草' . ($boardName ? ',' . $boardName : '');
         $this->pageDescription = '好物分享社区，发现全网高性价比商品' . ($boardName ? '，' . $boardName . '专区' : '');
-        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'index.php?r=index/forum/index' . ($bid > 0 ? '/bid/' . $bid : '');
+        $this->canonicalUrl = $bid > 0
+            ? url($route='index/forum/index/bid=<bid>', $params=array('bid' => $bid))
+            : url($route='index/forum/index', $params=array());
 
         $this->display();
     }

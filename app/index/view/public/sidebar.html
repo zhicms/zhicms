@@ -44,14 +44,27 @@
       {obj('index/global','controller')->calendar()}
     </div>
 
+    {if CONTROLLER_NAME == 'cheaps' || CONTROLLER_NAME == 'brand' || CONTROLLER_NAME == 'rank' || CONTROLLER_NAME == 'hot'}
+    <!-- 商品页：展示商品分类，链接到优惠券/商品检索 -->
     <div class="widget">
-      <h3>分类目录</h3>
+      <h3>商品分类</h3>
       <ul class="unstyle-li widget-list">
         {foreach $cats as $c}
-        <li><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$c['cid']))}">{$c['name']}</a></li>
+        <li><a href="{url($route='index/cheaps/index/id=<id>', $params=array('id'=>$c['cid']))}">{$c['name']}</a></li>
         {/foreach}
       </ul>
     </div>
+    {else}
+    <!-- 文章资讯页：展示文章分类(发现分类)，链接到首页按 navid 查资讯 -->
+    <div class="widget">
+      <h3>文章分类</h3>
+      <ul class="unstyle-li widget-list">
+        {foreach $navs as $id=>$name}
+        <li><a href="{url($route='index/index/index/nav=<nav>', $params=array('nav'=>$id))}">{$name}</a></li>
+        {/foreach}
+      </ul>
+    </div>
+    {/if}
 
     <div class="widget">
       <h3>热门文章</h3>

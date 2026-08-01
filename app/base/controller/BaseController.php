@@ -118,6 +118,34 @@ class BaseController extends \ZhiCms\base\Controller {
     ];
 
     /**
+     * 获取「文章资讯」分类（发现分类 yun_nav）映射 id => name
+     * 用于首页右侧分类目录、文章卡片分类标签，避免与商品分类(cid)混淆
+     */
+    public static function getNavCategories() {
+        static $navMap = null;
+        if ($navMap !== null) {
+            return $navMap;
+        }
+        $navMap = [];
+        $rows = obj("api/ApiData")->dataSelect("yun_nav", array("1"), "`px` ASC, `id` ASC");
+        if (!empty($rows)) {
+            foreach ($rows as $r) {
+                $navMap[(int)$r['id']] = $r['name'];
+            }
+        }
+        return $navMap;
+    }
+
+    /**
+     * 根据发现分类ID(navid)获取分类名（文章资讯分类）
+     */
+    public static function getNavName($navid) {
+        $navid = (int)$navid;
+        $map = self::getNavCategories();
+        return isset($map[$navid]) ? $map[$navid] : '';
+    }
+
+    /**
      * 获取所有分类目录（带缓存，对标 emlog 的 $CACHE 全局变量）
      */
     public static function getCategories() {
@@ -159,8 +187,9 @@ class BaseController extends \ZhiCms\base\Controller {
             return $hot ?: [];
         }, 600);
 
-        // 分类目录：使用静态映射（对标 emlog 缓存设计，0 次 DB 查询）
-        $this->cats = self::getCategories();
+        // 分类目录：使用「文章资讯」分类(发现分类 yun_nav)，与商品分类(cid)区分
+        $this->cats = self::getNavCategories();
+        $this->navs = self::getNavCategories();
 
         // 站内速览：5 次 COUNT → 1 次 UNION（对标 emlog 的 site_stat 缓存）
         $today = date("Y-m-d");

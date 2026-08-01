@@ -25,7 +25,7 @@ class HotController extends \app\base\controller\BaseController {
         $this->pageTitle = '线报 - 实时商品优惠情报 - ' . obj('base/Base')->SiteConfig('sitename');
         $this->pageKeywords = '线报,优惠线报,实时优惠,商品情报';
         $this->pageDescription = '最新实时线报，涵盖淘宝、京东、拼多多等平台的商品优惠情报，及时掌握全网折扣信息。';
-        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'index.php?r=index/hot/index';
+        $this->canonicalUrl = url($route='index/hot/index', $params=array());
 
         // 加载公共侧边栏（分类 + 热门文章等）
         $this->loadCommonSidebar();
