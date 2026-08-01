@@ -71,9 +71,14 @@ $this->checkManageSession();
 
 			 $id=intval($this->arg("id"));
 			 $where['id'] = $id;
-			 $data = obj('api/Api')->Form($this->POSTarg());
-             obj("api/ApiData")->dataUpdate("yun_link",$data,$where);
-             echo json_encode(array("info" => "保存成功", "status" => "y"));
+			 try {
+				 $data = obj('api/Api')->Form($this->POSTarg());
+				 unset($data['id']);
+				 obj("api/ApiData")->dataUpdate("yun_link",$data,$where);
+				 echo json_encode(array("info" => "保存成功", "status" => "y"));
+			 } catch(\Exception $e) {
+				 echo json_encode(array("info" => "保存失败: " . $e->getMessage(), "status" => "n"));
+			 }
 
 		}
 
@@ -140,11 +145,17 @@ $this->checkManageSession();
 				 exit;
 			 }
         $where['id'] = $id;
-        $data = obj('api/Api')->Form($this->POSTarg());
-        $data['file'] = isset($data['file']) ? intval($data['file']) : 0;
-        $data['type'] = isset($data['type']) && $data['type'] !== '' ? intval($data['type']) : 0;
-        obj("api/ApiData")->dataUpdate("yun_huan",$data,$where);
-             echo json_encode(array("info" => "保存成功", "status" => "y"));
+        try {
+            $data = obj('api/Api')->Form($this->POSTarg());
+            // 移除 data 中的 id，避免与 WHERE 的 id 重复（SET 与 WHERE 共用 :__id 占位符）
+            unset($data['id']);
+            $data['file'] = isset($data['file']) ? intval($data['file']) : 0;
+            $data['type'] = isset($data['type']) && $data['type'] !== '' ? intval($data['type']) : 0;
+            obj("api/ApiData")->dataUpdate("yun_huan",$data,$where);
+            echo json_encode(array("info" => "保存成功", "status" => "y"));
+        } catch(\Exception $e) {
+            echo json_encode(array("info" => "保存失败: " . $e->getMessage(), "status" => "n"));
+        }
 
 		}
 
