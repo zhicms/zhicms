@@ -60,8 +60,8 @@ $this->checkManageSession();
 
 		if(!IS_POST){
     		$this->pageText=array("友情链接","编辑链接");
-            $id=$this->arg("id");
-            $where[]="`id` ={$id}";
+            $id=intval($this->arg("id"));
+            $where['id'] = $id;
             $ret=obj("api/ApiData")->dataSelect("yun_link",$where);
             $this->ret=$ret;
             $this->html='<input type="hidden" name="id" value="'.$ret['id'].'" />';
@@ -69,8 +69,8 @@ $this->checkManageSession();
 			exit;
 		}else{
 
-			 $id=$this->arg("id");
-			 $where[]="  `id` ={$id} ";
+			 $id=intval($this->arg("id"));
+			 $where['id'] = $id;
 			 $data = obj('api/Api')->Form($this->POSTarg());
              obj("api/ApiData")->dataUpdate("yun_link",$data,$where);
              echo json_encode(array("info" => "保存成功", "status" => "y"));
@@ -85,9 +85,9 @@ public function DeleteLink(){
 $this->checkManageSession();
 
        error_reporting(0);
-        $id=$this->arg("id");
-        $where = " `id` ={$id}";
-        obj('api/ApiData')->deleteThis('yun_link', $where);
+        $id=intval($this->arg("id"));
+        $where = "`id` = ?";
+        obj('api/ApiData')->deleteThis('yun_link', $where, array($id));
         exit(json_encode(array("info" => "删除成功", "status" => "y")));
 
 	}
@@ -113,7 +113,7 @@ $this->checkManageSession();
 		}
 	}
 
-	public function editHuan(){
+	public function edithuan(){
 
 
 
@@ -123,14 +123,22 @@ $this->checkManageSession();
 		if(!IS_POST){
     		$this->pageText=array("幻灯广告","编辑幻灯");
             $id=intval($this->arg("id"));
+            if($id <= 0){
+                echo "无效的幻灯片 ID";
+                exit;
+            }
             $where['id'] = $id;
             $ret=obj("api/ApiData")->dataSelect("yun_huan",$where);
             $this->ret=$ret;
-            $this->display('app/manage/view/ad/editHuan');
+            $this->display('app/manage/view/ad/edithuan');
 			exit;
 		}else{
 
 			 $id=intval($this->arg("id"));
+			 if($id <= 0){
+				 echo json_encode(array("info" => "缺少有效的幻灯片 ID", "status" => "n"));
+				 exit;
+			 }
         $where['id'] = $id;
         $data = obj('api/Api')->Form($this->POSTarg());
         $data['file'] = isset($data['file']) ? intval($data['file']) : 0;

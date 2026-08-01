@@ -26,8 +26,8 @@
                     <div class="form-group">
                         <label class="font-weight-bold">显示平台</label>
                         <select name="type" class="form-control" style="max-width:200px;">
-                            <option value="0" <?php echo $ret['type']=='0' ? 'selected' : ''; ?>>PC网站</option>
-                            <option value="1" <?php echo $ret['type']=='1' ? 'selected' : ''; ?>>移动端</option>
+                            <option value="0" <?php echo intval($ret['type'])==0 ? 'selected' : ''; ?>>PC网站</option>
+                            <option value="1" <?php echo intval($ret['type'])==1 ? 'selected' : ''; ?>>移动端</option>
                         </select>
                     </div>
 
