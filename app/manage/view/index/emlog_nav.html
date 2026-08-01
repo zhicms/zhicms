@@ -66,7 +66,7 @@
                 <div id="collapseArticles" class="collapse" aria-labelledby="headingArticles" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" href="index.php?r=manage/find/index">发现列表</a>
-                        <a class="collapse-item" href="index.php?r=manage/find/addarticle">发布线索</a>
+                        <a class="collapse-item" href="index.php?r=manage/find/type">分类管理</a>
                     </div>
                 </div>
             </li>
@@ -124,6 +124,14 @@
                 <a class="nav-link" href="index.php?r=manage/set/index">
                     <i class="fas fa-fw fa-cogs"></i>
                     <span>系统设置</span>
+                </a>
+            </li>
+
+            <!-- Nav Item - Environment -->
+            <li class="nav-item {if CONTROLLER_NAME=='env'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/env/index">
+                    <i class="fas fa-fw fa-stethoscope"></i>
+                    <span>环境检测</span>
                 </a>
             </li>
 

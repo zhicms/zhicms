@@ -42,7 +42,7 @@ class JSSDK {
 
   private function getJsApiTicket() {
     // jsapi_ticket 应该全局存储与更新，以下代码以写入到文件中做示例
-    $data = json_decode(file_get_contents(CONFIG_PATH . "apicache/jsapi_ticket.json"));
+    $data = $this->readCacheJson(CONFIG_PATH . "apicache/jsapi_ticket.json");
     if ($data->expire_time < time()) {
       $accessToken = $this->getAccessToken();
       $url = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?type=jsapi&access_token=$accessToken";
@@ -64,7 +64,7 @@ class JSSDK {
 
   private function getAccessToken() {
     // access_token 应该全局存储与更新，以下代码以写入到文件中做示例
-    $data = json_decode(file_get_contents(CONFIG_PATH . "apicache/access_token.json"));
+    $data = $this->readCacheJson(CONFIG_PATH . "apicache/access_token.json");
     if ($data->expire_time < time()) {
       $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=$this->appId&secret=$this->appSecret";
       $res = json_decode($this->httpGet($url));
@@ -80,6 +80,28 @@ class JSSDK {
       $access_token = $data->access_token;
     }
     return $access_token;
+  }
+
+  /**
+   * 安全读取缓存 JSON：文件缺失或解析失败时返回 expire_time=0 的空对象，
+   * 避免 PHP 8 下 null->expire_time 致命错误
+   */
+  private function readCacheJson($file) {
+    if (!is_file($file)) {
+        return (object) array('expire_time' => 0, 'jsapi_ticket' => '', 'access_token' => '');
+    }
+    $content = @file_get_contents($file);
+    if ($content === false) {
+        return (object) array('expire_time' => 0, 'jsapi_ticket' => '', 'access_token' => '');
+    }
+    $data = @json_decode($content);
+    if (!is_object($data)) {
+        $data = (object) array('expire_time' => 0, 'jsapi_ticket' => '', 'access_token' => '');
+    }
+    if (!isset($data->expire_time)) {
+        $data->expire_time = 0;
+    }
+    return $data;
   }
 
   private function httpGet($url) {

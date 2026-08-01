@@ -140,6 +140,17 @@ class FileController extends BaseController
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $isImage = in_array($ext, $allowedExts);
 
+        // 真实 MIME 校验：仅允许图片，防止伪装扩展名上传可执行文件（RCE 风险）
+        if (!empty($file['tmp_name'])) {
+            $realInfo = @getimagesize($file['tmp_name']);
+            if ($realInfo === false || !in_array($realInfo['mime'], [
+                'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/bmp', 'image/x-ms-bmp'
+            ])) {
+                @unlink($file['tmp_name']);
+                return ['error' => 1, 'message' => '仅支持上传图片文件', 'url' => ''];
+            }
+        }
+
         // 生成文件名
         $fileName = substr(md5($file['name']), 0, 4) . time();
 
@@ -201,10 +212,10 @@ class FileController extends BaseController
             $this->jsonExit(['url' => '', 'error' => 1, 'message' => $result['message']]);
         }
 
-        // 更新用户头像
-        $mobile = $_COOKIE['ZhiCmsUser'];
+        // 更新用户头像（mobile 来自登录 cookie，转义后用于查询避免注入）
+        $mobile = addslashes($_COOKIE['ZhiCmsUser']);
         $data['pic'] = $result['url'];
-        $where[] = "`mobile` LIKE '{$mobile}'";
+        $where[] = "`mobile` = '{$mobile}'";
         obj('api/ApiData')->dataUpdate('yun_user', $data, $where);
 
         $this->jsonExit(['url' => $result['url']]);
@@ -219,6 +230,10 @@ class FileController extends BaseController
         error_reporting(0);
         ini_set('display_errors', 0);
         
+        if (!isset($_COOKIE['ZhiCmsUser']) || empty($_COOKIE['ZhiCmsUser'])) {
+            $this->jsonExit(['url' => '', 'error' => 1, 'message' => '请先登录']);
+        }
+
         $result = $this->doUpload('manage', 'file');
         $this->jsonExit(['url' => $result['url']]);
     }

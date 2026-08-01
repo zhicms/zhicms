@@ -87,7 +87,7 @@ class App{
 			$obj ->$action();
 			Hook::listen('actionAfter', array($obj, $action));
 			
-		} catch( \Exception $e ){
+		} catch( \Throwable $e ){
 			Hook::listen('appError', array($e));
 		}
 		

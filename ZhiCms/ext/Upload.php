@@ -284,6 +284,9 @@ class Upload {
             case 'image/bmp':
                 $src = imagecreatefrombmp($sourcePath);
                 break;
+            case 'image/webp':
+                $src = imagecreatefromwebp($sourcePath);
+                break;
             default:
                 return false;
         }
@@ -311,11 +314,14 @@ class Upload {
                 }
 
                 if (!$this->convertToWebp($tempPath, $targetPath)) {
-                    @unlink($tempPath);
                     if ($this->errorNum == -6) {
-                        @move_uploaded_file($this->tmpFileName, $targetPath);
-                        $this->setOption('errorNum', 0);
+                        // 转换函数不可用（如缺 imagewebp 扩展），回退为直接保留原图
+                        if (@rename($tempPath, $targetPath)) {
+                            $this->setOption('errorNum', 0);
+                            return true;
+                        }
                     }
+                    @unlink($tempPath);
                     return false;
                 }
 

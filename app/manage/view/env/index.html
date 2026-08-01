@@ -1,0 +1,125 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-stethoscope"></i>
+    基本环境检测
+    <a href="javascript:location.reload();" class="btn btn-sm btn-outline-secondary float-right">
+        <i class="fas fa-sync-alt mr-1"></i>刷新
+    </a>
+</h1>
+
+<!-- 概览 -->
+<div class="card mb-4">
+    <div class="card-body">
+        <?php if ($allPass): ?>
+        <div class="alert alert-success mb-0">
+            <i class="fas fa-check-circle mr-1"></i> 环境检测通过，运行所需的核心扩展与目录均正常。
+        </div>
+        <?php else: ?>
+        <div class="alert alert-warning mb-0">
+            <i class="fas fa-exclamation-triangle mr-1"></i> 检测发现部分项目未满足建议要求，请根据下方列表开启对应扩展或修改配置。标红项为必须项，会影响站点正常运行。
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+<!-- 检测列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-list-alt"></i> 检测明细</h5>
+        <button class="btn btn-sm btn-primary" id="recheckBtn" onclick="recheck()">
+            <i class="fas fa-sync-alt"></i> 重新检测
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>检测项</th>
+                        <th style="width:160px;">当前状态</th>
+                        <th style="width:140px;">要求</th>
+                        <th>说明 / 建议</th>
+                    </tr>
+                </thead>
+                <tbody id="envBody">
+                    <?php foreach ($items as $it): ?>
+                    <tr>
+                        <td>
+                            <?php echo htmlspecialchars($it['name']); ?>
+                            <?php if ($it['level'] === 'required'): ?>
+                            <span class="badge badge-danger ml-1">必须</span>
+                            <?php elseif ($it['level'] === 'recommend'): ?>
+                            <span class="badge badge-warning ml-1">建议</span>
+                            <?php else: ?>
+                            <span class="badge badge-secondary ml-1">可选</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <?php if ($it['pass']): ?>
+                            <span class="text-success"><i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($it['current']); ?></span>
+                            <?php else: ?>
+                            <span class="text-danger"><i class="fas fa-times-circle"></i> <?php echo htmlspecialchars($it['current']); ?></span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?php echo htmlspecialchars($it['required']); ?></td>
+                        <td class="small text-muted">
+                            <?php echo $it['pass'] ? '<span class="text-success">正常</span>' : nl2br(htmlspecialchars($it['suggest'])); ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function recheck() {
+    var btn = document.getElementById('recheckBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 检测中...';
+    $.get('index.php?r=manage/env/check', function(res) {
+        if (res.code === 0 && res.items) {
+            renderItems(res.items, res.allPass);
+        } else {
+            alert('检测失败');
+        }
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> 重新检测';
+    }, 'json').fail(function() {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-sync-alt"></i> 重新检测';
+        alert('请求失败，请重试');
+    });
+}
+
+function renderItems(items, allPass) {
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        var levelBadge = it.level === 'required'
+            ? '<span class="badge badge-danger ml-1">必须</span>'
+            : (it.level === 'recommend' ? '<span class="badge badge-warning ml-1">建议</span>' : '<span class="badge badge-secondary ml-1">可选</span>');
+        var status = it.pass
+            ? '<span class="text-success"><i class="fas fa-check-circle"></i> ' + escapeHtml(it.current) + '</span>'
+            : '<span class="text-danger"><i class="fas fa-times-circle"></i> ' + escapeHtml(it.current) + '</span>';
+        var suggest = it.pass ? '<span class="text-success">正常</span>' : nl2br(escapeHtml(it.suggest));
+        html += '<tr><td>' + escapeHtml(it.name) + levelBadge + '</td>'
+            + '<td>' + status + '</td>'
+            + '<td>' + escapeHtml(it.required) + '</td>'
+            + '<td class="small text-muted">' + suggest + '</td></tr>';
+    }
+    document.getElementById('envBody').innerHTML = html;
+}
+
+function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+}
+function nl2br(s) { return s.replace(/\n/g, '<br>'); }
+</script>

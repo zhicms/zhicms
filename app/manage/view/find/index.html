@@ -79,7 +79,7 @@
                         </td>
                         <td>
                             <span class="badge badge-primary badge-pill">
-                                <?php echo isset($categories[$row['cid']]) ? $categories[$row['cid']] : '未分类'; ?>
+                                <?php echo isset($navs[$row['navid']]) ? $navs[$row['navid']] : (isset($categories[$row['cid']]) ? $categories[$row['cid']] : '未分类'); ?>
                             </span>
                         </td>
                         <td>
@@ -249,6 +249,17 @@
                     <?php endif; ?>
                 </select>
             </div>
+            <div class="form-group">
+                <label class="small text-muted">发现分类（前台频道）</label>
+                <select class="form-control" id="collectNav">
+                    <option value="0">未分类</option>
+                    <?php if(isset($navs)): ?>
+                    <?php foreach($navs as $k => $v): ?>
+                    <option value="<?php echo $k; ?>"><?php echo $v; ?></option>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </select>
+            </div>
             <div class="form-group mb-0">
                 <label class="small text-muted">采集页数（每页约5条，建议3~10页）</label>
                 <input type="number" class="form-control" id="collectPages" value="5" min="1" max="20" step="1">
@@ -367,11 +378,12 @@ function openCollectModal() {
     btn.innerText = '开始采集';
     btn.onclick = function() {
         var cid = document.getElementById('collectCate').value;
+        var navid = document.getElementById('collectNav').value;
         var pages = document.getElementById('collectPages').value || 5;
         btn.disabled = true;
         btn.innerText = '采集中（请耐心等待）...';
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'index.php?r=manage/find/collect&cid=' + cid + '&pages=' + pages, true);
+        xhr.open('GET', 'index.php?r=manage/find/collect&cid=' + cid + '&navid=' + navid + '&pages=' + pages, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4 && xhr.status == 200) {
                 try {

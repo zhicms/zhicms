@@ -330,6 +330,11 @@ class AiService
      */
     private static function curlRequest($url, $apiKey, $postData, $timeout = 60)
     {
+        // curl 扩展缺失：返回结构化错误，交由上层降级/提示，避免 PHP 8 下抛 \Error 导致白屏
+        if (!extension_loaded('curl')) {
+            return json_encode(array('error' => 'curl 扩展未安装，AI 功能不可用。请在 php.ini 中启用 curl 扩展。'));
+        }
+
         $ch = curl_init();
         curl_setopt_array($ch, array(
             CURLOPT_URL            => $url,
@@ -405,6 +410,11 @@ class AiService
      */
     private static function sendImageApi($apiUrl, $apiKey, $data)
     {
+        // curl 扩展缺失：返回错误数组，由调用方提示
+        if (!extension_loaded('curl')) {
+            return array('error' => 'curl 扩展未安装，图像生成功能不可用。请在 php.ini 中启用 curl 扩展。');
+        }
+
         $ch = curl_init();
         curl_setopt_array($ch, array(
             CURLOPT_URL            => $apiUrl,

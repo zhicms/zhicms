@@ -33,7 +33,12 @@ class FileCacheDriver implements CacheInterface{
 		$expire = time() + $expire;		
         $content    = '<?php exit;?>' . sprintf('%012d', $expire) . $md5Sign . $value;		
        
-	   return @file_put_contents($this->_getFilePath($key, true), $content, LOCK_EX);
+        $file = $this->_getFilePath($key, true);
+        if ($file === false) {
+            return false;
+        }
+        $result = @file_put_contents($file, $content, LOCK_EX);
+        return $result !== false;
     }
 	
 	public function inc($key, $value = 1){
@@ -78,11 +83,16 @@ class FileCacheDriver implements CacheInterface{
 		
 		if ( !file_exists($dir) ) {
 			if ( !@mkdir($dir, 0777, true) ){
-				throw new \Exception("Can not create dir '{$dir}'", 500);
+				return false;
 			 }             
 		}
-		if ( !is_writable($dir) ) @chmod($dir, 0777);
+		if ( !is_writable($dir) ) {
+			@chmod($dir, 0777);
+			if ( !is_writable($dir) ) {
+				return false;
+			}
+		}
 		
-		return $dir. $key . '.php';;
+		return $dir. $key . '.php';
 	}
 }

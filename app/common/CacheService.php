@@ -62,7 +62,7 @@ class CacheService
         ];
         $file = $this->dir . $key . '.php';
         $content = '<?php return ' . var_export($data, true) . ';';
-        file_put_contents($file, $content, LOCK_EX);
+        @file_put_contents($file, $content, LOCK_EX);
     }
 
     /**

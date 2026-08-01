@@ -8,9 +8,10 @@ class FindController extends \app\base\controller\BaseController
 	public function index(){
 
 
-	$this->checkManageSession();
+		$this->checkManageSession();
 
 		$this->categories = $this->getGoodsCategories();
+		$this->navs = $this->getFindNavs();
 		$this->pageText=array("发现管理","文章列表");
 		$where[] = "1";
 
@@ -19,15 +20,24 @@ class FindController extends \app\base\controller\BaseController
     		$where[] = "`title` LIKE '%" . addslashes($keyword) . "%'";
     	}
 
+    	$navid = intval($this->arg("navid", 0));
+    	if($navid > 0){
+    		$where[] = "`navid` = {$navid}";
+    	}
+
     	$baseUrl = "index.php?r=manage/find/index";
     	if($keyword){
     		$baseUrl .= "&keyword=" . urlencode($keyword);
+    	}
+    	if($navid > 0){
+    		$baseUrl .= "&navid=" . $navid;
     	}
 
         $page = obj('api/ApiData')->page("50", "yun_article", $where, "`id` DESC", $baseUrl);
         $this->page = $page;
         $this->ret = $page['list'];
         $this->keyword = $keyword;
+        $this->navid = $navid;
 		$this->display();
 	}
 
@@ -60,6 +70,7 @@ class FindController extends \app\base\controller\BaseController
         $dtk = $tjk->getDtk();
 
         $cid = intval($this->arg("cid", 0));
+        $navid = intval($this->arg("navid", 0));
         $pages = max(1, intval($this->arg("pages", 5)));
         $minId = intval($this->arg("min_id", 1));
 
@@ -112,6 +123,7 @@ class FindController extends \app\base\controller\BaseController
                     'title' => $title,
                     'content' => $contentText,
                     'cid' => $cid,
+                    'navid' => $navid,
                     'mainPic' => $mainPic,
                     'keywords' => $item['items']['itemshorttitle'] ?? '',
                     'dec' => $decText,
@@ -190,9 +202,10 @@ class FindController extends \app\base\controller\BaseController
 	    
 	    $Siteinfo = \app\common\ConfigStore::load('site');
 	    $newData= new \ZhiCms\ext\Weixin;
-    	if(!IS_POST){
+		if(!IS_POST){
 			$this->pageText=array("发现管理","发布文章");
            $this->categories = $this->getGoodsCategories();
+           $this->navs = $this->getFindNavs();
            $lock=$this->arg("lock");
            $goodsId=$this->arg("goodsid");
            if($goodsId!=''){
@@ -219,6 +232,7 @@ class FindController extends \app\base\controller\BaseController
     		$goodsId=$this->arg("goodsid");
     		$title=$this->arg("title");
     		$cid=$this->arg("cid");
+    		$navid=intval($this->arg("navid"));
     		$pic=$this->arg("pic");
     		$keywords=$this->arg("keywords");
     		$dec=$this->arg("dec");
@@ -267,6 +281,7 @@ class FindController extends \app\base\controller\BaseController
     		 $data['goodsId']=null;
     		 $data['itemLink']=null;
     		 $data['cid']=$cid;
+    		 $data['navid']=$navid;
     		 $data['couponEndTime']=date("Y-m-d H:i:s",$endTime);
     		if($goodsId!='' && $goodsId!=null){
     		 $newData= new \ZhiCms\ext\Weixin;
@@ -333,6 +348,7 @@ class FindController extends \app\base\controller\BaseController
             $ret=obj("api/ApiData")->dataSelect("yun_article",$where);
             $this->ret=$ret;
             $this->categories = $this->getGoodsCategories();
+            $this->navs = $this->getFindNavs();
             $this->html='<input type="hidden" name="id" value="'.$ret['id'].'" /><input type="hidden" name="goodsid" value="'.$ret['goodsId'].'" />';
 			$this->display('app/manage/view/find/addarticle');
 			exit;
@@ -345,6 +361,7 @@ class FindController extends \app\base\controller\BaseController
     		$title=$this->arg("title");
     		$pic=$this->arg("pic");
     		$cid=$this->arg("cid");
+    		$navid=intval($this->arg("navid"));
     		$keywords=$this->arg("keywords");
     		$dec=$this->arg("dec");
     		$content=$this->arg("body");
@@ -378,6 +395,7 @@ class FindController extends \app\base\controller\BaseController
     		 $data['content']=$content;
 
     		  $data['cid']=$cid;
+    		  $data['navid']=$navid;
 
              $where['id'] = $id;
              obj("api/ApiData")->dataUpdate("yun_article",$data,$where);
@@ -575,6 +593,20 @@ class FindController extends \app\base\controller\BaseController
 			exit(json_encode(array("info" => "请输入描述", "status" => "n")));
 		}
 
+	}
+
+	/**
+	 * 读取发现分类（yun_nav）列表，返回 id => name 映射，供发布/编辑文章选择
+	 */
+	protected function getFindNavs(){
+		$list = obj("api/ApiData")->dataSelect("yun_nav", array("1"), "`px` ASC, `id` ASC");
+		$map = array();
+		if(!empty($list)){
+			foreach($list as $row){
+				$map[$row['id']] = $row['name'];
+			}
+		}
+		return $map;
 	}
 
 	public function diyColor(){

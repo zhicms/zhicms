@@ -37,6 +37,9 @@
                     <li class="layui-nav-item {if CONTROLLER_NAME=='set'}layui-this{/if}">
                         <a href="index.php?r=manage/set/index"><i class="layui-icon layui-icon-set"></i> 系统设置</a>
                     </li>
+                    <li class="layui-nav-item {if CONTROLLER_NAME=='env'}layui-this{/if}">
+                        <a href="index.php?r=manage/env/index"><i class="layui-icon layui-icon-survey"></i> 环境检测</a>
+                    </li>
                     <li class="layui-nav-item {if CONTROLLER_NAME=='user'}layui-this{/if}">
                         <a href="index.php?r=manage/user/index"><i class="layui-icon layui-icon-user"></i> 用户管理</a>
                     </li>
@@ -60,7 +63,7 @@
                         <a href="javascript:;"><i class="layui-icon layui-icon-read"></i> 发现管理</a>
                         <dl class="layui-nav-child">
                             <dd {if CONTROLLER_NAME=='find' && ACTION_NAME=='index'}class="layui-this"{/if}><a href="index.php?r=manage/find/index">发现列表</a></dd>
-                            <dd {if CONTROLLER_NAME=='find' && ACTION_NAME=='addarticle'}class="layui-this"{/if}><a href="index.php?r=manage/find/addarticle">发布线索</a></dd>
+                            <dd {if CONTROLLER_NAME=='find' && ACTION_NAME=='type'}class="layui-this"{/if}><a href="index.php?r=manage/find/type">分类管理</a></dd>
                         </dl>
                     </li>
                     <li class="layui-nav-item {if CONTROLLER_NAME=='page'}layui-this{/if}">

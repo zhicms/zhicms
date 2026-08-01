@@ -44,7 +44,7 @@ class Form {
 	        return $data;
 	    }else{
 	    	//还原自动转义
-	    	if(get_magic_quotes_gpc()) {
+	    	if(function_exists('get_magic_quotes_gpc') && get_magic_quotes_gpc()) {
 	    		$data = stripslashes($data);
 	    	}
 	    	return $this->htmlEncode($data, 1);

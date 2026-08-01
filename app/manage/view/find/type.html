@@ -1,0 +1,129 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-folder"></i>
+    发现分类管理
+    <a href="index.php?r=manage/find/addType" class="btn btn-sm btn-primary float-right">
+        <i class="fas fa-plus mr-1"></i>新建分类
+    </a>
+</h1>
+
+<!-- 分类列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-table"></i> 分类列表</h5>
+        <small class="text-muted">共 <?php echo isset($page['total']) ? $page['total'] : 0; ?> 条</small>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width:70px;" class="text-center">ID</th>
+                        <th style="width:80px;" class="text-center">图标</th>
+                        <th>分类名称</th>
+                        <th>关键字</th>
+                        <th>描述</th>
+                        <th style="width:80px;" class="text-center">排序</th>
+                        <th style="width:120px;" class="text-center">文章数</th>
+                        <th style="width:150px;" class="text-center">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($page['list'])): ?>
+                    <?php foreach ($page['list'] as $row): ?>
+                    <tr>
+                        <td class="text-center font-weight-bold"><?php echo $row['id']; ?></td>
+                        <td class="text-center">
+                            <?php if (!empty($row['pic'])): ?>
+                            <img src="<?php echo $row['pic']; ?>" style="max-width:48px;max-height:48px;border-radius:6px;" alt="">
+                            <?php else: ?>
+                            <span class="text-muted">—</span>
+                            <?php endif; ?>
+                        </td>
+                        <td class="font-weight-600"><?php echo htmlspecialchars($row['name']); ?></td>
+                        <td>
+                            <div class="text-truncate" style="max-width:200px;" title="<?php echo htmlspecialchars($row['keywords']); ?>">
+                                <?php echo htmlspecialchars($row['keywords']); ?>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width:240px;" title="<?php echo htmlspecialchars($row['dec']); ?>">
+                                <?php echo htmlspecialchars($row['dec']); ?>
+                            </div>
+                        </td>
+                        <td class="text-center"><?php echo intval($row['px']); ?></td>
+                        <td class="text-center">
+                            <span class="badge badge-info badge-pill" id="navCount<?php echo $row['id']; ?>">…</span>
+                        </td>
+                        <td class="text-center">
+                            <div class="btn-group btn-group-sm">
+                                <a href="index.php?r=manage/find/editType&id=<?php echo $row['id']; ?>" class="btn btn-outline-primary" title="编辑">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-outline-danger" onclick="del(<?php echo $row['id']; ?>)" title="删除">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr>
+                        <td colspan="8" class="text-center py-5">
+                            <div class="empty-state">
+                                <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">暂无分类数据</h5>
+                                <p class="text-muted">点击右上角"新建分类"创建第一个发现分类</p>
+                            </div>
+                        </td>
+                    </tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <!-- 分页 -->
+        <?php if(isset($page['page']) && $page['page']): ?>
+        <div class="text-center mt-3">
+            <?php echo $page['page']; ?>
+        </div>
+        <?php endif; ?>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+// 加载每个分类下的文章数量
+<?php if (!empty($page['list'])): ?>
+<?php foreach ($page['list'] as $row): ?>
+$.get('index.php?r=manage/find/navCount&id=<?php echo $row['id']; ?>', function(d){
+    var n = (typeof d === 'number') ? d : (d.count !== undefined ? d.count : d);
+    $('#navCount<?php echo $row['id']; ?>').text(n);
+});
+<?php endforeach; ?>
+<?php endif; ?>
+
+function del(id) {
+    if(confirm('确定要删除这个分类吗？若分类下还有文章将禁止删除。')) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/find/deleteType&id=' + id, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var result = JSON.parse(xhr.responseText);
+                    if (result.status === 'y') {
+                        location.reload();
+                    } else {
+                        alert(result.info);
+                    }
+                } catch(e) {
+                    location.reload();
+                }
+            }
+        };
+        xhr.send();
+    }
+}
+</script>
