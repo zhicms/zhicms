@@ -78,11 +78,15 @@ CREATE TABLE `__PREFIX__article` (
   `bili` int(11) DEFAULT '0',
   `sheng` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
   `couponEndTime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
+  `navid` int(11) NOT NULL DEFAULT '0' COMMENT '发现分类ID（yun_nav.id），0=未分类',
+  `allow_comment` tinyint(1) NOT NULL DEFAULT '1' COMMENT '允许评论 1允许 0禁止',
+  `featured` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推荐文章 1推荐 0否',
   `date` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `goodsId` (`goodsId`),
-  KEY `title` (`title`)
+  KEY `title` (`title`),
+  KEY `idx_navid` (`navid`)
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 --
