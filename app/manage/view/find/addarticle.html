@@ -38,6 +38,19 @@
                             <?php endif; ?>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label for="navid">发现分类</label>
+                        <select class="form-control" name="navid" id="navid">
+                            <option value="0">未分类</option>
+                            <?php if(isset($navs)): ?>
+                            <?php foreach($navs as $key => $value): ?>
+                            <option value="<?php echo $key; ?>" <?php echo isset($ret['navid']) && $ret['navid'] == $key ? 'selected' : ''; ?>><?php echo $value; ?></option>
+                            <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                        <small class="form-text text-muted">前台「发现」频道按此分类展示，可在 分类管理 中增改删</small>
+                    </div>
                     
                     <div class="form-row">
                         <div class="col-md-6">
@@ -436,7 +449,12 @@ function aiMatchGoods(title) {
                 }
             });
         } else {
-            $result.html('<div class="alert alert-warning">未找到匹配商品，保存时会自动尝试匹配</div>');
+            if (res && res.msg) {
+                $result.html('<div class="alert alert-danger">' + res.msg + '</div>');
+                showToast(res.msg, 'error');
+            } else {
+                $result.html('<div class="alert alert-warning">未找到匹配商品，保存时会自动尝试匹配</div>');
+            }
         }
         $btn.prop('disabled', false).html(originalHtml);
     }).fail(function() {

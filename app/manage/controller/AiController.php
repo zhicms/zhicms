@@ -361,6 +361,15 @@ class AiController extends \app\base\controller\BaseController
             return;
         }
 
+        // 大模型未配置：明确报错，提示站长先添加并启用模型
+        if (!AiService::isChatAvailable()) {
+            echo json_encode(array(
+                'code' => -2,
+                'msg'  => 'AI 对话模型未配置，无法使用 AI 提取关键词。请先到【AI 开放平台 → 模型管理】中添加并启用一个对话模型。'
+            ));
+            return;
+        }
+
         set_time_limit(120);
 
         $keywords = AiService::extractKeywords($title, $content);
@@ -397,6 +406,15 @@ class AiController extends \app\base\controller\BaseController
             return;
         }
 
+        // 大模型未配置：明确报错，提示站长先添加并启用模型
+        if (!AiService::isChatAvailable()) {
+            echo json_encode(array(
+                'code' => -2,
+                'msg'  => 'AI 对话模型未配置，无法使用 AI 匹配商品。请先到【AI 开放平台 → 模型管理】中添加并启用一个对话模型。'
+            ));
+            return;
+        }
+
         set_time_limit(120);
 
         $result = AiService::matchGoodsByAi($title, $content, $platform);
@@ -421,6 +439,15 @@ class AiController extends \app\base\controller\BaseController
 
         if (empty($title)) {
             echo json_encode(array('code' => -1, 'msg' => '标题不能为空'));
+            return;
+        }
+
+        // 大模型未配置：明确报错，提示站长先添加并启用模型
+        if (!AiService::isChatAvailable()) {
+            echo json_encode(array(
+                'code' => -2,
+                'msg'  => 'AI 对话模型未配置，无法使用 AI 发布助手。请先到【AI 开放平台 → 模型管理】中添加并启用一个对话模型。'
+            ));
             return;
         }
 
