@@ -73,7 +73,7 @@ class Route {
 	    $pureRoute = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=[^\/]+/i', '', $pureRoute);
 	    $routeArr = !empty($pureRoute) ? explode("/", $pureRoute) : array();
 	    if(empty($routeArr)){
-	    	$zhicms_404="error";
+	    	$zhicms_404=Config::get('DEFAULT_CONTROLLER');
 	    }
 	
 		if(strstr($_SERVER['REQUEST_URI'],"?spm")){

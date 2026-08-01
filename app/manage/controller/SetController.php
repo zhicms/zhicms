@@ -130,6 +130,10 @@ class SetController extends \app\base\controller\BaseController
 					'forum-b<bid>.html' => 'index/forum/index/bid=<bid>',
 					'group-<gid>.html' => 'index/forum/group/gid=<gid>',
 					'topic-<id>.html' => 'index/forum/view/id=<id>',
+					'shequ.html' => 'index/forum/index',
+					'shequ-b<bid>.html' => 'index/forum/index/bid=<bid>',
+					'shequ-group-<gid>.html' => 'index/forum/group/gid=<gid>',
+					'shequ-topic-<id>.html' => 'index/forum/view/id=<id>',
 					// ===== 商品 / 优惠券 =====
 					'brand.html' => 'index/brand/index',
 					'brand-view-<id>.html' => 'index/brand/view/id=<id>',
