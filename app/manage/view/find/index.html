@@ -16,7 +16,10 @@
             <i class="fas fa-sync-alt"></i> 刷新
         </button>
         <button class="btn btn-success" onclick="openCollectModal()">
-            <i class="fas fa-bolt"></i> 一键采集
+            <i class="fas fa-bolt"></i> 商品采集
+        </button>
+        <button class="btn btn-info" onclick="openNewsModal()">
+            <i class="fas fa-newspaper"></i> 资讯采集
         </button>
         <div class="btn-group ml-2" id="batchBtnGroup" style="display:none;">
             <button class="btn btn-warning" onclick="batchAction('publish')">
@@ -272,6 +275,88 @@
     </div>
 </div>
 
+<!-- 聚合资讯一键采集弹窗 -->
+<div class="cat-modal" id="newsModal" style="display: none;">
+    <div class="cat-modal-box" style="width: 560px;">
+        <div class="cat-modal-header">
+            <i class="fas fa-newspaper text-info mr-2"></i> 资讯采集（聚合数据）
+        </div>
+        <div class="cat-modal-body" style="max-height: 70vh; overflow-y: auto;">
+            <p class="text-muted small mb-2">两个接口各自独立 Key；下方为聚合分类与本地「发现分类」一对一映射，仅勾选/选择需要对接的分类。</p>
+
+            <div class="form-group">
+                <label class="small text-muted">接口235 新闻头条 Key</label>
+                <input type="text" class="form-control" id="newsKey235" placeholder="填写聚合数据 235 接口 Key" value="<?php echo isset($juheKeys['key235']) ? $juheKeys['key235'] : ''; ?>">
+            </div>
+            <div class="form-group">
+                <label class="small text-muted">接口850 AI新闻简报 Key</label>
+                <input type="text" class="form-control" id="newsKey850" placeholder="填写聚合数据 850 接口 Key" value="<?php echo isset($juheKeys['key850']) ? $juheKeys['key850'] : ''; ?>">
+            </div>
+
+            <div class="form-group">
+                <label class="small text-muted">采集页数（每个分类拉取页数，建议 1~3）</label>
+                <input type="number" class="form-control" id="newsPages" value="2" min="1" max="10">
+            </div>
+
+            <hr>
+            <h6 class="text-muted">接口235 分类映射</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="thead-light"><tr><th>聚合分类</th><th>本地发现分类</th><th>对接</th></tr></thead>
+                    <tbody>
+                    <?php if(isset($juheTypes235)): ?>
+                    <?php foreach($juheTypes235 as $code => $name): ?>
+                        <tr>
+                            <td><?php echo $name; ?> <small class="text-muted">(<?php echo $code; ?>)</small></td>
+                            <td>
+                                <select class="form-control form-control-sm" id="map235_<?php echo $code; ?>">
+                                    <option value="0">不采集</option>
+                                    <?php if(isset($navs)): ?><?php foreach($navs as $nk => $nv): ?>
+                                    <option value="<?php echo $nk; ?>"><?php echo $nv; ?></option>
+                                    <?php endforeach; ?><?php endif; ?>
+                                </select>
+                            </td>
+                            <td class="text-center"><input type="checkbox" class="news235chk" data-code="<?php echo $code; ?>" checked></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <hr>
+            <h6 class="text-muted">接口850 分类映射</h6>
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered">
+                    <thead class="thead-light"><tr><th>聚合分类</th><th>本地发现分类</th><th>对接</th></tr></thead>
+                    <tbody>
+                    <?php if(isset($juheTypes850)): ?>
+                    <?php foreach($juheTypes850 as $code => $name): ?>
+                        <tr>
+                            <td><?php echo $name; ?> <small class="text-muted">(<?php echo $code; ?>)</small></td>
+                            <td>
+                                <select class="form-control form-control-sm" id="map850_<?php echo $code; ?>">
+                                    <option value="0">不采集</option>
+                                    <?php if(isset($navs)): ?><?php foreach($navs as $nk => $nv): ?>
+                                    <option value="<?php echo $nk; ?>"><?php echo $nv; ?></option>
+                                    <?php endforeach; ?><?php endif; ?>
+                                </select>
+                            </td>
+                            <td class="text-center"><input type="checkbox" class="news850chk" data-code="<?php echo $code; ?>" checked></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="cat-modal-footer">
+            <button class="btn btn-sm btn-secondary" onclick="closeNewsModal()">取消</button>
+            <button class="btn btn-sm btn-primary" id="newsConfirmBtn">开始采集</button>
+        </div>
+    </div>
+</div>
+
 {include file="app/manage/view/index/emlog_footer"}
 
 <script>
@@ -421,4 +506,87 @@ document.addEventListener('keydown', function(e) {
         if (m && m.style.display !== 'none') m.style.display = 'none';
     }
 });
+
+// ===== 资讯采集（聚合数据） =====
+function openNewsModal() {
+    document.getElementById('newsModal').style.display = 'flex';
+    var btn = document.getElementById('newsConfirmBtn');
+    btn.disabled = false;
+    btn.innerText = '开始采集';
+    btn.onclick = function() {
+        var key235 = document.getElementById('newsKey235').value.trim();
+        var key850 = document.getElementById('newsKey850').value.trim();
+        var pages  = document.getElementById('newsPages').value || 2;
+
+        if (!key235 && !key850) {
+            alert('请至少填写一个聚合接口 Key');
+            return;
+        }
+
+        var map235 = {}, map850 = {};
+        var c235 = document.querySelectorAll('.news235chk');
+        for (var i = 0; i < c235.length; i++) {
+            if (!c235[i].checked) continue;
+            var code = c235[i].getAttribute('data-code');
+            var nav = document.getElementById('map235_' + code).value;
+            if (nav && nav != '0') map235[code] = nav;
+        }
+        var c850 = document.querySelectorAll('.news850chk');
+        for (var j = 0; j < c850.length; j++) {
+            if (!c850[j].checked) continue;
+            var code2 = c850[j].getAttribute('data-code');
+            var nav2 = document.getElementById('map850_' + code2).value;
+            if (nav2 && nav2 != '0') map850[code2] = nav2;
+        }
+
+        if (key235 && Object.keys(map235).length === 0) {
+            alert('已填 235 Key，请至少选择一个 235 分类并指定本地发现分类');
+            return;
+        }
+        if (key850 && Object.keys(map850).length === 0) {
+            alert('已填 850 Key，请至少选择一个 850 分类并指定本地发现分类');
+            return;
+        }
+
+        btn.disabled = true;
+        btn.innerText = '采集中（请耐心等待）...';
+
+        var params = 'key235=' + encodeURIComponent(key235)
+            + '&key850=' + encodeURIComponent(key850)
+            + '&pages=' + encodeURIComponent(pages)
+            + '&map235=' + encodeURIComponent(JSON.stringify(map235))
+            + '&map850=' + encodeURIComponent(JSON.stringify(map850));
+
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', 'index.php?r=manage/find/newsCollect', true);
+        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4) {
+                try {
+                    var r = JSON.parse(xhr.responseText);
+                    alert(r.info);
+                    if (r.status === 'y') {
+                        setTimeout(function() { location.reload(); }, 1500);
+                    }
+                } catch(e) {
+                    alert('采集异常：' + xhr.responseText.substring(0, 200));
+                }
+                closeNewsModal();
+            }
+        };
+        xhr.send(params);
+    };
+}
+
+function closeNewsModal() {
+    var m = document.getElementById('newsModal');
+    if (m) m.style.display = 'none';
+    var btn = document.getElementById('newsConfirmBtn');
+    if (btn) { btn.disabled = false; btn.innerText = '开始采集'; }
+}
+
+document.getElementById('newsModal').addEventListener('click', function(e) {
+    if (e.target === this) this.style.display = 'none';
+});
+
 </script>

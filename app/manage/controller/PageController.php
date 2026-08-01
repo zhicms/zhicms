@@ -93,6 +93,17 @@ class PageController extends \app\base\controller\BaseController
 	}
 
 	public function delete(){
+		$this->pageDelete();
+	}
+
+	/**
+	 * 删除别名（前端调用 manage/page/del）
+	 */
+	public function del(){
+		$this->pageDelete();
+	}
+
+	private function pageDelete(){
 
 
 

@@ -12,6 +12,13 @@ class FindController extends \app\base\controller\BaseController
 
 		$this->categories = $this->getGoodsCategories();
 		$this->navs = $this->getFindNavs();
+		$apiConf = \app\common\ConfigStore::load('api');
+		$this->juheKeys = array(
+		    'key235' => isset($apiConf['juhe_235_key']) ? $apiConf['juhe_235_key'] : '',
+		    'key850' => isset($apiConf['juhe_850_key']) ? $apiConf['juhe_850_key'] : '',
+		);
+		$this->juheTypes235 = \app\common\JuheService::types235();
+		$this->juheTypes850 = \app\common\JuheService::types850();
 		$this->pageText=array("发现管理","文章列表");
 		$where[] = "1";
 
@@ -157,6 +164,159 @@ class FindController extends \app\base\controller\BaseController
             "info" => "采集完成：翻页 {$pageDone} 次，成功入库 {$success} 条，跳过重复 {$skip} 条",
             "status" => "y"
         )));
+	}
+
+	/**
+	 * 资讯采集（聚合数据 235 新闻头条 + 850 AI新闻简报）
+	 * 接收两个独立 key 与分类映射（聚合分类 => 本地发现分类 navid），逐类拉取新闻入库 yun_article。
+	 */
+	public function newsCollect(){
+        $this->checkManageSession();
+        set_time_limit(0);
+        header('Content-Type: application/json; charset=utf-8');
+
+        $key235 = trim($this->arg("key235", ''));
+        $key850 = trim($this->arg("key850", ''));
+        $map235Raw = $this->arg("map235", '');
+        $map850Raw  = $this->arg("map850", '');
+        $map235 = is_array($map235Raw) ? $map235Raw : @json_decode($map235Raw, true);
+        $map850 = is_array($map850Raw) ? $map850Raw : @json_decode($map850Raw, true);
+        if (!is_array($map235)) $map235 = array();
+        if (!is_array($map850)) $map850 = array();
+        $pages  = max(1, intval($this->arg("pages", 3)));
+
+        if (empty($key235) && empty($key850)) {
+            exit(json_encode(array("info" => "请至少填写一个聚合接口 Key（新闻头条或 AI新闻简报）", "status" => "n")));
+        }
+
+        // 保存 key 到后台配置（下次预填）
+        $api = \app\common\ConfigStore::load('api');
+        if (!is_array($api)) $api = array();
+        if (!empty($key235)) $api['juhe_235_key'] = $key235;
+        if (!empty($key850)) $api['juhe_850_key'] = $key850;
+        \app\common\ConfigStore::save('api', $api);
+
+        $success = 0;
+        $skip = 0;
+        $failMsg = array();
+
+        // ---- 接口 235 新闻头条 ----
+        if (!empty($key235) && !empty($map235) && is_array($map235)) {
+            foreach ($map235 as $type => $navid) {
+                $navid = intval($navid);
+                if ($navid <= 0) continue;
+                $type = preg_replace('/[^a-z0-9]/i', '', $type);
+                if ($type === '') continue;
+                $res = \app\common\JuheService::fetch235($key235, $type, $pages);
+                if (!$res['ok']) {
+                    $failMsg[] = "235[{$type}]: " . $res['error'];
+                    continue;
+                }
+                foreach ($res['list'] as $news) {
+                    if (empty($news['title'])) continue;
+                    if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) {
+                        $skip++;
+                        continue;
+                    }
+                    $this->insertNews($news, $navid, 'juhe_235');
+                    $success++;
+                }
+            }
+        }
+
+        // ---- 接口 850 AI新闻简报 ----
+        if (!empty($key850) && !empty($map850) && is_array($map850)) {
+            foreach ($map850 as $type => $navid) {
+                $navid = intval($navid);
+                if ($navid <= 0) continue;
+                $type = preg_replace('/[^a-z0-9]/i', '', $type);
+                if ($type === '') continue;
+                $res = \app\common\JuheService::fetch850($key850, $type, $pages);
+                if (!$res['ok']) {
+                    $failMsg[] = "850[{$type}]: " . $res['error'];
+                    continue;
+                }
+                foreach ($res['list'] as $news) {
+                    if (empty($news['title'])) continue;
+                    if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) {
+                        $skip++;
+                        continue;
+                    }
+                    $this->insertNews($news, $navid, 'juhe_850');
+                    $success++;
+                }
+            }
+        }
+
+        if (!empty($failMsg)) {
+            exit(json_encode(array(
+                "info" => "采集完成：成功入库 {$success} 条，跳过重复 {$skip} 条。部分分类失败：" . implode('；', $failMsg),
+                "status" => $success > 0 ? "y" : "n"
+            )));
+        }
+
+        exit(json_encode(array(
+            "info" => "资讯采集完成：成功入库 {$success} 条，跳过重复 {$skip} 条",
+            "status" => "y"
+        )));
+	}
+
+	/**
+	 * 判断资讯是否已存在（按 uniquekey / url / title 去重）
+	 */
+	private function newsExists($uniquekey, $url, $title){
+        if (!empty($uniquekey)) {
+            $chk = obj("api/ApiData")->dataCount("yun_article", array("`surl` = '" . addslashes($uniquekey) . "'"));
+            if ($chk > 0) return true;
+        }
+        if (!empty($title)) {
+            $chk = obj("api/ApiData")->dataCount("yun_article", array("`title` = '" . addslashes($title) . "'"));
+            if ($chk > 0) return true;
+        }
+        return false;
+	}
+
+	/**
+	 * 将一条标准化新闻写入 yun_article（归到本地发现分类 navid）
+	 */
+	private function insertNews($news, $navid, $source){
+        $content = '';
+        if (!empty($news['content'])) {
+            $content .= '<p>' . $news['content'] . '</p>';
+        }
+        if (!empty($news['url'])) {
+            $content .= '<p><a href="' . htmlspecialchars($news['url'], ENT_QUOTES) . '" target="_blank" rel="nofollow">查看原文</a></p>';
+        }
+        $dec = strip_tags($news['summary'] ?: $news['content']);
+        $dec = mb_substr($dec, 0, 120, 'UTF-8');
+
+        $data = array(
+            'goodsId'       => null,
+            'itemLink'      => null,
+            'cid'           => 0,
+            'navid'         => $navid,
+            'title'         => $news['title'],
+            'content'       => $content,
+            'mainPic'       => $news['pic'] ?? '',
+            'keywords'      => $news['title'],
+            'dec'           => $dec,
+            'author'        => $news['source'] ?? '',
+            'laiyuan'       => $source,
+            'surl'          => $news['uniquekey'] ?? '',
+            'sort'          => 0,
+            'hits'          => 0,
+            'bili'          => 0,
+            'sheng'         => '',
+            'allow_comment' => 1,
+            'featured'      => 0,
+            'view'          => 0,
+            'like'          => 0,
+            'lock'          => 0,
+            'status'        => 1,
+            'couponEndTime' => '',
+            'date'          => $news['pubDate'] ?? date('Y-m-d H:i:s'),
+        );
+        obj("api/ApiData")->insertData("yun_article", $data);
 	}
 
 	/**

@@ -126,7 +126,16 @@ class MysqlPdoDriver implements DbInterface {
 		}
 		$table = $this->_table($table);
 		$condition = $this->_where( $condition );
-		return $this->execute("UPDATE {$table} SET ".implode(', ', $keys) . $condition['_where'], $condition['_bindParams'] + $values);
+		// 重命名 WHERE 参数键，避免与 SET 字段名冲突（如 data 与 where 同时含 id 时，
+		// 会出现两个 :__id 占位符却只绑定一个参数，触发 SQLSTATE[HY093]）
+		$whereParams = array();
+		$whereSql = $condition['_where'];
+		foreach ($condition['_bindParams'] as $wk => $wv) {
+			$newKey = ':__w_' . ltrim($wk, ':');
+			$whereSql = str_replace($wk, $newKey, $whereSql);
+			$whereParams[$newKey] = $wv;
+		}
+		return $this->execute("UPDATE {$table} SET ".implode(', ', $keys) . $whereSql, $whereParams + $values);
 	}
 	
 	public function delete($table, array $condition = array() ){

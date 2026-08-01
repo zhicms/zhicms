@@ -3,7 +3,7 @@
 -- 兼容 MySQL 5.7 ~ 8.0
 -- 表前缀 __PREFIX__ 将在安装时自动替换为用户选择的表前缀
 -- 默认管理员: admin / admin88
--- 更新时间: 2026-07-31 15:31:12
+-- 更新时间: 2026-08-01 21:20:00
 -- ============================================
 
 SET NAMES utf8mb4;
@@ -79,8 +79,6 @@ CREATE TABLE `__PREFIX__article` (
   `sheng` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
   `couponEndTime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `navid` int(11) NOT NULL DEFAULT '0' COMMENT '发现分类ID（yun_nav.id），0=未分类',
-  `allow_comment` tinyint(1) NOT NULL DEFAULT '1' COMMENT '允许评论 1允许 0禁止',
-  `featured` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推荐文章 1推荐 0否',
   `date` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
@@ -213,6 +211,8 @@ CREATE TABLE `__PREFIX__forum` (
   `ip` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'IP地址',
   `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1显示/0隐藏',
   `like` int(11) NOT NULL DEFAULT '0',
+  `lock` int(11) DEFAULT '0' COMMENT '锁定',
+  `featured` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推荐',
   `date` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `groupid` (`groupid`),
@@ -390,6 +390,7 @@ CREATE TABLE `__PREFIX__items` (
   `top` tinyint(4) NOT NULL DEFAULT '0' COMMENT '置顶',
   `top_stime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '置顶开始',
   `top_etime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '0' COMMENT '置顶结束',
+  `spec` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '规格',
   PRIMARY KEY (`id`),
   UNIQUE KEY `goodsId` (`goodsId`),
   KEY `item_from` (`item_from`),
