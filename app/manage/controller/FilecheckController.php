@@ -302,9 +302,11 @@ class FilecheckController extends \app\base\controller\BaseController
     }
 
     /**
-     * 在线升级文件系统：遍历基线，将“与官方基线不一致”（被改动/缺失）的文件，
+     * 在线升级文件系统：遍历基线，将“与官方基线不一致”（被改动/缺失）的【受保护核心文件】，
      * 从 gitee（优先）→ 本地托底目录 → 官方压缩包 重新拉取官方最新版本覆盖。
-     * 与“在线升级系统”互补：系统升级升级程序版本，这里把被改乱/缺失的程序文件还原为官方最新版。
+     * 与“在线升级系统”互补：系统升级升级程序版本，这里把被改乱/缺失的核心文件还原为官方最新版。
+     * 注意：仅处理受保护核心文件（ZhiCms/vendor/app/base/app/api/app/common/public 等），
+     * 普通可修改文件（如后台视图定制的改动）不会被强制覆盖，避免冲掉用户已有的正常修改。
      */
     public function pull(){
         $this->checkManageSession();
@@ -313,11 +315,13 @@ class FilecheckController extends \app\base\controller\BaseController
         $branch = $this->branch();
         $restored = 0;
         $failed = array();
+        $skipped = 0;   // 非核心文件（用户正常改动），不处理
         $fromGitee = 0;
         $fromLocal = 0;
         $fromZip = 0;
         foreach ($manifest as $rel => $hash) {
             if ($rel === '__time') continue;
+            if (!$this->isProtected($rel)) { $skipped++; continue; }   // 非核心文件：保留用户修改，不在线升级
             $current = is_file(\ROOT_PATH . $rel) ? $this->md5File(\ROOT_PATH . $rel) : '';
             if ($current !== '' && $current === $hash) continue;   // 与基线一致则跳过（无需升级）
             $res = $this->fetchFile($rel, $branch);
@@ -334,11 +338,14 @@ class FilecheckController extends \app\base\controller\BaseController
                 $failed[] = $rel;
             }
         }
-        \ZhiCms\ext\AdminLog::write('filecheck', '在线升级文件系统，覆盖 ' . $restored . ' 个（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）');
-        if ($failed) {
-            exit(json_encode(array('status' => 'n', 'info' => '在线升级完成 ' . $restored . ' 个，失败 ' . count($failed) . ' 个（多为网络不可达的自定义文件，可忽略）：' . implode('、', array_slice($failed, 0, 5)))));
-        }
-        exit(json_encode(array('status' => 'y', 'info' => '在线升级文件系统完成：已用官方最新版覆盖 ' . $restored . ' 个被改动/缺失的文件（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）')));
+        \ZhiCms\ext\AdminLog::write('filecheck', '在线升级文件系统，覆盖核心文件 ' . $restored . ' 个（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '），跳过普通文件 ' . $skipped . ' 个，失败 ' . count($failed) . ' 个');
+        $msg = '在线升级完成：已用官方最新版覆盖 ' . $restored . ' 个核心文件';
+        $msg .= '（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）';
+        if ($skipped > 0) $msg .= '；已跳过 ' . $skipped . ' 个普通文件（保留你的修改）';
+        if ($failed) $msg .= '；' . count($failed) . ' 个核心文件拉取失败（网络不可达，可重试）：' . implode('、', array_slice($failed, 0, 5));
+        // 仅当“有受保护文件需要处理但全部失败”时才判为失败；部分成功/跳过均视为成功
+        $status = ($restored === 0 && $failed) ? 'n' : 'y';
+        exit(json_encode(array('status' => $status, 'info' => $msg)));
     }
 
     /**

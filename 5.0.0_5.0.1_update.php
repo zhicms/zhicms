@@ -108,6 +108,15 @@ updateVersionConfig($config['version']);
 // 8. 清理
 delDirRecursive($config['tempDir']);
 echo "\n=== 升级全部完成 ===\n";
+
+// 9. 让文件校对基线失效：升级后程序文件已变化，旧基线会导致后台误报“文件被篡改”
+$manifest = __DIR__ . '/data/filecheck/manifest.json';
+if (is_file($manifest)) {
+    @unlink($manifest);
+    echo "ℹ️ 已清除旧的文件校对基线，请到【文件校对】点击「建立基线」重新建立（否则会误报文件被篡改）。\n";
+}
+
+echo "</pre></body></html>";
 echo "</pre></body></html>";
 
 // ================= 辅助函数区 =================
