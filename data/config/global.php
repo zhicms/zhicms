@@ -1,6 +1,10 @@
 <?php
-include('rule.php');
-include('db.php');
+// 兼容 PHP 8.x：array_merge 不接受 null 参数。
+// rule.php / db.php 在未安装时可能不存在（db.php 由安装向导生成），
+// 因此先判断文件存在再 include，缺失时回退为空数组，避免安装时报
+// "array_merge(): Argument #3 must be of type array, null given"。
+$rule = file_exists(__DIR__ . '/rule.php') ? include(__DIR__ . '/rule.php') : array();
+$db   = file_exists(__DIR__ . '/db.php') ? include(__DIR__ . '/db.php') : array();
 $global=array(
     'DEFAULT_APP' => 'index',                     //默认访问模块，后台控制
     'DEFAULT_CONTROLLER' => $rule['moren'],           //默认访问控制器，后台控制

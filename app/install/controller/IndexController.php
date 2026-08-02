@@ -750,7 +750,7 @@ code{background:#f5f5f5;padding:2px 6px;border-radius:3px;font-size:12px;color:#
 <body>
 <div class="header">
     <h1>ZhiCms 安装向导</h1>
-    <p>版本 5.0.0 | PHP 电商导购 CMS 系统</p>
+    <p>版本 5.0.1 | PHP 电商导购 CMS 系统</p>
 </div>
 <div class="steps">{$stepHtml}</div>
 <div class="main">
@@ -762,7 +762,7 @@ HTML;
         return <<<HTML
 </div>
 <div style="text-align:center;padding:30px;color:#bbb;font-size:12px">
-    Powered by ZhiCms 5.0.0
+    Powered by ZhiCms 5.0.1
 </div>
 </body>
 </html>
