@@ -172,31 +172,29 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <script>
-// 统一 AJAX：使用 jQuery( layui 内置 ) 发送，确保携带登录 Cookie，避免被判未登录返回登录页 HTML
-function postAJAX(url, data, cb){
+// 统一 AJAX：使用原生 XMLHttpRequest（与系统设置一致），同源请求自动携带登录 Cookie，
+// 避免 jQuery/layui 在某些环境下不带 Cookie 导致被判未登录、返回登录页 HTML 而出现“操作失败”。
+function postAct(url, data, okMsg){
     var fd = new FormData();
     for (var k in data) fd.append(k, data[k]);
-    var $ = (window.layui && window.layui.jquery) ? window.layui.jquery : (window.jQuery || window.$);
-    $.ajax({
-        url: url,
-        type: 'POST',
-        data: fd,
-        processData: false,
-        contentType: false,
-        xhrFields: { withCredentials: true },
-        success: function(res){ cb(res); },
-        error: function(){ showToast('请求失败，请检查网络或服务器的会话是否已过期', 'danger'); }
-    });
-}
-function postAct(url, data, okMsg){
-    postAJAX(url, data || {}, function(res){
-        if (res && res.status === 'y') {
-            showToast(res.info || okMsg, 'success');
-            setTimeout(function(){ location.reload(); }, 800);
-        } else {
-            showToast((res && res.info) ? res.info : '操作失败', 'danger');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState !== 4) return;
+        if (xhr.status !== 200) { showToast('请求失败，请重试', 'danger'); return; }
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (res && res.status === 'y') {
+                showToast(res.info || okMsg, 'success');
+                setTimeout(function(){ location.reload(); }, 900);
+            } else {
+                showToast((res && res.info) ? res.info : '操作失败', 'danger');
+            }
+        } catch(e) {
+            showToast('操作失败：返回数据异常', 'danger');
         }
-    });
+    };
+    xhr.send(fd);
 }
 function buildBase(){
     if (!confirm('将基于当前文件建立校验基线，后续检测以此次为准。确定？')) return;
@@ -210,45 +208,46 @@ function doCheck(){
     location.href = 'index.php?r=manage/filecheck/check';
 }
 function saveRef(){
-    postAJAX('index.php?r=manage/filecheck/save', {
+    postAct('index.php?r=manage/filecheck/save', {
         local_ref: document.getElementById('localRefInput').value
-    }, function(res){
-        if (res && res.status === 'y') { showToast(res.info || '保存成功', 'success'); }
-        else showToast((res && res.info) ? res.info : '保存失败', 'danger');
-    });
+    }, '设置已保存');
 }
 function restoreAll(){
     if (!confirm('一键恢复整站：将从官方代码仓/压缩包拉取最新代码，覆盖除数据库配置外的全部程序文件并清理缓存。\n此操作会覆盖你对程序文件的改动（不会动数据库与上传文件）。确定继续？')) return;
     showToast('正在从官方代码仓恢复整站，请稍候…', 'success');
-    postAJAX('index.php?r=manage/filecheck/restoreAll', {}, function(res){
-        if (res && res.status === 'y') { showToast(res.info || '恢复完成', 'success'); setTimeout(function(){location.reload();}, 1200); }
-        else showToast((res && res.info) ? res.info : '恢复失败', 'danger');
-    });
+    postAct('index.php?r=manage/filecheck/restoreAll', {}, '整站恢复完成');
 }
 function pullAll(){
-    if (!confirm('在线升级文件系统：将从官方代码仓/本地托底/官方压缩包远程下载最新版本，覆盖所有与基线不一致（被改动/缺失）的文件。确定？')) return;
+    if (!confirm('在线升级文件系统：将从官方代码仓/本地托底/官方压缩包远程下载最新版本，覆盖所有与基线不一致（被改动/缺失）的核心文件。确定？')) return;
     postAct('index.php?r=manage/filecheck/pull', {}, '在线升级完成');
 }
 function downloadZip(){
     showToast('正在下载官方压缩包，请稍候…', 'success');
-    postAJAX('index.php?r=manage/filecheck/dlZip', {}, function(res){
-        if (res && res.status === 'y') { showToast(res.info || '下载完成', 'success'); }
-        else showToast((res && res.info) ? res.info : '下载失败', 'danger');
-    });
+    postAct('index.php?r=manage/filecheck/dlZip', {}, '官方压缩包已下载');
 }
 function restore(file){
     if (!confirm('从代码仓恢复：' + file + '\n将覆盖当前文件（核心文件，不可撤销）。确定？')) return;
     postAct('index.php?r=manage/filecheck/restore', {file:file}, '恢复完成');
 }
 function queryFile(file){
-    postAJAX('index.php?r=manage/filecheck/query', {file:file}, function(res){
-        if (!res || res.status !== 'y') { showToast('查询失败', 'danger'); return; }
-        var msg = '文件：' + file + '\n';
-        msg += res.protected ? '状态：受保护核心文件（不可在后台修改）\n' : '状态：可修改文件\n';
-        msg += '可写：' + (res.writable ? '是' : '否') + '\n';
-        msg += '可从代码仓恢复：' + (res.restorable ? '是' : '否');
-        alert(msg);
-    });
+    if (!confirm('查询文件：' + file + '\n将展示该文件状态（受保护/可写/可恢复）。确定？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/filecheck/query', true);
+    var fd = new FormData(); fd.append('file', file);
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState !== 4) return;
+        if (xhr.status !== 200) { showToast('查询失败', 'danger'); return; }
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (!res || res.status !== 'y') { showToast('查询失败', 'danger'); return; }
+            var msg = '文件：' + file + '\n';
+            msg += res.protected ? '状态：受保护核心文件（不可在后台修改）\n' : '状态：可修改文件\n';
+            msg += '可写：' + (res.writable ? '是' : '否') + '\n';
+            msg += '可从代码仓恢复：' + (res.restorable ? '是' : '否');
+            alert(msg);
+        } catch(e) { showToast('查询失败', 'danger'); }
+    };
+    xhr.send(fd);
 }
 
 function showToast(message, type = 'success') {
