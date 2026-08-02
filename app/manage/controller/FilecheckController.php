@@ -688,6 +688,10 @@ class FilecheckController extends \app\base\controller\BaseController
     }
 
     public function index(){
+        // 禁止浏览器缓存本页，避免“检测更新”等按钮的前端脚本被旧缓存命中（导致接口返回数据异常）
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
         $this->checkManageSession();
         $this->pageText = array('文件校对');
         $this->toolTitle = '文件校对';
@@ -748,6 +752,9 @@ class FilecheckController extends \app\base\controller\BaseController
      * 执行比对
      */
     public function check(){
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
         $this->checkManageSession();
         $manifest = $this->loadManifest();
         if (empty($manifest)) exit(json_encode(array('info' => '请先建立基线', 'status' => 'n')));
