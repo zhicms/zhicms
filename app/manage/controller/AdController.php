@@ -39,16 +39,24 @@ $this->checkManageSession();
 
     		$this->display();
 			exit;
-        }else{
+		}else{
 			 try {
 			     $data = obj('api/Api')->Form($this->POSTarg());
 			     // 默认排序
 			     if(!isset($data['px']) || $data['px'] === '') $data['px'] = 0;
-			     obj('api/ApiData')->insertData('yun_link', $data);
+			     // 编辑时表单带 id 隐藏字段，走更新；否则新增（避免 1062 主键冲突）
+			     if(!empty($data['id'])){
+			         $id = intval($data['id']);
+			         unset($data['id']);
+			         $where = array('id' => $id);
+			         obj('api/ApiData')->dataUpdate('yun_link', $data, $where);
+			     } else {
+			         obj('api/ApiData')->insertData('yun_link', $data);
+			     }
 			     echo json_encode(array("info" => "保存成功", "status" => "y"));
-			 } catch(\Exception $e) {
+		     } catch(\Exception $e) {
 			     echo json_encode(array("info" => "保存失败: " . $e->getMessage(), "status" => "n"));
-			 }
+		     }
 		}
 	}
 

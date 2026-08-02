@@ -177,7 +177,8 @@ class IndexController extends \app\base\controller\BaseController
        }
        $newBody = preg_replace_callback('/\[ZhiCmsUrl](.+?)\[\/ZhiCmsUrl]/', [$this, 'findItems'], urldecode($view['content']));
       $this->newBody = $newBody;
-      $view['cateName'] = \app\base\controller\BaseController::getCategoryName($view['cid'] ?? 0);
+      $view['cateName'] = \app\base\controller\BaseController::getNavName($view['navid'] ?? 0);
+      $view['cateId'] = (int)($view['navid'] ?? 0);
       // 作者名（无作者时回退为站方小编）+ 首字母头像（需在赋值 $this->view 之前计算）
       $authorName = trim(isset($view['author']) ? $view['author'] : '');
       if ($authorName === '') { $authorName = '值得买小编'; }

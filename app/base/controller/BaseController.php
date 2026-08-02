@@ -187,9 +187,17 @@ class BaseController extends \ZhiCms\base\Controller {
             return $hot ?: [];
         }, 600);
 
-        // 分类目录：使用「文章资讯」分类(发现分类 yun_nav)，与商品分类(cid)区分
-        $this->cats = self::getNavCategories();
+        // 分类目录：文章资讯分类(yun_nav) 与 电商商品分类(cid) 分别赋值，避免混淆
+        // $navs = 文章资讯分类（首页/文章分类页/阅读页使用）
+        // $cats = 电商商品分类（优惠券/大牌/风云榜/热榜/商品详情页使用）
         $this->navs = self::getNavCategories();
+        $this->cats = self::getCategories();
+
+        // 友情链接（缓存 10 分钟，所有前端页面底部 footer 统一调用）
+        $this->links = $cache->remember('footer_links', function () {
+            $links = obj("api/ApiData")->dataSelect("yun_link", array(), "`px` ASC, `id` ASC LIMIT 0, 20");
+            return $links ?: [];
+        }, 600);
 
         // 站内速览：5 次 COUNT → 1 次 UNION（对标 emlog 的 site_stat 缓存）
         $today = date("Y-m-d");

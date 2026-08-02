@@ -48,9 +48,23 @@
             </div>
             </div><!-- /paramsFields -->
 
-            <!-- uniapp_url 和 mp_url 改为从服务端拉取，前端隐藏相关输入项 -->
-            <input type="hidden" name="uniapp_url" value="">
-            <input type="hidden" name="mp_url" value="">
+            <div class="form-group">
+                <label class="form-label">uniapp 源码包 URL</label>
+                <div class="form-control">
+                    <input type="text" id="uniappUrlInput" value="<?php echo htmlspecialchars($form['uniapp_url']); ?>" readonly style="width:480px;background:#f1f5f9;color:#475569;cursor:default;">
+                    <button type="button" class="btn btn-copy" data-target="uniappUrlInput" style="margin-left:8px;padding:4px 12px;font-size:12px;">复制</button>
+                    <span class="form-help">托管在服务器上的 uniapp 源码 ZIP 地址（只读，不可修改）</span>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">小程序源码包 URL</label>
+                <div class="form-control">
+                    <input type="text" id="mpUrlInput" value="<?php echo htmlspecialchars($form['mp_url']); ?>" readonly style="width:480px;background:#f1f5f9;color:#475569;cursor:default;">
+                    <button type="button" class="btn btn-copy" data-target="mpUrlInput" style="margin-left:8px;padding:4px 12px;font-size:12px;">复制</button>
+                    <span class="form-help">编译后的微信小程序源码 ZIP 地址（只读，不可修改）</span>
+                </div>
+            </div>
 
             <div class="form-group" id="lastDownloadWrap" style="display:none;">
                 <label class="form-label">打包下载</label>
@@ -87,8 +101,10 @@
             <p><strong>方式二：uniapp 源码（推荐给二次开发者）</strong></p>
             <ol style="padding-left:22px;margin:4px 0 16px;">
                 <li>选择「uniapp 源码」模式，点击「一键打包并下载」</li>
-                <li>系统直接从远程下载 uniapp 源码 ZIP，无需填写参数（拿到源码后自行修改）</li>
-                <li>解压 ZIP，用 <strong>HBuilderX</strong> → 打开目录，执行 <code>npm install</code> 后即可运行</li>
+                <li>系统直接从远程下载 uniapp 源码 ZIP，无需填写参数</li>
+                <li>解压 ZIP，用 <strong>HBuilderX</strong> → 打开目录</li>
+                <li>打开 <code>config.js</code>，修改 <code>BACKEND_BASE</code> 为你的后端网址、AppID 等参数</li>
+                <li>执行 <code>npm install</code> 后即可运行 / 编译</li>
             </ol>
 
             <p><strong>⚠️ 微信公众平台配置（必做，否则小程序无网络）：</strong></p>
@@ -122,6 +138,9 @@
 .btn-primary:disabled{background:#93c5fd;cursor:not-allowed;}
 .btn-secondary{background:#f1f5f9;color:#475569;border:1px solid #cbd5e1;}
 .btn-secondary:hover{background:#e2e8f0;}
+.btn-copy{background:#e0f2fe;color:#0369a1;border:1px solid #7dd3fc;border-radius:6px;cursor:pointer;font-size:12px;transition:all .2s;}
+.btn-copy:hover{background:#bae6fd;}
+.btn-copy.copied{background:#bbf7d0;color:#15803d;border-color:#86efac;}
 .warn-box{padding:12px 16px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:6px;font-size:13px;line-height:1.6;margin-bottom:20px;}
 .warn-box code{background:#fff;padding:2px 4px;border-radius:3px;color:#9a3412;}
 .info-box{padding:10px 14px;background:#eff6ff;border:1px solid #bfdbfe;border-radius:6px;font-size:13px;color:#1e40af;}
@@ -155,6 +174,29 @@
     if (radioMini) radioMini.addEventListener('change', toggleParams);
     if (radioUni)  radioUni.addEventListener('change', toggleParams);
     toggleParams(); // 初始化
+
+    // ======= 复制按钮 =======
+    document.querySelectorAll('.btn-copy').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var target = document.getElementById(this.getAttribute('data-target'));
+            if (!target) return;
+            var val = target.value;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(val).then(function () {
+                    showCopied(btn);
+                });
+            } else {
+                target.select();
+                try { document.execCommand('copy'); showCopied(btn); } catch (e) {}
+            }
+        });
+    });
+    function showCopied(btn) {
+        var orig = btn.textContent;
+        btn.textContent = '已复制';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = orig; btn.classList.remove('copied'); }, 1500);
+    }
 
     // ======= 「仅保存默认值」按钮：不用拦截，直接走原生统一 AJAX =======
     if (saveDefBtn) {

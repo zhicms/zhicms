@@ -12,7 +12,7 @@
         <!-- 调用后台设置的友情链接 -->
         {if !empty($links)}
           {foreach $links as $link}
-            <li><a href="{$link['link']}" target="_blank" rel="nofollow">{$link['name']}</a></li>
+            <li><a href="{$link['link']}" target="_blank" rel="nofollow">{$link['title']}</a></li>
           {/foreach}
         {else}
           <li><a href="{url($route='index/index/index', $params=array())}">网站首页</a></li>

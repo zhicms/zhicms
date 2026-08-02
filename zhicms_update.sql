@@ -16,3 +16,7 @@ ALTER TABLE `yun_items` ADD COLUMN `spec` varchar(500) DEFAULT '' COMMENT '规�
 -- yun_forum 表：新增锁定、推荐字段
 ALTER TABLE `yun_forum` ADD COLUMN `lock` int(11) DEFAULT '0' COMMENT '锁定';
 ALTER TABLE `yun_forum` ADD COLUMN `featured` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推荐';
+
+-- 版本号对齐：升级后将 cfg_version 更新为 5.0.1（与 data/config/version.php 一致）
+INSERT INTO `yun_config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.1"}', '版本号')
+ON DUPLICATE KEY UPDATE `value` = '{"version":"5.0.1"}';

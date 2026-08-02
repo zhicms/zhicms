@@ -1,9 +1,9 @@
 -- ============================================
--- ZhiCms 5.0 数据库安装脚本
+-- ZhiCms 5.0.1 数据库安装脚本
 -- 兼容 MySQL 5.7 ~ 8.0
 -- 表前缀 __PREFIX__ 将在安装时自动替换为用户选择的表前缀
 -- 默认管理员: admin / admin88
--- 更新时间: 2026-08-01 21:20:00
+-- 更新时间: 2026-08-02 09:10:00
 -- ============================================
 
 SET NAMES utf8mb4;
@@ -154,6 +154,13 @@ CREATE TABLE `__PREFIX__config` (
   UNIQUE KEY `key` (`key`)
 ) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COMMENT='站点配置表';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- 版本号配置（全新安装即为 5.0.1，与 data/config/version.php 对齐）
+--
+INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
+('cfg_version', '{"version":"5.0.1"}', '版本号');
+
 --
 --
 
