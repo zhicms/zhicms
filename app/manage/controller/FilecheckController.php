@@ -338,14 +338,177 @@ class FilecheckController extends \app\base\controller\BaseController
                 $failed[] = $rel;
             }
         }
-        \ZhiCms\ext\AdminLog::write('filecheck', '在线升级文件系统，覆盖核心文件 ' . $restored . ' 个（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '），跳过普通文件 ' . $skipped . ' 个，失败 ' . count($failed) . ' 个');
+        // 增强：除基线内受保护文件外，额外拉取 zip/代码仓中“新增”的受保护核心文件（你上传到代码仓/更新包的新文件），
+        // 让“在线升级”也能把新增文件补回本地（仅受保护核心文件，不冲掉普通文件）。
+        $added = 0;
+        $zip = $this->ensureZip();
+        if ($zip !== false && class_exists('ZipArchive')) {
+            $z = new ZipArchive;
+            if ($z->open($zip) === true) {
+                $branch = $this->branch();
+                $manifestKeys = $manifest;
+                unset($manifestKeys['__time']);
+                for ($i = 0; $i < $z->numFiles; $i++) {
+                    $name = $z->getNameIndex($i);
+                    if ($name === false) continue;
+                    $name = ltrim($name, '/');
+                    if (strpos($name, 'zhicms/') === 0) $name = substr($name, strlen('zhicms/'));
+                    if (substr($name, -1) === '/') continue;
+                    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                    if (!in_array($ext, $this->scanExt)) continue;
+                    $inScan = false;
+                    foreach ($this->scanDirs as $d) { if (strpos($name, $d . '/') === 0) { $inScan = true; break; } }
+                    if (!$inScan) continue;
+                    if (!$this->isProtected($name)) continue;          // 仅受保护核心文件
+                    if (isset($manifestKeys[$name])) continue;          // 基线内已处理过
+                    if (is_file(\ROOT_PATH . $name)) continue;          // 本地已存在则跳过
+                    $res = $this->fetchFile($name, $branch);
+                    if (!$res['ok']) { $failed[] = $name; continue; }
+                    $dst = \ROOT_PATH . $name;
+                    $dstDir = dirname($dst);
+                    if (!is_dir($dstDir)) @mkdir($dstDir, 0755, true);
+                    if (file_put_contents($dst, $res['content']) !== false) {
+                        $added++;
+                        if ($res['source'] === 'gitee') $fromGitee++;
+                        elseif ($res['source'] === 'local') $fromLocal++;
+                        else $fromZip++;
+                    } else {
+                        $failed[] = $name;
+                    }
+                }
+                $z->close();
+            }
+        }
+
+        \ZhiCms\ext\AdminLog::write('filecheck', '在线升级文件系统，覆盖核心文件 ' . $restored . ' 个（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '），新增补回 ' . $added . ' 个，跳过普通文件 ' . $skipped . ' 个，失败 ' . count($failed) . ' 个');
         $msg = '在线升级完成：已用官方最新版覆盖 ' . $restored . ' 个核心文件';
         $msg .= '（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）';
         if ($skipped > 0) $msg .= '；已跳过 ' . $skipped . ' 个普通文件（保留你的修改）';
+        if ($added > 0) $msg .= '；已补回 ' . $added . ' 个新增核心文件（来自代码仓/更新包）';
         if ($failed) $msg .= '；' . count($failed) . ' 个核心文件拉取失败（网络不可达，可重试）：' . implode('、', array_slice($failed, 0, 5));
         // 仅当“有受保护文件需要处理但全部失败”时才判为失败；部分成功/跳过均视为成功
         $status = ($restored === 0 && $failed) ? 'n' : 'y';
         exit(json_encode(array('status' => $status, 'info' => $msg)));
+    }
+
+    /**
+     * 检测代码仓/更新包是否有新版本或新文件（期望“检测代码仓有更新”场景）
+     * 逻辑：
+     *  1) 优先解析官方更新包 zip（data/repo_ref/zhicms.zip，ensureZip 自动下载/维持最新）的条目清单；
+     *  2) 与本地扫描文件对比，发现“新增文件”（zip 有、本地无，多为你上传到代码仓/更新包的新文件）；
+     *  3) 与基线内【受保护】文件对比，发现“可升级文件”（受保护核心文件与 zip 内容 hash 不同）；
+     *  4) 软检测 gitee 版本号（官方接口返回），失败不影响主流程；
+     *  5) 返回 has_update / new_count / upgrade_count / new_files / upgrade_files / source / remote_version。
+     */
+    public function detectUpdate(){
+        $this->checkManageSession();
+        $zip = $this->ensureZip();
+        $zipEntries = array();      // zip 内相对站点根的文件清单（已规范化）
+        if ($zip !== false && class_exists('ZipArchive')) {
+            $z = new ZipArchive;
+            if ($z->open($zip) === true) {
+                for ($i = 0; $i < $z->numFiles; $i++) {
+                    $name = $z->getNameIndex($i);
+                    if ($name === false) continue;
+                    $name = ltrim($name, '/');
+                    // 规范化：zip 内常见根前缀 zhicms/ 去掉
+                    if (strpos($name, 'zhicms/') === 0) $name = substr($name, strlen('zhicms/'));
+                    if (substr($name, -1) === '/') continue;
+                    $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                    if (!in_array($ext, $this->scanExt)) continue;
+                    $zipEntries[$name] = true;
+                }
+                $z->close();
+            }
+        }
+
+        $local = $this->scanFiles();
+        $localSet = array_flip($local);
+
+        // 新增文件：zip 有而本地扫描目录无（可能是你上传到代码仓/更新包的新文件）
+        $newFiles = array();
+        foreach (array_keys($zipEntries) as $rel) {
+            // 仅关注我们校验的目录，避免误报
+            $inScan = false;
+            foreach ($this->scanDirs as $d) {
+                if (strpos($rel, $d . '/') === 0) { $inScan = true; break; }
+            }
+            if (!$inScan) continue;
+            if (!isset($localSet[$rel])) $newFiles[] = $rel;
+        }
+
+        // 可升级文件：基线内受保护文件与 zip 内容 hash 不同
+        $manifest = $this->loadManifest();
+        $upgradeFiles = array();
+        if (!empty($manifest)) {
+            $branch = $this->branch();
+            foreach ($manifest as $rel => $hash) {
+                if ($rel === '__time') continue;
+                if (!isset($zipEntries[$rel])) continue;          // zip 没有该文件，无法判定
+                if (!$this->isProtected($rel)) continue;          // 仅核心文件纳入“升级”
+                $zipContent = $this->fetchFromZip($rel);
+                if ($zipContent === false) continue;
+                if (md5($zipContent) !== $hash) $upgradeFiles[] = $rel;
+            }
+        }
+
+        // 软检测 gitee 版本号（官方接口 update_check.php）
+        $remoteVersion = '';
+        $json = \ZhiCms\ext\Http::doGet(self::UPDATE_CHECK_URL, 8);
+        if ($json) {
+            $data = json_decode($json, true);
+            if (is_array($data) && !empty($data['version'])) $remoteVersion = $data['version'];
+        }
+
+        // 检测 gitee 代码仓“近期动态”（仓库 events 公开接口，无需登录），每次检测都实时拉取最新推送并展示，
+        // 不再依赖本地缓存判断“是否已见过”，确保每次点“检测更新”都能看到代码仓最新动态。
+        $giteeLatestSha = '';
+        $giteeLatestTime = '';
+        $giteeLatestMsg = '';
+        $giteeEvents = \ZhiCms\ext\Http::doGet('https://gitee.com/api/v5/repos/dazensun/zhicms/events', 10);
+        if ($giteeEvents) {
+            $ev = json_decode($giteeEvents, true);
+            if (is_array($ev)) {
+                foreach ($ev as $e) {
+                    if (isset($e['type']) && $e['type'] === 'PushEvent' && !empty($e['payload']['commits'][0]['sha'])) {
+                        $giteeLatestSha = $e['payload']['commits'][0]['sha'];
+                        $giteeLatestTime = isset($e['created_at']) ? $e['created_at'] : '';
+                        $giteeLatestMsg = isset($e['payload']['commits'][0]['message']) ? $e['payload']['commits'][0]['message'] : '';
+                        break;   // 第一条即最新
+                    }
+                }
+            }
+        }
+        // 每次都如实展示最新动态（gitee_online 表示代码仓在线并可获取动态）
+        $giteeOnline = ($giteeLatestSha !== '');
+        $giteeTip = $giteeOnline
+            ? ('代码仓最新推送（' . ($giteeLatestTime ?: '刚刚') . ($giteeLatestMsg ? '：' . $giteeLatestMsg : '') . '）')
+            : '';
+
+        // 注意：gitee 动态仅作“展示”，真正的可升级判定仍基于更新包的文件差异（new_files / upgrade_files），
+        // 避免每次都因“代码仓有动态”而误报“有更新”。
+        $hasUpdate = (!empty($newFiles) || !empty($upgradeFiles));
+        $source = $zip !== false ? 'zip' : 'none';
+        $msg = $hasUpdate
+            ? ('检测到更新：更新包中有 ' . count($newFiles) . ' 个新增文件、' . count($upgradeFiles) . ' 个核心文件可升级' . ($giteeTip ? '；' . $giteeTip : ''))
+            : '未检测到新版本或新文件（本地与更新包一致）' . ($giteeTip ? '；' . $giteeTip : '');
+
+        exit(json_encode(array(
+            'status'          => 'y',
+            'has_update'      => $hasUpdate,
+            'new_count'       => count($newFiles),
+            'upgrade_count'   => count($upgradeFiles),
+            'new_files'       => $newFiles,
+            'upgrade_files'   => $upgradeFiles,
+            'source'          => $source,
+            'remote_version'  => $remoteVersion,
+            'gitee_sha'       => $giteeLatestSha,
+            'gitee_time'      => $giteeLatestTime,
+            'gitee_msg'       => $giteeLatestMsg,
+            'gitee_online'    => $giteeOnline,
+            'gitee_tip'       => $giteeTip,
+            'info'            => $msg,
+        )));
     }
 
     /**
