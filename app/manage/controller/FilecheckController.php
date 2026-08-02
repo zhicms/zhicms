@@ -280,26 +280,31 @@ class FilecheckController extends \app\base\controller\BaseController
     }
 
     /**
-     * 从代码仓（gitee，失败回退本地托底）恢复单个文件（仅用于受保护的核心文件）
+     * 从代码仓/本地托底/官方压缩包远程下载并恢复单个文件（在线升级单文件）
+     * 适用于受保护核心文件与被改动过的普通文件，用官方最新版本覆盖本地
      */
     public function restore(){
         $this->checkManageSession();
         $f = trim($this->arg('file', ''));
         if ($f === '' || strpos($f, '..') !== false) exit(json_encode(array('status' => 'n', 'info' => '参数非法')));
-        if (!$this->isProtected($f)) exit(json_encode(array('status' => 'n', 'info' => '该文件非核心文件，无需从代码仓恢复')));
+        if (!is_file(\ROOT_PATH . $f) && !$this->isProtected($f)) {
+            // 普通文件且本地不存在：仍允许尝试从官方源拉取（等于补回官方文件）
+        }
         $branch = $this->branch();
         $res = $this->fetchFile($f, $branch);
-        if (!$res['ok']) exit(json_encode(array('status' => 'n', 'info' => '恢复失败：gitee、本地托底目录、官方压缩包均无可用的该文件（请检查网络或在“本地托底目录”上传官方副本）：' . $f)));
+        if (!$res['ok']) exit(json_encode(array('status' => 'n', 'info' => '远程下载失败：gitee、本地托底目录、官方压缩包均无可用的该文件（请检查网络或在“本地托底目录”上传官方副本）：' . $f)));
         $dst = \ROOT_PATH . $f;
         $dstDir = dirname($dst);
         if (!is_dir($dstDir)) @mkdir($dstDir, 0755, true);
         if (file_put_contents($dst, $res['content']) === false) exit(json_encode(array('status' => 'n', 'info' => '写入失败，请检查目录权限：' . $f)));
-        \ZhiCms\ext\AdminLog::write('filecheck', '从[' . $res['source'] . ']恢复了核心文件：' . $f);
-        exit(json_encode(array('status' => 'y', 'info' => '已从' . $this->sourceLabel($res['source']) . '恢复：' . $f)));
+        \ZhiCms\ext\AdminLog::write('filecheck', '在线升级(远程下载恢复)了文件：' . $f . ' [来源:' . $res['source'] . ']');
+        exit(json_encode(array('status' => 'y', 'info' => '已从' . $this->sourceLabel($res['source']) . '远程下载并覆盖：' . $f)));
     }
 
     /**
-     * 一键从代码仓拉取全部受保护文件（gitee 优先，失败回退本地托底）
+     * 在线升级文件系统：遍历基线，将“与官方基线不一致”（被改动/缺失）的文件，
+     * 从 gitee（优先）→ 本地托底目录 → 官方压缩包 重新拉取官方最新版本覆盖。
+     * 与“在线升级系统”互补：系统升级升级程序版本，这里把被改乱/缺失的程序文件还原为官方最新版。
      */
     public function pull(){
         $this->checkManageSession();
@@ -313,9 +318,8 @@ class FilecheckController extends \app\base\controller\BaseController
         $fromZip = 0;
         foreach ($manifest as $rel => $hash) {
             if ($rel === '__time') continue;
-            if (!$this->isProtected($rel)) continue;        // 仅核心文件
             $current = is_file(\ROOT_PATH . $rel) ? $this->md5File(\ROOT_PATH . $rel) : '';
-            if ($current !== '' && $current === $hash) continue;   // 与基线一致则跳过
+            if ($current !== '' && $current === $hash) continue;   // 与基线一致则跳过（无需升级）
             $res = $this->fetchFile($rel, $branch);
             if (!$res['ok']) { $failed[] = $rel; continue; }
             $dst = \ROOT_PATH . $rel;
@@ -330,11 +334,11 @@ class FilecheckController extends \app\base\controller\BaseController
                 $failed[] = $rel;
             }
         }
-        \ZhiCms\ext\AdminLog::write('filecheck', '批量拉取核心文件，恢复 ' . $restored . ' 个（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）');
+        \ZhiCms\ext\AdminLog::write('filecheck', '在线升级文件系统，覆盖 ' . $restored . ' 个（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）');
         if ($failed) {
-            exit(json_encode(array('status' => 'n', 'info' => '恢复 ' . $restored . ' 个，失败 ' . count($failed) . ' 个：' . implode('、', array_slice($failed, 0, 5)))));
+            exit(json_encode(array('status' => 'n', 'info' => '在线升级完成 ' . $restored . ' 个，失败 ' . count($failed) . ' 个（多为网络不可达的自定义文件，可忽略）：' . implode('、', array_slice($failed, 0, 5)))));
         }
-        exit(json_encode(array('status' => 'y', 'info' => '已拉取并恢复 ' . $restored . ' 个核心文件（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）')));
+        exit(json_encode(array('status' => 'y', 'info' => '在线升级文件系统完成：已用官方最新版覆盖 ' . $restored . ' 个被改动/缺失的文件（gitee:' . $fromGitee . ' 本地:' . $fromLocal . ' 压缩包:' . $fromZip . '）')));
     }
 
     /**
@@ -345,8 +349,11 @@ class FilecheckController extends \app\base\controller\BaseController
         $localRef = trim($this->arg('local_ref', ''));
         if ($localRef !== '') {
             $localRef = rtrim(str_replace('\\', '/', $localRef), '/') . '/';
+            // 目录不存在时自动创建（避免“目录不存在”导致保存失败，提升易用性）
             if (!is_dir($localRef)) {
-                exit(json_encode(array('status' => 'n', 'info' => '本地托底目录不存在：' . $localRef)));
+                if (!@mkdir($localRef, 0755, true) && !is_dir($localRef)) {
+                    exit(json_encode(array('status' => 'n', 'info' => '本地托底目录无法创建：' . $localRef . '（请检查父目录写权限）')));
+                }
             }
         }
         $cfg = \app\common\ConfigStore::load('filecheck');

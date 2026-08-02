@@ -126,37 +126,71 @@ document.getElementById('checkAll').addEventListener('change', function(){
 });
 document.querySelectorAll('.tbl-chk').forEach(function(el){ el.addEventListener('change', refreshCount); });
 
-function postAct(url, data, okMsg){
+function postAct(url, data, btn, loadingText){
     var fd = new FormData();
     for (var k in data) fd.append(k, data[k]);
-    fetch(url, {method:'POST', body: fd, credentials: 'same-origin'}).then(function(r){
-        return r.text().then(function(txt){
-            try { return JSON.parse(txt); } catch(e) { throw new Error(txt || ('HTTP ' + r.status)); }
-        });
-    }).then(function(res){
-        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();}, 700); }
-        else { alert((res && res.info) ? res.info : '操作失败'); }
-    }).catch(function(err){ alert('请求失败：' + (err && err.message ? err.message : err)); });
+    if (btn) { btn.disabled = true; var old = btn.innerHTML; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + (loadingText || '处理中...'); }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', url, true);
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState !== 4) return;
+        if (btn) { btn.disabled = false; btn.innerHTML = old; }
+        if (xhr.status !== 200) { showToast('请求失败，请重试', 'danger'); return; }
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (res && res.status === 'y') {
+                showToast(res.info, 'success');
+                // 延迟刷新，让成功提示充分展示（避免“点了没反应”的错觉）
+                setTimeout(function(){ location.reload(); }, 1500);
+            } else {
+                showToast((res && res.info) ? res.info : '操作失败', 'danger');
+            }
+        } catch(e) {
+            showToast('操作失败', 'danger');
+        }
+    };
+    xhr.send(fd);
 }
 function backupAll(){
     if (!confirm('确定要备份整个数据库吗？')) return;
-    postAct('index.php?r=manage/database/backup', {}, '备份完成');
+    postAct('index.php?r=manage/database/backup', {}, document.querySelector('[onclick^="backupAll"]'), '备份中...');
 }
 function batchAct(act){
     var sel = getChecked();
-    if (!sel.length) { alert('请先勾选要操作的表'); return; }
+    if (!sel.length) { showToast('请先勾选要操作的表', 'danger'); return; }
     if (!confirm('确定对选中的 ' + sel.length + ' 张表执行「' + (act==='optimize'?'优化':'修复') + '」？')) return;
-    postAct('index.php?r=manage/database/' + act, {tables: sel.join(',')}, '操作完成');
+    postAct('index.php?r=manage/database/' + act, {tables: sel.join(',')}, event.target, (act==='optimize'?'优化中...':'修复中...'));
 }
 function oneAct(act, table){
-    postAct('index.php?r=manage/database/' + act, {tables: table}, '操作完成');
+    postAct('index.php?r=manage/database/' + act, {tables: table}, event.currentTarget, (act==='optimize'?'优化中...':'修复中...'));
 }
 function restoreBak(file){
     if (!confirm('恢复备份「' + file + '」将覆盖现有数据，确定继续？')) return;
-    postAct('index.php?r=manage/database/restore', {file: file}, '恢复完成');
+    postAct('index.php?r=manage/database/restore', {file: file}, event.currentTarget, '恢复中...');
 }
 function delBak(file){
     if (!confirm('确定删除备份「' + file + '」？')) return;
-    postAct('index.php?r=manage/database/delBak', {file: file}, '已删除');
+    postAct('index.php?r=manage/database/delBak', {file: file}, event.currentTarget, '删除中...');
+}
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 3000);
 }
 </script>

@@ -50,7 +50,7 @@
         {if $hasBaseline}
         <button class="btn btn-sm btn-primary" onclick="doCheck()"><i class="fas fa-search mr-1"></i> 重新检测</button>
         <button class="btn btn-sm btn-outline-secondary" onclick="rebuild()"><i class="fas fa-sync mr-1"></i> 重建基线</button>
-        <button class="btn btn-sm btn-warning" onclick="pullAll()"><i class="fas fa-cloud-download-alt mr-1"></i> 从代码仓拉取全部</button>
+        <button class="btn btn-sm btn-warning" onclick="pullAll()"><i class="fas fa-cloud-download-alt mr-1"></i> 在线升级全部文件</button>
         {else}
         <button class="btn btn-sm btn-success" onclick="buildBase()"><i class="fas fa-plus mr-1"></i> 建立基线</button>
         {/if}
@@ -60,6 +60,16 @@
         基线建立于 {date('Y-m-d H:i:s', (int)$baselineTime)}，共 {$baselineCount} 个文件
     </div>
     {/if}
+</div>
+
+<!-- 在线升级文件系统：与“在线升级系统”互补 -->
+<div class="card border-info mb-3">
+    <div class="card-header bg-info text-white font-weight-bold"><i class="fas fa-satellite-dish mr-1"></i> 在线升级文件系统（远程下载恢复）</div>
+    <div class="card-body">
+        <p class="mb-2">当核心/程序文件被改动、缺失或被篡改时，可<b>直接从官方代码仓（gitee）远程下载最新官方版本覆盖</b>本地文件，相当于“文件级在线升级”，与“在线升级系统”（升级程序大版本）互补。</p>
+        <p class="mb-2 text-muted small">恢复顺序：gitee 官方代码仓 → 本地托底目录 → 官方压缩包（data/repo_ref/zhicms.zip）。点击下方按钮会对所有“与基线不一致”的文件执行远程下载覆盖。</p>
+        <button type="button" class="btn btn-info" onclick="pullAll()"><i class="fas fa-cloud-download-alt mr-1"></i> 一键在线升级全部文件（远程下载覆盖）</button>
+    </div>
 </div>
 
 {if isset($result) && $result}
@@ -87,12 +97,13 @@
                         <td>
                             {if $it.protected}
                                 {if $it.restorable}
-                                <button class="btn btn-xs btn-outline-warning" onclick="restore('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-undo"></i> 从代码仓恢复</button>
+                                <button class="btn btn-xs btn-outline-warning" onclick="restore('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-cloud-download-alt"></i> 在线升级</button>
                                 {else}
                                 <span class="small text-muted">未配置代码仓</span>
                                 {/if}
                             {else}
-                                <button class="btn btn-xs btn-outline-secondary" onclick="queryFile('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-search"></i> 可修改查询</button>
+                                <button class="btn btn-xs btn-outline-warning" onclick="restore('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-cloud-download-alt"></i> 在线升级</button>
+                                <button class="btn btn-xs btn-outline-secondary" onclick="queryFile('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-search"></i> 查询</button>
                             {/if}
                         </td>
                     </tr>
@@ -117,12 +128,12 @@
                         <td>
                             {if $it.protected}
                                 {if $it.restorable}
-                                <button class="btn btn-xs btn-outline-warning" onclick="restore('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-undo"></i> 从代码仓恢复</button>
+                                <button class="btn btn-xs btn-outline-warning" onclick="restore('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-cloud-download-alt"></i> 在线升级</button>
                                 {else}
                                 <span class="small text-muted">未配置代码仓</span>
                                 {/if}
                             {else}
-                                <span class="small text-muted">—</span>
+                                <button class="btn btn-xs btn-outline-warning" onclick="restore('{htmlspecialchars($it.file, ENT_QUOTES, 'UTF-8')}')"><i class="fas fa-cloud-download-alt"></i> 在线升级</button>
                             {/if}
                         </td>
                     </tr>
@@ -161,11 +172,10 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <script>
-function postJSON(url, data, cb){
+// 统一 AJAX：使用 jQuery( layui 内置 ) 发送，确保携带登录 Cookie，避免被判未登录返回登录页 HTML
+function postAJAX(url, data, cb){
     var fd = new FormData();
     for (var k in data) fd.append(k, data[k]);
-    // 使用 jQuery( layui 内置 ) 发送，确保同源请求携带登录 Cookie（PHPSESSID），
-    // 避免原生 fetch 在部分环境下默认不发送 Cookie 导致被判定未登录、返回登录页 HTML 而“请求失败”。
     var $ = (window.layui && window.layui.jquery) ? window.layui.jquery : (window.jQuery || window.$);
     $.ajax({
         url: url,
@@ -175,13 +185,17 @@ function postJSON(url, data, cb){
         contentType: false,
         xhrFields: { withCredentials: true },
         success: function(res){ cb(res); },
-        error: function(){ alert('请求失败，请检查网络或服务器的会话是否已过期'); }
+        error: function(){ showToast('请求失败，请检查网络或服务器的会话是否已过期', 'danger'); }
     });
 }
 function postAct(url, data, okMsg){
-    postJSON(url, data || {}, function(res){
-        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();}, 700); }
-        else { alert((res && res.info) ? res.info : '操作失败'); }
+    postAJAX(url, data || {}, function(res){
+        if (res && res.status === 'y') {
+            showToast(res.info || okMsg, 'success');
+            setTimeout(function(){ location.reload(); }, 800);
+        } else {
+            showToast((res && res.info) ? res.info : '操作失败', 'danger');
+        }
     });
 }
 function buildBase(){
@@ -196,30 +210,30 @@ function doCheck(){
     location.href = 'index.php?r=manage/filecheck/check';
 }
 function saveRef(){
-    postJSON('index.php?r=manage/filecheck/save', {
+    postAJAX('index.php?r=manage/filecheck/save', {
         local_ref: document.getElementById('localRefInput').value
     }, function(res){
-        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); }
-        else alert((res && res.info) ? res.info : '保存失败');
+        if (res && res.status === 'y') { showToast(res.info || '保存成功', 'success'); }
+        else showToast((res && res.info) ? res.info : '保存失败', 'danger');
     });
 }
 function restoreAll(){
     if (!confirm('一键恢复整站：将从官方代码仓/压缩包拉取最新代码，覆盖除数据库配置外的全部程序文件并清理缓存。\n此操作会覆盖你对程序文件的改动（不会动数据库与上传文件）。确定继续？')) return;
-    layer.msg('正在从官方代码仓恢复整站，请稍候…', {icon:16, time:120000});
-    postJSON('index.php?r=manage/filecheck/restoreAll', {}, function(res){
-        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();}, 1000); }
-        else alert((res && res.info) ? res.info : '恢复失败');
+    showToast('正在从官方代码仓恢复整站，请稍候…', 'success');
+    postAJAX('index.php?r=manage/filecheck/restoreAll', {}, function(res){
+        if (res && res.status === 'y') { showToast(res.info || '恢复完成', 'success'); setTimeout(function(){location.reload();}, 1200); }
+        else showToast((res && res.info) ? res.info : '恢复失败', 'danger');
     });
 }
 function pullAll(){
-    if (!confirm('将从代码仓/官方压缩包拉取并覆盖所有受保护的核心文件（与基线不一致者）。确定？')) return;
-    postAct('index.php?r=manage/filecheck/pull', {}, '拉取完成');
+    if (!confirm('在线升级文件系统：将从官方代码仓/本地托底/官方压缩包远程下载最新版本，覆盖所有与基线不一致（被改动/缺失）的文件。确定？')) return;
+    postAct('index.php?r=manage/filecheck/pull', {}, '在线升级完成');
 }
 function downloadZip(){
-    layer.msg('正在下载官方压缩包，请稍候…', {icon:16, time:60000});
-    postJSON('index.php?r=manage/filecheck/dlZip', {}, function(res){
-        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); }
-        else alert((res && res.info) ? res.info : '下载失败');
+    showToast('正在下载官方压缩包，请稍候…', 'success');
+    postAJAX('index.php?r=manage/filecheck/dlZip', {}, function(res){
+        if (res && res.status === 'y') { showToast(res.info || '下载完成', 'success'); }
+        else showToast((res && res.info) ? res.info : '下载失败', 'danger');
     });
 }
 function restore(file){
@@ -227,13 +241,34 @@ function restore(file){
     postAct('index.php?r=manage/filecheck/restore', {file:file}, '恢复完成');
 }
 function queryFile(file){
-    postJSON('index.php?r=manage/filecheck/query', {file:file}, function(res){
-        if (!res || res.status !== 'y') { alert('查询失败'); return; }
+    postAJAX('index.php?r=manage/filecheck/query', {file:file}, function(res){
+        if (!res || res.status !== 'y') { showToast('查询失败', 'danger'); return; }
         var msg = '文件：' + file + '\n';
         msg += res.protected ? '状态：受保护核心文件（不可在后台修改）\n' : '状态：可修改文件\n';
         msg += '可写：' + (res.writable ? '是' : '否') + '\n';
         msg += '可从代码仓恢复：' + (res.restorable ? '是' : '否');
         alert(msg);
     });
+}
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 3000);
 }
 </script>

@@ -11,7 +11,7 @@
 </div>
 
 <!-- 配置 -->
-<form method="post" action="index.php?r=manage/word/save">
+<form method="post" id="cfgForm" onsubmit="return false;">
     <div class="card mb-3">
         <div class="card-header font-weight-bold">检测设置</div>
         <div class="card-body">
@@ -45,7 +45,7 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> 保存设置</button>
+    <button type="button" class="btn btn-primary" id="saveWordBtn" onclick="saveWord()"><i class="fas fa-save mr-1"></i> 保存设置</button>
 </form>
 
 <!-- 实时检测 -->
@@ -116,11 +116,46 @@
 function postJSON(url, data, cb){
     var fd = new FormData();
     for (var k in data) fd.append(k, data[k]);
-    fetch(url, {method:'POST', body:fd}).then(function(r){return r.json();}).then(cb).catch(function(){ alert('请求失败'); });
+    // 使用 jQuery( layui 内置 ) 发送，确保携带登录 Cookie
+    var $ = (window.layui && window.layui.jquery) ? window.layui.jquery : (window.jQuery || window.$);
+    if ($) {
+        $.ajax({
+            url: url, type: 'POST', data: fd, processData: false, contentType: false,
+            xhrFields: { withCredentials: true },
+            success: function(res){ cb(res); },
+            error: function(){ showToast('请求失败，请检查网络或服务器的会话是否已过期', 'danger'); }
+        });
+    } else {
+        var xhr = new XMLHttpRequest();
+        xhr.open('POST', url, true);
+        xhr.onreadystatechange = function(){
+            if (xhr.readyState !== 4) return;
+            if (xhr.status !== 200) { showToast('请求失败，请重试', 'danger'); return; }
+            try { cb(JSON.parse(xhr.responseText)); } catch(e) { showToast('响应异常', 'danger'); }
+        };
+        xhr.send(fd);
+    }
+}
+function saveWord(){
+    var form = document.getElementById('cfgForm');
+    var btn = document.getElementById('saveWordBtn');
+    var data = {};
+    form.querySelectorAll('input, textarea, select').forEach(function(input){
+        if (input.type === 'checkbox') { data[input.name] = input.checked ? '1' : '0'; }
+        else { data[input.name] = input.value; }
+    });
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 保存中...';
+    postJSON('index.php?r=manage/word/save', data, function(res){
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save mr-1"></i> 保存设置';
+        if (res && res.status === 'y') { showToast(res.info || '保存成功', 'success'); }
+        else { showToast((res && res.info) ? res.info : '保存失败', 'danger'); }
+    });
 }
 function liveCheck(){
     var t = document.getElementById('testText').value;
-    if (!t.trim()) { alert('请输入文本'); return; }
+    if (!t.trim()) { showToast('请输入文本', 'danger'); return; }
     postJSON('index.php?r=manage/word/check', {text:t}, function(res){
         var box = document.getElementById('checkResult');
         if (res && res.ok) { box.innerHTML = '<div class="alert alert-success mb-0">未检测到违规词</div>'; }
@@ -131,19 +166,19 @@ function liveCheck(){
 }
 function addWord(){
     var w = document.getElementById('wordInput').value.trim();
-    if (!w) { alert('请输入违规词'); return; }
+    if (!w) { showToast('请输入违规词', 'danger'); return; }
     postJSON('index.php?r=manage/word/addWord', {
         word:w, level:document.getElementById('levelInput').value, category:document.getElementById('catInput').value
     }, function(res){
-        if (res && res.status==='y') { location.reload(); }
-        else alert((res&&res.info)?res.info:'添加失败');
+        if (res && res.status==='y') { showToast(res.info || '已添加', 'success'); setTimeout(function(){location.reload();}, 700); }
+        else showToast((res&&res.info)?res.info:'添加失败', 'danger');
     });
 }
 function delWord(id){
     if (!confirm('删除该违规词？')) return;
     postJSON('index.php?r=manage/word/delWord', {id:id}, function(res){
-        if (res && res.status==='y') location.reload();
-        else alert('删除失败');
+        if (res && res.status==='y') { showToast(res.info || '已删除', 'success'); setTimeout(function(){location.reload();}, 700); }
+        else showToast('删除失败', 'danger');
     });
 }
 function scanContent(){
@@ -162,4 +197,25 @@ function scanContent(){
     });
 }
 function htmlspecialchars(s){ return String(s).replace(/[&<>"']/g, function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 3000);
+}
 </script>

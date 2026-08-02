@@ -10,7 +10,7 @@
     <b>白名单</b>（仅放行已知搜索引擎，其余疑似蜘蛛拦截）。可叠加<b>频率限制</b>。
 </div>
 
-<form method="post" action="index.php?r=manage/spider/save">
+<form method="post" id="spiderForm" onsubmit="return false;">
     <div class="card mb-3">
         <div class="card-header font-weight-bold">基础设置</div>
         <div class="card-body">
@@ -56,7 +56,7 @@
         </div>
     </div>
 
-    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> 保存设置</button>
+    <button type="button" class="btn btn-primary" id="saveSpiderBtn" onclick="saveSpider()"><i class="fas fa-save mr-1"></i> 保存设置</button>
 </form>
 
 <div class="card mt-4">
@@ -116,11 +116,68 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <script>
+function saveSpider(){
+    var form = document.getElementById('spiderForm');
+    var btn = document.getElementById('saveSpiderBtn');
+    var data = {};
+    var inputs = form.querySelectorAll('input, textarea, select');
+    inputs.forEach(function(input){
+        if (input.type === 'checkbox') { data[input.name] = input.checked ? '1' : '0'; }
+        else { data[input.name] = input.value; }
+    });
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> 保存中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/spider/save', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState !== 4) return;
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save mr-1"></i> 保存设置';
+        if (xhr.status !== 200) { showToast('请求失败，请重试', 'danger'); return; }
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (res && res.status === 'y') { showToast(res.info, 'success'); }
+            else { showToast((res && res.info) ? res.info : '保存失败', 'danger'); }
+        } catch(e) { showToast('保存失败', 'danger'); }
+    };
+    var params = Object.keys(data).map(function(k){ return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]); }).join('&');
+    xhr.send(params);
+}
 function clearLog(){
     if (!confirm('确定清空拦截日志？')) return;
-    fetch('index.php?r=manage/spider/clearLog', {method:'POST'}).then(function(r){return r.json();}).then(function(res){
-        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();}, 600); }
-        else alert('清空失败');
-    }).catch(function(){ alert('请求失败'); });
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/spider/clearLog', true);
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState !== 4) return;
+        if (xhr.status !== 200) { showToast('请求失败，请重试', 'danger'); return; }
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (res && res.status === 'y') { showToast(res.info, 'success'); setTimeout(function(){ location.reload(); }, 700); }
+            else { showToast('清空失败', 'danger'); }
+        } catch(e) { showToast('清空失败', 'danger'); }
+    };
+    xhr.send();
+}
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 3000);
 }
 </script>

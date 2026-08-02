@@ -76,7 +76,7 @@ class SpiderController extends \app\base\controller\BaseController
         \app\common\ConfigStore::save('spider', $data);
         \app\common\ConfigStore::clearCache('spider');
         \ZhiCms\ext\AdminLog::write('spider', '保存了蜘蛛限制配置（' . ($data['enable'] ? '已开启' : '已关闭') . '）');
-        $this->alert('保存成功', 'index.php?r=manage/spider/index');
+        exit(json_encode(array('info' => '保存成功', 'status' => 'y')));
     }
 
     /**

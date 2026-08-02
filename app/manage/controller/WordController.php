@@ -63,7 +63,7 @@ class WordController extends \app\base\controller\BaseController
         \app\common\ConfigStore::save('word', $data);
         \app\common\ConfigStore::clearCache('word');
         \ZhiCms\ext\AdminLog::write('word', '保存了违规词检测配置');
-        $this->alert('保存成功', 'index.php?r=manage/word/index');
+        exit(json_encode(array('info' => '保存成功', 'status' => 'y')));
     }
 
     public function addWord(){

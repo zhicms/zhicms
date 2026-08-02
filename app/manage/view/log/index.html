@@ -27,9 +27,20 @@
             </button>
         </form>
     </div>
-    <button class="btn btn-sm btn-danger mb-2" onclick="clearLog()">
-        <i class="fas fa-trash-alt mr-1"></i> 清空日志
-    </button>
+    <div class="mb-2 d-flex align-items-center">
+        <div class="btn-group btn-group-sm mr-2" role="group" aria-label="每页条数">
+            <span class="btn btn-outline-secondary disabled">每页</span>
+            {foreach $pageSizes as $ps}
+            <a href="index.php?r=manage/log/index{if $type}&type={$type}{/if}{if $keyword}&keyword={htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8')}{/if}&pagesize={$ps}" class="btn {if $pagesize==$ps}btn-primary active{else}btn-outline-secondary{/if}">{$ps}条</a>
+            {/foreach}
+        </div>
+        <button class="btn btn-sm btn-warning mr-2" onclick="clearOld()">
+            <i class="fas fa-calendar-minus mr-1"></i> 清理7天前的日志
+        </button>
+        <button class="btn btn-sm btn-danger" onclick="clearLog()">
+            <i class="fas fa-trash-alt mr-1"></i> 清空全部日志
+        </button>
+    </div>
 </div>
 
 <div class="card">
@@ -67,7 +78,7 @@
             </table>
         </div>
         <!-- 分页 -->
-        <div class="mt-3">
+        <div class="zc-pager mt-3">
             {if isset($page['page'])}{$page['page']}{/if}
         </div>
     </div>
@@ -75,16 +86,62 @@
 
 {include file="app/manage/view/index/emlog_footer"}
 
+<style>
+.zc-pager {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+</style>
+
 <script>
-function clearLog() {
-    if (!confirm('确定要清空全部操作日志吗？此操作不可恢复。')) return;
-    $.get('index.php?r=manage/log/clear', function(res) {
-        if (res && res.status === 'y') {
-            layer.msg(res.info, {icon: 1});
-            setTimeout(function(){ location.reload(); }, 800);
-        } else {
-            alert((res && res.info) ? res.info : '清空失败');
+function doClear(url, msg){
+    if (!confirm(msg)) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
+        if (xhr.status !== 200) { showToast('请求失败，请重试', 'danger'); return; }
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (res && res.status === 'y') {
+                showToast(res.info, 'success');
+                setTimeout(function(){ location.reload(); }, 900);
+            } else {
+                showToast((res && res.info) ? res.info : '操作失败', 'danger');
+            }
+        } catch(e) {
+            showToast('操作失败', 'danger');
         }
-    }, 'json').fail(function(){ alert('请求失败，请重试'); });
+    };
+    xhr.send();
+}
+function clearLog(){
+    doClear('index.php?r=manage/log/clear', '确定要清空全部操作日志吗？此操作不可恢复。');
+}
+function clearOld(){
+    doClear('index.php?r=manage/log/clearOldApi', '确定只清理 7 天前的操作日志吗？（近 7 天保留）');
+}
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 3000);
 }
 </script>

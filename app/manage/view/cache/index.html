@@ -55,17 +55,46 @@ function cacheClear(type) {
     if (!confirm(tip)) return;
     var btn = event ? event.target : null;
     if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 清理中...'; }
-    $.get('index.php?r=manage/cache/clear&type=' + type, function(res) {
-        if (res && res.status === 'y') {
-            layer.msg(res.info, {icon: 1});
-            setTimeout(function(){ location.reload(); }, 800);
-        } else {
-            alert((res && res.info) ? res.info : '清理失败');
-            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> 清理'; }
-        }
-    }, 'json').fail(function() {
-        alert('请求失败，请重试');
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/cache/clear&type=' + type, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState !== 4) return;
         if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> 清理'; }
-    });
+        if (xhr.status !== 200) { showToast('请求失败，请重试', 'danger'); return; }
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (res && res.status === 'y') {
+                showToast(res.info, 'success');
+                setTimeout(function(){ location.reload(); }, 900);
+            } else {
+                showToast((res && res.info) ? res.info : '清理失败', 'danger');
+            }
+        } catch(e) {
+            showToast('清理失败', 'danger');
+        }
+    };
+    xhr.send();
+}
+
+function showToast(message, type = 'success') {
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
+        </div>
+    `;
+    document.body.appendChild(toast);
+    setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 3000);
 }
 </script>
