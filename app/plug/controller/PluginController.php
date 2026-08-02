@@ -19,7 +19,7 @@ class PluginController extends BaseController
 		}
 
 		$showClass = '\\plugins\\' . $alias . '\\Show';
-		$file = BASE_PATH . 'plugins/' . $alias . '/Show.php';
+		$file = \BASE_PATH . 'plugins/' . $alias . '/Show.php';
 		if (!class_exists($showClass)) {
 			if (!is_file($file)) $this->alert('插件前台组件缺失');
 			require $file;

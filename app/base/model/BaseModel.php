@@ -15,8 +15,8 @@ class BaseModel extends \ZhiCms\base\Model {
        $data = \app\common\ConfigStore::load('plug_' . $name);
        if (empty($data)) {
            // 插件配置回退文件
-           if (is_file(CONFIG_PATH . '/' . $name . '.php')) {
-               $data = include(CONFIG_PATH . '/' . $name . '.php');
+           if (is_file(\CONFIG_PATH . '/' . $name . '.php')) {
+               $data = include(\CONFIG_PATH . '/' . $name . '.php');
            } else {
                $data = [];
            }

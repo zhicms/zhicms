@@ -46,7 +46,7 @@ class PluginManager {
 		$meta = self::readMeta($alias);
 		if ($meta === null) return;
 		$class = '\\plugins\\' . $alias . '\\Plugin';
-		$file  = BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/Plugin.php';
+		$file  = \BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/Plugin.php';
 		if (!class_exists($class)) {
 			if (!is_file($file)) return;
 			require $file;
@@ -67,7 +67,7 @@ class PluginManager {
 	 */
 	public static function scanAvailable(){
 		$available = array();
-		$base = BASE_PATH . self::PLUGINS_DIR . '/';
+		$base = \BASE_PATH . self::PLUGINS_DIR . '/';
 		if (!is_dir($base)) return $available;
 		foreach (glob($base . '*', GLOB_ONLYDIR) as $dir) {
 			$alias = basename($dir);
@@ -128,7 +128,7 @@ class PluginManager {
 
 	/** 读取插件元信息 plugin.json */
 	public static function readMeta($alias){
-		$file = BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/plugin.json';
+		$file = \BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/plugin.json';
 		if (!is_file($file)) return null;
 		$json = json_decode(@file_get_contents($file), true);
 		if (!is_array($json)) return null;
@@ -221,7 +221,7 @@ class PluginManager {
 		}
 		self::db()->execute("DELETE FROM {pre}plug WHERE `alias`=?", array($alias));
 		if ($deleteFiles) {
-			self::rrmdir(BASE_PATH . self::PLUGINS_DIR . '/' . $alias);
+			self::rrmdir(\BASE_PATH . self::PLUGINS_DIR . '/' . $alias);
 		}
 		self::clearBoot();
 	}
@@ -231,7 +231,7 @@ class PluginManager {
 		$meta = $meta ?: self::readMeta($alias);
 		if ($meta === null) return null;
 		$class = '\\plugins\\' . $alias . '\\Plugin';
-		$file  = BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/Plugin.php';
+		$file  = \BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/Plugin.php';
 		if (!class_exists($class)) {
 			if (!is_file($file)) return null;
 			require $file;
@@ -293,7 +293,7 @@ class PluginManager {
 
 	/** 执行表结构升级 SQL（data/config/upgrade_plugin.sql） */
 	public static function upgradeTable(){
-		$file = CONFIG_PATH . 'upgrade_plugin.sql';
+		$file = \CONFIG_PATH . 'upgrade_plugin.sql';
 		if (!is_file($file)) {
 			throw new \Exception('升级 SQL 文件缺失');
 		}
@@ -313,7 +313,7 @@ class PluginManager {
 
 	/** 执行插件 install.sql（若存在） */
 	protected static function runInstallSql($alias){
-		$file = BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/install.sql';
+		$file = \BASE_PATH . self::PLUGINS_DIR . '/' . $alias . '/install.sql';
 		if (!is_file($file)) return;
 		$dbConf = \ZhiCms\base\Config::get('DB.default');
 		$pre = (!empty($dbConf['DB_PREFIX'])) ? $dbConf['DB_PREFIX'] : 'yun_';

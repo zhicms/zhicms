@@ -103,6 +103,13 @@ register_shutdown_function(function() {
     if ($error && ($error['type'] === E_ERROR || $error['type'] === E_PARSE || $error['type'] === E_COMPILE_ERROR)) {
         $errorMsg = "\n[Fatal Error] " . date('Y-m-d H:i:s') . ": " . $error['message'] . " in " . $error['file'] . " on line " . $error['line'];
         @file_put_contents($logFile, $errorMsg, FILE_APPEND | LOCK_EX);
+        // 安装阶段（display_errors 已开启）将致命错误输出到页面，避免 PHP 8.x 下空白页
+        if (ini_get('display_errors')) {
+            header('Content-Type: text/html; charset=utf-8');
+            echo "<div style='padding:20px;font-family:monospace;color:#c00;background:#fff0f0;border:1px solid #f99;border-radius:6px;margin:20px;'>"
+               . "<strong>致命错误（Fatal Error）：</strong><br>" . htmlspecialchars($error['message'], ENT_QUOTES)
+               . "<br><span style='color:#666;'>in " . htmlspecialchars($error['file'], ENT_QUOTES) . " on line " . $error['line'] . "</span></div>";
+        }
     }
 });
 

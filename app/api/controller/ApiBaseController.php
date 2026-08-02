@@ -29,7 +29,7 @@ class ApiBaseController extends Controller {
      * 处理 CORS 预检请求
      */
     protected function options() {
-        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        if (isset($_SERVER['\REQUEST_METHOD']) && $_SERVER['\REQUEST_METHOD'] === 'OPTIONS') {
             header('Access-Control-Allow-Origin: *');
             header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
             header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
@@ -80,7 +80,7 @@ class ApiBaseController extends Controller {
      * 加载 AI 配置（不下发 api_key 之外的内容由调用方控制）
      */
     protected function loadAiConfig() {
-        $file = CONFIG_PATH . 'aichat.php';
+        $file = \CONFIG_PATH . 'aichat.php';
         if (file_exists($file)) {
             $cfg = include $file;
             if (is_array($cfg)) {

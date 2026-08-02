@@ -15,7 +15,7 @@ class Plugin extends BasePlugin
     public function install()
     {
         // 确保下载目录存在
-        $downloadDir = BASE_PATH . 'runtime/wxapp_packer/downloads/';
+        $downloadDir = \BASE_PATH . 'runtime/wxapp_packer/downloads/';
         if (!is_dir($downloadDir)) {
             @mkdir($downloadDir, 0755, true);
         }
@@ -24,7 +24,7 @@ class Plugin extends BasePlugin
     public function uninstall()
     {
         // 清理下载目录
-        $downloadDir = BASE_PATH . 'runtime/wxapp_packer/downloads/';
+        $downloadDir = \BASE_PATH . 'runtime/wxapp_packer/downloads/';
         if (is_dir($downloadDir)) {
             $this->removeDirectory($downloadDir);
         }
@@ -59,7 +59,7 @@ class Plugin extends BasePlugin
             throw new \Exception('无法获取下载地址，请检查网络连接');
         }
 
-        $downloadDir = BASE_PATH . 'runtime/wxapp_packer/downloads/';
+        $downloadDir = \BASE_PATH . 'runtime/wxapp_packer/downloads/';
         if (!is_dir($downloadDir)) {
             @mkdir($downloadDir, 0755, true);
         }
@@ -97,7 +97,7 @@ class Plugin extends BasePlugin
         }
 
         // 准备临时目录
-        $baseTmp = BASE_PATH . 'runtime/wxapp_packer/';
+        $baseTmp = \BASE_PATH . 'runtime/wxapp_packer/';
         if (!is_dir($baseTmp)) {
             @mkdir($baseTmp, 0755, true);
         }
@@ -142,7 +142,7 @@ class Plugin extends BasePlugin
      */
     public function serveDownload($fileName)
     {
-        $downloadDir = BASE_PATH . 'runtime/wxapp_packer/downloads/';
+        $downloadDir = \BASE_PATH . 'runtime/wxapp_packer/downloads/';
         // 防止路径穿越
         $fileName = basename($fileName);
         $filePath = $downloadDir . $fileName;
@@ -269,7 +269,7 @@ class Plugin extends BasePlugin
         }
 
         // 缓存目录
-        $cacheDir = BASE_PATH . 'runtime/wxapp_packer/cache/';
+        $cacheDir = \BASE_PATH . 'runtime/wxapp_packer/cache/';
         if (!is_dir($cacheDir)) {
             @mkdir($cacheDir, 0755, true);
         }
@@ -472,7 +472,7 @@ class Plugin extends BasePlugin
      */
     public function cleanupOld()
     {
-        $downloadDir = BASE_PATH . 'runtime/wxapp_packer/downloads/';
+        $downloadDir = \BASE_PATH . 'runtime/wxapp_packer/downloads/';
         if (!is_dir($downloadDir)) {
             return;
         }

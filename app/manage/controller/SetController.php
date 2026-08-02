@@ -13,7 +13,7 @@ class SetController extends \app\base\controller\BaseController
 	$this->checkManageSession();
 
 
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pageText=array("基础设置","网站设置");
 			// 所有网站配置统一从 ConfigStore（DB）读取
 			$siteConfig  = ConfigStore::load('site');
@@ -23,9 +23,9 @@ class SetController extends \app\base\controller\BaseController
 			$aichatCfg   = ConfigStore::load('aichat');
 			$seopushCfg  = ConfigStore::load('seopush');
 			// rule 保持文件
-			include CONFIG_PATH . 'rule.php';
+			include \CONFIG_PATH . 'rule.php';
 			// 推送日志保持文件
-			$logFile = CONFIG_PATH . 'seopush_log.json';
+			$logFile = \CONFIG_PATH . 'seopush_log.json';
 			$this->pushLog = is_file($logFile) ? json_decode(file_get_contents($logFile), true) : array();
 			$this->ret = array_merge($siteConfig, $seoConfig, $apiConfig, $smsConfig, $aichatCfg, $seopushCfg);
 			$this->DEBUG=(int)$rule['DEBUG'];
@@ -90,10 +90,10 @@ class SetController extends \app\base\controller\BaseController
 	$this->checkManageSession();
 
 
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pagetext=array("基础设置","自定义rul");
 
-			include CONFIG_PATH . 'rule.php';
+			include \CONFIG_PATH . 'rule.php';
 			$keys=array_keys($rule['REWRITE_RULE']);
 
 			$this->DEBUG=(int)$rule['DEBUG'];
@@ -113,13 +113,14 @@ class SetController extends \app\base\controller\BaseController
 				'ENV' => 'global',
 				'DEBUG' => $DEBUG,
 				'LOG_ON' => false,
-				'LOG_PATH' => 'ROOT_PATH . \'data/log/\'',
+				'LOG_PATH' => '\ROOT_PATH . \'data/log/\'',
 				'TIMEZONE' => 'PRC',
 				'moren' => $moren,
 				'REWRITE_ON' => $REWRITE_ON,
 				'REWRITE_RULE' => array(
 					// ===== 文章资讯 =====
 					'index.html' => 'index/index/index',
+					'install.html' => 'install/index/index',
 					'cat-<nav>.html' => 'index/index/index/nav=<nav>',
 					'list-<cid>.html' => 'index/index/index/list=<cid>',
 					'archive-<ym>.html' => 'index/index/index/ym=<ym>',
@@ -165,9 +166,9 @@ class SetController extends \app\base\controller\BaseController
 			);
 
 			$content = "<?php\r\n\$rule=" . var_export($rule, true) . ";\n";
-			$content = str_replace("'ROOT_PATH . \\'data/log/\\''", 'ROOT_PATH . \'data/log/\'', $content);
+			$content = str_replace("'\ROOT_PATH . \\'data/log/\\''", '\ROOT_PATH . \'data/log/\'', $content);
 			
-			$of = fopen(CONFIG_PATH . 'rule.php', 'w');
+			$of = fopen(\CONFIG_PATH . 'rule.php', 'w');
             if ($of) {
                 fwrite($of, $content);
             }
@@ -185,7 +186,7 @@ class SetController extends \app\base\controller\BaseController
 	$this->checkManageSession();
 
 
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pagetext=array("基础设置","SEO设置");
 			$this->ret=ConfigStore::load('seo');
 			$this->display();
@@ -228,7 +229,7 @@ class SetController extends \app\base\controller\BaseController
    $this->checkManageSession();
 
 
-      if(!IS_POST){
+      if(!\IS_POST){
         $this->pagetext=array("基础设置","生成高佣API");
         $this->ret=ConfigStore::load('api');
         $this->display();
@@ -268,7 +269,7 @@ class SetController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if (!IS_POST) {
+        if (!\IS_POST) {
             $this->redirect('index.php?r=manage/set/index');
             exit;
         }
@@ -298,7 +299,7 @@ class SetController extends \app\base\controller\BaseController
     $this->checkManageSession();
 
 
-      if(!IS_POST){
+      if(!\IS_POST){
         $this->pagetext=array("基础设置","短信通道");
         $this->ret=ConfigStore::load('sms');
         $this->display();
@@ -336,11 +337,11 @@ class SetController extends \app\base\controller\BaseController
 
     $this->checkManageSession();
 
-        if (!IS_POST) {
+        if (!\IS_POST) {
             $this->pagetext = array("基础设置", "SEO推送");
             $this->ret = ConfigStore::load('seopush');
             // 最近推送记录
-            $logFile = CONFIG_PATH . 'seopush_log.json';
+            $logFile = \CONFIG_PATH . 'seopush_log.json';
             $this->pushLog = is_file($logFile) ? json_decode(file_get_contents($logFile), true) : array();
             $this->display();
             exit;
@@ -382,7 +383,7 @@ class SetController extends \app\base\controller\BaseController
 
         // 清空推送日志
         if (isset($_POST['action']) && $_POST['action'] === 'clear_log') {
-            $logFile = CONFIG_PATH . 'seopush_log.json';
+            $logFile = \CONFIG_PATH . 'seopush_log.json';
             file_put_contents($logFile, '[]');
             echo json_encode(array('info' => '推送日志已清空', 'status' => 'y'));
             return;
@@ -411,7 +412,7 @@ class SetController extends \app\base\controller\BaseController
      */
     public function migrateConfig() {
         $this->checkManageSession();
-        require_once CONFIG_PATH . 'migrate_to_db.php';
+        require_once \CONFIG_PATH . 'migrate_to_db.php';
         $result = migrate_all_to_db();
         
         $success = $result['success'];
@@ -432,7 +433,7 @@ class SetController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if (!IS_POST) {
+        if (!\IS_POST) {
             $this->pagetext = array("基础设置", "互动设置");
             $this->pageText = array("基础设置", "互动设置");
 

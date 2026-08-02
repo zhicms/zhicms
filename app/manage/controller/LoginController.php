@@ -4,7 +4,7 @@ namespace app\manage\controller;
 class LoginController extends \app\base\controller\BaseController {
 
 	public function index(){
-	   if(!IS_POST){
+	   if(!\IS_POST){
 	   	$this->display();
 	    exit;
 	   }else{

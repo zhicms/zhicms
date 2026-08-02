@@ -42,7 +42,7 @@ class JSSDK {
 
   private function getJsApiTicket() {
     // jsapi_ticket 应该全局存储与更新，以下代码以写入到文件中做示例
-    $data = $this->readCacheJson(CONFIG_PATH . "apicache/jsapi_ticket.json");
+    $data = $this->readCacheJson(\CONFIG_PATH . "apicache/jsapi_ticket.json");
     if ($data->expire_time < time()) {
       $accessToken = $this->getAccessToken();
       $url = "https://api.weixin.qq.com/cgi-bin/ticket/getticket?type=jsapi&access_token=$accessToken";
@@ -51,7 +51,7 @@ class JSSDK {
       if ($ticket) {
         $data->expire_time = time() + 7000;
         $data->jsapi_ticket = $ticket;
-        $fp = fopen(CONFIG_PATH . "apicache/jsapi_ticket.json", "w");
+        $fp = fopen(\CONFIG_PATH . "apicache/jsapi_ticket.json", "w");
         fwrite($fp, json_encode($data));
         fclose($fp);
       }
@@ -64,7 +64,7 @@ class JSSDK {
 
   private function getAccessToken() {
     // access_token 应该全局存储与更新，以下代码以写入到文件中做示例
-    $data = $this->readCacheJson(CONFIG_PATH . "apicache/access_token.json");
+    $data = $this->readCacheJson(\CONFIG_PATH . "apicache/access_token.json");
     if ($data->expire_time < time()) {
       $url = "https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=$this->appId&secret=$this->appSecret";
       $res = json_decode($this->httpGet($url));
@@ -72,7 +72,7 @@ class JSSDK {
       if ($access_token) {
         $data->expire_time = time() + 7000;
         $data->access_token = $access_token;
-        $fp = fopen(CONFIG_PATH . "apicache/access_token.json", "w");
+        $fp = fopen(\CONFIG_PATH . "apicache/access_token.json", "w");
         fwrite($fp, json_encode($data));
         fclose($fp);
       }

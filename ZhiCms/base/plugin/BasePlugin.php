@@ -51,7 +51,7 @@ abstract class BasePlugin {
 	protected function render($tpl, $vars = array()){
 		$config = \ZhiCms\base\Config::get('TPL');
 		$engine = new \ZhiCms\base\ThinkTemplate($config);
-		$file = BASE_PATH . 'plugins/' . $this->alias . '/view/' . $tpl . '.html';
+		$file = \BASE_PATH . 'plugins/' . $this->alias . '/view/' . $tpl . '.html';
 		return $engine->display($file, true, true);
 	}
 
@@ -60,7 +60,7 @@ abstract class BasePlugin {
 	 * 适合需要原生 PHP 灵活性的场景
 	 */
 	protected function includeView($tpl, $vars = array()){
-		$file = BASE_PATH . 'plugins/' . $this->alias . '/view/' . $tpl . '.php';
+		$file = \BASE_PATH . 'plugins/' . $this->alias . '/view/' . $tpl . '.php';
 		if (!is_file($file)) return '';
 		extract($vars);
 		ob_start();

@@ -50,7 +50,7 @@ class ZblogBridge
         // 预定义所有 Z-Blog 防护常量（必须在 require 插件文件之前）
         self::predefineConstants();
 
-        require_once BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
+        require_once \BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
 
         $inc = $dir . '/include.php';
         if (is_file($inc)) {
@@ -82,14 +82,14 @@ class ZblogBridge
     protected static function predefineConstants()
     {
         // Z-BlogPHP 核心常量
-        if (!defined('ZBP_PATH'))       define('ZBP_PATH', BASE_PATH);
+        if (!defined('ZBP_PATH'))       define('ZBP_PATH', \BASE_PATH);
         if (!defined('ZBP_HOOKERROR'))  define('ZBP_HOOKERROR', true);
         if (!defined('ZBP_SAFEMODE'))   define('ZBP_SAFEMODE', false);
         if (!defined('ZBP_VERSION'))    define('ZBP_VERSION', '1.7');
-        if (!defined('ZBP_PLUGIN_DIR')) define('ZBP_PLUGIN_DIR', BASE_PATH . 'zb_users/plugin/');
+        if (!defined('ZBP_PLUGIN_DIR')) define('ZBP_PLUGIN_DIR', \BASE_PATH . 'zb_users/plugin/');
         // 兜底：其他平台的常量也预置，防止因 detectType 误判导致 exit
-        if (!defined('ABSPATH'))        define('ABSPATH', BASE_PATH);
-        if (!defined('EMLOG_ROOT'))     define('EMLOG_ROOT', BASE_PATH);
+        if (!defined('ABSPATH'))        define('ABSPATH', \BASE_PATH);
+        if (!defined('EMLOG_ROOT'))     define('EMLOG_ROOT', \BASE_PATH);
     }
 
     /**
@@ -120,7 +120,7 @@ class ZblogBridge
      */
     public static function renderAdmin($alias)
     {
-        $dir = BASE_PATH . 'plugins/' . $alias;
+        $dir = \BASE_PATH . 'plugins/' . $alias;
         if (!is_dir($dir)) {
             return '<div class="alert alert-danger"><i class="fas fa-exclamation-circle mr-2"></i>插件目录不存在</div>';
         }
@@ -146,7 +146,7 @@ class ZblogBridge
 
         // 1. 创建 Z-Blog admin 桩文件（两套路径都补齐）
         //    插件内部的 require '../../../zb_system/...' 从 plugins/{alias}/ 解析到
-        //    parent(BASE_PATH)/zb_system/，而 $zbp->systemdir 指向 ZBP_SYSTEM_DIR
+        //    parent(\BASE_PATH)/zb_system/，而 $zbp->systemdir 指向 \ZBP_SYSTEM_DIR
         //    （已迁移至 ZhiCms/base/compat/zb_system/）。
         //    通过 scanAdminRequires 从实际 admin 文件内容中精确找出引用路径并动态补桩。
         self::ensureAdminStubs($adminFile);
@@ -158,13 +158,13 @@ class ZblogBridge
         // 2. 预置环境
         self::predefineConstants();
         if (!class_exists('\\ZhiCms\\base\\compat\\ZbpShim')) {
-            require_once BASE_PATH . 'ZhiCms/base/compat/ZbpShim.php';
+            require_once \BASE_PATH . 'ZhiCms/base/compat/ZbpShim.php';
         }
         global $zbp;
         if (!isset($zbp) || !($zbp instanceof \ZhiCms\base\compat\ZbpShim)) {
             $zbp = new \ZhiCms\base\compat\ZbpShim();
         }
-        require_once BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
+        require_once \BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
 
         // 加载插件的 include.php（注册函数和类）
         $inc = $dir . '/include.php';
@@ -178,7 +178,7 @@ class ZblogBridge
         try {
             ob_start();
             global $blogpath, $blogtitle, $lang;
-            if (!isset($blogpath)) $blogpath = BASE_PATH;
+            if (!isset($blogpath)) $blogpath = \BASE_PATH;
             if (!isset($blogtitle)) $blogtitle = '';
             if (!isset($lang) || !is_array($lang)) $lang = array('msg' => array('submit' => '提交'));
 
@@ -186,7 +186,7 @@ class ZblogBridge
             $content = ob_get_clean();
         } catch (\Throwable $e) {
             @ob_end_clean();
-            $errFile = str_replace(BASE_PATH, '', $e->getFile());
+            $errFile = str_replace(\BASE_PATH, '', $e->getFile());
             $errMsg = $e->getMessage();
             // 如果是类/函数未定义，给出更有意义的提示
             if (preg_match('/Class\s+[\'"]?(\S+)[\'"]?\s+not found/', $errMsg, $cm)) {
@@ -239,18 +239,18 @@ class ZblogBridge
     }
 
     /**
-     * 确保 Z-Blog admin 桩文件存在（在 BASE_PATH 和 parent(BASE_PATH) 两个位置）
+     * 确保 Z-Blog admin 桩文件存在（在 \BASE_PATH 和 parent(\BASE_PATH) 两个位置）
      * @param string|null $adminFile 可选，用于精确计算相对路径解析目标
      */
     protected static function ensureAdminStubs($adminFile = null)
     {
-        $basePathClean = rtrim(str_replace('\\', '/', BASE_PATH), '/');
+        $basePathClean = rtrim(str_replace('\\', '/', \BASE_PATH), '/');
 
         // 桩文件内容
-        $stubBase = "if (!defined('ZBP_PATH')) { if (defined('BASE_PATH')) define('ZBP_PATH', BASE_PATH); else define('ZBP_PATH', dirname(dirname(dirname(__DIR__))) . '/'); }\n"
+        $stubBase = "if (!defined('ZBP_PATH')) { if (defined('\BASE_PATH')) define('ZBP_PATH', \BASE_PATH); else define('ZBP_PATH', dirname(dirname(dirname(__DIR__))) . '/'); }\n"
                   . "if (!isset(\$blogpath)) \$blogpath = ZBP_PATH;\n"
                   . "if (!isset(\$bloghost)) { \$bloghost = 'http://localhost/'; }\n";
-        $stubAdmin = "if (!defined('ZBP_PATH')) define('ZBP_PATH', defined('BASE_PATH') ? BASE_PATH : dirname(dirname(dirname(__DIR__))) . '/');\n";
+        $stubAdmin = "if (!defined('ZBP_PATH')) define('ZBP_PATH', defined('\BASE_PATH') ? \BASE_PATH : dirname(dirname(dirname(__DIR__))) . '/');\n";
         $stubHeader = "if (!isset(\$blogtitle)) \$blogtitle = '';\n";
 
         $stubs = array(
@@ -262,12 +262,12 @@ class ZblogBridge
         );
 
         // 计算需要桩文件的目标目录
-        // 供 $zbp->systemdir 使用的目标目录：ZBP_SYSTEM_DIR 已含 zb_system/ 后缀，
-        // 故这里取其父目录，拼接 relPath('zb_system/...') 后正好落在 ZBP_SYSTEM_DIR。
-        $compatBase = defined('ZBP_SYSTEM_DIR') ? rtrim(dirname(ZBP_SYSTEM_DIR), '/') : $basePathClean;
+        // 供 $zbp->systemdir 使用的目标目录：\ZBP_SYSTEM_DIR 已含 zb_system/ 后缀，
+        // 故这里取其父目录，拼接 relPath('zb_system/...') 后正好落在 \ZBP_SYSTEM_DIR。
+        $compatBase = defined('\ZBP_SYSTEM_DIR') ? rtrim(dirname(\ZBP_SYSTEM_DIR), '/') : $basePathClean;
         $targetDirs = array($compatBase);   // → 供 $zbp->systemdir 使用
 
-        // parent(BASE_PATH) → 供 plugins/{alias}/main.php 中的 ../../../zb_system/ 使用
+        // parent(\BASE_PATH) → 供 plugins/{alias}/main.php 中的 ../../../zb_system/ 使用
         $parentPath = dirname($basePathClean);
         if ($parentPath !== $basePathClean && $parentPath !== '.') {
             $targetDirs[] = $parentPath;
@@ -321,8 +321,8 @@ class ZblogBridge
         );
 
         $neededStubs = array();
-        $zbpSystemDir = defined('ZBP_SYSTEM_DIR') ? ZBP_SYSTEM_DIR : (BASE_PATH . 'zb_system/');
-        $blogpath = BASE_PATH;
+        $zbpSystemDir = defined('\ZBP_SYSTEM_DIR') ? \ZBP_SYSTEM_DIR : (\BASE_PATH . 'zb_system/');
+        $blogpath = \BASE_PATH;
 
         foreach ($patterns as $idx => $pat) {
             if (!preg_match_all($pat, $content, $matches, PREG_SET_ORDER)) continue;
@@ -351,8 +351,8 @@ class ZblogBridge
 
         // 特殊处理：为 admin_header.php / admin_top.php / admin_footer.php 添加基本内容
         $specialContent = array(
-            'c_system_base'  => "<?php\nif (!defined('ZBP_PATH')) define('ZBP_PATH', BASE_PATH);\nif (!isset(\$blogpath)) \$blogpath = ZBP_PATH;\nif (!isset(\$bloghost)) \$bloghost = 'http://localhost/';\n",
-            'c_system_admin' => "<?php\nif (!defined('ZBP_PATH')) define('ZBP_PATH', BASE_PATH);\n",
+            'c_system_base'  => "<?php\nif (!defined('ZBP_PATH')) define('ZBP_PATH', \BASE_PATH);\nif (!isset(\$blogpath)) \$blogpath = ZBP_PATH;\nif (!isset(\$bloghost)) \$bloghost = 'http://localhost/';\n",
+            'c_system_admin' => "<?php\nif (!defined('ZBP_PATH')) define('ZBP_PATH', \BASE_PATH);\n",
             'admin_header'   => "<?php\nif (!isset(\$blogtitle)) \$blogtitle = '';\n",
         );
 
@@ -466,7 +466,7 @@ class ZblogBridge
      */
     public static function handlePluginAjax($alias)
     {
-        $dir = BASE_PATH . 'plugins/' . $alias;
+        $dir = \BASE_PATH . 'plugins/' . $alias;
         $adminFile = $dir . '/main.php';
 
         if (!is_file($adminFile)) {
@@ -482,13 +482,13 @@ class ZblogBridge
         // 2. 预置环境
         self::predefineConstants();
         if (!class_exists('\\ZhiCms\\base\\compat\\ZbpShim')) {
-            require_once BASE_PATH . 'ZhiCms/base/compat/ZbpShim.php';
+            require_once \BASE_PATH . 'ZhiCms/base/compat/ZbpShim.php';
         }
         global $zbp;
         if (!isset($zbp) || !($zbp instanceof \ZhiCms\base\compat\ZbpShim)) {
             $zbp = new \ZhiCms\base\compat\ZbpShim();
         }
-        require_once BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
+        require_once \BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
 
         // 3. 加载插件 include.php
         $inc = $dir . '/include.php';
@@ -514,7 +514,7 @@ class ZblogBridge
 
         // 5. 注入全局变量
         global $blogpath, $blogtitle, $lang, $bloghost;
-        if (!isset($blogpath)) $blogpath = BASE_PATH;
+        if (!isset($blogpath)) $blogpath = \BASE_PATH;
         if (!isset($blogtitle)) $blogtitle = '';
         if (!isset($bloghost)) $bloghost = 'http://localhost/';
         if (!isset($lang) || !is_array($lang)) $lang = array('msg' => array('submit' => '提交'));

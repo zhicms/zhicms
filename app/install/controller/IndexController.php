@@ -16,17 +16,17 @@ class IndexController
 
     public function index()
     {
-        $this->configPath = ROOT_PATH . 'data/config/';
+        $this->configPath = \ROOT_PATH . 'data/config/';
 
         // 如果已安装，跳转到首页
         if (file_exists($this->configPath . 'install.lock')) {
-            header('Location: ' . ROOT_URL . 'index.php');
+            header('Location: ' . \ROOT_URL . 'index.php');
             exit;
         }
 
         $step = isset($_GET['step']) ? intval($_GET['step']) : 1;
 
-        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
+        if (isset($_SERVER['\REQUEST_METHOD']) && $_SERVER['\REQUEST_METHOD'] === 'POST') {
             $step = $this->handlePost();
             // handlePost 内部已直接输出 HTML（renderSuccess/renderError），不再重复渲染
             if ($step >= 2) exit;
@@ -823,7 +823,7 @@ HTML;
 
         // 目录权限
         foreach ($this->writeDirs as $dir) {
-            $fullPath = ROOT_PATH . $dir;
+            $fullPath = \ROOT_PATH . $dir;
             $writable = is_writable($fullPath);
             if (!$writable) $allPass = false;
             $items[] = array(

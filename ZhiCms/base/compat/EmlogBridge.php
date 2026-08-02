@@ -54,7 +54,7 @@ class EmlogBridge
         // 预定义所有 Emlog 防护常量（必须在 require 插件文件之前）
         self::predefineConstants();
 
-        require_once BASE_PATH . 'ZhiCms/base/compat/emlog_api.php';
+        require_once \BASE_PATH . 'ZhiCms/base/compat/emlog_api.php';
 
         $main = $dir . '/' . $alias . '.php';
         if (is_file($main)) {
@@ -104,12 +104,12 @@ class EmlogBridge
     protected static function predefineConstants()
     {
         // Emlog 核心常量
-        if (!defined('EMLOG_ROOT'))    define('EMLOG_ROOT', BASE_PATH);
-        if (!defined('TEMPLATE_PATH')) define('TEMPLATE_PATH', BASE_PATH . 'public/');
-        if (!defined('TPLS_URL'))      define('TPLS_URL', defined('ROOT_URL') ? ROOT_URL . 'public/' : '/public/');
+        if (!defined('EMLOG_ROOT'))    define('EMLOG_ROOT', \BASE_PATH);
+        if (!defined('TEMPLATE_PATH')) define('TEMPLATE_PATH', \BASE_PATH . 'public/');
+        if (!defined('TPLS_URL'))      define('TPLS_URL', defined('\ROOT_URL') ? \ROOT_URL . 'public/' : '/public/');
         // 兜底：其他平台的常量也预置，防止因 detectType 误判导致 exit
-        if (!defined('ABSPATH'))       define('ABSPATH', BASE_PATH);
-        if (!defined('ZBP_PATH'))      define('ZBP_PATH', BASE_PATH);
+        if (!defined('ABSPATH'))       define('ABSPATH', \BASE_PATH);
+        if (!defined('ZBP_PATH'))      define('ZBP_PATH', \BASE_PATH);
     }
 
     /**

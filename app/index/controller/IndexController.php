@@ -3,7 +3,7 @@ namespace app\index\controller;
 class IndexController extends \app\base\controller\BaseController
 {
     public function index(){
-        if (!file_exists(CONFIG_PATH . 'install.lock')) {
+        if (!file_exists(\CONFIG_PATH . 'install.lock')) {
             $this->redirect("index.php?r=install");
         }
 

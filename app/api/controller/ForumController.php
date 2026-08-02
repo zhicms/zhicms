@@ -567,7 +567,7 @@ class ForumController extends ApiBaseController {
 
         // 生成目录路径（按日期组织，统一到 upload/forum/{dateDir}/）
         $dateDir = date('Ymd');
-        $dir = ROOT_PATH . 'upload/forum/' . $dateDir;
+        $dir = \ROOT_PATH . 'upload/forum/' . $dateDir;
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
         // 生成文件名

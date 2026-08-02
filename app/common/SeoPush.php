@@ -302,7 +302,7 @@ class SeoPush {
      * 生成 / 更新 sitemap.txt（纯文本格式，一行一条 URL）
      */
     private function writeSitemap(array $urls) {
-        $sitemapPath = ROOT_PATH . 'sitemap.txt';
+        $sitemapPath = \ROOT_PATH . 'sitemap.txt';
         $existing = is_file($sitemapPath) ? file($sitemapPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) : array();
         $merged = array_unique(array_merge($existing, $urls));
         // 保留最新 50000 条（百度上限）
@@ -327,14 +327,14 @@ class SeoPush {
             $xml .= '  </url>' . "\n";
         }
         $xml .= '</urlset>';
-        file_put_contents(ROOT_PATH . 'sitemap.xml', $xml);
+        file_put_contents(\ROOT_PATH . 'sitemap.xml', $xml);
     }
 
     /**
      * 写入推送日志（JSON Lines，追加模式，保留最近 200 条）
      */
     private function writeLog() {
-        $logFile = CONFIG_PATH . 'seopush_log.json';
+        $logFile = \CONFIG_PATH . 'seopush_log.json';
         $logs = array();
         if (is_file($logFile)) {
             $logs = json_decode(file_get_contents($logFile), true);

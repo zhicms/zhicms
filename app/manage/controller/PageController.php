@@ -34,7 +34,7 @@ class PageController extends \app\base\controller\BaseController
 
 	$this->checkManageSession();
 
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pageText=array("单页管理","发布单页");
     		$this->display('app/manage/view/page/addpage');
 			exit;
@@ -65,7 +65,7 @@ class PageController extends \app\base\controller\BaseController
 	$this->checkManageSession();
 
 
-		if(!IS_POST){
+		if(!\IS_POST){
     		$this->pageText=array("单页管理","编辑单页");
 
             $id=intval($this->arg("id"));

@@ -34,7 +34,7 @@ public function AddLink(){
 
 $this->checkManageSession();
 
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pageText=array("友情链接","添加链接");
 
     		$this->display();
@@ -66,7 +66,7 @@ $this->checkManageSession();
 	$this->checkManageSession();
 
 
-		if(!IS_POST){
+		if(!\IS_POST){
     		$this->pageText=array("友情链接","编辑链接");
             $id=intval($this->arg("id"));
             $where['id'] = $id;
@@ -110,7 +110,7 @@ $this->checkManageSession();
 
  $this->checkManageSession();
 
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pageText=array("幻灯广告","添加幻灯");
 
     		$this->display();
@@ -133,7 +133,7 @@ $this->checkManageSession();
 	$this->checkManageSession();
 
 
-		if(!IS_POST){
+		if(!\IS_POST){
     		$this->pageText=array("幻灯广告","编辑幻灯");
             $id=intval($this->arg("id"));
             if($id <= 0){

@@ -12,7 +12,7 @@ class Controller{
 	public function display($tpl = '', $return = false, $isTpl = true ){
 		if( $isTpl ){
 			if( empty($tpl) ){
-				$tpl = 'app/'.APP_NAME . '/view/' . strtolower(CONTROLLER_NAME) . config('TPL.TPL_DEPR') . strtolower(ACTION_NAME);
+				$tpl = 'app/'.\APP_NAME . '/view/' . strtolower(\CONTROLLER_NAME) . config('TPL.TPL_DEPR') . strtolower(\ACTION_NAME);
 			}
 			if( $this->layout ){
 				$this->__template_file = $tpl;
@@ -24,7 +24,7 @@ class Controller{
 	}
 	
 	public function isPost(){
-		return $_SERVER['REQUEST_METHOD'] == 'POST';
+		return $_SERVER['\REQUEST_METHOD'] == 'POST';
 	}
 	
 	public function redirect( $url, $code=302) {

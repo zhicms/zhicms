@@ -21,10 +21,10 @@ class ZbpShim
 
     public function __construct()
     {
-        $this->host = defined('ROOT_URL') ? ROOT_URL : '/';
-        $this->usersdir = BASE_PATH . 'plugins/_compat/';
-        $this->guid = md5(BASE_PATH);
-        $this->systemdir = defined('ZBP_SYSTEM_DIR') ? ZBP_SYSTEM_DIR : (BASE_PATH . 'zb_system/');
+        $this->host = defined('\ROOT_URL') ? \ROOT_URL : '/';
+        $this->usersdir = \BASE_PATH . 'plugins/_compat/';
+        $this->guid = md5(\BASE_PATH);
+        $this->systemdir = defined('\ZBP_SYSTEM_DIR') ? \ZBP_SYSTEM_DIR : (\BASE_PATH . 'zb_system/');
         $pre = self::prefix();
         $this->table = array(
             'Article' => $pre . 'article',

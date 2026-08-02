@@ -24,7 +24,7 @@ class MController extends \app\base\controller\BaseController {
 		$style = isset($Siteinfo['mobile_style']) ? trim($Siteinfo['mobile_style']) : 'super_search';
 		$allowed = array('super_search', 'tb_minishop', 'welfare_listing', 'rt_xb');
 		if (!in_array($style, $allowed, true)) { $style = 'super_search'; }
-		$viewFile = ROOT_PATH . 'app/index/view/m/' . $style . '.html';
+		$viewFile = \ROOT_PATH . 'app/index/view/m/' . $style . '.html';
 		header('Content-Type: text/html; charset=utf-8');
 		if (file_exists($viewFile)) {
 			readfile($viewFile);

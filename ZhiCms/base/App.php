@@ -10,9 +10,9 @@ class App{
 	           define('IS_PUT',        REQUEST_METHOD =='PUT' ? true : false);
 	           define('IS_DELETE',     REQUEST_METHOD =='DELETE' ? true : false);
     
-		Config::init( BASE_PATH );
-		Config::loadConfig( CONFIG_PATH . 'global.php' );
-		Config::loadConfig( CONFIG_PATH . Config::get('ENV') . '.php' );
+		Config::init( \BASE_PATH );
+		Config::loadConfig( \CONFIG_PATH . 'global.php' );
+		Config::loadConfig( \CONFIG_PATH . Config::get('ENV') . '.php' );
 		
 		date_default_timezone_set( Config::get('TIMEZONE') );
 
@@ -29,9 +29,9 @@ class App{
 	
 	static public function run(){
 		try{			
-			if (!file_exists(CONFIG_PATH . 'install.lock')) {
+			if (!file_exists(\CONFIG_PATH . 'install.lock')) {
 				if (!isset($_REQUEST['r']) || strpos($_REQUEST['r'], 'install') !== 0) {
-					header('Location: ' . ROOT_URL . 'index.php?r=install');
+					header('Location: ' . \ROOT_URL . 'index.php?r=install');
 					exit;
 				}
 			}
@@ -43,7 +43,7 @@ class App{
 			// defined('XXX') || exit('access denied!') 直接杀死进程。
 			\ZhiCms\base\compat\Compat::predefineAll();
 
-			Hook::init(BASE_PATH);
+			Hook::init(\BASE_PATH);
 			// 加载并注册已启用插件（标准化插件系统）
 			try {
 				\ZhiCms\base\PluginManager::boot();
@@ -57,13 +57,13 @@ class App{
 			Hook::listen('routeParseUrl', array( Config::get('REWRITE_RULE'), Config::get('REWRITE_ON')));
 			
 			//default route
-			if( !defined('APP_NAME') || !defined('CONTROLLER_NAME') || !defined('ACTION_NAME')){
+			if( !defined('\APP_NAME') || !defined('\CONTROLLER_NAME') || !defined('\ACTION_NAME')){
 				Route::parseUrl( Config::get('REWRITE_RULE'), Config::get('REWRITE_ON') );
 			}
 			
 			//execute action
-			$controller = '\app\\'. APP_NAME .'\controller\\'. CONTROLLER_NAME .'Controller';
-			$action = ACTION_NAME;
+			$controller = '\app\\'. \APP_NAME .'\controller\\'. \CONTROLLER_NAME .'Controller';
+			$action = \ACTION_NAME;
 
 			if( !class_exists($controller) ) {
 				$classes = get_declared_classes();

@@ -13,6 +13,14 @@ if (version_compare(PHP_VERSION, '7.0.0','<')) {
 define('ROOT_PATH', realpath('./').DIRECTORY_SEPARATOR);
 define('BASE_PATH', realpath('./').DIRECTORY_SEPARATOR);
 define('CONFIG_PATH', BASE_PATH.'data/config/');
+
+// 安装引导阶段强制显示错误：PHP 8.x 下部分致命错误（如 array_merge 参数为 null）
+// 会导致整页空白，开启 display_errors 后可直观看到报错而非白屏，便于排查。
+if (!file_exists(CONFIG_PATH . 'install.lock')
+    || (isset($_REQUEST['r']) && strpos($_REQUEST['r'], 'install') === 0)) {
+    ini_set('display_errors', 1);
+    error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE);
+}
 // Z-Blog 兼容桩根目录（原根目录 zb_system 已迁移至此，统一由该常量映射）
 define('ZBP_SYSTEM_DIR', BASE_PATH . 'ZhiCms/base/compat/zb_system/');
 define('ROOT_URL',  rtrim(dirname($_SERVER["SCRIPT_NAME"]), '\\/').'/');

@@ -12,7 +12,7 @@ class Plugin extends BasePlugin
     public function __construct($meta = array())
     {
         parent::__construct($meta);
-        $this->cacheDir = BASE_PATH . 'runtime/static_cache/';
+        $this->cacheDir = \BASE_PATH . 'runtime/static_cache/';
     }
     
     public function register()
@@ -49,11 +49,11 @@ class Plugin extends BasePlugin
             return;
         }
         
-        if (!IS_GET) {
+        if (!\IS_GET) {
             return;
         }
         
-        if (REQUEST_METHOD !== 'GET') {
+        if (\REQUEST_METHOD !== 'GET') {
             return;
         }
         
@@ -90,7 +90,7 @@ class Plugin extends BasePlugin
             return;
         }
         
-        if (!IS_GET) {
+        if (!\IS_GET) {
             return;
         }
         
@@ -121,7 +121,7 @@ class Plugin extends BasePlugin
     {
         $config = $this->getConfig();
         
-        if (!empty($config['exclude_admin']) && APP_NAME === 'manage') {
+        if (!empty($config['exclude_admin']) && defined('APP_NAME') && \APP_NAME === 'manage') {
             return true;
         }
         

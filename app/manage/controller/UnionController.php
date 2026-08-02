@@ -221,7 +221,7 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if (!IS_POST) {
+        if (!\IS_POST) {
             $this->pageText = array("联盟模型", "新建联盟模型");
             $this->display('app/manage/view/union/addunion');
             exit;
@@ -237,7 +237,7 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if (!IS_POST) {
+        if (!\IS_POST) {
             $this->pageText = array("联盟模型", "编辑联盟模型");
             $id = intval($this->arg("id"));
             $where['id'] = $id;
@@ -298,7 +298,7 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if (!IS_POST) {
+        if (!\IS_POST) {
             $this->pageText = array("商城管理", "添加商城");
             $this->union = self::loadUnion();
             $this->display('app/manage/view/union/addmall');
@@ -315,7 +315,7 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if (!IS_POST) {
+        if (!\IS_POST) {
             $this->pageText = array("商城管理", "编辑商城");
             $id = intval($this->arg("id"));
             $where['id'] = $id;
@@ -375,7 +375,7 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if(!IS_POST){
+        if(!\IS_POST){
             $this->pageText = array("分类管理", "新建分类");
             $this->display('app/manage/view/union/addtype');
             exit;
@@ -392,7 +392,7 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if(!IS_POST){
+        if(!\IS_POST){
             $this->pageText = array("分类管理", "编辑分类");
             $id = intval($this->arg("id"));
             $where['id'] = $id;
@@ -1139,7 +1139,7 @@ class UnionController extends \app\base\controller\BaseController
      * 写入采集日志到 data/log/collect.log
      */
     private function writeCollectLog($msg) {
-        $logFile = defined('ROOT_PATH') ? ROOT_PATH . 'data/log/collect.log' : __DIR__ . '/../../data/log/collect.log';
+        $logFile = defined('\ROOT_PATH') ? \ROOT_PATH . 'data/log/collect.log' : __DIR__ . '/../../data/log/collect.log';
         $dir = dirname($logFile);
         if (!is_dir($dir)) {
             @mkdir($dir, 0755, true);

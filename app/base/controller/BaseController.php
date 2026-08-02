@@ -13,8 +13,8 @@ class BaseController extends \ZhiCms\base\Controller {
 	 */
 	public function __construct() {
 		// 站点关闭拦截：仅前台生效，后台(manage)与安装(install)不受影响
-		if (defined('APP_NAME') && APP_NAME != 'manage' && APP_NAME != 'install') {
-			$closeFile = CONFIG_PATH . 'siteconfig.php';
+		if (defined('\APP_NAME') && \APP_NAME != 'manage' && \APP_NAME != 'install') {
+			$closeFile = \CONFIG_PATH . 'siteconfig.php';
 			if (file_exists($closeFile)) {
 				$Siteinfo = array();
 				include $closeFile;
@@ -95,7 +95,7 @@ class BaseController extends \ZhiCms\base\Controller {
 		}
 		$fileName = substr(md5($file['name']), 0, 4) . time() . '.' . $ext;
 		$dateDir = date('Ymd');
-		$uploadDir = ROOT_PATH . '/upload/file/images/' . $dateDir;
+		$uploadDir = \ROOT_PATH . '/upload/file/images/' . $dateDir;
 		if (!is_dir($uploadDir)) {
 			@mkdir($uploadDir, 0777, true);
 		}

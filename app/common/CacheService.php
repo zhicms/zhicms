@@ -23,7 +23,7 @@ class CacheService
 
     public function __construct($ttl = 300)
     {
-        $this->dir = ROOT_PATH . 'data/cache/';
+        $this->dir = \ROOT_PATH . 'data/cache/';
         if (!is_dir($this->dir)) {
             mkdir($this->dir, 0755, true);
         }

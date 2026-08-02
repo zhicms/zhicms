@@ -25,7 +25,7 @@ class AiService
         if (self::$config !== null) {
             return self::$config;
         }
-        $configFile = CONFIG_PATH . 'ai.php';
+        $configFile = \CONFIG_PATH . 'ai.php';
         if (!file_exists($configFile)) {
             self::$config = array('ai_chat' => '', 'ai_image' => '', 'ai_system_prompt' => '', 'ai_models' => array());
             return self::$config;
@@ -45,7 +45,7 @@ class AiService
         $config = array_merge($defaults, $config);
 
         $content = "<?php\n/**\n * AI 开放平台配置\n */\n\n\$AI = " . var_export($config, true) . ";\n";
-        $of = fopen(CONFIG_PATH . 'ai.php', 'w');
+        $of = fopen(\CONFIG_PATH . 'ai.php', 'w');
         if ($of) {
             fwrite($of, $content);
             fclose($of);

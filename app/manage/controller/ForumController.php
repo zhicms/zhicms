@@ -121,7 +121,7 @@ class ForumController extends \app\base\controller\BaseController
      */
     public function saveBoard(){
         $this->checkManageSession();
-        if (!IS_POST) exit(json_encode(array("info" => "请求方式错误", "status" => "n")));
+        if (!\IS_POST) exit(json_encode(array("info" => "请求方式错误", "status" => "n")));
 
         $id = intval($this->arg("id"));
         $name = trim($this->arg("name"));
@@ -175,7 +175,7 @@ class ForumController extends \app\base\controller\BaseController
      */
     public function saveGroup(){
         $this->checkManageSession();
-        if (!IS_POST) exit(json_encode(array("info" => "请求方式错误", "status" => "n")));
+        if (!\IS_POST) exit(json_encode(array("info" => "请求方式错误", "status" => "n")));
 
         $id = intval($this->arg("id"));
         $name = trim($this->arg("groupname"));

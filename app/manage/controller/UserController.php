@@ -15,7 +15,7 @@ class UserController extends \app\base\controller\BaseController
     }
     public function addUser(){
         $this->checkManageSession();
-        if(!IS_POST){
+        if(!\IS_POST){
             $this->pageText=array("用户管理","添加用户");
             $this->display();
             exit;
@@ -47,7 +47,7 @@ class UserController extends \app\base\controller\BaseController
     }
     public function editorUser(){
         $this->checkManageSession();
-        if(!IS_POST){
+        if(!\IS_POST){
             $id=intval($this->arg("id"));
             $where['id'] = $id;
             $ret=obj("api/ApiData")->dataSelect("yun_user",$where);

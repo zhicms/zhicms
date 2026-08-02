@@ -188,7 +188,7 @@ class FileController extends \app\base\controller\BaseController
 
         // 生成目录路径（按日期组织）
         $dateDir = date('Ymd');
-        $targetDir = ROOT_PATH . "upload/{$uploadDir}/{$dateDir}";
+        $targetDir = \ROOT_PATH . "upload/{$uploadDir}/{$dateDir}";
 
         // 创建目录
         if (!is_dir($targetDir)) {

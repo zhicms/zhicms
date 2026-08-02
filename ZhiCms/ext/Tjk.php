@@ -45,8 +45,8 @@ class Tjk {
             $api = \app\common\ConfigStore::load('api');
         } else {
             $api = array();
-            if (file_exists(CONFIG_PATH . 'apiset.php')) {
-                include CONFIG_PATH . 'apiset.php';
+            if (file_exists(\CONFIG_PATH . 'apiset.php')) {
+                include \CONFIG_PATH . 'apiset.php';
             }
         }
         $dtkAppKey = $api['dtk_appkey'] ?? '';

@@ -90,8 +90,14 @@ class Route {
 	    }
 
 		$app_name = empty($routeArr[0]) ? Config::get('DEFAULT_APP') : $routeArr[0];
-		$controller_name = empty($routeArr[1]) ? $zhicms_404 : $routeArr[1];
-		$action_name = empty($routeArr[2]) ? Config::get('DEFAULT_ACTION') : $routeArr[2];
+		if (count($routeArr) == 1) {
+			// 仅 app 段（如 r=install）：controller/action 回退默认值，避免解析成 DefaultController
+			$controller_name = Config::get('DEFAULT_CONTROLLER');
+			$action_name = Config::get('DEFAULT_ACTION');
+		} else {
+			$controller_name = empty($routeArr[1]) ? $zhicms_404 : $routeArr[1];
+			$action_name = empty($routeArr[2]) ? Config::get('DEFAULT_ACTION') : $routeArr[2];
+		}
 		$_REQUEST['r'] = $app_name .'/'. $controller_name .'/'. $action_name;
 		
 		// 将 action 名称转为驼峰命名
@@ -117,9 +123,9 @@ class Route {
 	}
 
 	static public function url($route=null, $params=array()){
-		$app = APP_NAME;
-		$controller = CONTROLLER_NAME;
-		$action = ACTION_NAME;
+		$app = \APP_NAME;
+		$controller = \CONTROLLER_NAME;
+		$action = \ACTION_NAME;
 		$fullRoute = $route;
 		if($route){
 			$route = explode('/', $route, 3);

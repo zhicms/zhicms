@@ -10,6 +10,7 @@ $rule=array (
   'REWRITE_RULE' => 
   array (
     'index.html' => 'index/index/index',
+    'install.html' => 'install/index/index',
     'cat-<nav>.html' => 'index/index/index/nav=<nav>',
     'list-<cid>.html' => 'index/index/index/list=<cid>',
     'archive-<ym>.html' => 'index/index/index/ym=<ym>',

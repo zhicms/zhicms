@@ -548,7 +548,7 @@ class AiController extends \app\base\controller\BaseController
         }
 
         $dir = date('Ym');
-        $uploadDir = BASE_PATH . 'upload/ai/' . $dir . '/';
+        $uploadDir = \BASE_PATH . 'upload/ai/' . $dir . '/';
         if (!is_dir($uploadDir)) {
             mkdir($uploadDir, 0777, true);
         }

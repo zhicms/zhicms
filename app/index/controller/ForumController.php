@@ -310,7 +310,7 @@ class ForumController extends \app\base\controller\BaseController {
         if ($this->getSwitch('forum_on', '1') !== '1') {
             exit(json_encode(array("info" => "社区功能已关闭", "status" => "n")));
         }
-        if (!IS_POST) {
+        if (!\IS_POST) {
             exit(json_encode(array("info" => "请求方式错误", "status" => "n")));
         }
 
@@ -566,7 +566,7 @@ class ForumController extends \app\base\controller\BaseController {
 
         // 生成目录路径（按日期组织，统一到 upload/forum/{dateDir}/）
         $dateDir = date('Ymd');
-        $dir = ROOT_PATH . 'upload/forum/' . $dateDir;
+        $dir = \ROOT_PATH . 'upload/forum/' . $dateDir;
         if (!is_dir($dir)) @mkdir($dir, 0755, true);
 
         // 生成文件名
@@ -741,7 +741,7 @@ class ForumController extends \app\base\controller\BaseController {
         if ($this->getSwitch('forum_on', '1') !== '1') {
             exit(json_encode(array("info" => "社区功能已关闭", "status" => "n")));
         }
-        if (!IS_POST) {
+        if (!\IS_POST) {
             exit(json_encode(array("info" => "请求方式错误", "status" => "n")));
         }
 

@@ -23,7 +23,7 @@ class AiAssistantController extends \app\base\controller\BaseController
     public function __construct()
     {
         parent::__construct();
-        $this->historyDir = ROOT_PATH . 'data/ai_chat_history/';
+        $this->historyDir = \ROOT_PATH . 'data/ai_chat_history/';
         if (!is_dir($this->historyDir)) {
             mkdir($this->historyDir, 0755, true);
         }
@@ -161,7 +161,7 @@ class AiAssistantController extends \app\base\controller\BaseController
     {
         header('Content-Type: application/json; charset=utf-8');
 
-        $jsonFile = ROOT_PATH . 'data/hot_keywords.json';
+        $jsonFile = \ROOT_PATH . 'data/hot_keywords.json';
 
         // ========== 内置兜底词库（与 ai_widget.html 保持一致） ==========
         $fallbackPools = [

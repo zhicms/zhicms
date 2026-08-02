@@ -21,7 +21,7 @@ class ManageController extends \app\base\controller\BaseController
 
     $this->checkManageSession();
 
-    	if(!IS_POST){
+    	if(!\IS_POST){
     		$this->pageText=array("账户管理","添加账户");
     		$this->display();
     		exit;
@@ -47,7 +47,7 @@ class ManageController extends \app\base\controller\BaseController
 
    $this->checkManageSession();
 
-     if(!IS_POST){
+     if(!\IS_POST){
         $id=intval($this->arg("id"));
         $where['id'] = $id;
         $ret=obj("api/ApiData")->dataSelect("yun_manage",$where);

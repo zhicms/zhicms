@@ -173,7 +173,7 @@ class EnvController extends \app\base\controller\BaseController
             'runtime'    => '运行时目录',
         );
         foreach ($writeDirs as $dir => $desc) {
-            $full  = ROOT_PATH . $dir;
+            $full  = \ROOT_PATH . $dir;
             $writable = is_dir($full) ? is_writable($full) : false;
             $items[] = array(
                 'name'     => '目录可写 - /' . $dir,

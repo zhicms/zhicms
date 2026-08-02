@@ -6,7 +6,7 @@ class UcenterController extends \app\base\controller\BaseController {
   
   public function index(){
     $uInfo=obj("index/global","controller")->findUser("y",$_COOKIE['ZhiCmsUser'],"cookie");
-     if(!IS_POST){
+     if(!\IS_POST){
        $type=$this->arg("type");
       if(!$type){
       

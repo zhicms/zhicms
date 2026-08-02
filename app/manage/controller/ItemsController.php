@@ -79,7 +79,7 @@ class ItemsController extends \app\base\controller\BaseController
         $this->checkManageSession();
 
         $Siteinfo = \app\common\ConfigStore::load('site');
-        if(!IS_POST){
+        if(!\IS_POST){
             $this->pageText = array("宝贝管理", "新增宝贝");
             $goodsId = $this->arg("goodsid");
             if($goodsId != ''){

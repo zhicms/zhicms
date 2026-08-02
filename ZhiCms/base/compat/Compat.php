@@ -25,26 +25,26 @@ class Compat
     public static function predefineAll()
     {
         // WordPress 防护常量
-        if (!defined('ABSPATH'))         define('ABSPATH', BASE_PATH);
+        if (!defined('ABSPATH'))         define('ABSPATH', \BASE_PATH);
         if (!defined('WPINC'))           define('WPINC', 'wp-includes');
-        if (!defined('WP_CONTENT_DIR'))  define('WP_CONTENT_DIR', BASE_PATH);
-        if (!defined('WP_PLUGIN_DIR'))   define('WP_PLUGIN_DIR', BASE_PATH . 'plugins/');
-        if (!defined('WP_PLUGIN_URL'))   define('WP_PLUGIN_URL', defined('ROOT_URL') ? ROOT_URL . 'plugins/' : '/plugins/');
-        if (!defined('WP_CONTENT_URL'))  define('WP_CONTENT_URL', defined('ROOT_URL') ? ROOT_URL : '/');
+        if (!defined('WP_CONTENT_DIR'))  define('WP_CONTENT_DIR', \BASE_PATH);
+        if (!defined('WP_PLUGIN_DIR'))   define('WP_PLUGIN_DIR', \BASE_PATH . 'plugins/');
+        if (!defined('WP_PLUGIN_URL'))   define('WP_PLUGIN_URL', defined('\ROOT_URL') ? \ROOT_URL . 'plugins/' : '/plugins/');
+        if (!defined('WP_CONTENT_URL'))  define('WP_CONTENT_URL', defined('\ROOT_URL') ? \ROOT_URL : '/');
         if (!defined('WP_DEBUG'))        define('WP_DEBUG', false);
         if (!defined('WP_DEBUG_DISPLAY')) define('WP_DEBUG_DISPLAY', false);
 
         // Emlog 防护常量
-        if (!defined('EMLOG_ROOT'))    define('EMLOG_ROOT', BASE_PATH);
-        if (!defined('TEMPLATE_PATH')) define('TEMPLATE_PATH', BASE_PATH . 'public/');
-        if (!defined('TPLS_URL'))      define('TPLS_URL', defined('ROOT_URL') ? ROOT_URL . 'public/' : '/public/');
+        if (!defined('EMLOG_ROOT'))    define('EMLOG_ROOT', \BASE_PATH);
+        if (!defined('TEMPLATE_PATH')) define('TEMPLATE_PATH', \BASE_PATH . 'public/');
+        if (!defined('TPLS_URL'))      define('TPLS_URL', defined('\ROOT_URL') ? \ROOT_URL . 'public/' : '/public/');
 
         // Z-BlogPHP 防护常量
-        if (!defined('ZBP_PATH'))       define('ZBP_PATH', BASE_PATH);
+        if (!defined('ZBP_PATH'))       define('ZBP_PATH', \BASE_PATH);
         if (!defined('ZBP_HOOKERROR'))  define('ZBP_HOOKERROR', true);
         if (!defined('ZBP_SAFEMODE'))   define('ZBP_SAFEMODE', false);
         if (!defined('ZBP_VERSION'))    define('ZBP_VERSION', '1.7');
-        if (!defined('ZBP_PLUGIN_DIR')) define('ZBP_PLUGIN_DIR', BASE_PATH . 'zb_users/plugin/');
+        if (!defined('ZBP_PLUGIN_DIR')) define('ZBP_PLUGIN_DIR', \BASE_PATH . 'zb_users/plugin/');
     }
 
     /**
@@ -80,7 +80,7 @@ class Compat
      */
     public static function detectType($alias)
     {
-        $dir = BASE_PATH . self::DIR . '/' . $alias;
+        $dir = \BASE_PATH . self::DIR . '/' . $alias;
         if (!is_dir($dir)) return false;
         if (is_file($dir . '/plugin.json')) return 'native';
         if (is_file($dir . '/plugin.xml')) return 'zblog';
@@ -132,7 +132,7 @@ class Compat
     /** 按类型加载插件入口（仅注册钩子，不触发生命周期副作用） */
     public static function load($type, $alias)
     {
-        $dir = BASE_PATH . self::DIR . '/' . $alias;
+        $dir = \BASE_PATH . self::DIR . '/' . $alias;
         try {
             if ($type === 'emlog') EmlogBridge::load($alias, $dir);
             elseif ($type === 'zblog') ZblogBridge::load($alias, $dir);
@@ -145,18 +145,18 @@ class Compat
     public static function install($alias)
     {
         $type = self::detectType($alias);
-        if ($type === 'emlog') EmlogBridge::install($alias, BASE_PATH . self::DIR . '/' . $alias);
-        elseif ($type === 'zblog') ZblogBridge::install($alias, BASE_PATH . self::DIR . '/' . $alias);
-        elseif ($type === 'wordpress') WordPressBridge::install($alias, BASE_PATH . self::DIR . '/' . $alias);
+        if ($type === 'emlog') EmlogBridge::install($alias, \BASE_PATH . self::DIR . '/' . $alias);
+        elseif ($type === 'zblog') ZblogBridge::install($alias, \BASE_PATH . self::DIR . '/' . $alias);
+        elseif ($type === 'wordpress') WordPressBridge::install($alias, \BASE_PATH . self::DIR . '/' . $alias);
     }
 
     /** 卸载时触发的兼容层生命周期 */
     public static function uninstall($alias)
     {
         $type = self::detectType($alias);
-        if ($type === 'emlog') EmlogBridge::uninstall($alias, BASE_PATH . self::DIR . '/' . $alias);
-        elseif ($type === 'zblog') ZblogBridge::uninstall($alias, BASE_PATH . self::DIR . '/' . $alias);
-        elseif ($type === 'wordpress') WordPressBridge::uninstall($alias, BASE_PATH . self::DIR . '/' . $alias);
+        if ($type === 'emlog') EmlogBridge::uninstall($alias, \BASE_PATH . self::DIR . '/' . $alias);
+        elseif ($type === 'zblog') ZblogBridge::uninstall($alias, \BASE_PATH . self::DIR . '/' . $alias);
+        elseif ($type === 'wordpress') WordPressBridge::uninstall($alias, \BASE_PATH . self::DIR . '/' . $alias);
     }
 
     /**
@@ -165,7 +165,7 @@ class Compat
     public static function scanAvailable()
     {
         $out = array();
-        $base = BASE_PATH . self::DIR . '/';
+        $base = \BASE_PATH . self::DIR . '/';
         if (!is_dir($base)) return $out;
         foreach (glob($base . '*', GLOB_ONLYDIR) as $dir) {
             $alias = basename($dir);
@@ -180,7 +180,7 @@ class Compat
     /** 读取兼容插件的元信息（zblog 读 plugin.xml，emlog/wordpress 解析头注释） */
     public static function readCompatMeta($alias, $type)
     {
-        $dir = BASE_PATH . self::DIR . '/' . $alias;
+        $dir = \BASE_PATH . self::DIR . '/' . $alias;
         if ($type === 'zblog') {
             $xmlFile = $dir . '/plugin.xml';
             $hasSetting = false;

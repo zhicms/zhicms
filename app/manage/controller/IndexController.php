@@ -63,7 +63,7 @@ class IndexController extends \app\base\controller\BaseController
 
    public function delCache(){
    $this->checkManageSession();
-        self::delDir(ROOT_PATH . 'data/cache/tpl');
+        self::delDir(\ROOT_PATH . 'data/cache/tpl');
         exit(json_encode(array("info" => "清除缓存成功", "status" => "y")));
     }
 	 
@@ -112,9 +112,9 @@ class IndexController extends \app\base\controller\BaseController
 
         // 创建备份目录
         $timestamp = date('Ymd_His');
-        $backupDir = ROOT_PATH . 'backup/full_update_' . $timestamp . '/';
-        $zipPath = ROOT_PATH . 'data/update.zip';
-        $tempDir = ROOT_PATH . 'data/update_temp/';
+        $backupDir = \ROOT_PATH . 'backup/full_update_' . $timestamp . '/';
+        $zipPath = \ROOT_PATH . 'data/update.zip';
+        $tempDir = \ROOT_PATH . 'data/update_temp/';
         $manifestPath = $backupDir . 'manifest.json';
 
         try{
@@ -195,7 +195,7 @@ class IndexController extends \app\base\controller\BaseController
             $manifest['sql_executed'] = true;
 
             // 8. 全量覆盖文件
-            $this->updateAllFiles($tempDir, ROOT_PATH);
+            $this->updateAllFiles($tempDir, \ROOT_PATH);
             $manifest['files_updated'] = true;
 
             // 9. 更新版本号（数据库 + 文件双重更新）
@@ -206,7 +206,7 @@ class IndexController extends \app\base\controller\BaseController
 
             // 先更新 version.php 文件（ConfigStore 兼容格式：$v='版本号';）
             $versionContent = "<?php\n\$v=" . var_export($newVersion, true) . ";\n";
-            $writeResult = file_put_contents(CONFIG_PATH . 'version.php', $versionContent);
+            $writeResult = file_put_contents(\CONFIG_PATH . 'version.php', $versionContent);
             if($writeResult === false){
                 throw new Exception('更新版本号文件失败');
             }
@@ -250,7 +250,7 @@ class IndexController extends \app\base\controller\BaseController
         $backupFilesDir = $backupDir . 'files/';
         
         // 递归备份整个网站根目录（排除不需要备份的目录）
-        $this->copyDirectoryWithExclude(ROOT_PATH, $backupFilesDir, true);
+        $this->copyDirectoryWithExclude(\ROOT_PATH, $backupFilesDir, true);
     }
     
     /**
@@ -281,7 +281,7 @@ class IndexController extends \app\base\controller\BaseController
             }
             
             $sourcePath = $source . '/' . $file;
-            $relativePath = substr($sourcePath, strlen(ROOT_PATH));
+            $relativePath = substr($sourcePath, strlen(\ROOT_PATH));
             
             // 检查是否应该排除
             if($this->shouldExclude($relativePath)){
@@ -329,7 +329,7 @@ class IndexController extends \app\base\controller\BaseController
      * 备份数据库
      */
     private function backupDatabase($backupDir){
-        include ROOT_PATH . 'data/config/db.php';
+        include \ROOT_PATH . 'data/config/db.php';
         
         $dbConfig = $db['DB']['default'];
         $backupFile = $backupDir . 'database.sql';
@@ -401,7 +401,7 @@ class IndexController extends \app\base\controller\BaseController
                 continue;
             }
             
-            include ROOT_PATH . 'data/config/db.php';
+            include \ROOT_PATH . 'data/config/db.php';
             $dbConfig = $db['DB']['default'];
             
             try{
@@ -703,7 +703,7 @@ class IndexController extends \app\base\controller\BaseController
             // 1. 还原文件
             $backupFilesDir = $backupDir . 'files/';
             if(is_dir($backupFilesDir)){
-                $this->restoreFilesRecursive($backupFilesDir, ROOT_PATH);
+                $this->restoreFilesRecursive($backupFilesDir, \ROOT_PATH);
             }
             
             // 2. 还原数据库
@@ -722,8 +722,8 @@ class IndexController extends \app\base\controller\BaseController
             if(is_dir($tempDir)){
                 $this->delDir($tempDir);
             }
-            if(file_exists(ROOT_PATH . 'data/update.zip')){
-                unlink(ROOT_PATH . 'data/update.zip');
+            if(file_exists(\ROOT_PATH . 'data/update.zip')){
+                unlink(\ROOT_PATH . 'data/update.zip');
             }
             
         }catch(Exception $e){
@@ -761,7 +761,7 @@ class IndexController extends \app\base\controller\BaseController
      * 还原数据库
      */
     private function restoreDatabase($backupFile){
-        include ROOT_PATH . 'data/config/db.php';
+        include \ROOT_PATH . 'data/config/db.php';
         $dbConfig = $db['DB']['default'];
         
         try{

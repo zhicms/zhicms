@@ -362,7 +362,7 @@ class FindController extends \app\base\controller\BaseController
 	    
 	    $Siteinfo = \app\common\ConfigStore::load('site');
 	    $newData= new \ZhiCms\ext\Weixin;
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pageText=array("发现管理","发布文章");
            $this->categories = $this->getGoodsCategories();
            $this->navs = $this->getFindNavs();
@@ -498,7 +498,7 @@ class FindController extends \app\base\controller\BaseController
 
     $Siteinfo = \app\common\ConfigStore::load('site');
     $newData= new \ZhiCms\ext\Weixin;
-	if(!IS_POST){
+	if(!\IS_POST){
     		$this->pageText=array("发现管理","编辑文章");
   
 
@@ -647,7 +647,7 @@ class FindController extends \app\base\controller\BaseController
 	$this->checkManageSession();
 
 
-		if(!IS_POST){
+		if(!\IS_POST){
 			$this->pageText=array("分类管理","新建分类");
 			$this->color=self::diyColor();
 			$this->display();
@@ -668,7 +668,7 @@ class FindController extends \app\base\controller\BaseController
 
 	$this->checkManageSession();
 
-     if(!IS_POST){
+     if(!\IS_POST){
 			$this->pageText=array("分类管理","编辑分类");
 			$id=intval($this->arg("id"));
             $where['id'] = $id;

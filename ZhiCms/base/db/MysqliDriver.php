@@ -11,7 +11,7 @@ class MysqliDriver implements DbInterface {
 	 * 记录 SQL 错误到日志文件（与 PDO 驱动保持一致）
 	 */
 	private function logError($sql, $error) {
-		$logFile = defined('ROOT_PATH') ? ROOT_PATH . 'data/log/sql_error.log' : __DIR__ . '/../../data/log/sql_error.log';
+		$logFile = defined('\ROOT_PATH') ? \ROOT_PATH . 'data/log/sql_error.log' : __DIR__ . '/../../data/log/sql_error.log';
 		$dir = dirname($logFile);
 		if (!is_dir($dir)) {
 			@mkdir($dir, 0755, true);

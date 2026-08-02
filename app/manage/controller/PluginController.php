@@ -96,7 +96,7 @@ class PluginController extends \app\base\controller\BaseController
 		if (!preg_match('/^[a-zA-Z0-9_\-]+$/', $alias)) {
 			$this->alert('插件别名只能包含字母、数字、下划线、连字符');
 		}
-		$destDir = BASE_PATH . 'plugins/' . $alias;
+		$destDir = \BASE_PATH . 'plugins/' . $alias;
 		if (is_dir($destDir)) {
 			$this->alert('该插件已存在，请先卸载后再上传');
 		}
@@ -105,7 +105,7 @@ class PluginController extends \app\base\controller\BaseController
 		if ($ext === 'zba') {
 			// .zba 已在上面的 handleZba 中解压
 		} else {
-			if (!$this->unzip($tmp, BASE_PATH . 'plugins/')) {
+			if (!$this->unzip($tmp, \BASE_PATH . 'plugins/')) {
 				$this->alert('解压失败，请检查目录写入权限');
 			}
 		}
@@ -217,7 +217,7 @@ class PluginController extends \app\base\controller\BaseController
 
 		// 原生插件：加载 Setting.php
 		$settingClass = '\\plugins\\' . $alias . '\\Setting';
-		$file = BASE_PATH . 'plugins/' . $alias . '/Setting.php';
+		$file = \BASE_PATH . 'plugins/' . $alias . '/Setting.php';
 		if (!class_exists($settingClass)) {
 			if (!is_file($file)) $this->alert('设置组件缺失');
 			require $file;
@@ -359,17 +359,17 @@ class PluginController extends \app\base\controller\BaseController
 	 * 模拟 $zbp->Config()->xxx = yyy + $zbp->SaveConfig() 的保存逻辑
 	 */
 	protected function saveCompatSetting($alias){
-		$dir = BASE_PATH . 'plugins/' . $alias;
+		$dir = \BASE_PATH . 'plugins/' . $alias;
 
 		// 预置 Z-Blog 运行环境
 		if (!class_exists('\\ZhiCms\\base\\compat\\ZbpShim')) {
-			require_once BASE_PATH . 'ZhiCms/base/compat/ZbpShim.php';
+			require_once \BASE_PATH . 'ZhiCms/base/compat/ZbpShim.php';
 		}
 		global $zbp;
 		if (!isset($zbp) || !($zbp instanceof \ZhiCms\base\compat\ZbpShim)) {
 			$zbp = new \ZhiCms\base\compat\ZbpShim();
 		}
-		require_once BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
+		require_once \BASE_PATH . 'ZhiCms/base/compat/zblog_api.php';
 
 		// 加载插件 include.php
 		$inc = $dir . '/include.php';
@@ -482,7 +482,7 @@ class PluginController extends \app\base\controller\BaseController
 		$id   = (string)$xml->id;
 		if (empty($id)) return false;
 
-		$destBase = BASE_PATH . 'plugins/';
+		$destBase = \BASE_PATH . 'plugins/';
 		$destDir  = $destBase . $id;
 
 		if (is_dir($destDir)) return false;

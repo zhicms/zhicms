@@ -68,7 +68,7 @@ class WordPressBridge
         // 预定义所有 WordPress 防护常量（必须在 require 插件文件之前）
         self::predefineConstants();
 
-        require_once BASE_PATH . 'ZhiCms/base/compat/wordpress_api.php';
+        require_once \BASE_PATH . 'ZhiCms/base/compat/wordpress_api.php';
 
         // 设置当前加载的插件上下文
         $GLOBALS['_wp_current_plugin'] = $alias;
@@ -176,17 +176,17 @@ class WordPressBridge
     protected static function predefineConstants()
     {
         // WordPress 核心常量
-        if (!defined('ABSPATH'))         define('ABSPATH', BASE_PATH);
+        if (!defined('ABSPATH'))         define('ABSPATH', \BASE_PATH);
         if (!defined('WPINC'))           define('WPINC', 'wp-includes');
-        if (!defined('WP_CONTENT_DIR'))  define('WP_CONTENT_DIR', BASE_PATH);
-        if (!defined('WP_PLUGIN_DIR'))   define('WP_PLUGIN_DIR', BASE_PATH . 'plugins/');
-        if (!defined('WP_PLUGIN_URL'))   define('WP_PLUGIN_URL', defined('ROOT_URL') ? ROOT_URL . 'plugins/' : '/plugins/');
-        if (!defined('WP_CONTENT_URL'))  define('WP_CONTENT_URL', defined('ROOT_URL') ? ROOT_URL : '/');
+        if (!defined('WP_CONTENT_DIR'))  define('WP_CONTENT_DIR', \BASE_PATH);
+        if (!defined('WP_PLUGIN_DIR'))   define('WP_PLUGIN_DIR', \BASE_PATH . 'plugins/');
+        if (!defined('WP_PLUGIN_URL'))   define('WP_PLUGIN_URL', defined('\ROOT_URL') ? \ROOT_URL . 'plugins/' : '/plugins/');
+        if (!defined('WP_CONTENT_URL'))  define('WP_CONTENT_URL', defined('\ROOT_URL') ? \ROOT_URL : '/');
         if (!defined('WP_DEBUG'))        define('WP_DEBUG', false);
         if (!defined('WP_DEBUG_DISPLAY')) define('WP_DEBUG_DISPLAY', false);
         // 兜底：其他平台的常量也预置，防止因 detectType 误判导致 exit
-        if (!defined('EMLOG_ROOT'))      define('EMLOG_ROOT', BASE_PATH);
-        if (!defined('ZBP_PATH'))        define('ZBP_PATH', BASE_PATH);
+        if (!defined('EMLOG_ROOT'))      define('EMLOG_ROOT', \BASE_PATH);
+        if (!defined('ZBP_PATH'))        define('ZBP_PATH', \BASE_PATH);
     }
 
     /**

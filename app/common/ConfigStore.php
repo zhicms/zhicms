@@ -199,38 +199,38 @@ class ConfigStore {
         );
 
         $file = $fileMap[$group] ?? '';
-        if (!$file || !is_file(CONFIG_PATH . $file)) {
+        if (!$file || !is_file(\CONFIG_PATH . $file)) {
             return null;
         }
 
         // 每个文件定义不同的全局变量，需要单独处理
         switch ($group) {
             case 'cfg_site':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($Siteinfo) ? $Siteinfo : null;
             case 'cfg_seo':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($SEO) ? $SEO : null;
             case 'cfg_api':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($api) ? $api : null;
             case 'cfg_sms':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($sms) ? $sms : null;
             case 'cfg_aichat':
-                $cfg = include CONFIG_PATH . $file;
+                $cfg = include \CONFIG_PATH . $file;
                 return is_array($cfg) ? $cfg : null;
             case 'cfg_seopush':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($pu) ? $pu : null;
             case 'cfg_weixin':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($weixin) ? $weixin : null;
             case 'cfg_ai':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($AI) ? $AI : null;
             case 'cfg_version':
-                include CONFIG_PATH . $file;
+                include \CONFIG_PATH . $file;
                 return isset($v) ? array('version' => $v) : null;
             default:
                 return null;
@@ -266,7 +266,7 @@ class ConfigStore {
             $content = "<?php\r\n{$info['var']}=" . var_export($data, true) . ";\n";
         }
 
-        $of = fopen(CONFIG_PATH . $info['file'], 'w');
+        $of = fopen(\CONFIG_PATH . $info['file'], 'w');
         if ($of) {
             fwrite($of, $content);
             fclose($of);

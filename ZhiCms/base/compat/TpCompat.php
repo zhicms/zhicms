@@ -42,7 +42,7 @@ class TpCompat {
             'stores' => [
                 'file' => [
                     'type' => 'File',
-                    'path' => BASE_PATH . 'data/cache/',
+                    'path' => \BASE_PATH . 'data/cache/',
                 ],
             ],
         ];
