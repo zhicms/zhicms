@@ -584,7 +584,8 @@ class FilecheckController extends \app\base\controller\BaseController
         $cfg = \app\common\ConfigStore::load('filecheck');
         $this->localRef = isset($cfg['local_ref']) ? $cfg['local_ref'] : '';
         $this->hasLocal = ($this->localRef !== '' && is_dir($this->localRef)) || is_dir(\ROOT_PATH . 'data/repo_ref/');
-        $this->display();
+        // check 复用 index 模板展示比对结果（不存在 check.html，避免“模板未找到”报错）
+        $this->display('app/manage/view/filecheck/index');
     }
 
     /**
