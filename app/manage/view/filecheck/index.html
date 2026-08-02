@@ -164,7 +164,19 @@
 function postJSON(url, data, cb){
     var fd = new FormData();
     for (var k in data) fd.append(k, data[k]);
-    fetch(url, {method:'POST', body:fd}).then(function(r){return r.json();}).then(cb).catch(function(){ alert('请求失败'); });
+    // 使用 jQuery( layui 内置 ) 发送，确保同源请求携带登录 Cookie（PHPSESSID），
+    // 避免原生 fetch 在部分环境下默认不发送 Cookie 导致被判定未登录、返回登录页 HTML 而“请求失败”。
+    var $ = (window.layui && window.layui.jquery) ? window.layui.jquery : (window.jQuery || window.$);
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: fd,
+        processData: false,
+        contentType: false,
+        xhrFields: { withCredentials: true },
+        success: function(res){ cb(res); },
+        error: function(){ alert('请求失败，请检查网络或服务器的会话是否已过期'); }
+    });
 }
 function postAct(url, data, okMsg){
     postJSON(url, data || {}, function(res){

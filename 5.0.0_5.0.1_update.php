@@ -16,7 +16,7 @@ echo "<html><head><title>系统升级中...</title></head><body><pre>";
 // 2. 升级配置
 $config = [
     'version'   => '5.0.1', // 目标版本号
-    'zipUrl'    => 'https://www.zhicms.cc/d/update/full_update_5.0.1.zip',
+    'zipUrl'    => 'https://www.zhi.red/d/update/full_update_5.0.1.zip',
     'sqlFile'   => __DIR__ . '/zhicms_update.sql',
     'tempDir'   => __DIR__ . '/data/remote_update_temp/',
     'zipFile'   => __DIR__ . '/data/remote_update.zip',
@@ -24,7 +24,8 @@ $config = [
 ];
 
 echo "=== 开始升级流程 ===\n";
-echo "目标版本: {$config['version']}\n\n";
+echo "目标版本: {$config['version']}\n";
+echo "升级包地址: {$config['zipUrl']}\n\n";
 
 // 3. 下载升级包
 echo "[1/5] 正在下载升级包...\n";
@@ -32,11 +33,9 @@ if (!is_dir(dirname($config['zipFile']))) {
     mkdir(dirname($config['zipFile']), 0755, true);
 }
 
-$context = stream_context_create(['http' => ['timeout' => 300, 'user_agent' => 'ZhiCmsUpdater']]);
-$content = @file_get_contents($config['zipUrl'], false, $context);
-
+$content = downloadFile($config['zipUrl'], 300);
 if ($content === false) {
-    die("❌ 下载失败，请检查网络连接或 URL。\n");
+    die("❌ 下载失败，请检查网络连接或 URL：{$config['zipUrl']}\n");
 }
 
 if (file_put_contents($config['zipFile'], $content) === false) {
@@ -112,6 +111,39 @@ echo "\n=== 升级全部完成 ===\n";
 echo "</pre></body></html>";
 
 // ================= 辅助函数区 =================
+
+/**
+ * 稳健下载：优先 curl（关闭 SSL 校验、跟随跳转、长超时），
+ * 回退到 file_get_contents（同样关闭 SSL 校验），并返回文件内容或 false
+ */
+function downloadFile($url, $timeout = 300) {
+    if (function_exists('curl_init')) {
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 30);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+        curl_setopt($ch, CURLOPT_USERAGENT, 'ZhiCmsUpdater');
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+        $data = curl_exec($ch);
+        $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $err  = curl_error($ch);
+        curl_close($ch);
+        if ($data !== false && $code >= 200 && $code < 300 && strlen($data) > 0) {
+            return $data;
+        }
+        error_log("Upgrade download(curl) failed: code=$code err=$err");
+    }
+    // 回退：file_get_contents（关闭 SSL 校验）
+    $ctx = stream_context_create([
+        'http'  => ['timeout' => $timeout, 'user_agent' => 'ZhiCmsUpdater', 'follow_location' => true],
+        'https' => ['timeout' => $timeout, 'user_agent' => 'ZhiCmsUpdater', 'follow_location' => true,
+                    'ssl' => ['verify_peer' => false, 'verify_peer_name' => false]],
+    ]);
+    $data = @file_get_contents($url, false, $ctx);
+    return $data === false ? false : $data;
+}
 
 function delDirRecursive($dir) {
     if (!is_dir($dir)) return;
