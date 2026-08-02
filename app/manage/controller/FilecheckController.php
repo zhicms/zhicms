@@ -210,7 +210,7 @@ class FilecheckController extends \app\base\controller\BaseController
         $zip = $this->ensureZip();
         if ($zip === false) return false;
         if (!class_exists('ZipArchive')) return false;
-        $z = new ZipArchive;
+        $z = new \ZipArchive;
         if ($z->open($zip) !== true) return false;
         $content = false;
         // 直接匹配，以及常见的根目录前缀（如 zhicms/）
@@ -343,7 +343,7 @@ class FilecheckController extends \app\base\controller\BaseController
         $added = 0;
         $zip = $this->ensureZip();
         if ($zip !== false && class_exists('ZipArchive')) {
-            $z = new ZipArchive;
+            $z = new \ZipArchive;
             if ($z->open($zip) === true) {
                 $branch = $this->branch();
                 $manifestKeys = $manifest;
@@ -401,11 +401,12 @@ class FilecheckController extends \app\base\controller\BaseController
      *  5) 返回 has_update / new_count / upgrade_count / new_files / upgrade_files / source / remote_version。
      */
     public function detectUpdate(){
+        try {
         $this->checkManageSession();
         $zip = $this->ensureZip();
         $zipEntries = array();      // zip 内相对站点根的文件清单（已规范化）
         if ($zip !== false && class_exists('ZipArchive')) {
-            $z = new ZipArchive;
+            $z = new \ZipArchive;
             if ($z->open($zip) === true) {
                 for ($i = 0; $i < $z->numFiles; $i++) {
                     $name = $z->getNameIndex($i);
@@ -509,6 +510,13 @@ class FilecheckController extends \app\base\controller\BaseController
             'gitee_tip'       => $giteeTip,
             'info'            => $msg,
         )));
+        } catch (\Throwable $e) {
+            exit(json_encode(array(
+                'status' => 'n',
+                'info'   => '检测异常：' . $e->getMessage(),
+                'trace'  => $e->getFile() . ':' . $e->getLine(),
+            )));
+        }
     }
 
     /**
@@ -558,7 +566,7 @@ class FilecheckController extends \app\base\controller\BaseController
         // 恢复时优先本地缓存的压缩包，过期自动重新下载（维持最新版）
         $zip = $this->ensureZip();
         if ($zip === false) exit(json_encode(array('status' => 'n', 'info' => '恢复失败：无法获取官方压缩包（请检查服务器外网，或先点“立即下载官方压缩包”）')));
-        if (!class_exists('ZipArchive') || ($z = new ZipArchive) === false || $z->open($zip) !== true) {
+        if (!class_exists('ZipArchive') || ($z = new \ZipArchive) === false || $z->open($zip) !== true) {
             exit(json_encode(array('status' => 'n', 'info' => '恢复失败：无法打开官方压缩包')));
         }
 
@@ -631,7 +639,7 @@ class FilecheckController extends \app\base\controller\BaseController
         $stamp = date('Ymd_His');
         $zipPath = $backupDir . 'backup_' . $stamp . '.zip';
         $backupDirs = array('app', 'ZhiCms', 'public', 'plugins', 'vendor');
-        $z = new ZipArchive;
+        $z = new \ZipArchive;
         if ($z->open($zipPath, ZipArchive::CREATE) !== true) return false;
         $added = 0;
         foreach ($backupDirs as $d) {
