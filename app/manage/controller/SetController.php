@@ -79,6 +79,7 @@ class SetController extends \app\base\controller\BaseController
 			);
 			ConfigStore::save('site', $Siteinfo);
 			ConfigStore::clearCache('site');
+			\ZhiCms\ext\AdminLog::write('setting', '保存了网站基础设置');
 			echo json_encode(array("info" => "设置成功", "status" => "y"));
 		}
 

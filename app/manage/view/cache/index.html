@@ -1,0 +1,71 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-sync-alt"></i>
+    缓存管理
+    <span class="badge badge-info ml-2">全站缓存占用：{$allSize}</span>
+</h1>
+
+<div class="alert alert-secondary">
+    <i class="fas fa-info-circle mr-1"></i> 可单独清理某一类缓存，或点击右上角「一键全站清理」一次性清空所有缓存（模板/数据库/数据/全站静态）。
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-list-alt"></i> 缓存类型</h5>
+        <button class="btn btn-sm btn-danger" onclick="cacheClear('all')">
+            <i class="fas fa-broom mr-1"></i> 一键全站清理
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>缓存类型</th>
+                        <th>文件数</th>
+                        <th>占用空间</th>
+                        <th class="text-right">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {foreach $cacheList as $c}
+                    <tr>
+                        <td>{$c['name']}</td>
+                        <td>{$c['count']}</td>
+                        <td>{$c['size']}</td>
+                        <td class="text-right">
+                            <button class="btn btn-sm btn-outline-primary" onclick="cacheClear('{$c['key']}')">
+                                <i class="fas fa-trash-alt mr-1"></i> 清理
+                            </button>
+                        </td>
+                    </tr>
+                    {/foreach}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function cacheClear(type) {
+    var tip = type === 'all' ? '确定要一键清理全站缓存吗？' : '确定要清理该缓存吗？';
+    if (!confirm(tip)) return;
+    var btn = event ? event.target : null;
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 清理中...'; }
+    $.get('index.php?r=manage/cache/clear&type=' + type, function(res) {
+        if (res && res.status === 'y') {
+            layer.msg(res.info, {icon: 1});
+            setTimeout(function(){ location.reload(); }, 800);
+        } else {
+            alert((res && res.info) ? res.info : '清理失败');
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> 清理'; }
+        }
+    }, 'json').fail(function() {
+        alert('请求失败，请重试');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-trash-alt mr-1"></i> 清理'; }
+    });
+}
+</script>

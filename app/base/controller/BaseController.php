@@ -35,6 +35,15 @@ class BaseController extends \ZhiCms\base\Controller {
 			}
 		}
 		$this->initSessionSecurity();
+
+		// 后台导航：注入已启用插件的后台菜单（供 emlog_nav 动态渲染）
+		if (defined('\APP_NAME') && \APP_NAME == 'manage') {
+			if (class_exists('\\ZhiCms\\base\\PluginManager')) {
+				$this->pluginMenus = \ZhiCms\base\PluginManager::getAdminMenus();
+			} else {
+				$this->pluginMenus = array();
+			}
+		}
 	}  
    
     /**

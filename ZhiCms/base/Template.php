@@ -10,6 +10,11 @@ class Template {
 		$this->config = $config;
 		$this->assign('__Template', $this);
 		$this->label = array(         
+			/**raw php block
+				{php echo $x;}  =>  <?php echo $x;?>
+				{php $a=1; echo $a; } => <?php $a=1; echo $a; ?>
+			*/
+			'/\{\s*php\s+([\s\S]+?)\s*\}/i' => '<?php \\1 ?>',
 			/**variable label
 				{$name} => <?php echo $name;?>
 				{$user['name']} => <?php echo $user['name'];?>

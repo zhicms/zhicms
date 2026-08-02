@@ -1,0 +1,115 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title"><i class="fas fa-edit"></i> 编辑计划任务</h1>
+
+<form method="post" action="index.php?r=manage/task/save">
+    <input type="hidden" name="id" value="{intval($task.id)}">
+    <div class="card">
+        <div class="card-body">
+            <div class="form-group">
+                <label>任务名称</label>
+                <input type="text" class="form-control" name="title" value="{htmlspecialchars($task.title, ENT_QUOTES, 'UTF-8')}" required>
+            </div>
+            <div class="form-group">
+                <label>执行方式</label>
+                <select class="form-control" name="exec_type">
+                    <option value="url" {if $task.exec_type=='url'}selected{/if}>URL 回调（HTTP 请求该地址）</option>
+                    <option value="php" {if $task.exec_type=='php'}selected{/if}>PHP 代码 / 脚本</option>
+                    <option value="shell" {if $task.exec_type=='shell'}selected{/if}>Shell 命令</option>
+                    <option value="python" {if $task.exec_type=='python'}selected{/if}>Python 脚本 / 代码</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>命令 / 地址 / 代码</label>
+                <textarea class="form-control" name="command" rows="5" required>{htmlspecialchars($task.command, ENT_QUOTES, 'UTF-8')}</textarea>
+            </div>
+            <div class="form-group">
+                <label>调度周期</label>
+                <input type="hidden" name="schedule" id="schedule" value="{htmlspecialchars($task.schedule, ENT_QUOTES, 'UTF-8')}">
+                <div class="form-row align-items-center">
+                    <div class="col-auto">
+                        <select class="form-control" id="sch_mode">
+                            <option value="interval">每隔</option>
+                            <option value="daily">每天固定时间</option>
+                        </select>
+                    </div>
+                    <div class="col-auto" id="box_interval">
+                        <input type="number" class="form-control" id="iv_num" value="30" min="1" style="width:90px;display:inline-block;">
+                        <select class="form-control" id="iv_unit" style="width:110px;display:inline-block;">
+                            <option value="second">秒</option>
+                            <option value="minute">分</option>
+                            <option value="hour">时</option>
+                            <option value="day">天</option>
+                        </select>
+                    </div>
+                    <div class="col-auto" id="box_daily" style="display:none;">
+                        时 <select class="form-control" id="daily_h" style="width:75px;display:inline-block;"></select>
+                        分 <select class="form-control" id="daily_m" style="width:75px;display:inline-block;"></select>
+                        秒 <select class="form-control" id="daily_s" style="width:75px;display:inline-block;"></select>
+                    </div>
+                </div>
+                <small class="text-muted">间隔模式：每隔 N 秒/分/时/天执行一次；每天固定时间：在每日指定时分秒执行。当前值：<code id="sch_preview">{htmlspecialchars($task.schedule, ENT_QUOTES, 'UTF-8')}</code></small>
+            </div>
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="status" name="status" value="1" {if $task['status']=='1'}checked{/if}>
+                <label class="form-check-label" for="status">启用</label>
+            </div>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
+    <a href="index.php?r=manage/task/index" class="btn btn-outline-secondary">返回</a>
+</form>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+(function(){
+    function pad(n){ return (n<10?'0':'')+n; }
+    for (var h=0; h<24; h++){ var o=document.createElement('option'); o.value=h; o.text=pad(h); document.getElementById('daily_h').appendChild(o); }
+    for (var m=0; m<60; m++){ var o1=document.createElement('option'); o1.value=m; o1.text=pad(m); document.getElementById('daily_m').appendChild(o1);
+        var o2=document.createElement('option'); o2.value=m; o2.text=pad(m); document.getElementById('daily_s').appendChild(o2); }
+
+    // 解析已有值
+    var cur = document.getElementById('schedule').value.trim();
+    var m1 = cur.match(/^every\s+(\d+)\s+(second|minute|hour|day)s?$/i);
+    var m2 = cur.match(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/);
+    if (m1){
+        document.getElementById('sch_mode').value='interval';
+        document.getElementById('iv_num').value=parseInt(m1[1],10)||1;
+        document.getElementById('iv_unit').value=m1[2].toLowerCase();
+    } else if (m2){
+        document.getElementById('sch_mode').value='daily';
+        document.getElementById('daily_s').value=parseInt(m2[1],10);
+        document.getElementById('daily_m').value=parseInt(m2[2],10);
+        document.getElementById('daily_h').value=parseInt(m2[3],10);
+    } else {
+        // 其它 cron 或未知，退回间隔默认
+        document.getElementById('sch_mode').value='interval';
+        document.getElementById('iv_unit').value='minute';
+    }
+
+    function build(){
+        var mode = document.getElementById('sch_mode').value;
+        var val;
+        if (mode==='interval'){
+            document.getElementById('box_interval').style.display='';
+            document.getElementById('box_daily').style.display='none';
+            var n = parseInt(document.getElementById('iv_num').value,10) || 1;
+            var u = document.getElementById('iv_unit').value;
+            val = 'every ' + n + ' ' + u;
+        } else {
+            document.getElementById('box_interval').style.display='none';
+            document.getElementById('box_daily').style.display='';
+            var h=document.getElementById('daily_h').value, m=document.getElementById('daily_m').value, s=document.getElementById('daily_s').value;
+            val = s + ' ' + m + ' ' + h + ' * *';
+        }
+        document.getElementById('schedule').value = val;
+        document.getElementById('sch_preview').textContent = val;
+    }
+    ['sch_mode','iv_num','iv_unit','daily_h','daily_m','daily_s'].forEach(function(id){
+        document.getElementById(id).addEventListener('change', build);
+        document.getElementById(id).addEventListener('input', build);
+    });
+    build();
+})();
+</script>

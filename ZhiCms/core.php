@@ -5,6 +5,16 @@
 // 最前引入入口引导（Session / 编码 / 错误处理 / 响应头 / gzip）
 require __DIR__ . '/bootstrap.php';
 
+// 后台操作日志扩展（提供全局函数 admin_log()）
+require_once __DIR__ . '/ext/AdminLog.php';
+
+// 蜘蛛访问限制（提供全局函数 zhi_spider_guard()，前台引导阶段调用）
+require_once __DIR__ . '/ext/SpiderGuard.php';
+
+// 违规词检测 / 计划任务运行器
+require_once __DIR__ . '/ext/WordCheck.php';
+require_once __DIR__ . '/ext/CronRunner.php';
+
 if (version_compare(PHP_VERSION, '7.0.0','<')) {
 	header("Content-Type: text/html; charset=UTF-8");
     echo 'PHP环境不能低于7.0.0';
@@ -290,11 +300,14 @@ function cdn_url($path) {
         if (class_exists('\\app\\common\\ConfigStore')) {
             $siteConfig = \app\common\ConfigStore::load('site');
             $cdnUrl  = !empty($siteConfig['cdnurl']) ? rtrim($siteConfig['cdnurl'], '/') : '';
-            $hostUrl = !empty($siteConfig['hosturl']) ? rtrim($siteConfig['hosturl'], '/') : '';
+            // hosturl 为 localhost / 127.0.0.1 / 空 时视为未配置，回退到当前访问域名
+            $rawHost = !empty($siteConfig['hosturl']) ? rtrim($siteConfig['hosturl'], '/') : '';
+            $hostUrl = (preg_match('#^https?://(localhost|127\.0\.0\.1)([:/]|$)#i', $rawHost) || $rawHost === '') ? '' : $rawHost;
         } elseif (file_exists(CONFIG_PATH . 'siteconfig.php')) {
             include CONFIG_PATH . 'siteconfig.php';
             $cdnUrl  = !empty($Siteinfo['cdnurl']) ? rtrim($Siteinfo['cdnurl'], '/') : '';
-            $hostUrl = !empty($Siteinfo['hosturl']) ? rtrim($Siteinfo['hosturl'], '/') : '';
+            $rawHost = !empty($Siteinfo['hosturl']) ? rtrim($Siteinfo['hosturl'], '/') : '';
+            $hostUrl = (preg_match('#^https?://(localhost|127\.0\.0\.1)([:/]|$)#i', $rawHost) || $rawHost === '') ? '' : $rawHost;
         } else {
             $cdnUrl  = '';
             $hostUrl = '';
@@ -322,6 +335,16 @@ function cdn_url($path) {
     $path = ltrim($path, '/');
 
     return $baseUrl . '/' . $path;
+}
+
+// 蜘蛛访问限制：仅前台生效（后台/安装不拦截，避免管理员被误伤）
+$__r = isset($_GET['r']) ? $_GET['r'] : '';
+$__uri = isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) : '';
+if (strpos($__r, 'manage') !== 0 && strpos($__r, 'install') !== 0
+    && strpos($__uri, '/manage') !== 0 && strpos($__uri, '/install') !== 0) {
+    if (function_exists('zhi_spider_guard')) {
+        zhi_spider_guard();
+    }
 }
 
 App::run();

@@ -1,0 +1,109 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-clock"></i>
+    计划任务
+    <a href="index.php?r=manage/task/add" class="btn btn-sm btn-primary ml-2"><i class="fas fa-plus"></i> 新增自定义任务</a>
+    <a href="index.php?r=manage/task/token" class="btn btn-sm btn-outline-info ml-1"><i class="fas fa-key"></i> 运行令牌</a>
+</h1>
+
+<div class="alert alert-secondary">
+    <i class="fas fa-info-circle mr-1"></i> 系统任务（商品/资讯/订单采集、订单匹配）由程序自动注册；自定义任务支持
+    <b>URL 回调 / PHP 代码 / Shell / Python</b> 四种执行方式。在服务器 crontab 中加入：<br>
+    <code>* * * * * curl -s "你的域名/index.php?r=manage/task/run&token=你的令牌"</code> 即可每分钟触发到点任务。
+</div>
+
+<div class="alert {if $cronStatus=='ok'}alert-success{else}alert-warning{/if}">
+    <i class="fas fa-heartbeat mr-1"></i>
+    <b>健康检查：</b>
+    {if $cronStatus=='ok'}
+        <span class="badge badge-success">正常</span>
+    {else}
+        <span class="badge badge-warning">异常</span>
+    {/if}
+    最近触发：<code>{$cronLastText}</code> — {$cronMsg}
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>任务</th>
+                        <th style="width:80px;">类型</th>
+                        <th style="width:90px;">执行方式</th>
+                        <th>调度</th>
+                        <th style="width:150px;">下次执行</th>
+                        <th style="width:120px;">上次结果</th>
+                        <th style="width:160px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {if !empty($tasks)}
+                    {foreach $tasks as $t}
+                    <tr>
+                        <td>
+                            <b>{htmlspecialchars($t.title, ENT_QUOTES, 'UTF-8')}</b>
+                            <div class="small text-muted"><code>{htmlspecialchars($t.command, ENT_QUOTES, 'UTF-8')}</code></div>
+                        </td>
+                        <td>{if $t.type=='system'}<span class="badge badge-primary">系统</span>{else}<span class="badge badge-light border">自定义</span>{/if}</td>
+                        <td>{htmlspecialchars($t.exec_type, ENT_QUOTES, 'UTF-8')}</td>
+                        <td><code>{htmlspecialchars($t.schedule, ENT_QUOTES, 'UTF-8')}</code></td>
+                        <td>{if $t.next_run}{date('m-d H:i', (int)$t.next_run)}{else}—{/if}</td>
+                        <td>
+                            {if $t.last_run}
+                            <span class="small">{date('m-d H:i', (int)$t.last_run)}</span><br>
+                            <span class="small text-muted">{htmlspecialchars(mb_substr($t.last_result,0,30), ENT_QUOTES, 'UTF-8')}</span>
+                            {else}<span class="text-muted">未运行</span>
+                            {/if}
+                        </td>
+                        <td>
+                            <button class="btn btn-xs btn-outline-success" onclick="runNow({(int)$t['id']})"><i class="fas fa-play"></i></button>
+                            <button class="btn btn-xs btn-outline-secondary" onclick="toggle({(int)$t['id']})"><i class="fas fa-power-off"></i></button>
+                            {if $t['type']=='custom'}
+                            <a class="btn btn-xs btn-outline-primary" href="index.php?r=manage/task/edit&id={(int)$t['id']}"><i class="fas fa-edit"></i></a>
+                            <button class="btn btn-xs btn-outline-danger" onclick="del({(int)$t['id']})"><i class="fas fa-trash"></i></button>
+                            {else}
+                            <span class="text-muted small">系统</span>
+                            {/if}
+                        </td>
+                    </tr>
+                    {/foreach}
+                    {else}
+                    <tr><td colspan="7" class="text-center text-muted py-4">暂无任务</td></tr>
+                    {/if}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function postJSON(url, data, cb){
+    var fd = new FormData();
+    for (var k in data) fd.append(k, data[k]);
+    fetch(url, {method:'POST', body:fd}).then(function(r){return r.json();}).then(cb).catch(function(){ alert('请求失败'); });
+}
+function runNow(id){
+    postJSON('index.php?r=manage/task/runNow', {id:id}, function(res){
+        if (res && res.status==='y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();},700); }
+        else alert((res&&res.info)?res.info:'执行失败');
+    });
+}
+function toggle(id){
+    postJSON('index.php?r=manage/task/toggle', {id:id}, function(res){
+        if (res && res.status==='y') location.reload();
+        else alert('操作失败');
+    });
+}
+function del(id){
+    if (!confirm('确定删除该自定义任务？')) return;
+    postJSON('index.php?r=manage/task/del', {id:id}, function(res){
+        if (res && res.status==='y') location.reload();
+        else alert((res&&res.info)?res.info:'删除失败');
+    });
+}
+</script>

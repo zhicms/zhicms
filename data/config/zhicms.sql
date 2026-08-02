@@ -3,17 +3,14 @@
 -- 兼容 MySQL 5.7 ~ 8.0
 -- 表前缀 __PREFIX__ 将在安装时自动替换为用户选择的表前缀
 -- 默认管理员: admin / admin88
--- 更新时间: 2026-08-02 09:10:00
+-- 更新时间: 2026-08-02 15:41:37
 -- ============================================
 
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
--- MySQL dump 10.13  Distrib 5.7.26, for Win64 (x86_64)
 --
--- Host: localhost    Database: zhicms
 -- ------------------------------------------------------
--- Server version	5.7.26
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -44,8 +41,27 @@ CREATE TABLE `__PREFIX__ad` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
+
 --
+-- Table structure for table `__PREFIX__admin_log`
 --
+
+DROP TABLE IF EXISTS `__PREFIX__admin_log`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `__PREFIX__admin_log` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `type` varchar(50) NOT NULL DEFAULT '',
+  `content` varchar(500) NOT NULL DEFAULT '',
+  `operator` varchar(100) NOT NULL DEFAULT '',
+  `ip` varchar(45) NOT NULL DEFAULT '',
+  `url` varchar(500) NOT NULL DEFAULT '',
+  `create_time` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `type` (`type`),
+  KEY `create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='后台操作日志';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 --
 -- Table structure for table `__PREFIX__article`
@@ -61,6 +77,7 @@ CREATE TABLE `__PREFIX__article` (
   `title` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `content` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
   `cid` int(11) NOT NULL DEFAULT '0',
+  `navid` int(11) NOT NULL DEFAULT '0' COMMENT '发现分类(nav)ID',
   `mainPic` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `keywords` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `dec` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -78,17 +95,13 @@ CREATE TABLE `__PREFIX__article` (
   `bili` int(11) DEFAULT '0',
   `sheng` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
   `couponEndTime` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
-  `navid` int(11) NOT NULL DEFAULT '0' COMMENT '发现分类ID（yun_nav.id），0=未分类',
   `date` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '0',
   PRIMARY KEY (`id`),
   UNIQUE KEY `id` (`id`),
   UNIQUE KEY `goodsId` (`goodsId`),
-  KEY `title` (`title`),
-  KEY `idx_navid` (`navid`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `title` (`title`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__bankuai`
@@ -104,8 +117,6 @@ CREATE TABLE `__PREFIX__bankuai` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__comment`
@@ -135,8 +146,6 @@ CREATE TABLE `__PREFIX__comment` (
   KEY `idx_mid_model` (`mid`,`model`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__config`
@@ -152,17 +161,8 @@ CREATE TABLE `__PREFIX__config` (
   `desc` varchar(255) NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   UNIQUE KEY `key` (`key`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8mb4 COMMENT='站点配置表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站点配置表';
 /*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- 版本号配置（全新安装即为 5.0.1，与 data/config/version.php 对齐）
---
-INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
-('cfg_version', '{"version":"5.0.1"}', '版本号');
-
---
---
 
 --
 -- Table structure for table `__PREFIX__duomai`
@@ -191,8 +191,6 @@ CREATE TABLE `__PREFIX__duomai` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__forum`
@@ -218,17 +216,15 @@ CREATE TABLE `__PREFIX__forum` (
   `ip` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'IP地址',
   `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1显示/0隐藏',
   `like` int(11) NOT NULL DEFAULT '0',
+  `date` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `lock` int(11) DEFAULT '0' COMMENT '锁定',
   `featured` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推荐',
-  `date` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `groupid` (`groupid`),
   KEY `idx_groupid` (`groupid`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__forum_reply`
@@ -254,8 +250,6 @@ CREATE TABLE `__PREFIX__forum_reply` (
   KEY `idx_pid` (`pid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='帖子回复表';
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__group`
@@ -275,8 +269,6 @@ CREATE TABLE `__PREFIX__group` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__home_mall`
@@ -297,8 +289,6 @@ CREATE TABLE `__PREFIX__home_mall` (
   KEY `view` (`view`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__huan`
@@ -316,10 +306,8 @@ CREATE TABLE `__PREFIX__huan` (
   `type` int(11) NOT NULL DEFAULT '0' COMMENT '0pc 1移动',
   `date` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__items`
@@ -415,8 +403,6 @@ CREATE TABLE `__PREFIX__items` (
   KEY `idx_laiyuan` (`laiyuan`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='电商选品库（本地库）';
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__items_old_feed`
@@ -436,8 +422,6 @@ CREATE TABLE `__PREFIX__items_old_feed` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__like`
@@ -461,8 +445,6 @@ CREATE TABLE `__PREFIX__like` (
   KEY `idx_fid_model` (`fid`,`model`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__link`
@@ -477,10 +459,8 @@ CREATE TABLE `__PREFIX__link` (
   `link` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `px` int(11) NOT NULL DEFAULT '0',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__mall`
@@ -498,8 +478,6 @@ CREATE TABLE `__PREFIX__mall` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__manage`
@@ -514,10 +492,8 @@ CREATE TABLE `__PREFIX__manage` (
   `password` varchar(35) COLLATE utf8mb4_unicode_ci NOT NULL,
   `pic` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__nav`
@@ -536,8 +512,6 @@ CREATE TABLE `__PREFIX__nav` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__page`
@@ -556,8 +530,6 @@ CREATE TABLE `__PREFIX__page` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__plug`
@@ -578,10 +550,8 @@ CREATE TABLE `__PREFIX__plug` (
   `addtime` int(11) NOT NULL DEFAULT '0' COMMENT '安装时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `alias` (`alias`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COMMENT='插件注册表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='插件注册表';
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__plug_h5_huan`
@@ -599,8 +569,6 @@ CREATE TABLE `__PREFIX__plug_h5_huan` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__skuitems`
@@ -625,8 +593,6 @@ CREATE TABLE `__PREFIX__skuitems` (
   UNIQUE KEY `link` (`link`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__union`
@@ -642,8 +608,6 @@ CREATE TABLE `__PREFIX__union` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
 
 --
 -- Table structure for table `__PREFIX__user`
@@ -663,16 +627,8 @@ CREATE TABLE `__PREFIX__user` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
---
---
-
---
--- Dumping data for table `__PREFIX__manage`
---
-
-INSERT INTO `__PREFIX__manage` (`id`, `username`, `password`, `pic`) VALUES (1,'admin','61e2f0d3f61fc7f06741d6230632dd25','upload/manageuser/20180507103202_760.jpg');
-
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
+
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;
@@ -680,6 +636,47 @@ INSERT INTO `__PREFIX__manage` (`id`, `username`, `password`, `pic`) VALUES (1,'
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
--- Dump completed on 2026-07-31 15:31:12;
+
+
+--
+CREATE TABLE `__PREFIX__cron_task` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `title` varchar(100) NOT NULL DEFAULT '' COMMENT '任务名称',
+  `type` varchar(20) NOT NULL DEFAULT 'custom' COMMENT 'system=系统任务 custom=自定义任务',
+  `exec_type` varchar(20) NOT NULL DEFAULT 'url' COMMENT 'url/php/shell/python',
+  `command` text COMMENT 'URL 或 PHP/Shell/Python 代码或脚本路径',
+  `schedule` varchar(50) NOT NULL DEFAULT '' COMMENT 'cron 表达式或 every N minute/hour/day',
+  `status` tinyint(1) NOT NULL DEFAULT '1' COMMENT '1启用 0停用',
+  `last_run` int(11) NOT NULL DEFAULT '0' COMMENT '上次执行时间',
+  `last_result` varchar(500) NOT NULL DEFAULT '' COMMENT '上次执行结果摘要',
+  `next_run` int(11) NOT NULL DEFAULT '0' COMMENT '预计下次执行时间',
+  `create_time` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `status` (`status`),
+  KEY `type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='计划任务';
+
+--
+CREATE TABLE `__PREFIX__sensitive_word` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `word` varchar(100) NOT NULL DEFAULT '' COMMENT '违规词',
+  `level` tinyint(2) NOT NULL DEFAULT '1' COMMENT '1低 2中 3高',
+  `category` varchar(50) NOT NULL DEFAULT '' COMMENT '分类',
+  `create_time` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `word` (`word`),
+  KEY `level` (`level`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='违规词库';
+
+--
+-- 版本号配置（全新安装即为 5.0.1，与 data/config/version.php 对齐）
+--
+INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
+('cfg_version', '{"version":"5.0.1"}', '版本号');
+
+--
+-- Dumping data for table `__PREFIX__manage`
+--
+INSERT INTO `__PREFIX__manage` (`id`, `username`, `password`, `pic`) VALUES (1,'admin','61e2f0d3f61fc7f06741d6230632dd25','upload/manageuser/20180507103202_760.jpg');
 
 SET FOREIGN_KEY_CHECKS = 1;

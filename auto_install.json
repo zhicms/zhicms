@@ -11,10 +11,10 @@
         }
     ],
     "success_url": "\/index.php",
-    "php_versions": "53,54,55,56,70,71,72,73,7.4,8.0,8.2,8.3,8.4,8.5",
+    "php_versions": "53,54,55,56,70,71,72,73",
     "db_config": "",
     "admin_username": "admin",
-    "admin_password": "admin888",
+    "admin_password": "admin88",
     "run_path": "\/",
     "remove_file": [
         "\/index.html",

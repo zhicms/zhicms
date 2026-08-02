@@ -62,13 +62,51 @@ class IndexController extends \app\base\controller\BaseController
 
 
    public function delCache(){
-   $this->checkManageSession();
-        self::delDir(\ROOT_PATH . 'data/cache/tpl');
+       $this->checkManageSession();
+        self::clearAllCache();
+        \ZhiCms\ext\AdminLog::write('cache', '清理了全站缓存');
         exit(json_encode(array("info" => "清除缓存成功", "status" => "y")));
     }
-	 
-    public function delDir($dir){
-	$this->checkManageSession();
+
+    /**
+     * 一键清理全站缓存：模板缓存、数据库查询缓存、数据缓存、全站静态缓存
+     */
+    public static function clearAllCache(){
+        // 1. data/cache 下所有内容（含子目录 tpl/db 及散落的 php 缓存文件）
+        $dataCache = \ROOT_PATH . 'data/cache';
+        if (is_dir($dataCache)) {
+            self::delDirContents($dataCache);
+        }
+        // 2. runtime/static_cache 全站静态化缓存
+        $staticCacheDir = \BASE_PATH . 'runtime/static_cache';
+        if (is_dir($staticCacheDir)) {
+            // 优先调用静态缓存插件的清理方法（若已启用）
+            $cleared = false;
+            if (class_exists('\\plugins\\static_cache\\Plugin')) {
+                $plugin = new \plugins\static_cache\Plugin();
+                if (method_exists($plugin, 'clearAllCache')) {
+                    $plugin->clearAllCache();
+                    $cleared = true;
+                }
+            }
+            if (!$cleared) {
+                self::delDirContents($staticCacheDir);
+            }
+        }
+        // 3. runtime 下其它缓存目录（cache/log 等，若存在）
+        foreach (array('cache', 'log') as $sub) {
+            $d = \BASE_PATH . 'runtime/' . $sub;
+            if (is_dir($d)) {
+                self::delDirContents($d);
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 删除目录下的所有内容，但保留目录本身（避免后续写入因目录不存在而失败）
+     */
+    public static function delDirContents($dir){
         if(!is_dir($dir)){
             return false;
         }
@@ -77,17 +115,19 @@ class IndexController extends \app\base\controller\BaseController
             if($file != "." && $file != "..") {
                 $fullpath = $dir . "/" . $file;
                 if(!is_dir($fullpath)) {
-                    unlink($fullpath);
+                    @unlink($fullpath);
                 } else {
-                    self::delDir($fullpath);
+                    self::delDirContents($fullpath);
+                    @rmdir($fullpath);
                 }
             }
         }
         closedir($dh);
-        if(rmdir($dir)) {
-            return true;
-        }
-        return false;
+        return true;
+    }
+
+    public function delDir($dir){
+        return self::delDirContents($dir);
     }
 
 

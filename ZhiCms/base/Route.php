@@ -39,13 +39,25 @@ class Route {
 			} else {
 				$scriptDir = '/' . $scriptDir;
 			}
+			// 归一化 REQUEST_URI：去掉入口脚本前缀（如 /index.php/brand.html -> /brand.html），
+			// 兼容 nginx 的 “rewrite ^(.*)$ /index.php/$1” 配置，使伪静态规则仍可匹配
+			$scriptName = $_SERVER["SCRIPT_NAME"];
+			$normUri = $_SERVER['REQUEST_URI'];
+			if ($scriptName && $scriptName !== '/') {
+				if (stripos($normUri, $scriptName . '/') === 0) {
+					$normUri = substr($normUri, strlen($scriptName));
+				} elseif ($normUri === $scriptName) {
+					$normUri = '/';
+				}
+			}
+			if ($normUri === '') $normUri = '/';
 			foreach(self::$rewriteRule as $rule => $mapper){
 				$rule = ltrim($rule, "./\\");
 				if( false === stripos($rule, 'http://')){
 					$rule = $_SERVER['HTTP_HOST'] . $scriptDir . '/' . $rule;
 				}
 				$rule = '/'.str_ireplace(array('\\\\', 'http://', '-', '/', '<', '>',  '.'), array('', '', '\-', '\/', '(?<', ">[a-zA-Z0-9_\-%]+)", '\.'), $rule).'/i';
-				if( preg_match($rule, $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'], $matches) ){
+				if( preg_match($rule, $_SERVER['HTTP_HOST'] . $normUri, $matches) ){
 					foreach($matches as $matchkey => $matchval){
 						if(('app' === $matchkey)){
 							$mapper = str_ireplace('<app>', $matchval, $mapper);

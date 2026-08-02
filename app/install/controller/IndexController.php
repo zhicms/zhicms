@@ -26,7 +26,7 @@ class IndexController
 
         $step = isset($_GET['step']) ? intval($_GET['step']) : 1;
 
-        if (isset($_SERVER['\REQUEST_METHOD']) && $_SERVER['\REQUEST_METHOD'] === 'POST') {
+        if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST') {
             $step = $this->handlePost();
             // handlePost 内部已直接输出 HTML（renderSuccess/renderError），不再重复渲染
             if ($step >= 2) exit;

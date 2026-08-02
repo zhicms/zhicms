@@ -1,0 +1,162 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-database"></i>
+    数据库管理
+    <span class="badge badge-info ml-2">{count($tables)} 张表</span>
+</h1>
+
+<div class="alert alert-secondary">
+    <i class="fas fa-info-circle mr-1"></i> 共 <b>{number_format($totalRows)}</b> 条记录，占用 <b>{round($totalSize/1024, 1)} KB</b>。
+    建议定期备份，并对碎片较多的表执行优化。
+</div>
+
+{if isset($dbError) && $dbError}
+<div class="alert alert-danger">数据库连接失败：{htmlspecialchars($dbError, ENT_QUOTES, 'UTF-8')}</div>
+{/if}
+
+<!-- 工具栏 -->
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap">
+    <div class="mb-2">
+        <button class="btn btn-sm btn-primary" onclick="backupAll()"><i class="fas fa-download mr-1"></i> 备份全库</button>
+        <button class="btn btn-sm btn-outline-success" onclick="batchAct('optimize')"><i class="fas fa-broom mr-1"></i> 优化所选</button>
+        <button class="btn btn-sm btn-outline-warning" onclick="batchAct('repair')"><i class="fas fa-wrench mr-1"></i> 修复所选</button>
+        <button class="btn btn-sm btn-outline-secondary" onclick="location.reload()"><i class="fas fa-sync mr-1"></i> 刷新</button>
+    </div>
+    <div class="text-muted small">已选 <span id="selCount">0</span> 张表</div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header font-weight-bold">数据表列表</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped" id="tblTables">
+                <thead class="thead-light">
+                    <tr>
+                        <th style="width:36px;"><input type="checkbox" id="checkAll"></th>
+                        <th>表名</th>
+                        <th style="width:90px;">引擎</th>
+                        <th style="width:90px;" class="text-right">记录数</th>
+                        <th style="width:100px;" class="text-right">大小</th>
+                        <th style="width:90px;">状态</th>
+                        <th style="width:160px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {if !empty($tables)}
+                    {foreach $tables as $t}
+                    <tr>
+                        <td><input type="checkbox" class="tbl-chk" value="{$t['name']}"></td>
+                        <td><code>{htmlspecialchars($t['name'], ENT_QUOTES, 'UTF-8')}</code></td>
+                        <td>{htmlspecialchars($t['engine'], ENT_QUOTES, 'UTF-8')}</td>
+                        <td class="text-right">{number_format($t['rows'])}</td>
+                        <td class="text-right">{round($t['size']/1024, 1)} KB</td>
+                        <td>
+                            {if $t['status']=='need_optimize'}
+                            <span class="badge badge-warning">需优化</span>
+                            {else}
+                            <span class="badge badge-light border">正常</span>
+                            {/if}
+                        </td>
+                        <td>
+                            <button class="btn btn-xs btn-outline-success" onclick="oneAct('optimize','{$t['name']}')"><i class="fas fa-broom"></i></button>
+                            <button class="btn btn-xs btn-outline-warning" onclick="oneAct('repair','{$t['name']}')"><i class="fas fa-wrench"></i></button>
+                        </td>
+                    </tr>
+                    {/foreach}
+                    {else}
+                    <tr><td colspan="7" class="text-center text-muted py-4">暂无数据表</td></tr>
+                    {/if}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header font-weight-bold">备份文件（data/dbbak/）</div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="thead-light">
+                    <tr>
+                        <th>文件名</th>
+                        <th style="width:100px;" class="text-right">大小</th>
+                        <th style="width:170px;">备份时间</th>
+                        <th style="width:160px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {if !empty($bakList)}
+                    {foreach $bakList as $b}
+                    <tr>
+                        <td><code>{htmlspecialchars($b['name'], ENT_QUOTES, 'UTF-8')}</code></td>
+                        <td class="text-right">{round($b['size']/1024, 1)} KB</td>
+                        <td>{date('Y-m-d H:i:s', $b['time'])}</td>
+                        <td>
+                            <button class="btn btn-xs btn-outline-primary" onclick="restoreBak('{$b['name']}')"><i class="fas fa-upload"></i> 恢复</button>
+                            <button class="btn btn-xs btn-outline-danger" onclick="delBak('{$b['name']}')"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    {/foreach}
+                    {else}
+                    <tr><td colspan="4" class="text-center text-muted py-4">暂无备份文件，点击「备份全库」生成</td></tr>
+                    {/if}
+                </tbody>
+            </table>
+        </div>
+        <p class="text-muted small mb-0"><i class="fas fa-exclamation-triangle mr-1"></i> 恢复备份会覆盖现有数据，请谨慎操作并提前备份。</p>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function getChecked(){
+    var arr = [];
+    document.querySelectorAll('.tbl-chk:checked').forEach(function(el){ arr.push(el.value); });
+    return arr;
+}
+function refreshCount(){
+    document.getElementById('selCount').textContent = getChecked().length;
+}
+document.getElementById('checkAll').addEventListener('change', function(){
+    document.querySelectorAll('.tbl-chk').forEach(function(el){ el.checked = this.checked; }.bind(this));
+    refreshCount();
+});
+document.querySelectorAll('.tbl-chk').forEach(function(el){ el.addEventListener('change', refreshCount); });
+
+function postAct(url, data, okMsg){
+    var fd = new FormData();
+    for (var k in data) fd.append(k, data[k]);
+    fetch(url, {method:'POST', body: fd, credentials: 'same-origin'}).then(function(r){
+        return r.text().then(function(txt){
+            try { return JSON.parse(txt); } catch(e) { throw new Error(txt || ('HTTP ' + r.status)); }
+        });
+    }).then(function(res){
+        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();}, 700); }
+        else { alert((res && res.info) ? res.info : '操作失败'); }
+    }).catch(function(err){ alert('请求失败：' + (err && err.message ? err.message : err)); });
+}
+function backupAll(){
+    if (!confirm('确定要备份整个数据库吗？')) return;
+    postAct('index.php?r=manage/database/backup', {}, '备份完成');
+}
+function batchAct(act){
+    var sel = getChecked();
+    if (!sel.length) { alert('请先勾选要操作的表'); return; }
+    if (!confirm('确定对选中的 ' + sel.length + ' 张表执行「' + (act==='optimize'?'优化':'修复') + '」？')) return;
+    postAct('index.php?r=manage/database/' + act, {tables: sel.join(',')}, '操作完成');
+}
+function oneAct(act, table){
+    postAct('index.php?r=manage/database/' + act, {tables: table}, '操作完成');
+}
+function restoreBak(file){
+    if (!confirm('恢复备份「' + file + '」将覆盖现有数据，确定继续？')) return;
+    postAct('index.php?r=manage/database/restore', {file: file}, '恢复完成');
+}
+function delBak(file){
+    if (!confirm('确定删除备份「' + file + '」？')) return;
+    postAct('index.php?r=manage/database/delBak', {file: file}, '已删除');
+}
+</script>

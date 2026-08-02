@@ -83,8 +83,8 @@ function CloseError(){
 
 
 //ajax get 方式
-function ajaxget(url){
-var loadings= layer.msg('正在执行您的请求...', {icon: 16});
+function ajaxget(url, infotxt){
+var loadings= layer.msg(infotxt ? infotxt : '正在执行您的请求...', {icon: 16});
 $(".ajaxbt").attr("disabled", true); 
  $.ajax({
          url: url,

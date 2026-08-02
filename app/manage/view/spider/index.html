@@ -1,0 +1,126 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-bug"></i>
+    蜘蛛限制
+</h1>
+
+<div class="alert alert-secondary">
+    <i class="fas fa-info-circle mr-1"></i> 限制垃圾爬虫抓取、降低服务器负载。支持两种模式：<b>黑名单</b>（屏蔽命中关键词的 UA）与
+    <b>白名单</b>（仅放行已知搜索引擎，其余疑似蜘蛛拦截）。可叠加<b>频率限制</b>。
+</div>
+
+<form method="post" action="index.php?r=manage/spider/save">
+    <div class="card mb-3">
+        <div class="card-header font-weight-bold">基础设置</div>
+        <div class="card-body">
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="enable" name="enable" value="1" {if $cfg.enable=='1'}checked{/if}>
+                <label class="form-check-label" for="enable">启用蜘蛛限制</label>
+            </div>
+            <div class="form-group form-check">
+                <input type="checkbox" class="form-check-input" id="log_all" name="log_all" value="1" {if $cfg.log_all=='1'}checked{/if}>
+                <label class="form-check-label" for="log_all">记录所有蜘蛛访问（visit.log，含时间/IP/UA）</label>
+            </div>
+            <div class="form-group">
+                <label>拦截模式</label>
+                <select class="form-control" name="mode" id="mode">
+                    <option value="blacklist" {if $cfg.mode=='blacklist'}selected{/if}>黑名单（屏蔽命中关键词的 UA）</option>
+                    <option value="whitelist" {if $cfg.mode=='whitelist'}selected{/if}>白名单（仅放行已知搜索引擎）</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>频率限制（每 IP+UA 每分钟最大请求数，0=不限制）</label>
+                <input type="number" min="0" class="form-control" name="rate_limit" value="{intval($cfg.rate_limit)}">
+            </div>
+            <div class="form-group">
+                <label>拦截提示语</label>
+                <input type="text" class="form-control" name="block_message" value="{htmlspecialchars($cfg.block_message, ENT_QUOTES, 'UTF-8')}">
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header font-weight-bold">黑名单 UA 关键词（每行一个，命中即拦截）</div>
+        <div class="card-body">
+            <textarea class="form-control" name="blacklist" rows="6">{htmlspecialchars($cfg.blacklist, ENT_QUOTES, 'UTF-8')}</textarea>
+            <small class="text-muted">常见垃圾蜘蛛：AhrefsBot / SemrushBot / MJ12bot / DotBot / PetalBot / YandexBot / BLEXBot 等</small>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header font-weight-bold">白名单 UA 关键词（每行一个，仅放行这些）</div>
+        <div class="card-body">
+            <textarea class="form-control" name="whitelist" rows="6">{htmlspecialchars($cfg.whitelist, ENT_QUOTES, 'UTF-8')}</textarea>
+            <small class="text-muted">主流搜索引擎：Baiduspider / Googlebot / bingbot / 360Spider / Sogou web spider / YisouSpider / Bytespider</small>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> 保存设置</button>
+</form>
+
+<div class="card mt-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span class="font-weight-bold">最近拦截记录（data/spiderlog/blocked.log）</span>
+        <button class="btn btn-sm btn-outline-danger" onclick="clearLog()"><i class="fas fa-trash"></i> 清空</button>
+    </div>
+    <div class="card-body">
+        {if !empty($blockLog)}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead class="thead-light"><tr><th>时间</th><th>IP</th><th>原因</th><th>UA</th></tr></thead>
+                <tbody>
+                {foreach $blockLog as $l}
+                    <tr>
+                        <td>{htmlspecialchars($l.0, ENT_QUOTES, 'UTF-8')}</td>
+                        <td>{htmlspecialchars($l.1, ENT_QUOTES, 'UTF-8')}</td>
+                        <td>{htmlspecialchars($l.2, ENT_QUOTES, 'UTF-8')}</td>
+                        <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{htmlspecialchars($l.3, ENT_QUOTES, 'UTF-8')}</td>
+                    </tr>
+                {/foreach}
+                </tbody>
+            </table>
+        </div>
+        {else}
+        <p class="text-muted mb-0 text-center py-3">暂无拦截记录</p>
+        {/if}
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header font-weight-bold">最近蜘蛛访问记录（data/spiderlog/visit.log，开启“记录所有蜘蛛访问”后生成）</div>
+    <div class="card-body">
+        {if !empty($visitLog)}
+        <div class="table-responsive">
+            <table class="table table-sm">
+                <thead class="thead-light"><tr><th>时间</th><th>IP</th><th>页面</th><th>状态</th><th>UA</th></tr></thead>
+                <tbody>
+                {foreach $visitLog as $l}
+                    <tr>
+                        <td>{htmlspecialchars($l.0, ENT_QUOTES, 'UTF-8')}</td>
+                        <td>{htmlspecialchars($l.1, ENT_QUOTES, 'UTF-8')}</td>
+                        <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{htmlspecialchars($l.2, ENT_QUOTES, 'UTF-8')}</td>
+                        <td>{htmlspecialchars($l.3, ENT_QUOTES, 'UTF-8')}</td>
+                        <td style="max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{htmlspecialchars($l.4, ENT_QUOTES, 'UTF-8')}</td>
+                    </tr>
+                {/foreach}
+                </tbody>
+            </table>
+        </div>
+        {else}
+        <p class="text-muted mb-0 text-center py-3">暂无访问记录（请先在基础设置中开启“记录所有蜘蛛访问”）</p>
+        {/if}
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<script>
+function clearLog(){
+    if (!confirm('确定清空拦截日志？')) return;
+    fetch('index.php?r=manage/spider/clearLog', {method:'POST'}).then(function(r){return r.json();}).then(function(res){
+        if (res && res.status === 'y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();}, 600); }
+        else alert('清空失败');
+    }).catch(function(){ alert('请求失败'); });
+}
+</script>

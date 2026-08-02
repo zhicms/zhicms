@@ -24,6 +24,7 @@ class LoginController extends \app\base\controller\BaseController {
                 $_SESSION['manage_system'] = $userName;
                 $_SESSION['manage_uid'] = is_object($user) ? $user->id : $user['id'];
                 $_SESSION['manage_pic'] = is_object($user) ? $user->pic : $user['pic'];
+                \ZhiCms\ext\AdminLog::write('login', '管理员「' . $userName . '」登录后台');
                 echo json_encode(array("info" => "登录成功", "status" => "y"));
                 exit;
             } else {
@@ -37,9 +38,15 @@ class LoginController extends \app\base\controller\BaseController {
 
 
     public function logout(){
+        $user = isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '';
+        \ZhiCms\ext\AdminLog::write('logout', '管理员「' . $user . '」退出登录');
         obj("api/Api")->unsetSession("manage_system");
         obj("api/Api")->unsetSession("manage_uid");
         obj("api/Api")->unsetSession("manage_pic");
+        // 退出前一键清理全站缓存
+        if (class_exists('\\app\\manage\\controller\\IndexController')) {
+            \app\manage\controller\IndexController::clearAllCache();
+        }
         $url = 'index.php?r=manage';
         $this->redirect($url, $code = 302);
     }

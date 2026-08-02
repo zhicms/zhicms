@@ -139,6 +139,7 @@ class PluginController extends \app\base\controller\BaseController
 		$alias = $this->arg('alias');
 		if (empty($alias)) $this->alert('参数错误');
 		\ZhiCms\base\PluginManager::enable($alias);
+		\ZhiCms\ext\AdminLog::write('plugin', '启用了插件：' . $alias);
 		$this->redirect('index.php?r=manage/plugin/index');
 	}
 
@@ -148,6 +149,7 @@ class PluginController extends \app\base\controller\BaseController
 		$alias = $this->arg('alias');
 		if (empty($alias)) $this->alert('参数错误');
 		\ZhiCms\base\PluginManager::disable($alias);
+		\ZhiCms\ext\AdminLog::write('plugin', '停用了插件：' . $alias);
 		$this->redirect('index.php?r=manage/plugin/index');
 	}
 
@@ -158,6 +160,7 @@ class PluginController extends \app\base\controller\BaseController
 		if (empty($alias)) $this->alert('参数错误');
 		$deleteFiles = $this->arg('del') == '1';
 		\ZhiCms\base\PluginManager::uninstall($alias, $deleteFiles);
+		\ZhiCms\ext\AdminLog::write('plugin', '卸载了插件：' . $alias);
 		$this->redirect('index.php?r=manage/plugin/index');
 	}
 
