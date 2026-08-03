@@ -764,6 +764,39 @@ https://www.example.com/brand.html"></textarea>
                                 <small class="form-text text-muted">同一 IP 在该秒数内无法再次评论，0 表示不限制（防刷建议 30~120 秒）</small>
                             </div>
 
+                            <h5 class="section-title mt-4"><i class="fas fa-user-circle"></i> 用户注册设置</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="user_show_login" name="user_show_login" value="1" <?php echo isset($ret['user_show_login']) && $ret['user_show_login'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="user_show_login">前台显示登录/注册入口</label>
+                                        </div>
+                                        <small class="form-text text-muted">关闭后前台侧栏不再展示登录/注册按钮（已登录用户仍可见用户中心）</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="user_reg_captcha" name="user_reg_captcha" value="1" <?php echo isset($ret['user_reg_captcha']) && $ret['user_reg_captcha'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="user_reg_captcha">注册开启图形验证码</label>
+                                        </div>
+                                        <small class="form-text text-muted">开启后注册需填写图形验证码，防机器人刷注册</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="user_email_verify" name="user_email_verify" value="1" <?php echo isset($ret['user_email_verify']) && $ret['user_email_verify'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="user_email_verify">注册需要邮箱验证</label>
+                                        </div>
+                                        <small class="form-text text-muted">预留开关，开启后注册邮箱将作为必填项（当前未强制发验证邮件）</small>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="form-group border-top pt-3 mt-4">
                                 <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('interact')">
                                     <i class="fas fa-save"></i> 保存设置

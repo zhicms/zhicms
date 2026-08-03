@@ -168,11 +168,18 @@ function obj($class, $layer = 'model'){
 	$className = "\\app\\{$app}\\{$layer}\\{$module}".ucfirst($layer);
 	
 	if (isset($objArr[$className])) {
+		// 若正处于"构造中"（占位标记），说明构造期重入 obj() 自身，
+		// 直接返回 false，避免 Container::make() 无限递归；由调用方兜底。
+		if ($objArr[$className] === true) {
+			return false;
+		}
         return $objArr[$className];
 	}
 	
 	if (class_exists('\\think\\Container')) {
 		try {
+			// 构造前先写入占位标记，防止构造期重入同一类导致无限递归
+			$objArr[$className] = true;
 			// 使用单例容器，避免每次 obj() 都重建容器（双框架互补点）
 			$container = method_exists('\\think\\Container', 'getInstance')
 				? \think\Container::getInstance()
@@ -181,6 +188,7 @@ function obj($class, $layer = 'model'){
 			$objArr[$className] = $obj;
 			return $obj;
 		} catch (\Exception $e) {
+			unset($objArr[$className]);
 		}
 	}
 	

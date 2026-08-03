@@ -1,9 +1,9 @@
 -- ============================================
--- ZhiCms 5.0.1 数据库安装脚本
+-- ZhiCms 5.0.2 数据库安装脚本
 -- 兼容 MySQL 5.7 ~ 8.0
 -- 表前缀 __PREFIX__ 将在安装时自动替换为用户选择的表前缀
 -- 默认管理员: admin / admin88
--- 更新时间: 2026-08-02 15:41:37
+-- 更新时间: 2026-08-03
 -- ============================================
 
 SET NAMES utf8mb4;
@@ -621,10 +621,17 @@ CREATE TABLE `__PREFIX__user` (
   `username` varchar(100) NOT NULL,
   `password` varchar(100) NOT NULL,
   `mobile` varchar(20) DEFAULT NULL,
+  `email` varchar(100) NOT NULL DEFAULT '' COMMENT '邮箱',
+  `avatar` varchar(255) NOT NULL DEFAULT '' COMMENT '头像URL',
+  `reg_time` varchar(20) NOT NULL DEFAULT '' COMMENT '注册时间',
+  `reg_ip` varchar(64) NOT NULL DEFAULT '' COMMENT '注册IP',
+  `login_ip` varchar(64) NOT NULL DEFAULT '' COMMENT '最后登录IP',
+  `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1正常 0禁用',
   `vest` tinyint(4) DEFAULT '1',
   `lock` tinyint(4) DEFAULT '0',
   `date` varchar(50) DEFAULT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_mobile` (`mobile`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -669,10 +676,18 @@ CREATE TABLE `__PREFIX__sensitive_word` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='违规词库';
 
 --
--- 版本号配置（全新安装即为 5.0.1，与 data/config/version.php 对齐）
+-- 版本号配置（全新安装即为 5.0.2，与 data/config/version.php 对齐）
 --
 INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
-('cfg_version', '{"version":"5.0.1"}', '版本号');
+('cfg_version', '{"version":"5.0.2"}', '版本号');
+
+--
+-- 用户功能开关默认值（全新安装即生效，后台「互动设置」可改）
+--
+INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
+('user_reg_captcha', '1', '注册开启图形验证码 1开/0关'),
+('user_email_verify', '0', '注册需要邮箱验证 1是/0否（当前仅预留）'),
+('user_show_login', '1', '前台显示用户登录/注册入口 1显示/0隐藏');
 
 --
 -- Dumping data for table `__PREFIX__manage`

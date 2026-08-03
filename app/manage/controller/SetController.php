@@ -152,7 +152,13 @@ class SetController extends \app\base\controller\BaseController
 					'page-<id>.html' => 'index/page/index/id=<id>',
 					'app.html' => 'index/page/app',
 					'side.html' => 'index/page/side',
+					'login.html' => 'index/login/index',
+					'register.html' => 'index/login/register',
 					'ucenter.html' => 'index/ucenter/index',
+					'ucenter-comment.html' => 'index/ucenter/myComment',
+					'ucenter-forum.html' => 'index/ucenter/myForum',
+					'ucenter-profile.html' => 'index/ucenter/profile',
+					'ucenter-pwd.html' => 'index/ucenter/pwd',
 					'ai.html' => 'index/aiassistant/chat',
 					// ===== 移动端 =====
 					'm.html' => 'index/m/index',
@@ -438,7 +444,8 @@ class SetController extends \app\base\controller\BaseController
             $this->pagetext = array("基础设置", "互动设置");
             $this->pageText = array("基础设置", "互动设置");
 
-            $keys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval');
+            $keys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval',
+                'user_reg_captcha', 'user_email_verify', 'user_show_login');
             $in = implode(',', array_fill(0, count($keys), '?'));
 
             // 使用 thisQuery 参数化查询
@@ -453,6 +460,9 @@ class SetController extends \app\base\controller\BaseController
                 'comment_anonymous' => '1',
                 'comment_check' => '0',
                 'comment_interval' => '60',
+                'user_reg_captcha' => '1',
+                'user_email_verify' => '0',
+                'user_show_login' => '1',
             );
             $config = $defaults;
             if (!empty($rows)) {
@@ -488,6 +498,9 @@ class SetController extends \app\base\controller\BaseController
                 'comment_anonymous' => array('value' => !empty($_POST['comment_anonymous']) ? '1' : '0', 'desc' => '允许未登录评论 1允许/0禁止'),
                 'comment_check'    => array('value' => !empty($_POST['comment_check']) ? '1' : '0', 'desc' => '评论需要审核 1是/0否'),
                 'comment_interval' => array('value' => (string)max(0, intval($_POST['comment_interval'] ?? 60)), 'desc' => '评论间隔秒数（防刷）'),
+                'user_reg_captcha' => array('value' => !empty($_POST['user_reg_captcha']) ? '1' : '0', 'desc' => '注册开启图形验证码 1开/0关'),
+                'user_email_verify' => array('value' => !empty($_POST['user_email_verify']) ? '1' : '0', 'desc' => '注册需要邮箱验证 1是/0否（当前仅预留）'),
+                'user_show_login'  => array('value' => !empty($_POST['user_show_login']) ? '1' : '0', 'desc' => '前台显示用户登录/注册入口 1显示/0隐藏'),
             );
 
             foreach ($settings as $k => $item) {

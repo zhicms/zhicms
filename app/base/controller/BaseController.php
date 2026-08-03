@@ -44,7 +44,64 @@ class BaseController extends \ZhiCms\base\Controller {
 				$this->pluginMenus = array();
 			}
 		}
-	}  
+
+		// 前台统一注入当前登录用户（供侧栏/模板使用），construct 阶段 obj 可能未就绪则用 try 兜底
+		if (defined('\APP_NAME') && \APP_NAME != 'manage' && \APP_NAME != 'install') {
+			try {
+				$this->loginUser = $this->resolveLoginUser();
+			} catch (\Throwable $e) {
+				$this->loginUser = null;
+			}
+			try {
+				$this->showUserEntry = $this->resolveUserSwitch('user_show_login', '1') === '1';
+			} catch (\Throwable $e) {
+				$this->showUserEntry = true;
+			}
+		}
+	}
+
+	/**
+	 * 解析当前登录用户（前台）：基于 ZhiCmsUser Cookie（手机号）查询 yun_user
+	 * 与 InteractController / ForumController 的识别方式保持一致。
+	 * @return array|null
+	 */
+	protected function resolveLoginUser() {
+		if (empty($_COOKIE['ZhiCmsUser'])) return null;
+		$cookie = $_COOKIE['ZhiCmsUser'];
+		// 仅在用户/论坛/互动等前台模块加载 obj（避免安装期报错）
+		if (!function_exists('obj')) return null;
+		// 关键修复：直接用 ApiData model 查询，避免 obj("index/global") 触发
+		// BaseController::__construct → resolveLoginUser → obj("index/global") → make() →
+		// __construct 的无限递归（obj() 在 make() 返回前不缓存正在构造的实例）。
+		$safeUid = str_replace(['%', '_', '\\'], ['\%', '\_', '\\\\'], $cookie);
+		// 注意：dataSelect() 未传 order 时内部走 find()，返回的是【单个用户关联数组】而非二维数组，
+		// 因此不能再用 $rows[0] 取用户（那会是 null），需直接使用 $rows。
+		$u = obj("api/ApiData")->dataSelect("yun_user", array("`mobile` LIKE '{$safeUid}'"));
+		if (empty($u)) return null;
+		// 脱敏手机号作为展示名（无昵称字段，用手机号）
+		$mobile = isset($u['mobile']) ? $u['mobile'] : $cookie;
+		$u['show_name'] = (strlen($mobile) >= 11)
+			? substr($mobile, 0, 3) . '****' . substr($mobile, 7)
+			: $mobile;
+		return $u;
+	}
+
+	/**
+	 * 读取用户开关（yun_config）
+	 */
+	protected function resolveUserSwitch($key, $default = '1') {
+		if (!function_exists('obj')) return $default;
+		$row = obj("api/ApiData")->thisQuery(
+			"SELECT `value` FROM `{pre}config` WHERE `key` = ? LIMIT 1",
+			array($key)
+		);
+		// 注意：DB 值可能为字符串 '0'，不能用 empty() 判断（empty('0') 为 true），
+		// 否则开关设为 0 时会错误地回落到默认值导致开关失效。
+		if (isset($row[0]['value']) && $row[0]['value'] !== '') {
+			return $row[0]['value'];
+		}
+		return $default;
+	}
    
     /**
      * 初始化Session安全配置

@@ -1,0 +1,258 @@
+{include file="app/index/view/public/header"}
+
+<div class="uc-wrap container" style="max-width:1080px;padding:30px 0;">
+  <div class="uc-layout" style="display:flex;gap:24px;align-items:flex-start;">
+
+    <!-- 左侧：用户信息 + 菜单（emlog 风格） -->
+    <aside class="uc-side" style="width:240px;flex-shrink:0;">
+      <div class="uc-card" style="background:#fff;border-radius:14px;padding:22px;box-shadow:0 4px 20px rgba(0,0,0,.06);text-align:center;">
+        <div class="uc-avatar" style="width:72px;height:72px;border-radius:50%;margin:0 auto 12px;background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;">
+          {if !empty($uInfo['username'])}{substr($uInfo['username'],0,1)}{else}{substr($uInfo['mobile'],0,1)}{/if}
+        </div>
+        <div class="uc-name" style="font-size:16px;font-weight:600;color:#333;">
+          {if !empty($uInfo['username']) && $uInfo['username'] != $uInfo['mobile']}{$uInfo['username']}{else}{substr($uInfo['mobile'],0,3)}****{substr($uInfo['mobile'],7)}{/if}
+        </div>
+        <div class="uc-sub" style="font-size:12px;color:#999;margin-top:4px;">
+          {if !empty($uInfo['reg_time'])}注册于 {$uInfo['reg_time']}{else}手机用户 {/if}
+        </div>
+      </div>
+
+      <nav class="uc-menu" style="background:#fff;border-radius:14px;margin-top:16px;padding:8px;box-shadow:0 4px 20px rgba(0,0,0,.06);">
+        <a href="{url($route='index/ucenter/index', $params=array())}"        class="uc-menu-item {if $menu=='like'}active{/if}">❤️ 我的收藏</a>
+        <a href="{url($route='index/ucenter/myComment', $params=array())}"   class="uc-menu-item {if $menu=='myComment'}active{/if}">💬 我的评论</a>
+        <a href="{url($route='index/ucenter/myForum', $params=array())}"     class="uc-menu-item {if $menu=='myForum'}active{/if}">📝 我的帖子</a>
+        <a href="{url($route='index/ucenter/profile', $params=array())}"    class="uc-menu-item {if $menu=='profile'}active{/if}">👤 个人资料</a>
+        <a href="{url($route='index/ucenter/pwd', $params=array())}"        class="uc-menu-item {if $menu=='pwd'}active{/if}">🔒 修改密码</a>
+        <a href="javascript:;" onclick="userLogout()" class="uc-menu-item uc-menu-logout">🚪 退出登录</a>
+      </nav>
+    </aside>
+
+    <!-- 右侧：内容区 -->
+    <main class="uc-main" style="flex:1;min-width:0;background:#fff;border-radius:14px;padding:26px;box-shadow:0 4px 20px rgba(0,0,0,.06);">
+
+      <!-- 我的收藏 -->
+      {if $menu=='like'}
+        <h3 class="uc-title">我的收藏</h3>
+        <div class="uc-tabs" style="margin:14px 0 20px;display:flex;gap:10px;">
+          <a href="{url($route='index/ucenter/index', $params=array())}"            class="uc-tab {if $likeModel=='index'}active{/if}">社区帖子</a>
+          <a href="{url($route='index/ucenter/index', $params=array('type'=>'article'))}" class="uc-tab {if $likeModel=='article'}active{/if}">文章</a>
+        </div>
+        {if !empty($page['list'])}
+          <ul class="uc-list">
+            {foreach $page['list'] as $item}
+              {if $likeModel=='article'}
+                <li class="uc-list-item">
+                  <a href="{url($route='index/article/index', $params=array('id'=>$item['fid']))}" class="uc-link">{$item['title']}</a>
+                  <span class="uc-date">{$item['date']}</span>
+                </li>
+              {else}
+                <li class="uc-list-item">
+                  <a href="{url($route='index/forum/view', $params=array('id'=>$item['fid']))}" class="uc-link">{$item['title']}</a>
+                  <span class="uc-date">{$item['date']}</span>
+                </li>
+              {/if}
+            {/foreach}
+          </ul>
+          <div class="uc-pager">{$page['page']}</div>
+        {else}
+          <div class="uc-empty">还没有收藏任何内容~</div>
+        {/if}
+      {/if}
+
+      <!-- 我的评论 -->
+      {if $menu=='myComment'}
+        <h3 class="uc-title">我的评论</h3>
+        {if !empty($page['list'])}
+          <ul class="uc-list">
+            {foreach $page['list'] as $item}
+              <li class="uc-list-item uc-comment">
+                <div class="uc-comment-body">{$item['content']}</div>
+                <div class="uc-comment-meta">
+                  <a href="{url($route='index/article/index', $params=array('id'=>$item['mid']))}" class="uc-link">查看原文</a>
+                  <span class="uc-date">{$item['date']}</span>
+                </div>
+              </li>
+            {/foreach}
+          </ul>
+          <div class="uc-pager">{$page['page']}</div>
+        {else}
+          <div class="uc-empty">还没有发表过评论~</div>
+        {/if}
+      {/if}
+
+      <!-- 我的帖子 -->
+      {if $menu=='myForum'}
+        <h3 class="uc-title">我的帖子</h3>
+        {if !empty($page['list'])}
+          <ul class="uc-list">
+            {foreach $page['list'] as $item}
+              <li class="uc-list-item">
+                <a href="{url($route='index/forum/view', $params=array('id'=>$item['id']))}" class="uc-link">{$item['title']}</a>
+                <span class="uc-date">{$item['date']} · 👁 {$item['view']} · 💬 {$item['reply_count']}</span>
+              </li>
+            {/foreach}
+          </ul>
+          <div class="uc-pager">{$page['page']}</div>
+        {else}
+          <div class="uc-empty">还没有发布过帖子~</div>
+        {/if}
+      {/if}
+
+      <!-- 个人资料 -->
+      {if $menu=='profile'}
+        <h3 class="uc-title">个人资料</h3>
+        <form id="profileForm" class="uc-form" style="max-width:420px;margin-top:18px;">
+          <div class="form-group">
+            <label>手机号</label>
+            <input type="text" class="form-control" value="{substr($uInfo['mobile'],0,3)}****{substr($uInfo['mobile'],7)}" disabled>
+          </div>
+          <div class="form-group">
+            <label>昵称</label>
+            <input type="text" class="form-control" name="username" id="nick" value="{$uInfo['username']}" maxlength="30">
+          </div>
+          <div class="form-group">
+            <label>邮箱</label>
+            <input type="email" class="form-control" name="email" id="email" value="{$uInfo['email']}" maxlength="60">
+          </div>
+          <button type="button" class="btn btn-primary" onclick="saveProfile()">保存资料</button>
+        </form>
+      {/if}
+
+      <!-- 修改密码 -->
+      {if $menu=='pwd'}
+        <h3 class="uc-title">修改密码</h3>
+        <form id="pwdForm" class="uc-form" style="max-width:420px;margin-top:18px;">
+          <div class="form-group">
+            <label>原密码</label>
+            <input type="password" class="form-control" name="oldpwd" id="oldpwd" maxlength="32">
+          </div>
+          <div class="form-group">
+            <label>新密码</label>
+            <input type="password" class="form-control" name="newpwd" id="newpwd" maxlength="32">
+          </div>
+          <div class="form-group">
+            <label>确认新密码</label>
+            <input type="password" class="form-control" name="repwd" id="repwd" maxlength="32">
+          </div>
+          <button type="button" class="btn btn-primary" onclick="savePwd()">修改密码</button>
+        </form>
+      {/if}
+
+    </main>
+  </div>
+</div>
+
+{include file="app/index/view/public/footer"}
+
+<style>
+.uc-menu-item{display:block;padding:11px 16px;border-radius:9px;color:#555;font-size:14px;text-decoration:none;margin-bottom:4px;transition:all .2s;}
+.uc-menu-item:hover{background:#f3f7fd;color:#1677CB;}
+.uc-menu-item.active{background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;font-weight:600;}
+.uc-menu-logout{color:#e0284a;}
+.uc-menu-logout:hover{background:#fff0f2;color:#e0284a;}
+.uc-title{font-size:18px;font-weight:600;color:#333;margin:0;border-bottom:2px solid #f0f3f8;padding-bottom:12px;}
+.uc-tab{padding:6px 14px;border-radius:18px;font-size:13px;color:#666;text-decoration:none;background:#f3f5f9;transition:all .2s;}
+.uc-tab.active{background:#1677CB;color:#fff;}
+.uc-list{list-style:none;padding:0;margin:0;}
+.uc-list-item{padding:14px 0;border-bottom:1px solid #f0f3f8;display:flex;flex-direction:column;gap:6px;}
+.uc-link{color:#333;font-size:14px;text-decoration:none;font-weight:500;}
+.uc-link:hover{color:#1677CB;}
+.uc-date{font-size:12px;color:#aaa;}
+.uc-comment-body{font-size:14px;color:#444;line-height:1.6;background:#f8f9fb;border-radius:8px;padding:10px 12px;}
+.uc-comment-meta{display:flex;justify-content:space-between;align-items:center;}
+.uc-empty{text-align:center;color:#bbb;padding:50px 0;font-size:14px;}
+.uc-pager{margin-top:20px;text-align:center;}
+/* 表单区：不依赖 Bootstrap，改用站点主题变量补齐样式 */
+.uc-form{max-width:420px;margin-top:18px;}
+.uc-form .form-group{margin-bottom:16px;}
+.uc-form label{font-size:13px;color:var(--lightColor,#666);margin-bottom:6px;display:block;}
+.uc-form .form-control{
+  display:block;width:100%;padding:10px 12px;font-size:14px;line-height:1.5;
+  color:var(--inputTextColor,#333);background:var(--inputBgColor,#fff);
+  border:1px solid var(--inputBorderColor,#ececec);border-radius:9px;box-sizing:border-box;
+  transition:border-color .2s,box-shadow .2s;outline:none;
+}
+.uc-form .form-control:focus{border-color:var(--buttonBgColor,#1677CB);box-shadow:0 0 0 3px rgba(255,77,79,.12);}
+.uc-form .form-control:disabled{background:var(--surfaceHover,#f7f8fa);color:var(--lightColor,#999);}
+.uc-form .btn-primary{
+  display:inline-block;padding:10px 26px;font-size:14px;font-weight:600;border:none;border-radius:9px;cursor:pointer;
+  color:#fff;background:linear-gradient(135deg,#ff7a45,#ff3b5c);transition:opacity .2s,transform .15s;
+}
+.uc-form .btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,59,92,.35);}
+.uc-form .btn-primary:active{transform:translateY(0);}
+/* 轻提示 Toast（不依赖 Bootstrap） */
+.uc-toast-wrap{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.uc-toast{min-width:250px;max-width:360px;padding:12px 16px;border-radius:9px;font-size:14px;color:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);
+  opacity:0;transform:translateX(20px);transition:opacity .3s ease,transform .3s ease;}
+.uc-toast.show{opacity:1;transform:translateX(0);}
+.uc-toast.success{background:#2fa76f;}
+.uc-toast.danger{background:#e0284a;}
+.uc-toast .uc-toast-body{flex:1;}
+.uc-toast .uc-toast-close{background:none;border:none;color:rgba(255,255,255,.85);font-size:16px;line-height:1;cursor:pointer;padding:2px;}
+</style>
+
+<script>
+function saveProfile(){
+  var nick = document.getElementById('nick').value.trim();
+  var email = document.getElementById('email').value.trim();
+  if (!nick){ showToast('请输入昵称','danger'); return; }
+  var fd = new FormData();
+  fd.append('username', nick);
+  fd.append('email', email);
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', 'index.php?r=index/ucenter/profile', true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    try {
+      var res = JSON.parse(xhr.responseText);
+      showToast(res.info, res.status === 'y' ? 'success' : 'danger');
+      if (res.status === 'y') setTimeout(function(){ location.reload(); }, 800);
+    } catch(e){ showToast('保存失败','danger'); }
+  };
+  xhr.send(fd);
+}
+function savePwd(){
+  var oldp = document.getElementById('oldpwd').value;
+  var newp = document.getElementById('newpwd').value;
+  var rep  = document.getElementById('repwd').value;
+  if (!oldp || !newp){ showToast('请填写密码','danger'); return; }
+  var fd = new FormData();
+  fd.append('oldpwd', oldp);
+  fd.append('newpwd', newp);
+  fd.append('repwd', rep);
+  var xhr = new XMLHttpRequest();
+  xhr.open('POST', 'index.php?r=index/ucenter/pwd', true);
+  xhr.onreadystatechange = function(){
+    if (xhr.readyState !== 4) return;
+    try {
+      var res = JSON.parse(xhr.responseText);
+      showToast(res.info, res.status === 'y' ? 'success' : 'danger');
+      if (res.status === 'y') setTimeout(function(){ location.reload(); }, 800);
+    } catch(e){ showToast('修改失败','danger'); }
+  };
+  xhr.send(fd);
+}
+function showToast(message, type){
+  type = type || 'success';
+  var wrap = document.getElementById('ucToastWrap');
+  if (!wrap){
+    wrap = document.createElement('div');
+    wrap.id = 'ucToastWrap';
+    wrap.className = 'uc-toast-wrap';
+    document.body.appendChild(wrap);
+  }
+  var toast = document.createElement('div');
+  toast.className = 'uc-toast ' + type;
+  toast.setAttribute('role','alert');
+  toast.innerHTML = '<span class="uc-toast-body">' + message + '</span>' +
+    '<button type="button" class="uc-toast-close" onclick="this.parentElement.remove()">✕</button>';
+  wrap.appendChild(toast);
+  // 强制 reflow 后加 show 触发过渡
+  requestAnimationFrame(function(){ toast.classList.add('show'); });
+  setTimeout(function(){
+    toast.classList.remove('show');
+    setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+  }, 2500);
+}
+</script>

@@ -137,6 +137,27 @@
   opacity: .8;
   margin-top: 1px;
 }
+.ai-chat-identity {
+  font-size: 11px;
+  margin-top: 3px;
+  opacity: .92;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.ai-chat-identity .ai-id-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffd54f;
+  flex-shrink: 0;
+}
+.ai-chat-identity.login .ai-id-dot {
+  background: #69f0ae;
+}
+.ai-chat-identity.login {
+  color: #eafff2;
+}
 .ai-chat-actions {
   display: flex;
   gap: 8px;
@@ -775,6 +796,7 @@
       <div>
         <div class="ai-chat-title">AI购物助手 · 小淘</div>
         <div class="ai-chat-subtitle">智能导购 · 帮你找到最值的</div>
+        <div class="ai-chat-identity" id="aiChatIdentity">身份识别中…</div>
       </div>
     </div>
     <div class="ai-chat-actions">
@@ -892,19 +914,34 @@
     }
   }
 
-  // 加载历史消息
+  // 加载历史消息 + 同步登录态身份
   function loadHistory() {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', API_BASE + 'getHistory', true);
     xhr.onload = function() {
       try {
         var res = JSON.parse(xhr.responseText);
+        updateIdentity(res);
         if (res.history && res.history.length > 0) {
           renderHistory(res.history);
         }
       } catch(e) {}
     };
     xhr.send();
+  }
+
+  // 设置面板头部身份状态条（方案A：当前对话身份；方案B：登录用户维度历史）
+  function updateIdentity(res) {
+    var el = document.getElementById('aiChatIdentity');
+    if (!el) return;
+    var isLogin = !!(res && res.is_login);
+    var name = (res && res.user_name) ? res.user_name : '游客';
+    el.className = 'ai-chat-identity' + (isLogin ? ' login' : '');
+    if (isLogin) {
+      el.innerHTML = '<span class="ai-id-dot"></span>已登录 · 与「' + name + '」的对话';
+    } else {
+      el.innerHTML = '<span class="ai-id-dot"></span>游客模式 · 对话仅存于本机';
+    }
   }
 
   // 渲染历史消息

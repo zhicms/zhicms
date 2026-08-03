@@ -28,8 +28,12 @@ class IndexController extends \app\base\controller\BaseController
     ];
     
     public function index(){
+        // 禁止浏览器缓存本页，避免“在线升级”等按钮的前端脚本被旧缓存命中（导致接口返回数据异常）
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
 
-    $this->checkManageSession();
+        $this->checkManageSession();
 
         $this->pageText = array("后台首页");
 
@@ -47,9 +51,14 @@ class IndexController extends \app\base\controller\BaseController
         $v = \app\common\ConfigStore::load('version', 'version');
         $this->localVersion = $v;
 
+        // 与 FilecheckController 一致：用 Http::doGet 稳健请求更新接口，并容错 JSON 解析
         $updateUrl = 'https://www.zhicms.cc/update_check.php';
-        $token = new \ZhiCms\ext\Weixin;
-        $ret = obj("api/Api")->objectArray(json_decode($token->http($updateUrl)));
+        $ret = array();
+        $json = \ZhiCms\ext\Http::doGet($updateUrl, 8);
+        if ($json) {
+            $data = json_decode($json, true);
+            if (is_array($data)) $ret = $data;
+        }
         
         $this->updateAvailable = false;
         if(isset($ret['version']) && version_compare($ret['version'], $v, '>')){
@@ -135,19 +144,27 @@ class IndexController extends \app\base\controller\BaseController
      * 整包更新
      */
     public function downloadFile(){
+        // 禁止浏览器缓存，避免前端脚本/接口被旧缓存命中导致返回数据异常
+        header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+        header('Pragma: no-cache');
+        header('Expires: 0');
         $this->checkManageSession();
 
         $v = \app\common\ConfigStore::load('version', 'version');
-        
-        // 获取更新信息
+
+        // 获取更新信息（与 FilecheckController 一致：Http::doGet 稳健请求 + 容错 JSON 解析）
         $updateUrl = 'https://www.zhicms.cc/update_check.php';
-        $token = new \ZhiCms\ext\Weixin;
-        $ret = obj("api/Api")->objectArray(json_decode($token->http($updateUrl)));
+        $ret = array();
+        $json = \ZhiCms\ext\Http::doGet($updateUrl, 8);
+        if ($json) {
+            $data = json_decode($json, true);
+            if (is_array($data)) $ret = $data;
+        }
         
         $zipUrl = isset($ret['full_zip']) ? $ret['full_zip'] : '';
         
         if(empty($zipUrl)){
-            exit(json_encode(array("info" => "未获取到升级包地址", "status" => "n")));
+            exit(json_encode(array("info" => "未获取到升级包地址，请检查服务器外网能否访问更新接口：" . $updateUrl, "status" => "n")));
         }
 
         // 创建备份目录

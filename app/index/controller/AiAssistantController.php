@@ -132,7 +132,25 @@ class AiAssistantController extends \app\base\controller\BaseController
     public function getHistory()
     {
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['history' => $this->loadHistory()], JSON_UNESCAPED_UNICODE);
+        // 返回登录态信息，供前端展示"当前对话身份"
+        $isLogin = false;
+        $userName = '游客';
+        if (!empty($_COOKIE['ZhiCmsUser'])) {
+            $u = obj("index/global", "controller")->findUser("y", $_COOKIE['ZhiCmsUser'], "cookie");
+            if (!empty($u)) {
+                $isLogin = true;
+                $mobile = isset($u['mobile']) ? $u['mobile'] : '';
+                $userName = !empty($u['username']) && $u['username'] !== $mobile
+                    ? $u['username']
+                    : (strlen($mobile) >= 11 ? substr($mobile, 0, 3) . '****' . substr($mobile, 7) : $mobile);
+            }
+        }
+        echo json_encode([
+            'history'  => $this->loadHistory(),
+            'is_login' => $isLogin,
+            'user_name' => $userName,
+            'ai_uid'   => $this->userId,
+        ], JSON_UNESCAPED_UNICODE);
     }
 
     /**

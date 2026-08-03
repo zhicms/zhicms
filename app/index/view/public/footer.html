@@ -190,5 +190,79 @@
     </div>
 </nav>
 
+<style>
+/* ===== Bootstrap 兼容样式（站点未加载 Bootstrap，仅 blog.css）===== */
+.card{background:var(--conBgcolor,#fff);border:1px solid var(--borderColor,rgba(0,0,0,.06));border-radius:14px;}
+.card-body{padding:1.5rem;}
+.form-group{margin-bottom:1rem;}
+.form-group label{display:block;font-size:13px;color:var(--lightColor,#666);margin-bottom:6px;}
+.form-control{display:block;width:100%;padding:10px 12px;font-size:14px;line-height:1.5;color:var(--inputTextColor,#333);
+  background:var(--inputBgColor,#fff);border:1px solid var(--inputBorderColor,#ececec);border-radius:9px;box-sizing:border-box;outline:none;transition:border-color .2s,box-shadow .2s;}
+.form-control:focus{border-color:var(--buttonBgColor,#ff4d4f);box-shadow:0 0 0 3px rgba(255,77,79,.12);}
+.btn-primary{display:inline-block;padding:11px 22px;font-size:14px;font-weight:600;border:none;border-radius:9px;cursor:pointer;color:#fff;
+  background:linear-gradient(135deg,#ff7a45,#ff3b5c);transition:opacity .2s,transform .15s;text-align:center;}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,59,92,.35);}
+.btn-block{display:block;width:100%;}
+.btn-lg{padding:13px 22px;font-size:15px;}
+.alert{border-radius:9px;padding:12px 16px;font-size:14px;margin-bottom:1rem;}
+.alert-warning{background:var(--accentWeak,#fff3e0);color:var(--accent2,#e65100);border:1px solid rgba(255,122,69,.3);}
+.input-group{display:flex;align-items:stretch;}
+.input-group .form-control{flex:1;border-radius:9px 0 0 9px;}
+.input-group-append img{border:1px solid var(--inputBorderColor,#ececec);border-left:none;border-radius:0 9px 9px 0;height:41px;box-sizing:border-box;}
+.text-center{text-align:center;}
+.mt-3{margin-top:1rem;}
+.mb-3{margin-bottom:1rem;}
+.p-4{padding:1.5rem;}
+.m-auto{margin:auto;}
+/* 通用轻提示 Toast */
+.uc-toast-wrap{position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:8px;}
+.uc-toast{min-width:250px;max-width:360px;padding:12px 16px;border-radius:9px;font-size:14px;color:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);
+  opacity:0;transform:translateX(20px);transition:opacity .3s ease,transform .3s ease;}
+.uc-toast.show{opacity:1;transform:translateX(0);}
+.uc-toast.success{background:#2fa76f;}
+.uc-toast.danger{background:#e0284a;}
+.uc-toast .uc-toast-body{flex:1;}
+.uc-toast .uc-toast-close{background:none;border:none;color:rgba(255,255,255,.85);font-size:16px;line-height:1;cursor:pointer;padding:2px;}
+</style>
+
+<script>
+function userLogout(){
+    if (!confirm('确定退出登录？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=index/login/logout&ajax=1', true);
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState !== 4) return;
+        try {
+            var res = JSON.parse(xhr.responseText);
+            if (res && res.status === 'y') { location.href = '{url($route="index/index/index", $params=array())}'; }
+            else { alert((res && res.info) ? res.info : '退出失败'); }
+        } catch(e) { location.href = '{url($route="index/index/index", $params=array())}'; }
+    };
+    xhr.send();
+}
+function showToast(message, type){
+    type = type || 'success';
+    var wrap = document.getElementById('ucToastWrap');
+    if (!wrap){
+        wrap = document.createElement('div');
+        wrap.id = 'ucToastWrap';
+        wrap.className = 'uc-toast-wrap';
+        document.body.appendChild(wrap);
+    }
+    var toast = document.createElement('div');
+    toast.className = 'uc-toast ' + type;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = '<span class="uc-toast-body">' + message + '</span>' +
+        '<button type="button" class="uc-toast-close" onclick="this.parentElement.remove()">✕</button>';
+    wrap.appendChild(toast);
+    requestAnimationFrame(function(){ toast.classList.add('show'); });
+    setTimeout(function(){
+        toast.classList.remove('show');
+        setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+    }, 2500);
+}
+</script>
+
 </body>
 </html>

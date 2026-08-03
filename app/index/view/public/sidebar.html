@@ -1,4 +1,44 @@
 <aside class="column-small side-bar">
+
+<style>
+.widget-user{padding:14px;}
+.user-card{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.user-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0;}
+.user-meta{flex:1;min-width:0;}
+.user-name{font-weight:600;font-size:15px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-sub{font-size:12px;color:#999;margin-top:2px;}
+.user-guest-tip{font-size:13px;color:#666;margin-bottom:10px;line-height:1.5;}
+.user-actions{display:flex;gap:8px;}
+.user-actions .btn{flex:1;text-align:center;}
+</style>
+
+    {if $showUserEntry}
+    <!-- 用户登录/注册 + 登录后状态 -->
+    <div class="widget widget-user">
+        {if !empty($loginUser)}
+        <div class="user-card">
+            <div class="user-avatar">{substr($loginUser['show_name'],0,1)}</div>
+            <div class="user-meta">
+                <div class="user-name">{$loginUser['show_name']}</div>
+                <div class="user-sub">已登录 · 身份已确认</div>
+            </div>
+        </div>
+        <div class="user-actions">
+            <a href="{url($route='index/ucenter/index', $params=array())}" class="btn btn-sm btn-outline-primary">用户中心</a>
+            <a href="javascript:;" onclick="userLogout()" class="btn btn-sm btn-outline-secondary">退出</a>
+        </div>
+        {else}
+        <div class="user-guest">
+            <div class="user-guest-tip">登录后参与评论、发帖与 AI 对话</div>
+            <div class="user-actions">
+                <a href="{url($route='index/login/index', $params=array())}" class="btn btn-sm btn-primary">登录</a>
+                <a href="{url($route='index/login/register', $params=array())}" class="btn btn-sm btn-outline-primary">注册</a>
+            </div>
+        </div>
+        {/if}
+    </div>
+    {/if}
+
     <div class="widget widget-stats">
       <h3>站内速览</h3>
       <div class="stats-report">
