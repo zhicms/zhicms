@@ -175,20 +175,27 @@ class FindController extends \app\base\controller\BaseController
         set_time_limit(0);
         header('Content-Type: application/json; charset=utf-8');
 
-        $key235 = trim($this->arg("key235", ''));
-        $key850 = trim($this->arg("key850", ''));
-        // map235/map850 是 JSON 字符串，arg() 会对值做 htmlspecialchars（破坏 JSON 引号），
-        // 因此必须用原始 $_POST 取值，再 html_entity_decode 还原后 json_decode。
+        // key 与 map 均用原始 $_POST 取值：arg() 会对值做 htmlspecialchars，
+        // 破坏 JSON 引号导致 map 解析失败（表现为"成功入库 0 条"）。
+        $key235 = trim(isset($_POST['key235']) ? $_POST['key235'] : (isset($_GET['key235']) ? $_GET['key235'] : ''));
+        $key850 = trim(isset($_POST['key850']) ? $_POST['key850'] : (isset($_GET['key850']) ? $_GET['key850'] : ''));
         $map235Raw = isset($_POST['map235']) ? $_POST['map235'] : (isset($_GET['map235']) ? $_GET['map235'] : '');
         $map850Raw = isset($_POST['map850']) ? $_POST['map850'] : (isset($_GET['map850']) ? $_GET['map850'] : '');
         $map235 = @json_decode(html_entity_decode($map235Raw, ENT_QUOTES), true);
         $map850 = @json_decode(html_entity_decode($map850Raw, ENT_QUOTES), true);
         if (!is_array($map235)) $map235 = array();
         if (!is_array($map850)) $map850 = array();
-        $pages  = max(1, intval($this->arg("pages", 3)));
+        $pages  = max(1, intval(isset($_POST['pages']) ? $_POST['pages'] : (isset($_GET['pages']) ? $_GET['pages'] : 3)));
 
         if (empty($key235) && empty($key850)) {
             exit(json_encode(array("info" => "请至少填写一个聚合接口 Key（新闻头条或 AI新闻简报）", "status" => "n")));
+        }
+        // 若填了 key 但对应分类映射为空，给出明确提示，避免"成功入库 0 条"误导
+        if (!empty($key235) && empty($map235)) {
+            exit(json_encode(array("info" => "已填新闻头条 Key，但未选择任何 235 分类并指定本地发现分类，请检查弹窗中的分类映射", "status" => "n")));
+        }
+        if (!empty($key850) && empty($map850)) {
+            exit(json_encode(array("info" => "已填 AI新闻简报 Key，但未选择任何 850 分类并指定本地发现分类，请检查弹窗中的分类映射", "status" => "n")));
         }
 
         // 保存 key 到后台配置（下次预填）
