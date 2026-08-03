@@ -177,10 +177,12 @@ class FindController extends \app\base\controller\BaseController
 
         $key235 = trim($this->arg("key235", ''));
         $key850 = trim($this->arg("key850", ''));
-        $map235Raw = $this->arg("map235", '');
-        $map850Raw  = $this->arg("map850", '');
-        $map235 = is_array($map235Raw) ? $map235Raw : @json_decode($map235Raw, true);
-        $map850 = is_array($map850Raw) ? $map850Raw : @json_decode($map850Raw, true);
+        // map235/map850 是 JSON 字符串，arg() 会对值做 htmlspecialchars（破坏 JSON 引号），
+        // 因此必须用原始 $_POST 取值，再 html_entity_decode 还原后 json_decode。
+        $map235Raw = isset($_POST['map235']) ? $_POST['map235'] : (isset($_GET['map235']) ? $_GET['map235'] : '');
+        $map850Raw = isset($_POST['map850']) ? $_POST['map850'] : (isset($_GET['map850']) ? $_GET['map850'] : '');
+        $map235 = @json_decode(html_entity_decode($map235Raw, ENT_QUOTES), true);
+        $map850 = @json_decode(html_entity_decode($map850Raw, ENT_QUOTES), true);
         if (!is_array($map235)) $map235 = array();
         if (!is_array($map850)) $map850 = array();
         $pages  = max(1, intval($this->arg("pages", 3)));
