@@ -40,9 +40,6 @@ function _mobileRedirectToM(){
     // 只对 HTML 页面/首页做重定向（/go/ 等功能性路由不重定向）
     $isHtmlPage = ($reqPath === '/' || $reqPath === '' || preg_match('/\.html$/i', $reqPath));
     if (!$isHtmlPage) return;
-    if (!_isMobileUA()) return;
-    header('Location: /m.html', true, 302);
-    exit;
 }
 _mobileRedirectToM();
 
