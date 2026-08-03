@@ -576,10 +576,16 @@ class FilecheckController extends \app\base\controller\BaseController
 
         // 需要覆盖的代码目录（含框架 vendor，确保彻底还原）
         $restoreDirs = array('app', 'ZhiCms', 'public', 'plugins', 'vendor');
-        // 必须保留的站点配置（不覆盖，避免恢复后连不上数据库/丢失站点设置）
+        // 必须保留的站点配置（不覆盖，避免恢复后连不上数据库/丢失站点设置，
+        // 含伪静态开关 rule.php——用户可能开/关伪静态，恢复整站时不能重置）
         $keep = array(
             'data/config/db.php',
             'data/config/siteconfig.php',
+            'data/config/seo.php',
+            'data/config/sms.php',
+            'data/config/apiset.php',
+            'data/config/rule.php',
+            'data/config/global.php',
             'data/config/install.lock',
             'data/config/version.php',
             'data/config/seopush_log.json',

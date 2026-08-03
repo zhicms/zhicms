@@ -713,9 +713,30 @@ class IndexController extends \app\base\controller\BaseController
         $newConfig = $this->getConfigVariable($source);
 
         if($oldConfig && $newConfig){
-            // 旧值覆盖新值（用户设置优先）
-            $mergedConfig = array_merge($newConfig, $oldConfig);
             $varName = $this->getConfigVarName($dest);
+            // rule.php 特殊处理：保留用户伪静态开关(REWRITE_ON)，并合并规则(REWRITE_RULE)，
+            // 避免更新覆盖用户开/关伪静态的选择，同时补入更新包新增的规则。
+            if(basename($dest) === 'rule.php'){
+                $mergedConfig = $newConfig;
+                if(isset($oldConfig['REWRITE_ON'])){
+                    $mergedConfig['REWRITE_ON'] = $oldConfig['REWRITE_ON']; // 保留用户开关
+                }
+                $newRules = isset($newConfig['REWRITE_RULE']) && is_array($newConfig['REWRITE_RULE']) ? $newConfig['REWRITE_RULE'] : array();
+                $mergedConfig['REWRITE_RULE'] = $newRules;
+                if(isset($oldConfig['REWRITE_RULE']) && is_array($oldConfig['REWRITE_RULE'])){
+                    foreach($oldConfig['REWRITE_RULE'] as $k => $v){
+                        $mergedConfig['REWRITE_RULE'][$k] = $v; // 用户规则覆盖/保留
+                    }
+                }
+                foreach($oldConfig as $k => $v){
+                    if($k !== 'REWRITE_ON' && $k !== 'REWRITE_RULE' && !isset($mergedConfig[$k])){
+                        $mergedConfig[$k] = $v;
+                    }
+                }
+            } else {
+                // 通用配置：旧值（用户设置）优先
+                $mergedConfig = array_merge($newConfig, $oldConfig);
+            }
             $content = "<?php\n\${$varName}=" . var_export($mergedConfig, true) . ";\n";
             file_put_contents($dest, $content);
         }else{
