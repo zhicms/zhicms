@@ -47,7 +47,7 @@
       {/if}
       
       <div style="padding:24px;">
-        <h1 class="post-title mb-20" style="font-size:22px ; font-weight:700 ; color:#1f2329 ; line-height:1.6">
+        <h1 class="post-title mb-20" style="font-size:22px ; font-weight:700 ; color:var(--aColor,#1f2329) ; line-height:1.6">
           {$ret['title']}
         </h1>
         
@@ -93,7 +93,7 @@
               {if !empty($ret['monthSales'])}
               <div>
                 <span style="color:#666;font-size:13px;">月销</span>
-                <span style="color:#333;font-weight:600;margin-left:6px;">{$ret['monthSales']}</span>
+                <span style="color:var(--fontColor,#333);font-weight:600;margin-left:6px;">{$ret['monthSales']}</span>
               </div>
               {/if}
               {if !empty($ret['couponPrice'])}
@@ -111,7 +111,7 @@
               {if !empty($ret['couponRemainCount'])}
               <div>
                 <span style="color:#666;font-size:13px;">剩余</span>
-                <span style="color:#333;font-weight:600;margin-left:6px;">{$ret['couponRemainCount']}</span>
+                <span style="color:var(--fontColor,#333);font-weight:600;margin-left:6px;">{$ret['couponRemainCount']}</span>
               </div>
               {/if}
             </div>
@@ -121,7 +121,7 @@
             <h4 class="mb-10" style="font-size:14px ; font-weight:600 ; color:#999">📅 有效期</h4>
             <div style="font-size:13px;color:#666;line-height:1.8;">
               {if $showCouponStartTime}
-              <div>开始: <span style="color:#333;">{$ret['couponStartTime']}</span></div>
+              <div>开始: <span style="color:var(--fontColor,#333);">{$ret['couponStartTime']}</span></div>
               {/if}
               {if $showCouponEndTime}
               <div>结束: <span style="color:#ff4757;font-weight:600;">{$ret['couponEndTime']}</span></div>
@@ -142,7 +142,7 @@
         </div>
         
         <div style="border-top:1px solid #eee;padding-top:24px;margin-bottom:24px;">
-          <h3 style="font-size:18px;font-weight:700;color:#333;margin-bottom:16px;">📷 商品详情</h3>
+          <h3 style="font-size:18px;font-weight:700;color:var(--fontColor,#333);margin-bottom:16px;">📷 商品详情</h3>
           {if !empty($detailPicsHtml)}
             {$detailPicsHtml}
           {elseif !empty($newBody)}
@@ -157,24 +157,24 @@
         </div>
         
         <div style="border-top:1px solid #eee;padding-top:24px;">
-          <h3 style="font-size:18px;font-weight:700;color:#333;margin-bottom:16px;">🏪 店铺信息</h3>
+          <h3 style="font-size:18px;font-weight:700;color:var(--fontColor,#333);margin-bottom:16px;">🏪 店铺信息</h3>
           <div class="d-flex" style="flex-wrap:wrap ; gap:16px">
             {if !empty($ret['shopName'])}
             <div style="background:#f8f9fa;border-radius:8px;padding:12px 20px;">
               <strong style="color:#999;font-size:14px;">店铺名称:</strong>
-              <span style="color:#333;margin-left:8px;font-weight:500;">{$ret['shopName']}</span>
+              <span style="color:var(--fontColor,#333);margin-left:8px;font-weight:500;">{$ret['shopName']}</span>
             </div>
             {/if}
             {if !empty($ret['shopType'])}
             <div style="background:#f8f9fa;border-radius:8px;padding:12px 20px;">
               <strong style="color:#999;font-size:14px;">店铺类型:</strong>
-              <span style="color:#333;margin-left:8px;font-weight:500;">{$shopTypeText}</span>
+              <span style="color:var(--fontColor,#333);margin-left:8px;font-weight:500;">{$shopTypeText}</span>
             </div>
             {/if}
             {if !empty($ret['dsrScore'])}
             <div style="background:#f8f9fa;border-radius:8px;padding:12px 20px;">
               <strong style="color:#999;font-size:14px;">DSR评分:</strong>
-              <span style="color:#333;margin-left:8px;font-weight:500;">{$ret['dsrScore']}</span>
+              <span style="color:var(--fontColor,#333);margin-left:8px;font-weight:500;">{$ret['dsrScore']}</span>
             </div>
             {/if}
           </div>

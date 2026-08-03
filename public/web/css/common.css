@@ -15,7 +15,13 @@
 .form-control:focus{border-color:var(--buttonBgColor,#ff4d4f);box-shadow:0 0 0 3px rgba(255,77,79,.12);}
 .btn-primary{display:inline-block;padding:11px 22px;font-size:14px;font-weight:600;border:none;border-radius:9px;cursor:pointer;color:#fff;
   background:linear-gradient(135deg,#ff7a45,#ff3b5c);transition:opacity .2s,transform .15s;text-align:center;}
-.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,59,92,.35);}
+/* 悬停保持白色文字，避免被全局 a:hover 的橘色覆盖导致看不清 */
+.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,59,92,.35);color:#fff;}
+.btn-primary:active{color:#fff;}
+/* 侧栏登录/注册按钮（.user-actions）悬停统一白色/清晰色 */
+.user-actions .btn-primary:hover,
+.user-actions .btn-primary:active{color:#fff;}
+.user-actions .btn-outline-primary:hover{color:var(--buttonBgColor,#ff4d4f);}
 .btn-block{display:block;width:100%;}
 .btn-lg{padding:13px 22px;font-size:15px;}
 .alert{border-radius:9px;padding:12px 16px;font-size:14px;margin-bottom:1rem;}
@@ -34,7 +40,7 @@
 .user-card{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .user-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0;}
 .user-meta{flex:1;min-width:0;}
-.user-name{font-weight:600;font-size:15px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-name{font-weight:600;font-size:15px;color:var(--fontColor,#333);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .user-sub{font-size:12px;color:#999;margin-top:2px;}
 .user-guest-tip{font-size:13px;color:#666;margin-bottom:10px;line-height:1.5;}
 .user-actions{display:flex;gap:8px;}
@@ -77,7 +83,44 @@
 
 /* ===== 移动端适配（PC/移动端兼容）===== */
 @media (max-width: 767px){
+  /* 用户中心布局：侧栏与内容区垂直排列，避免移动端挤压/溢出 */
+  .uc-layout{flex-direction:column;gap:16px !important;}
+  .uc-side{width:100% !important;flex:none !important;}
+  .uc-side .uc-menu{display:flex;flex-wrap:wrap;gap:6px;padding:10px;}
+  .uc-side .uc-menu .uc-menu-item{margin-bottom:0;}
+  .uc-main{width:100%;min-width:0 !important;}
+  .uc-wrap{padding:16px 0 !important;}
   .uc-menu-item{font-size:13px;padding:10px 12px;}
   .uc-title{font-size:16px;}
   .uc-toast{min-width:200px;max-width:300px;}
+}
+
+/* ===== 深色模式适配（参考主流站点：文字提亮、弱化深色硬编码、统一用主题变量）===== */
+[data-theme="dark"]{
+  /* 用户中心组件 */
+  .uc-menu-item{color:var(--fontColor,#e8eaed);}
+  .uc-menu-item:hover{background:var(--surfaceHover,#23272f);color:var(--aHoverColor,#ff6a6e);}
+  .uc-title{color:var(--fontColor,#e8eaed);border-bottom-color:var(--dividerColor,#2a2f38);}
+  .uc-tab{color:var(--lightColor,#828a96);background:var(--surfaceHover,#23272f);}
+  .uc-tab:hover{background:var(--borderColor,rgba(255,255,255,.06));}
+  .uc-list-item{border-bottom-color:var(--dividerColor,#2a2f38);}
+  .uc-link{color:var(--aColor,#e8eaed);}
+  .uc-link:hover{color:var(--aHoverColor,#ff6a6e);}
+  .uc-date{color:var(--lightColor,#828a96);}
+  .uc-comment-body{color:var(--fontColor,#e8eaed);background:var(--surfaceHover,#23272f);}
+  .uc-empty{color:var(--lightColor,#828a96);}
+  /* 侧栏用户组件 */
+  .user-name{color:var(--fontColor,#e8eaed);}
+  .user-sub{color:var(--lightColor,#828a96);}
+  .user-guest-tip{color:var(--lightColor,#828a96);}
+  .user-avatar{background:linear-gradient(135deg,#5a6fd4,#6a5acd);}
+  /* 用户中心卡片（uc-card 背景用主题色） */
+  .uc-card{background:var(--conBgcolor,#1a1d24);}
+  .uc-menu{background:var(--conBgcolor,#1a1d24);}
+  .uc-main{background:var(--conBgcolor,#1a1d24);}
+  /* 登录/注册卡片 */
+  .card{background:var(--conBgcolor,#1a1d24);}
+  .form-control{background:var(--inputBgColor,#20242c);color:var(--inputTextColor,#e8eaed);border-color:var(--inputBorderColor,#2a2f38);}
+  .form-group label{color:var(--lightColor,#828a96);}
+  .uc-form .form-control:disabled{background:var(--surfaceHover,#23272f);color:var(--lightColor,#828a96);}
 }

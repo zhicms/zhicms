@@ -924,3 +924,15 @@ hr { border: none; border-top: 1px solid var(--dividerColor); margin: 20px 0; }
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
+
+/* 深色模式下侧边按钮（返回顶部/主题切换）提高可见性：背景提亮、边框明显、阴影加强 */
+[data-theme="dark"] .side-btn {
+    background: #23272f;                     /* 比页面背景略亮，形成可见圆钮 */
+    border-color: rgba(255,255,255,.14);     /* 明显浅色边框 */
+    color: #e8eaed;                          /* 浅色图标 */
+    box-shadow: 0 2px 12px rgba(0,0,0,.35);
+}
+[data-theme="dark"] .side-btn:hover {
+    background: var(--gradient); color: #fff; border-color: transparent;
+    box-shadow: 0 4px 16px rgba(255,46,84,.35);
+}

@@ -200,3 +200,27 @@
     .group-info-card { padding: 12px; gap: 10px; }
     .gic-avatar { width: 46px; height: 46px; font-size: 20px; }
 }
+
+/* ===== 深色模式适配（论坛/社区）===== */
+[data-theme="dark"]{
+    .forum-tabs{border-bottom-color:var(--dividerColor,#2a2f38);}
+    .forum-tab{background:var(--surfaceHover,#23272f);color:var(--lightColor,#828a96);}
+    .forum-tab:hover{background:var(--borderColor,rgba(255,255,255,.06));color:var(--aHoverColor,#ff6a6e);}
+    .forum-card{background:var(--conBgcolor,#1a1d24);box-shadow:0 1px 3px rgba(0,0,0,.2);}
+    .forum-card:hover{box-shadow:0 3px 8px rgba(0,0,0,.3);}
+    .fc-user strong{color:var(--fontColor,#e8eaed);}
+    .fc-user small{color:var(--lightColor,#828a96);}
+    .fc-stats{color:var(--lightColor,#828a96);}
+    .fc-title{color:var(--aColor,#e8eaed);}
+    .fc-content{color:var(--fontColor,#e8eaed);}
+    .fc-content a{color:var(--aHoverColor,#ff6a6e);}
+    .fc-goods-card{background:var(--surfaceHover,#23272f);border-color:var(--borderColor,rgba(255,255,255,.08));}
+    .fc-goods-title{color:var(--fontColor,#e8eaed);}
+    .fc-goods-orig{color:var(--lightColor,#828a96);}
+    .fc-footer{border-top-color:var(--dividerColor,#2a2f38);}
+    .fc-action{color:var(--lightColor,#828a96);}
+    .fc-action:hover{background:var(--borderColor,rgba(255,255,255,.06));color:var(--aHoverColor,#ff6a6e);}
+    .group-info-card{background:linear-gradient(135deg,var(--conBgcolor,#1a1d24),var(--surfaceHover,#23272f));border-color:var(--borderColor,rgba(255,255,255,.08));}
+    .gic-info h3{color:var(--fontColor,#e8eaed);}
+    .gic-stats{color:var(--lightColor,#828a96);}
+}
