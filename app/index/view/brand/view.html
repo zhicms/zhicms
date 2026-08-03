@@ -16,7 +16,7 @@
 </div>
 
 {if !empty($tips)}
-<div style="background:#fff7f7;border:1px solid #ffd6d6;color:#c0392b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;">
+<div class="mb-20" style="background:#fff7f7 ; border:1px solid #ffd6d6 ; color:#c0392b ; padding:12px 16px ; border-radius:10px ; font-size:14px">
   ⚠️ {$tips}
 </div>
 {/if}
@@ -24,26 +24,26 @@
 <div class="row">
   <div class="column-big">
     {if !empty($brandInfo)}
-    <div class="shadow-theme" style="border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;margin-bottom:24px;">
-      <div class="brand-header-inner" style="display:flex;flex-wrap:wrap;">
-        <div style="flex:0 0 200px;position:relative;">
+    <div class="shadow-theme of-hidden" style="border-radius:16px ; border:1px solid rgba(0,0,0,0.06) ; margin-bottom:24px">
+      <div class="brand-header-inner d-flex" style="flex-wrap:wrap">
+        <div class="pos-rel" style="flex:0 0 200px">
           {if !empty($brandInfo['brandLogo'])}
-          <img src="{$brandInfo['brandLogo']}" alt="{$brandInfo['brandName']}" style="width:100%;height:200px;object-fit:cover;">
+          <img src="{$brandInfo['brandLogo']}" alt="{$brandInfo['brandName']}" class="w-full h-200" style="object-fit:cover">
           {else}
-          <div style="width:100%;height:200px;background:linear-gradient(135deg,#667eea,#764ba2);display:flex;align-items:center;justify-content:center;">
+          <div class="w-full h-200 d-flex" style="background:linear-gradient(135deg,#667eea,#764ba2) ; align-items:center ; justify-content:center">
             <span style="font-size:64px;color:#fff;">🏷️</span>
           </div>
           {/if}
         </div>
-        <div class="mobile-card-full" style="flex:1;min-width:280px;padding:24px;">
-          <h1 style="font-size:28px;font-weight:800;color:#1f2329;margin-bottom:12px;">{$brandInfo['brandName']}</h1>
+        <div class="mobile-card-full minw-280" style="flex:1 ; padding:24px">
+          <h1 class="mb-12" style="font-size:28px ; font-weight:800 ; color:#1f2329">{$brandInfo['brandName']}</h1>
           {if !empty($brandInfo['brandDesc'])}
           <p style="color:#666;font-size:15px;line-height:1.7;margin-bottom:16px;">{$brandInfo['brandDesc']}</p>
           {/if}
           {if !empty($brandInfo['brandFeatures'])}
           <p style="color:#555;font-size:14px;line-height:1.6;margin-bottom:16px;">{$brandInfo['brandFeatures']}</p>
           {/if}
-          <div style="display:flex;flex-wrap:wrap;gap:12px;">
+          <div class="d-flex" style="flex-wrap:wrap ; gap:12px">
             {if !empty($brandInfo['sales'])}
             <span class="card-tag" style="background:#f0f5ff;color:#4080ff;padding:6px 14px;border-radius:8px;font-size:13px;">📦 销量 {$brandInfo['sales']}</span>
             {/if}
@@ -69,7 +69,7 @@
     {/if}
     
     {if !empty($Page['list'])}
-      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-bottom:24px;">
+      <div class="d-flex" style="flex-wrap:wrap ; gap:16px ; margin-bottom:24px">
       {foreach $Page['list'] as $item}
       <?php 
         $detailId = !empty($item['id']) ? $item['id'] : (!empty($item['ID']) ? $item['ID'] : 0);
@@ -82,28 +82,28 @@
         $originalPrice = !empty($item['originalPrice']) ? $item['originalPrice'] : (!empty($item['original_price']) ? $item['original_price'] : (!empty($item['originPrice']) ? $item['originPrice'] : (!empty($item['marketPrice']) ? $item['marketPrice'] : '')));
         $couponUrl = url('index/redirect/go', ['platform' => $itemFrom, 'id' => $goodsId]);
       ?>
-      <article class="shadow-theme mobile-card-full" style="flex:1;min-width:280px;max-width:400px;border-radius:12px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;">
-        <a href="{$detailUrl}" target="_blank" style="display:block;position:relative;overflow:hidden;">
+      <article class="shadow-theme mobile-card-full minw-280 mw-400 of-hidden" style="flex:1 ; border-radius:12px ; border:1px solid rgba(0,0,0,0.06) ; transition:all 0.3s ease">
+        <a href="{$detailUrl}" target="_blank" class="d-block pos-rel of-hidden">
           {if !empty($item['mainPic'])}
-          <img src="<?php echo $item['mainPic']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" style="width:100%;height:200px;object-fit:cover;transition:transform 0.4s ease;">
+          <img src="<?php echo $item['mainPic']; ?>" alt="<?php echo htmlspecialchars($itemTitle); ?>" class="w-full h-200" style="object-fit:cover ; transition:transform 0.4s ease">
           {else}
-          <div style="width:100%;height:200px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;">
+          <div class="w-full h-200 d-flex" style="background:#f5f5f5 ; align-items:center ; justify-content:center">
             <span style="font-size:48px;color:#ccc;">📦</span>
           </div>
           {/if}
           <?php if(!empty($couponVal)): ?>
-          <div style="position:absolute;top:10px;right:10px;background:linear-gradient(135deg,#ff4757,#ff6b35);color:#fff;padding:4px 12px;border-radius:15px;font-size:12px;font-weight:700;">
+          <div class="pos-abs" style="top:10px ; right:10px ; background:linear-gradient(135deg,#ff4757,#ff6b35) ; color:#fff ; padding:4px 12px ; border-radius:15px ; font-size:12px ; font-weight:700">
             ¥<?php echo $couponVal; ?>券
           </div>
           <?php endif; ?>
         </a>
         <div style="padding:16px;">
-          <h3 style="font-size:15px;font-weight:600;color:#333;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+          <h3 class="mb-10 of-hidden" style="font-size:15px ; font-weight:600 ; color:#333 ; line-height:1.5 ; display:-webkit-box ; -webkit-line-clamp:2 ; -webkit-box-orient:vertical">
             <a href="{$detailUrl}" target="_blank" title="<?php echo htmlspecialchars($itemTitle); ?>" style="color:#333;">
               <?php echo mb_substr(htmlspecialchars($itemTitle), 0, 50, 'UTF-8'); ?>
             </a>
           </h3>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+          <div class="d-flex mb-10" style="align-items:center ; gap:8px">
             <?php if(!empty($actualPrice)): ?>
             <span style="font-size:22px;font-weight:800;color:#ff4757;">¥<?php echo $actualPrice; ?></span>
             <?php endif; ?>
@@ -111,7 +111,7 @@
             <span style="font-size:13px;color:#999;text-decoration:line-through;">¥<?php echo $originalPrice; ?></span>
             <?php endif; ?>
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div class="d-flex" style="align-items:center ; justify-content:space-between">
             <div>
               {if !empty($item['monthSales'])}
               <span style="color:#666;font-size:12px;">月销 {$item['monthSales']}</span>
@@ -127,11 +127,11 @@
       {/foreach}
       </div>
       
-      <div class="pagination" style="margin-top:24px;text-align:center;">{$Page['pages']}</div>
+      <div class="pagination text-center" style="margin-top:24px">{$Page['pages']}</div>
     {else}
-      <div style="text-align:center;padding:80px 20px;background:var(--conBgcolor);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--borderColor);">
-        <div style="font-size:80px;margin-bottom:20px;">📦</div>
-        <h3 style="font-size:24px;margin-bottom:12px;color:var(--aColor);font-weight:700;">暂无商品</h3>
+      <div class="text-center" style="padding:80px 20px ; background:var(--conBgcolor) ; border-radius:20px ; box-shadow:var(--shadow) ; border:1px solid var(--borderColor)">
+        <div class="mb-20" style="font-size:80px">📦</div>
+        <h3 class="mb-12" style="font-size:24px ; color:var(--aColor) ; font-weight:700">暂无商品</h3>
         <p style="color:var(--lightColor);margin-bottom:24px;font-size:15px;">该品牌暂时没有商品，去看看其他品牌吧！</p>
         <a href="{url($route='index/brand/index', $params=array())}" class="btn btn-buy" style="padding:12px 32px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;">查看全部品牌</a>
       </div>

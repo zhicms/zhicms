@@ -1,6 +1,6 @@
 {include file="app/manage/view/index/emlog_nav"}
             
-            <div class="layui-container" style="max-width:900px;">
+            <div class="layui-container mw-900">
                 <div class="layui-row">
                     <div class="layui-col-md12">
                         <div class="layui-card">
@@ -11,19 +11,19 @@
                                 <form class="layui-form" id="sms-form">
                                     <div class="layui-form-item">
                                         <label class="layui-form-label">短信接口</label>
-                                        <div class="layui-input-block" style="width:550px;">
+                                        <div class="layui-input-block w-550">
                                             <input type="text" name="smsurl" class="layui-input" value="{$ret['smsurl']}" placeholder="短信接口地址">
                                             <div class="layui-form-mid layui-word-aux" style="margin-left:0;color:#F30">http://api.smsbao.com/sms?u=smsbao账号&amp;p=密码MD532位大写 &nbsp;&nbsp;现在：<a href="http://www.smsbao.com/reg" target="_blank">注册送测试短信</a></div>
                                         </div>
                                     </div>
                                     <div class="layui-form-item">
                                         <label class="layui-form-label">用户注册短信</label>
-                                        <div class="layui-input-block" style="width:550px;">
+                                        <div class="layui-input-block w-550">
                                             <input type="text" name="reg_sms" class="layui-input" value="{$ret['reg_sms']}" placeholder="短信验证码模板">
                                         </div>
                                     </div>
                                     <div class="layui-form-item">
-                                        <div class="layui-input-block" style="width:550px;">
+                                        <div class="layui-input-block w-550">
                                             <button type="button" class="layui-btn" onclick="submitForm('sms')"><i class="layui-icon layui-icon-save"></i> 保存设置</button>
                                         </div>
                                     </div>

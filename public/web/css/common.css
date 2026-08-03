@@ -1,0 +1,83 @@
+/* =========================================================
+ * ZhiCms 公共样式（前端所有页面共享）
+ * 整合自：public/footer.html 的 Bootstrap 兼容样式 + public/sidebar.html 用户组件样式
+ * 加载位置：<head> 中（先于内容输出，符合 SEO/渲染最佳实践）
+ * 依赖：blog.css（提供 --buttonBgColor 等主题变量）
+ * ========================================================= */
+
+/* ===== Bootstrap 兼容样式（站点未加载 Bootstrap，仅 blog.css）===== */
+.card{background:var(--conBgcolor,#fff);border:1px solid var(--borderColor,rgba(0,0,0,.06));border-radius:14px;}
+.card-body{padding:1.5rem;}
+.form-group{margin-bottom:1rem;}
+.form-group label{display:block;font-size:13px;color:var(--lightColor,#666);margin-bottom:6px;}
+.form-control{display:block;width:100%;padding:10px 12px;font-size:14px;line-height:1.5;color:var(--inputTextColor,#333);
+  background:var(--inputBgColor,#fff);border:1px solid var(--inputBorderColor,#ececec);border-radius:9px;box-sizing:border-box;outline:none;transition:border-color .2s,box-shadow .2s;}
+.form-control:focus{border-color:var(--buttonBgColor,#ff4d4f);box-shadow:0 0 0 3px rgba(255,77,79,.12);}
+.btn-primary{display:inline-block;padding:11px 22px;font-size:14px;font-weight:600;border:none;border-radius:9px;cursor:pointer;color:#fff;
+  background:linear-gradient(135deg,#ff7a45,#ff3b5c);transition:opacity .2s,transform .15s;text-align:center;}
+.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,59,92,.35);}
+.btn-block{display:block;width:100%;}
+.btn-lg{padding:13px 22px;font-size:15px;}
+.alert{border-radius:9px;padding:12px 16px;font-size:14px;margin-bottom:1rem;}
+.alert-warning{background:var(--accentWeak,#fff3e0);color:var(--accent2,#e65100);border:1px solid rgba(255,122,69,.3);}
+.input-group{display:flex;align-items:stretch;}
+.input-group .form-control{flex:1;border-radius:9px 0 0 9px;}
+.input-group-append img{border:1px solid var(--inputBorderColor,#ececec);border-left:none;border-radius:0 9px 9px 0;height:41px;box-sizing:border-box;}
+.text-center{text-align:center;}
+.mt-3{margin-top:1rem;}
+.mb-3{margin-bottom:1rem;}
+.p-4{padding:1.5rem;}
+.m-auto{margin:auto;}
+
+/* ===== 侧栏用户组件（整合自 sidebar.html）===== */
+.widget-user{padding:14px;}
+.user-card{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.user-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0;}
+.user-meta{flex:1;min-width:0;}
+.user-name{font-weight:600;font-size:15px;color:#333;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-sub{font-size:12px;color:#999;margin-top:2px;}
+.user-guest-tip{font-size:13px;color:#666;margin-bottom:10px;line-height:1.5;}
+.user-actions{display:flex;gap:8px;}
+.user-actions .btn{flex:1;text-align:center;}
+
+/* ===== 通用轻提示 Toast ===== */
+.uc-toast-wrap{position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:8px;}
+.uc-toast{min-width:250px;max-width:360px;padding:12px 16px;border-radius:9px;font-size:14px;color:#fff;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);
+  opacity:0;transform:translateX(20px);transition:opacity .3s ease,transform .3s ease;}
+.uc-toast.show{opacity:1;transform:translateX(0);}
+.uc-toast.success{background:#2fa76f;}
+.uc-toast.danger{background:#e0284a;}
+.uc-toast .uc-toast-body{flex:1;}
+.uc-toast .uc-toast-close{background:none;border:none;color:rgba(255,255,255,.85);font-size:16px;line-height:1;cursor:pointer;padding:2px;}
+
+/* ===== 用户中心组件（整合自 ucenter/index.html）===== */
+.uc-menu-item{display:block;padding:11px 16px;border-radius:9px;color:#555;font-size:14px;text-decoration:none;margin-bottom:4px;transition:all .2s;}
+.uc-menu-item:hover{background:#f3f7fd;color:#1677CB;}
+.uc-menu-item.active{background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;font-weight:600;}
+.uc-menu-logout{color:#e0284a;}
+.uc-menu-logout:hover{background:#fff0f2;color:#e0284a;}
+.uc-title{font-size:18px;font-weight:600;color:#333;margin:0;border-bottom:2px solid #f0f3f8;padding-bottom:12px;}
+.uc-tab{padding:6px 14px;border-radius:18px;font-size:13px;color:#666;text-decoration:none;background:#f3f5f9;transition:all .2s;}
+.uc-tab.active{background:#1677CB;color:#fff;}
+.uc-list{list-style:none;padding:0;margin:0;}
+.uc-list-item{padding:14px 0;border-bottom:1px solid #f0f3f8;display:flex;flex-direction:column;gap:6px;}
+.uc-link{color:#333;font-size:14px;text-decoration:none;font-weight:500;}
+.uc-link:hover{color:#1677CB;}
+.uc-date{font-size:12px;color:#aaa;}
+.uc-comment-body{font-size:14px;color:#444;line-height:1.6;background:#f8f9fb;border-radius:8px;padding:10px 12px;}
+.uc-comment-meta{display:flex;justify-content:space-between;align-items:center;}
+.uc-empty{text-align:center;color:#bbb;padding:50px 0;font-size:14px;}
+.uc-pager{margin-top:20px;text-align:center;}
+/* 用户中心表单（复用公共 .form-group/.form-control/.btn-primary，这里仅补充布局） */
+.uc-form{max-width:420px;margin-top:18px;}
+.uc-form .form-group{margin-bottom:16px;}
+.uc-form .form-control:disabled{background:var(--surfaceHover,#f7f8fa);color:var(--lightColor,#999);}
+.uc-form .btn-primary:active{transform:translateY(0);}
+
+/* ===== 移动端适配（PC/移动端兼容）===== */
+@media (max-width: 767px){
+  .uc-menu-item{font-size:13px;padding:10px 12px;}
+  .uc-title{font-size:16px;}
+  .uc-toast{min-width:200px;max-width:300px;}
+}

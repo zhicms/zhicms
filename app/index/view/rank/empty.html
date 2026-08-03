@@ -1,6 +1,6 @@
-<div style="text-align:center;padding:80px 20px;background:var(--conBgcolor);border-radius:20px;box-shadow:var(--shadow);border:1px solid var(--borderColor);">
-  <div style="font-size:80px;margin-bottom:20px;">{$rankInfo['icon']}</div>
-  <h3 style="font-size:24px;margin-bottom:12px;color:var(--aColor);font-weight:700;">暂无榜单数据</h3>
+<div class="text-center" style="padding:80px 20px ; background:var(--conBgcolor) ; border-radius:20px ; box-shadow:var(--shadow) ; border:1px solid var(--borderColor)">
+  <div class="mb-20" style="font-size:80px">{$rankInfo['icon']}</div>
+  <h3 class="mb-12" style="font-size:24px ; color:var(--aColor) ; font-weight:700">暂无榜单数据</h3>
   <p style="color:var(--lightColor);margin-bottom:24px;font-size:15px;">「{$rankInfo['name']}」暂时没有数据，请稍后再来查看，或切换其他榜单。</p>
   <a href="{url($route='index/rank/index', $params=array('type'=>1))}" class="btn btn-buy" style="padding:12px 32px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:12px;font-size:15px;font-weight:600;">查看实时榜</a>
 </div>

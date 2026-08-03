@@ -158,7 +158,7 @@
                 <small class="form-text text-muted">
                     自动提取关键词、生成描述、匹配商品，无需手动填写
                 </small>
-                <div id="ai-match-result" class="mt-3" style="display: none;"></div>
+                <div id="ai-match-result" class="mt-3 d-none"></div>
             </div>
         </div>
         
@@ -175,9 +175,9 @@
                             <button type="button" class="btn btn-outline-secondary" onclick="upthis()">上传图片</button>
                         </div>
                     </div>
-                    <input type="file" name="jpg" id="up_file" style="display: none;" onchange="upimg()"/>
+                    <input type="file" name="jpg" id="up_file" onchange="upimg()"/ class="d-none">
                     <div class="mt-3">
-                        <img id="showimg" src="{$ret['mainPic']}" class="img-thumbnail" {if $ret['mainPic']==""} style="display: none;"{/if}>
+                        <img id="showimg" src="{$ret['mainPic']}" class="img-thumbnail d-none" {if $ret['mainPic']==""}{/if}>
                     </div>
                     <small class="form-text text-muted">建议尺寸：600*330，支持JPG、PNG格式</small>
                 </div>
@@ -426,7 +426,7 @@ function aiMatchGoods(title) {
                 var itemPic = item.pic || item.itemPic || '';
                 html += '<div class="list-group-item d-flex align-items-center">';
                 if (itemPic) {
-                    html += '<img src="' + itemPic + '" class="mr-3" style="width:50px;height:50px;object-fit:cover;">';
+                    html += '<img src="' + itemPic + '" class="mr-3 w-50 h-50" style="object-fit:cover">';
                 }
                 html += '<div class="flex-grow-1">';
                 html += '<small>' + itemTitle + '</small>';

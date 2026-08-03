@@ -137,9 +137,9 @@
             <div class="card mb-3 border">
                 <div class="card-body py-3">
                     <div class="d-flex align-items-center mb-2">
-                        <img src="<?php echo $repPic; ?>" style="width:56px;height:56px;object-fit:cover;border-radius:6px;margin-right:12px;flex:0 0 auto;">
+                        <img src="<?php echo $repPic; ?>" class="w-56 h-56" style="object-fit:cover ; border-radius:6px ; margin-right:12px ; flex:0 0 auto">
                         <div style="min-width:0;">
-                            <div class="font-weight-bold" style="max-width:520px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo htmlspecialchars(mb_substr($repTitle, 0, 60, 'UTF-8')); ?></div>
+                            <div class="font-weight-bold mw-520 of-hidden" style="white-space:nowrap ; text-overflow:ellipsis"><?php echo htmlspecialchars(mb_substr($repTitle, 0, 60, 'UTF-8')); ?></div>
                             <div class="text-muted small mt-1">
                                 同款匹配 <span class="badge badge-info"><?php echo $group['platformCount']; ?></span> 个平台 ·
                                 最低价 <span class="text-danger font-weight-bold">¥<?php echo number_format($minPrice, 2); ?></span>
@@ -150,12 +150,12 @@
                         <table class="table table-sm table-bordered mb-0">
                             <thead class="thead-light">
                                 <tr>
-                                    <th style="width:90px;">平台</th>
+                                    <th class="w-90">平台</th>
                                     <th>店铺名称</th>
-                                    <th style="width:110px;">券后价</th>
-                                    <th style="width:80px;">佣金</th>
-                                    <th style="width:90px;">销量</th>
-                                    <th style="width:90px;">操作</th>
+                                    <th class="w-110">券后价</th>
+                                    <th class="w-80">佣金</th>
+                                    <th class="w-90">销量</th>
+                                    <th class="w-90">操作</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -170,7 +170,7 @@
                                     <span class="badge" style="background:<?php echo $pcolor; ?>20;color:<?php echo $pcolor; ?>"><?php echo $pname; ?></span>
                                     <?php if ($isLowest): ?><span class="badge badge-success ml-1">最低</span><?php endif; ?>
                                 </td>
-                                <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><?php echo htmlspecialchars($it['shopName'] ?? '—'); ?></td>
+                                <td class="mw-220 of-hidden" style="white-space:nowrap ; text-overflow:ellipsis"><?php echo htmlspecialchars($it['shopName'] ?? '—'); ?></td>
                                 <td class="text-danger font-weight-bold">¥<?php echo number_format($p['price'], 2); ?></td>
                                 <td><?php echo $it['commissionRate'] ?? 0; ?>%</td>
                                 <td><?php echo number_format($it['monthSales'] ?? 0); ?></td>
@@ -200,15 +200,15 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-dark">
                     <tr>
-                        <th style="width: 95px;">商品图片</th>
+                        <th class="w-95">商品图片</th>
                         <th>商品信息</th>
-                        <th style="width: 120px;">券后价</th>
-                        <th style="width: 100px;">佣金</th>
-                        <th style="width: 100px;">预估返利</th>
-                        <th style="width: 90px;">领券量</th>
-                        <th style="width: 100px;">优惠券</th>
-                        <th style="width: 80px;">包邮</th>
-                        <th style="width: 120px;">操作</th>
+                        <th class="w-120">券后价</th>
+                        <th class="w-100">佣金</th>
+                        <th class="w-100">预估返利</th>
+                        <th class="w-90">领券量</th>
+                        <th class="w-100">优惠券</th>
+                        <th class="w-80">包邮</th>
+                        <th class="w-120">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -328,7 +328,7 @@
                                 <i class="fas fa-cloud-download-alt fa-3x mb-3 d-block"></i>
                                 <h5>没有找到商品</h5>
                                 <?php if (!empty($apiError)): ?>
-                                <div class="alert alert-warning mt-3 mx-auto" style="max-width:500px;">
+                                <div class="alert alert-warning mt-3 mx-auto mw-500">
                                     <i class="fas fa-exclamation-triangle"></i> API响应：<?php echo htmlspecialchars($apiError); ?>
                                 </div>
                                 <?php endif; ?>
@@ -363,12 +363,12 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <!-- 图片模态框 -->
-<div class="image-modal" onclick="closeImageModal()" style="display: none;">
+<div class="image-modal d-none" onclick="closeImageModal()">
     <img id="modalImage" src="" alt="商品大图">
 </div>
 
 <!-- 采集分类选择弹窗（拼多多/京东/唯品会 等无标准分类时手动选择） -->
-<div class="cat-modal" id="catModal" style="display: none;">
+<div class="cat-modal d-none" id="catModal">
     <div class="cat-modal-box">
         <div class="cat-modal-header">
             <i class="fas fa-tags text-warning mr-2"></i> 选择商品分类

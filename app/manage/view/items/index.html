@@ -85,17 +85,17 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-dark">
                     <tr>
-                        <th style="width: 95px;">商品图片</th>
+                        <th class="w-95">商品图片</th>
                         <th>商品信息</th>
-                        <th style="width: 120px;">券后价</th>
-                        <th style="width: 90px;">佣金</th>
-                        <th style="width: 100px;">预估返利</th>
-                        <th style="width: 100px;">销量</th>
-                        <th style="width: 90px;">领券量</th>
-                        <th style="width: 100px;">优惠券</th>
-                        <th style="width: 80px;">包邮</th>
-                        <th style="width: 80px;">置顶</th>
-                        <th style="width: 160px;">操作</th>
+                        <th class="w-120">券后价</th>
+                        <th class="w-90">佣金</th>
+                        <th class="w-100">预估返利</th>
+                        <th class="w-100">销量</th>
+                        <th class="w-90">领券量</th>
+                        <th class="w-100">优惠券</th>
+                        <th class="w-80">包邮</th>
+                        <th class="w-80">置顶</th>
+                        <th class="w-160">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -118,8 +118,8 @@
                     ?>
                     <tr class="align-middle">
                         <td>
-                            <img src="<?php echo $mainPic; ?>" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;"
-                                 onclick="showImage('<?php echo $mainPic; ?>')">
+                            <img src="<?php echo $mainPic; ?>" class="img-thumbnail w-70 h-70 cur-pointer"
+                                 onclick="showImage('<?php echo $mainPic; ? style="object-fit: cover">')">
                         </td>
                         <td>
                             <div class="font-weight-bold mb-2">
@@ -237,7 +237,7 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <!-- 图片模态框 -->
-<div class="image-modal" onclick="closeImageModal()" style="display: none;">
+<div class="image-modal d-none" onclick="closeImageModal()">
     <img id="modalImage" src="" alt="商品大图">
 </div>
 

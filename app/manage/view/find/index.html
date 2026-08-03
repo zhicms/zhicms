@@ -21,7 +21,7 @@
         <button class="btn btn-info" onclick="openNewsModal()">
             <i class="fas fa-newspaper"></i> 资讯采集
         </button>
-        <div class="btn-group ml-2" id="batchBtnGroup" style="display:none;">
+        <div class="btn-group ml-2 d-none" id="batchBtnGroup">
             <button class="btn btn-warning" onclick="batchAction('publish')">
                 <i class="fas fa-check-circle"></i> 批量发布
             </button>
@@ -34,7 +34,7 @@
         </div>
     </div>
     
-    <div class="search-form" style="width: 300px;">
+    <div class="search-form w-300">
         <div class="input-group">
             <input type="text" class="form-control" id="keyword" placeholder="搜索文章标题" value="<?php echo isset($keyword) ? $keyword : ''; ?>">
             <div class="input-group-append">
@@ -57,15 +57,15 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width: 40px;"><input type="checkbox" id="selectAll" onclick="toggleAll()" title="全选/取消"></th>
-                        <th style="width: 60px;">ID</th>
+                        <th class="w-40"><input type="checkbox" id="selectAll" onclick="toggleAll()" title="全选/取消"></th>
+                        <th class="w-60">ID</th>
                         <th>文章标题</th>
-                        <th style="width: 120px;">分类</th>
-                        <th style="width: 60px;">推荐</th>
-                        <th style="width: 100px;">状态</th>
-                        <th style="width: 80px;">浏览量</th>
-                        <th style="width: 160px;">发布时间</th>
-                        <th style="width: 150px;">操作</th>
+                        <th class="w-120">分类</th>
+                        <th class="w-60">推荐</th>
+                        <th class="w-100">状态</th>
+                        <th class="w-80">浏览量</th>
+                        <th class="w-160">发布时间</th>
+                        <th class="w-150">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -75,7 +75,7 @@
                         <td><input type="checkbox" class="row-checkbox" value="<?php echo $row['id']; ?>" onclick="updateBatchBtns()"></td>
                         <td><?php echo $row['id']; ?></td>
                         <td>
-                            <div class="text-truncate" style="max-width: 300px;" title="<?php echo $row['title']; ?>">
+                            <div class="text-truncate mw-300" title="<?php echo $row['title']; ?>">
                                 <?php echo mb_substr($row['title'], 0, 50, 'UTF-8'); ?>
                                 <?php if(mb_strlen($row['title'], 'UTF-8') > 50): ?>...<?php endif; ?>
                             </div>
@@ -234,7 +234,7 @@
 }
 .cat-modal-footer .btn { margin-left: 8px; }
 </style>
-<div class="cat-modal" id="collectModal" style="display: none;">
+<div class="cat-modal d-none" id="collectModal">
     <div class="cat-modal-box">
         <div class="cat-modal-header">
             <i class="fas fa-bolt text-warning mr-2"></i> 一键采集（好单库朋友圈）
@@ -276,8 +276,8 @@
 </div>
 
 <!-- 聚合资讯一键采集弹窗 -->
-<div class="cat-modal" id="newsModal" style="display: none;">
-    <div class="cat-modal-box" style="width: 560px;">
+<div class="cat-modal d-none" id="newsModal">
+    <div class="cat-modal-box w-560">
         <div class="cat-modal-header">
             <i class="fas fa-newspaper text-info mr-2"></i> 资讯采集（聚合数据）
         </div>

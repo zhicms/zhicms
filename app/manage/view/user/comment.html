@@ -45,7 +45,7 @@
 					<table class="table table-striped table-bordered">
 															<thead >
 																<tr  >
-																	<th style="width:80px;" class="center" >ID</th>
+																	<th class="center w-80" >ID</th>
 																	<th class="center">用户</th>
 														
 																	<th class="center">标题</th>
@@ -53,23 +53,23 @@
                                                                     <th class="center">内容</th>
                                                                     <th class="center">评论日期</th>
                                                                   
-																	<th  class="center" style="width:140px;">操作</th>
+																	<th  class="center w-140">操作</th>
 																</tr>
 															</thead>
 
-															<tbody  style="text-align:center">
+															<tbody  class="text-center">
                                                             {foreach $Page['list'] as $vo}
 																<tr>
-																	<td style="vertical-align:middle" class="center">{$vo['id']}</td>
+																	<td class="center v-middle">{$vo['id']}</td>
 
-																	<td style="vertical-align:middle">
+																	<td class="v-middle">
 																		<?
                                                                    $u=obj("index/global","controller")->finduser("y",$vo['uid']);
                                                                    echo $u['username'];
                                                                    ?>
 																	</td>
 																	
-																	<td style="vertical-align:middle" class="hidden-480">
+																	<td class="hidden-480 v-middle">
                                                                     {if $vo['model']=='1'}
                                                                     {obj('manage/user','controller')->commenttitle($vo['aid'],'1')}
                                                                     {/if}
@@ -78,7 +78,7 @@
                                                                     {/if}
                                                                     
                                                                     </td>
-                                                                    <td style="vertical-align:middle">
+                                                                    <td class="v-middle">
                                                                    {if $vo['model']=='1'}
                                                                    <span class="badge badge-yellow">攻略</span>
                                                                    {/if}
@@ -86,10 +86,10 @@
                                                                    <span class="badge badge-danger">文章</span>
                                                                    {/if}
                                                                     </td>
-                                                                    <td style="vertical-align:middle" class="commentcss">
+                                                                    <td class="commentcss v-middle">
                                                                   {$vo['body']}
                                                                     </td>
-                                                                     <td style="vertical-align:middle">
+                                                                     <td class="v-middle">
                                                                   {$vo['date']}
                                                                     
                                                                     </td>
@@ -113,37 +113,38 @@
 		<!-- basic scripts -->
 
 		<!--[if !IE]> -->
-		<script src="{__PUBLIC__}manage/assets/js/jquery-2.1.4.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery-2.1.4.min.js"></script>
 
 		<!-- <![endif]-->
 
 		<!--[if IE]>
-<script src="{__PUBLIC__}manage/assets/js/jquery-1.11.3.min.js"></script>
+<script src="{__PUBLIC__}manage/js/jquery-1.11.3.min.js"></script>
 <![endif]-->
 		<script type="text/javascript">
 			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
 		</script>
-		<script src="{__PUBLIC__}manage/assets/js/bootstrap.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/bootstrap.min.js"></script>
 
 		<!-- page specific plugin scripts -->
 
 		<!--[if lte IE 8]>
-		  <script src="{__PUBLIC__}manage/assets/js/excanvas.min.js"></script>
+		  <script src="{__PUBLIC__}manage/js/excanvas.min.js"></script>
 		<![endif]-->
-		<script src="{__PUBLIC__}manage/assets/js/jquery-ui.custom.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.ui.touch-punch.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.easypiechart.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.sparkline.index.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.flot.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.flot.pie.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.flot.resize.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.sparkline.index.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.flot.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.flot.pie.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.flot.resize.min.js"></script>
 
 		<!-- ace scripts -->
-		<script src="{__PUBLIC__}manage/assets/js/ace-elements.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/ace.min.js"></script>
-        <script src="{__PUBLIC__}manage/layer/layer.js"></script>
-        <link rel="stylesheet" href="{__PUBLIC__}manage/message/css/jquery.my-message.1.1.css" />
-        <script type="text/javascript" src="{__PUBLIC__}manage/message/js/jquery.my-message.1.1.js"></script>
+		<script src="{__PUBLIC__}manage/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/ace.min.js"></script>
+        <script src="{__PUBLIC__}manage/js/layer/layer.js"></script>
+        <link rel="stylesheet" href="{__PUBLIC__}manage/css/jquery.my-message.1.1.css" />
+	<link rel="stylesheet" href="{__PUBLIC__}manage/css/utilities.css?v=5.0.2">
+        <script type="text/javascript" src="{__PUBLIC__}manage/js/jquery.my-message.1.1.js"></script>
         <script src="{__PUBLIC__}manage/js/index.js?v=20260729"></script>
 		
 	</body>

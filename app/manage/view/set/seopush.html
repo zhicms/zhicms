@@ -164,7 +164,7 @@ https://www.example.com/brand.html"></textarea>
                         </div>
                     </div>
                 </div>
-                <div id="push-result" class="mt-3" style="display:none;"></div>
+                <div id="push-result" class="mt-3 d-none"></div>
             </div>
         </div>
 
@@ -184,7 +184,7 @@ https://www.example.com/brand.html"></textarea>
                     <?php foreach (array_slice($pushLog, 0, 20) as $log): ?>
                     <tr>
                         <td class="text-nowrap small"><?php echo $log['time'] ?? ''; ?></td>
-                        <td class="small text-truncate" style="max-width:200px;"><?php echo isset($log['url']) ? $log['url'] : (isset($log['urls']) ? count($log['urls']).' 条URL' : ''); ?></td>
+                        <td class="small text-truncate mw-200"><?php echo isset($log['url']) ? $log['url'] : (isset($log['urls']) ? count($log['urls']).' 条URL' : ''); ?></td>
                         <td class="small"><?php echo $log['total'] ?? 1; ?> 条</td>
                         <td class="small">
                             <?php

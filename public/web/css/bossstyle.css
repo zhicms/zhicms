@@ -58,7 +58,7 @@ z-index:999;
 {
 position: fixed; 
 top: 0px; 
-background: url("../images/wordhead.png") no-repeat scroll 0px 0px;
+background: url(../images/wordhead.png) no-repeat scroll 0px 0px;
 width:1920px;
 height: 158px;
 z-index:999;

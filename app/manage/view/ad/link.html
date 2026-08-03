@@ -20,7 +20,7 @@
         </button>
     </div>
     
-    <div class="search-form" style="width: 300px;">
+    <div class="search-form w-300">
         <div class="input-group">
             <input type="text" class="form-control" id="keyword" placeholder="搜索链接标题或URL..." value="<?php echo isset($keyword) ? $keyword : ''; ?>">
             <div class="input-group-append">
@@ -47,11 +47,11 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width: 80px;" class="text-center">ID</th>
+                        <th class="text-center w-80">ID</th>
                         <th>链接信息</th>
-                        <th style="width: 200px;">链接地址</th>
-                        <th style="width: 120px;" class="text-center">状态</th>
-                        <th style="width: 150px;" class="text-center">操作</th>
+                        <th class="w-200">链接地址</th>
+                        <th class="text-center w-120">状态</th>
+                        <th class="text-center w-150">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -79,7 +79,7 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-truncate" style="max-width: 200px;">
+                            <div class="text-truncate mw-200">
                                 <a href="<?php echo $item['link']; ?>" target="_blank" class="text-decoration-none" title="<?php echo $item['link']; ?>">
                                     <?php echo $item['link']; ?>
                                 </a>

@@ -24,7 +24,7 @@
 
                     <div class="form-group">
                         <label class="font-weight-bold">显示平台</label>
-                        <select name="type" class="form-control" style="max-width:200px;">
+                        <select name="type" class="form-control mw-200">
                             <option {if $ret['type']=='0'} selected{/if} value="0">PC网站</option>
                             <option {if $ret['type']=='1'} selected{/if} value="1">移动端</option>
                         </select>
@@ -41,11 +41,11 @@
                             </div>
                         </div>
                         <input type="hidden" name="file" value="0">
-                        <input type="file" name="file" id="up_tupian" onChange="Uploadthis('tupian','up_tupian')" style="display:none">
+                        <input type="file" name="file" id="up_tupian" onChange="Uploadthis('tupian','up_tupian')" class="d-none">
                         <small class="form-text text-muted">建议尺寸：1900×449</small>
                         {if $ret['pic']}
                         <div class="mt-2">
-                            <img src="{$ret['pic']}" class="img-thumbnail" style="max-width:300px;max-height:80px;">
+                            <img src="{$ret['pic']}" class="img-thumbnail mw-300" style="max-height:80px">
                         </div>
                         {/if}
                     </div>

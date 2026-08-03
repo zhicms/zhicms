@@ -29,10 +29,10 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width: 60px;">ID</th>
-                        <th style="width: 100px;">排序</th>
+                        <th class="w-60">ID</th>
+                        <th class="w-100">排序</th>
                         <th>板块名称</th>
-                        <th style="width: 180px;">操作</th>
+                        <th class="w-180">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -40,7 +40,7 @@
                     <?php foreach ($boards as $row): ?>
                     <tr id="board-row-<?php echo (int)$row['id']; ?>">
                         <td><?php echo (int)$row['id']; ?></td>
-                        <td><input type="number" class="form-control form-control-sm" style="width: 80px;" value="<?php echo (int)($row['px'] ?? 0); ?>" onchange="updatePx(<?php echo (int)$row['id']; ?>, this.value, 'board')" readonly></td>
+                        <td><input type="number" class="form-control form-control-sm w-80" value="<?php echo (int)($row['px'] ?? 0); ?>" onchange="updatePx(<?php echo (int)$row['id']; ?>, this.value, 'board')" readonly></td>
                         <td><strong><?php echo htmlspecialchars($row['name'] ?? '', ENT_QUOTES, 'UTF-8'); ?></strong></td>
                         <td>
                             <div class="btn-group btn-group-sm" role="group">

@@ -17,7 +17,7 @@
         </button>
     </div>
     
-    <div class="search-form" style="width: 300px;">
+    <div class="search-form w-300">
         <div class="input-group">
             <input type="text" class="form-control" id="keyword" placeholder="搜索页面标题..." value="<?php echo isset($keyword) ? $keyword : ''; ?>">
             <div class="input-group-append">
@@ -44,13 +44,13 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width: 80px;">ID</th>
+                        <th class="w-80">ID</th>
                         <th>页面信息</th>
-                        <th style="width: 120px;">关键词</th>
-                        <th style="width: 200px;">描述</th>
-                        <th style="width: 130px;">创建时间</th>
-                        <th style="width: 120px;" class="text-center">状态</th>
-                        <th style="width: 150px;" class="text-center">操作</th>
+                        <th class="w-120">关键词</th>
+                        <th class="w-200">描述</th>
+                        <th class="w-130">创建时间</th>
+                        <th class="text-center w-120">状态</th>
+                        <th class="text-center w-150">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -70,12 +70,12 @@
                             </div>
                         </td>
                         <td>
-                            <div class="text-truncate" style="max-width: 120px;">
+                            <div class="text-truncate mw-120">
                                 <?php echo !empty($row['keywords']) ? $row['keywords'] : '<span class="text-muted">-</span>'; ?>
                             </div>
                         </td>
                         <td>
-                            <div class="text-truncate" style="max-width: 200px;">
+                            <div class="text-truncate mw-200">
                                 <?php echo !empty($row['dec']) ? mb_substr($row['dec'], 0, 50, 'UTF-8') : '<span class="text-muted">-</span>'; ?>
                             </div>
                         </td>

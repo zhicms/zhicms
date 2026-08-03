@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <title>{if isset($pageText['1'])}{$pageText['1']}{else}{$pageText['0']}{/if} - ZhiCms</title>
-    <link rel="stylesheet" href="/public/manage/emlog/css/bootstrap.min.css">
-    <link rel="stylesheet" href="/public/manage/emlog/css/sb-admin-2.css">
-    <link rel="stylesheet" href="/public/manage/emlog/css/emlog-style.css">
+    <link rel="stylesheet" href="/public/manage/css/emlog-bootstrap.min.css">
+    <link rel="stylesheet" href="/public/manage/css/sb-admin-2.css">
+    <link rel="stylesheet" href="/public/manage/css/emlog-style.css">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/public/manage/assets/css/nav-fix.css">
+    <link rel="stylesheet" href="/public/manage/css/nav-fix.css">
+<link rel="stylesheet" href="{__PUBLIC__}manage/css/utilities.css?v=5.0.2">
     <style type="text/css">
         /* 覆盖内联style强制修复子导航白色字体问题 */
         .collapse-inner .collapse-item[style],
@@ -264,7 +265,7 @@
                         <li class="nav-item dropdown no-arrow">
                             <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                                 <span class="mr-2 d-none d-lg-inline text-gray-600 small">{$_SESSION['manage_system']}</span>
-                                <img class="img-profile rounded-circle" src="{$_SESSION['manage_pic']}" style="width: 32px; height: 32px;">
+                                <img class="img-profile rounded-circle w-32 h-32" src="{$_SESSION['manage_pic']}">
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">

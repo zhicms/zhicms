@@ -32,10 +32,10 @@
                                 </button>
                             </div>
                         </div>
-                        <input type="file" name="file" id="up_tupian" onChange="Uploadthis('tupian','up_tupian')" style="display:none">
+                        <input type="file" name="file" id="up_tupian" onChange="Uploadthis('tupian','up_tupian')" class="d-none">
                         {if $ret['pic']}
                         <div class="mt-2">
-                            <img src="{$ret['pic']}" class="img-thumbnail" style="max-width:96px;max-height:96px;">
+                            <img src="{$ret['pic']}" class="img-thumbnail mw-96" style="max-height:96px">
                         </div>
                         {/if}
                         <small class="form-text text-muted">建议尺寸 200×200，支持 JPG/PNG</small>
@@ -53,7 +53,7 @@
 
                     <div class="form-group">
                         <label class="font-weight-bold">排序</label>
-                        <input type="number" name="px" class="form-control" style="max-width:160px;" min="0" placeholder="越小越靠前" value="{$ret['px']}">
+                        <input type="number" name="px" class="form-control mw-160" min="0" placeholder="越小越靠前" value="{$ret['px']}">
                         <small class="form-text text-muted">数字越小排序越靠前</small>
                     </div>
 

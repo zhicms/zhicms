@@ -1,6 +1,6 @@
 {include file="app/index/view/public/header"}
 
-<div class="container" style="max-width:420px;padding:40px 0;">
+<div class="container mw-420" style="padding:40px 0">
     <div class="card" style="border-radius:14px;box-shadow:0 8px 30px rgba(0,0,0,.08);">
         <div class="card-body p-4">
             <h4 class="mb-3 text-center" style="font-weight:600;">用户注册</h4>
@@ -32,12 +32,12 @@
                     <div class="input-group">
                         <input type="text" class="form-control" name="captcha" id="captcha" placeholder="请输入右侧验证码" maxlength="4">
                         <span class="input-group-append">
-                            <img src="index.php?r=index/login/captcha" onclick="this.src='index.php?r=index/login/captcha&t='+Date.now()" style="height:38px;cursor:pointer;border-radius:0 4px 4px 0;" title="点击刷新">
+                            <img src="index.php?r=index/login/captcha" onclick="this.src='index.php?r=index/login/captcha&t='+Date.now()" title="点击刷新" class="h-38 cur-pointer" style="border-radius:0 4px 4px 0">
                         </span>
                     </div>
                 </div>
                 {/if}
-                <button type="button" class="btn btn-primary btn-block btn-lg" onclick="doReg()" style="width:100%;">注册</button>
+                <button type="button" class="btn btn-primary btn-block btn-lg w-full" onclick="doReg()">注册</button>
             </form>
 
             <div class="text-center mt-3">

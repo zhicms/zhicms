@@ -2,31 +2,31 @@
 
 <!-- PC幻灯banner：值得买精选上方 -->
 {if !empty($banners)}
-<div class="pc_slider" style="width:100%;margin-bottom:20px;overflow:hidden;border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.08);position:relative;">
-  <input type="radio" name="pc-slider" id="pc-slide-0" checked style="display:none;">
+<div class="pc_slider w-full mb-20 of-hidden pos-rel" style="border-radius:16px ; box-shadow:0 8px 30px rgba(0,0,0,0.08)">
+  <input type="radio" name="pc-slider" id="pc-slide-0" checked class="d-none">
   {foreach $banners as $k=>$banner}
-    <input type="radio" name="pc-slider" id="pc-slide-{$k+1}" style="display:none;">
+    <input type="radio" name="pc-slider" id="pc-slide-{$k+1}" class="d-none">
   {/foreach}
-  <div class="slides" style="width:100%;height:0;padding-bottom:33.33%;position:relative;overflow:hidden;">
-    <div class="slide-track" style="width:100%;height:100%;position:absolute;top:0;left:0;display:flex;align-items:center;transition:transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94);transform:translateX(0);">
+  <div class="slides w-full pos-rel of-hidden" style="height:0 ; padding-bottom:33.33%">
+    <div class="slide-track w-full h-full pos-abs d-flex" style="top:0 ; left:0 ; align-items:center ; transition:transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94) ; transform:translateX(0)">
       {foreach $banners as $k=>$banner}
-        <div class="slide" style="width:100%;height:100%;flex-shrink:0;position:relative;overflow:hidden;">
-          <a href="{$banner['link']}" target="_blank" rel="noopener" style="display:block;width:100%;height:100%;position:relative;">
-            <img src="{$banner['pic']}" alt="{$banner['title']}" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block;transition:filter 0.3s ease;">
+        <div class="slide w-full h-full pos-rel of-hidden" style="flex-shrink:0">
+          <a href="{$banner['link']}" target="_blank" rel="noopener" class="d-block w-full h-full pos-rel">
+            <img src="{$banner['pic']}" alt="{$banner['title']}" loading="lazy" class="w-full h-full d-block" style="object-fit:cover ; transition:filter 0.3s ease">
           </a>
         </div>
       {/foreach}
     </div>
   </div>
-  <div class="controls" style="position:absolute;top:50%;left:0;right:0;transform:translateY(-50%);display:flex;justify-content:space-between;pointer-events:none;z-index:10;">
+  <div class="controls pos-abs d-flex" style="top:50% ; left:0 ; right:0 ; transform:translateY(-50%) ; justify-content:space-between ; pointer-events:none ; z-index:10">
     {foreach $banners as $k=>$banner}
         <label for="pc-slide-{if $k==0}{count($banners)}{else}{$k-1}{/if}" class="prev"
-      <label for="pc-slide-{$k+1}" class="next" style="cursor:pointer;pointer-events:auto;width:50px;height:50px;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.2);color:#fff;border-radius:50%;margin-right:20px;transition:all 0.3s ease;opacity:0.7;">›</label>
+      <label for="pc-slide-{$k+1}" class="next cur-pointer w-50 h-50 d-flex" style="pointer-events:auto ; align-items:center ; justify-content:center ; background:rgba(0,0,0,0.2) ; color:#fff ; border-radius:50% ; margin-right:20px ; transition:all 0.3s ease ; opacity:0.7">›</label>
     {/foreach}
   </div>
-  <div class="dots" style="position:absolute;bottom:20px;left:0;right:0;display:flex;justify-content:center;gap:10px;pointer-events:none;z-index:10;">
+  <div class="dots pos-abs d-flex" style="bottom:20px ; left:0 ; right:0 ; justify-content:center ; gap:10px ; pointer-events:none ; z-index:10">
     {foreach $banners as $k=>$banner}
-      <label for="pc-slide-{$k+1}" style="width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,0.6);cursor:pointer;pointer-events:auto;transition:all 0.3s ease;border:2px solid transparent;display:block;"></label>
+      <label for="pc-slide-{$k+1}" class="w-12 h-12 cur-pointer d-block" style="border-radius:50% ; background:rgba(255,255,255,0.6) ; pointer-events:auto ; transition:all 0.3s ease ; border:2px solid transparent"></label>
     {/foreach}
   </div>
   <style>
@@ -146,7 +146,7 @@
 </div>
 
 {if isset($minute) && count($minute) > 0}
-<div class="container" style="margin-bottom:20px;">
+<div class="container mb-20">
   <div class="blog-hotbar" style="background:linear-gradient(90deg,#1a1a2e 0%,#16213e 100%);border-radius:16px;">
     <span class="blog-hotbar-label" style="background:rgba(255,255,255,0.15);color:#fff;">实时热榜</span>
     <div class="blog-hotbar-list">
@@ -163,15 +163,15 @@
 <div class="row">
   <div class="column-big">
     {foreach $page['list'] as $vo}
-    <article class="shadow-theme post" style="border-radius:16px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;transition:all 0.3s ease;transform:translateY(0);">
+    <article class="shadow-theme post of-hidden" style="border-radius:16px ; border:1px solid rgba(0,0,0,0.06) ; transition:all 0.3s ease ; transform:translateY(0)">
       {if $vo['mainPic']}
-      <a class="post-cover" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" style="position:relative;overflow:hidden;">
+      <a class="post-cover" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" class="pos-rel of-hidden">
         <img src="{$vo['mainPic']}" alt="{$vo['title']}" loading="lazy" style="transition:transform 0.4s ease;">
-        <div style="position:absolute;bottom:0;left:0;right:0;height:40%;background:linear-gradient(transparent, rgba(0,0,0,0.3));"></div>
+        <div class="pos-abs" style="bottom:0 ; left:0 ; right:0 ; height:40% ; background:linear-gradient(transparent, rgba(0,0,0,0.3))"></div>
       </a>
       {/if}
       <div class="card-padding" style="padding:20px;">
-        <div class="card-tags" style="margin-bottom:12px;">
+        <div class="card-tags mb-12">
           {if $vo['featured']}
           <span class="card-tag" style="background:linear-gradient(135deg,#ff9a00,#ff6a00);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;margin-right:6px;">
             ⭐ 推荐
@@ -183,23 +183,23 @@
           </span>
           {/if}
         </div>
-        <h3 class="card-title" style="margin-bottom:10px;">
+        <h3 class="card-title mb-10">
           <a class="post-title" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" style="font-size:17px;font-weight:700;color:#1f2329;line-height:1.5;">{$vo['title']}</a>
         </h3>
         <div class="post-content" style="color:#8a8a8a;font-size:14px;line-height:1.7;margin-bottom:14px;">{mb_substr(strip_tags($vo['dec']),0,100,'UTF-8')}...</div>
-        <div class="info-row" style="display:flex;align-items:center;justify-content:space-between;">
-          <div class="log-info" style="display:flex;align-items:center;gap:10px;">
-            <span class="post-avatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;">{mb_substr($vo['author'] ?: '小',0,1,'UTF-8')}</span>
+        <div class="info-row d-flex" style="align-items:center ; justify-content:space-between">
+          <div class="log-info d-flex" style="align-items:center ; gap:10px">
+            <span class="post-avatar w-32 h-32 d-flex" style="border-radius:50% ; background:linear-gradient(135deg,#667eea,#764ba2) ; color:#fff ; align-items:center ; justify-content:center ; font-size:14px ; font-weight:600">{mb_substr($vo['author'] ?: '小',0,1,'UTF-8')}</span>
             {if $vo['author']}<span style="color:#555;font-size:13px;">{htmlspecialchars($vo['author'])}</span>{else}<span style="color:#555;font-size:13px;">值得买小编</span>{/if}
             <span class="dot" style="color:#ddd;">·</span>
             <time style="color:#8a8a8a;font-size:13px;">{obj('api/Api')->mdate($vo['date'])}</time>
             <span class="dot" style="color:#ddd;">·</span>
-            <span class="view-count" style="display:flex;align-items:center;gap:4px;color:#8a8a8a;font-size:13px;">
+            <span class="view-count d-flex" style="align-items:center ; gap:4px ; color:#8a8a8a ; font-size:13px">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
               {$vo['view']}
             </span>
           </div>
-          <div class="post-actions" style="display:flex;gap:8px;">
+          <div class="post-actions d-flex" style="gap:8px">
             <a class="btn btn-detail" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" style="padding:8px 16px;background:#f7f8fa;color:#555;border:none;border-radius:8px;font-size:13px;font-weight:500;transition:all 0.2s;">查看详情</a>
             {if $vo['goodsId']}
             <a class="btn btn-buy" href="{url($route='index/redirect/go/platform=<platform>/id=<id>', $params=array('platform'=>'tb', 'id'=>$vo['goodsId']))}" target="_blank" rel="nofollow" style="padding:8px 16px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;transition:all 0.2s;">去购买</a>

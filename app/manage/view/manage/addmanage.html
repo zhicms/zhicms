@@ -90,8 +90,8 @@
                                               
                                             </div>
 										</div>
-                                        <input type="text" class="form-control" name="pic" id="tupian"   value="{$ret['pic']}" style="display:none" >
-                                                 <input type="file"  name="file"  id="up_tupian"  onChange="Uploadthis('tupian','up_tupian')" style="display:none"  >          
+                                        <input type="text" class="form-control d-none" name="pic" id="tupian"   value="{$ret['pic']}" >
+                                                 <input type="file"  name="file"  id="up_tupian"  onChange="Uploadthis('tupian','up_tupian')"   class="d-none">          
 													
                                                             
                                     
@@ -124,17 +124,17 @@
 			<!-- basic scripts -->
 
 		<!--[if !IE]> -->
-		<script src="{__PUBLIC__}manage/assets/js/jquery-2.1.4.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery-2.1.4.min.js"></script>
 
 		<!-- <![endif]-->
 
 		<!--[if IE]>
-<script src="{__PUBLIC__}manage/assets/js/jquery-1.11.3.min.js"></script>
+<script src="{__PUBLIC__}manage/js/jquery-1.11.3.min.js"></script>
 <![endif]-->
 		<script type="text/javascript">
 			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
 		</script>
-        <script src="{__PUBLIC__}manage/assets/js/ace-extra.min.js"></script>
+        <script src="{__PUBLIC__}manage/js/ace-extra.min.js"></script>
 	<!-- ace scripts -->
 	<!--[if !IE]> -->
 		<script src="assets/js/jquery-2.1.4.min.js"></script>
@@ -147,30 +147,31 @@
 		<script type="text/javascript">
 			if('ontouchstart' in document.documentElement) document.write("<script src='assets/js/jquery.mobile.custom.min.js'>"+"<"+"/script>");
 		</script>
-		<script src="{__PUBLIC__}manage/assets/js/bootstrap.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/bootstrap.min.js"></script>
 
 		<!-- page specific plugin scripts -->
 
 		<!--[if lte IE 8]>
-		  <script src="{__PUBLIC__}manage/assets/js/excanvas.min.js"></script>
+		  <script src="{__PUBLIC__}manage/js/excanvas.min.js"></script>
 		<![endif]-->
-		<script src="{__PUBLIC__}manage/assets/js/jquery-ui.custom.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.ui.touch-punch.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/bootbox.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.easypiechart.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/jquery.gritter.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/spin.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery-ui.custom.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.ui.touch-punch.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/bootbox.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.easypiechart.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/jquery.gritter.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/spin.js"></script>
 
 		<!-- ace scripts -->
-		<script src="{__PUBLIC__}manage/assets/js/ace-elements.min.js"></script>
-		<script src="{__PUBLIC__}manage/assets/js/ace.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/ace-elements.min.js"></script>
+		<script src="{__PUBLIC__}manage/js/ace.min.js"></script>
 
 
 
 
 		<!-- inline scripts related to this page -->
-        <link rel="stylesheet" href="{__PUBLIC__}manage/message/css/jquery.my-message.1.1.css" />
-		<script type="text/javascript" src="{__PUBLIC__}manage/message/js/jquery.my-message.1.1.js"></script>
+        <link rel="stylesheet" href="{__PUBLIC__}manage/css/jquery.my-message.1.1.css" />
+	<link rel="stylesheet" href="{__PUBLIC__}manage/css/utilities.css?v=5.0.2">
+		<script type="text/javascript" src="{__PUBLIC__}manage/js/jquery.my-message.1.1.js"></script>
         <script src="{__PUBLIC__}manage/js/Validform_v5.3.2_min.js"></script>
         <script src="{__PUBLIC__}manage/js/index.js?v=20260729"></script>
 		<script>

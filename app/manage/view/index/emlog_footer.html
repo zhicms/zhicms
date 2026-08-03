@@ -24,26 +24,27 @@
 
     <!-- Bootstrap core JavaScript-->
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
-    <script>window.jQuery || document.write('<script src="/public/web/page/js/jquery.min.js"><\/script>');</script>
+    <script>window.jQuery || document.write('<script src="/public/web/js/jquery.min.js"><\/script>');</script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <!-- Core plugin JavaScript-->
 
     <!-- Custom scripts for all pages-->
-    <script src="/public/manage/emlog/js/sb-admin-2.min.js?v=20260730fix"></script>
+    <script src="/public/manage/js/sb-admin-2.min.js?v=20260730fix"></script>
 
     <!-- MyMessage 消息提示库 -->
-    <link rel="stylesheet" href="/public/manage/message/css/jquery.my-message.1.1.css" />
-    <script src="/public/manage/message/js/jquery.my-message.1.1.js"></script>
+    <link rel="stylesheet" href="/public/manage/css/jquery.my-message.1.1.css" />
+    <script src="/public/manage/js/jquery.my-message.1.1.js"></script>
 
     <!-- Page level plugins -->
     <script src="/public/manage/js/index.js?v=20260729"></script>
     <script src="/public/manage/js/emlog_nav_fix.js?v=20260730v6"></script>
 
     <!-- AI 开放平台 -->
-    <link rel="stylesheet" href="/public/manage/emlog/css/ai-chat.css">
+    <link rel="stylesheet" href="/public/manage/css/ai-chat.css">
+	<link rel="stylesheet" href="{__PUBLIC__}manage/css/utilities.css?v=5.0.2">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/public/manage/emlog/js/ai-chat.js"></script>
+    <script src="/public/manage/js/ai-chat.js"></script>
 
     <!-- AI Chat Modal -->
     <div class="modal fade" id="aiChatModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -56,13 +57,13 @@
                     <button type="button" class="close ml-0" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body pt-0">
-                    <div id="chat-box" style="height: 500px; overflow-y: scroll; border: 1px solid #e3e6f0; padding: 10px; margin-bottom: 10px; border-radius: 8px;">
+                    <div id="chat-box" class="h-500 mb-10" style="overflow-y: scroll ; border: 1px solid #e3e6f0 ; padding: 10px ; border-radius: 8px">
                         <!-- 动态填充 -->
                     </div>
                     <form id="chat-form">
                         <div class="input-group">
-                            <textarea class="form-control" id="chat-input" placeholder="输入你的问题，按 Enter 发送..."
-                                rows="1" style="resize: none; overflow: hidden;"></textarea>
+                            <textarea class="form-control of-hidden" id="chat-input" placeholder="输入你的问题，按 Enter 发送..."
+                                rows="1" style="resize: none"></textarea>
                             <div class="input-group-append">
                                 <button class="btn btn-primary" type="submit" id="send-btn">发送</button>
                             </div>
@@ -74,9 +75,9 @@
     </div>
 
     <!-- AI 浮动按钮（右下角快捷入口） -->
-    <button id="ai-float-btn" class="btn btn-primary rounded-circle shadow-lg"
-        style="position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px; z-index: 1050; font-size: 24px; display: flex; align-items: center; justify-content: center;"
-        onclick="AIChat.open()" title="AI 智能助手">
+    <button id="ai-float-btn" class="btn btn-primary rounded-circle shadow-lg w-56 h-56 d-flex"
+       
+        onclick="AIChat.open()" title="AI 智能助手" style="position: fixed ; bottom: 30px ; right: 30px ; z-index: 1050 ; font-size: 24px ; align-items: center ; justify-content: center">
         <i class="fas fa-robot"></i>
     </button>
     

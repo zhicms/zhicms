@@ -10,7 +10,7 @@
 </div>
 
 {if !empty($tips)}
-<div style="background:#fff7f7;border:1px solid #ffd6d6;color:#c0392b;padding:12px 16px;border-radius:10px;margin-bottom:20px;font-size:14px;">
+<div class="mb-20" style="background:#fff7f7 ; border:1px solid #ffd6d6 ; color:#c0392b ; padding:12px 16px ; border-radius:10px ; font-size:14px">
   ⚠️ {$tips}
 </div>
 {/if}
@@ -19,7 +19,7 @@
   <div class="column-big">
 
     {if !empty($list)}
-      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:24px;">
+      <div class="d-flex" style="flex-direction:column ; gap:14px ; margin-bottom:24px">
       {foreach $list as $item}
       <?php
         $platform = $item['platform'] ?? '';
@@ -35,16 +35,16 @@
         $copyText  = !empty($content) ? $content : ($item['contentCopy'] ?? '');
         $time      = $item['createTime'] ?? '';
       ?>
-      <article class="shadow-theme tipoff-card" style="border-radius:14px;border:1px solid rgba(0,0,0,0.06);overflow:hidden;display:flex;gap:14px;padding:14px;">
+      <article class="shadow-theme tipoff-card of-hidden d-flex" style="border-radius:14px ; border:1px solid rgba(0,0,0,0.06) ; gap:14px ; padding:14px">
         <a href="{$detailUrl}" target="_blank" style="flex:0 0 110px;text-decoration:none;">
           {if !empty($pic)}
-          <img src="<?php echo $pic; ?>" alt="线报" style="width:110px;height:110px;object-fit:cover;border-radius:10px;background:#f5f5f5;">
+          <img src="<?php echo $pic; ?>" alt="线报" class="w-110 h-110" style="object-fit:cover ; border-radius:10px ; background:#f5f5f5">
           {else}
-          <div style="width:110px;height:110px;border-radius:10px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;"><span style="font-size:40px;color:#ccc;">🖼️</span></div>
+          <div class="w-110 h-110 d-flex" style="border-radius:10px ; background:#f5f5f5 ; align-items:center ; justify-content:center"><span style="font-size:40px;color:#ccc;">🖼️</span></div>
           {/if}
         </a>
-        <div style="flex:1;min-width:0;display:flex;flex-direction:column;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <div class="d-flex" style="flex:1 ; min-width:0 ; flex-direction:column">
+          <div class="d-flex" style="align-items:center ; gap:8px ; margin-bottom:8px">
             <span style="background:<?php echo $pColor; ?>;color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;"><?php echo $p ?: '优惠'; ?></span>
             {if !empty($item['isRecommend']) || !empty($item['homeRecommend'])}
             <span style="background:#fff0f0;color:#ff4757;font-size:12px;font-weight:700;padding:3px 10px;border-radius:12px;">精选</span>
@@ -57,16 +57,16 @@
           <div style="font-size:15px;font-weight:700;color:#1f2329;line-height:1.4;margin-bottom:6px;">{$item['recommendDesc']}</div>
           {/if}
           {if !empty($item['contentCopy'])}
-          <p style="font-size:13px;color:#555;line-height:1.6;margin:0 0 10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">{$item['contentCopy']}</p>
+          <p class="of-hidden" style="font-size:13px ; color:#555 ; line-height:1.6 ; margin:0 0 10px ; display:-webkit-box ; -webkit-line-clamp:3 ; -webkit-box-orient:vertical">{$item['contentCopy']}</p>
           {elseif !empty($content)}
           <p style="font-size:13px;color:#555;line-height:1.6;margin:0 0 10px;word-break:break-all;">{$content}</p>
           {/if}
-          <div style="margin-top:auto;display:flex;align-items:center;gap:10px;">
+          <div class="d-flex" style="margin-top:auto ; align-items:center ; gap:10px">
             {if !empty($detailUrl)}
             <a href="{$detailUrl}" target="_blank" style="padding:7px 18px;background:linear-gradient(135deg,#667eea,#764ba2);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;">查看商品</a>
             {/if}
             {if !empty($copyText)}
-            <button type="button" class="tipoff-copy" data-copy="<?php echo htmlspecialchars($copyText, ENT_QUOTES); ?>" style="padding:7px 18px;background:#fff;border:1px solid #ff6b6b;color:#ff4757;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;">复制口令</button>
+            <button type="button" class="tipoff-copy" data-copy="<?php echo htmlspecialchars($copyText, ENT_QUOTES); ?>" class="cur-pointer" style="padding:7px 18px ; background:#fff ; border:1px solid #ff6b6b ; color:#ff4757 ; border-radius:8px ; font-size:13px ; font-weight:600">复制口令</button>
             {/if}
           </div>
         </div>
@@ -74,9 +74,9 @@
       {/foreach}
       </div>
     {else}
-      <div style="text-align:center;padding:80px 20px;">
+      <div class="text-center" style="padding:80px 20px">
         <div style="font-size:64px;margin-bottom:16px;">📭</div>
-        <h3 style="font-size:24px;margin-bottom:12px;color:var(--aColor);font-weight:700;">暂无线报数据</h3>
+        <h3 class="mb-12" style="font-size:24px ; color:var(--aColor) ; font-weight:700">暂无线报数据</h3>
         <p style="color:var(--lightColor);margin-bottom:24px;font-size:15px;">线报暂未更新，请稍后再来查看。</p>
       </div>
     {/if}

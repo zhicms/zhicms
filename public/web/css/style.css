@@ -267,7 +267,7 @@ font-size:14px;
 line-height:100%;
 width:124px;
 height:23px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -159px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -159px;
 }
 
 .selectlayer
@@ -328,7 +328,7 @@ display:block;
 float:left;
 width:8px;
 height:5px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -86px -116px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -86px -116px;
 margin-left: -8px;
 margin-top: 27px;
 margin-right: 10px;
@@ -364,7 +364,7 @@ font-family: 微软雅黑,黑体,Arial;
 cursor:pointer;
 display:inline-block;
 float:left;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -213px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -213px;
 width:38px;
 height:38px;
 margin-top:8px;
@@ -379,7 +379,7 @@ border-bottom:1px solid #dfdfdf;
 cursor:pointer;
 display:inline-block;
 float:left;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -40px -213px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -40px -213px;
 width:38px;
 height:38px;
 margin-top:8px;
@@ -443,7 +443,7 @@ font-family: 微软雅黑,黑体,Arial;
 cursor:pointer;
 display:inline-block;
 float:left;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -105px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -105px;
 width:30px;
 height:30px;
 margin-top:8px;
@@ -656,7 +656,7 @@ line-height:150%;
 float:right;
 width:10px;
 height:6px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -70px -106px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -70px -106px;
 margin-top: 22px;
 margin-right: 20px;
 }
@@ -677,7 +677,7 @@ display:inline-block;
 float:left;
 width:12px;
 height:7px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -100px -105px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -100px -105px;
 margin-top: -5px;
 }
 
@@ -710,22 +710,22 @@ line-height:150%;
 
 .dhicon1
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -48px -129px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -48px -129px;
 }
 
 .dhicon2
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -68px -129px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -68px -129px;
 }
 
 .dhicon3
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -88px -129px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -88px -129px;
 }
 
 .dhicon4
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -108px -129px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -108px -129px;
 }
 
 .dealheadholder 
@@ -779,7 +779,7 @@ display:inline-block;
 float: left;
 width: 11px;
 height: 14px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -91px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -91px;
 margin-right: 6px;
 margin-top:9px;
 margin-left:8px;
@@ -1083,7 +1083,7 @@ margin-bottom: 15px;
 {
 display: block;
 position: absolute;
-background: url("../images/bg-greylayer.png") repeat scroll 0 0 transparent;
+background: url(../images/bg-greylayer.png) repeat scroll 0 0 transparent;
 display:none;
 }
 
@@ -1300,12 +1300,12 @@ height: 53px;
 
 .ishotdeal
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0 -153px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0 -153px;
 }
 
 .isinvalid
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -87px -153px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -87px -153px;
 }
 
 .titleback
@@ -1404,7 +1404,7 @@ margin-bottom: 35px;
 display:block;
 width: 80px;
 height: 45px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0 0px;
 float: left;
 margin-right: 7px;
 cursor:pointer;
@@ -1415,7 +1415,7 @@ cursor:pointer;
 display:block;
 width: 80px;
 height: 45px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -81px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -81px 0px;
 float: left;
 margin-right: 7px;
 cursor:pointer;
@@ -1426,7 +1426,7 @@ cursor:pointer;
 display:block;
 width: 80px;
 height: 45px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0 -46px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0 -46px;
 float: left;
 margin-right: 7px;
 }
@@ -1436,7 +1436,7 @@ margin-right: 7px;
 display:block;
 width: 80px;
 height: 45px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -81px -46px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -81px -46px;
 float: left;
 margin-right: 7px;
 }
@@ -1744,17 +1744,17 @@ margin:14px 14px 9px 14px;
 
 .prodiconchrome
 {
-background: url("../images/prodicon.png?v=201510252211") no-repeat scroll 0px 0px;
+background: url(../images/prodicon.png?v=201510252211) no-repeat scroll 0px 0px;
 }
 
 .prodiconm
 {
-background: url("../images/prodicon.png?v=201510252211") no-repeat scroll -42px 0px;
+background: url(../images/prodicon.png?v=201510252211) no-repeat scroll -42px 0px;
 }
 
 .prodiconygk
 {
-background: url("../images/prodicon.png?v=201510252211") no-repeat scroll -84px 0px;
+background: url(../images/prodicon.png?v=201510252211) no-repeat scroll -84px 0px;
 }
 
 .prodtexts
@@ -1836,52 +1836,52 @@ margin-right: 8px;
 
 .dot1
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -161px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -161px 0px;
 }
 
 .dot2
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -191px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -191px 0px;
 }
 
 .dot3
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -221px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -221px 0px;
 }
 
 .dot4
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -251px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -251px 0px;
 }
 
 .dot5
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -281px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -281px 0px;
 }
 
 .dot6
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -311px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -311px 0px;
 }
 
 .dot7
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -341px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -341px 0px;
 }
 
 .dot8
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -371px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -371px 0px;
 }
 
 .dot9
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -401px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -401px 0px;
 }
 
 .dot10
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -431px 0px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -431px 0px;
 }
 
 /* 右侧区 - 搜索区 */
@@ -1916,7 +1916,7 @@ color:#555;
 cursor:pointer;
 display:inline-block;
 float:left;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -105px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -105px;
 width:30px;
 height:30px;
 margin-top:15px;
@@ -2114,22 +2114,22 @@ margin-left: 30px;
 
 .gototopstatic
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -468px -9px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -468px -9px;
 }
 
 .gototophover
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -468px -55px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -468px -55px;
 }
 
 .feedbackstatic
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -248px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -248px;
 }
 
 .feedbackhover
 {
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -105px -248px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -105px -248px;
 }
 
 /* 右侧区 - 详情页推荐区 */
@@ -2189,7 +2189,7 @@ color:#555;
 {
 float:right;
 display:block;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -135px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -135px;
 width:17px;
 height:17px;
 margin-top:9px;
@@ -2497,7 +2497,7 @@ margin-bottom: 30px;
 {
 float:right;
 display:block;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll 0px -135px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll 0px -135px;
 width:17px;
 height:17px;
 margin-top:9px;
@@ -2516,7 +2516,7 @@ border-bottom: 1px solid #f9f9f9;
 {
 width: 16px;
 height: 33px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -468px -109px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -468px -109px;
 margin-left: 805px;
 margin-top: 18px;
 position: absolute;
@@ -2788,7 +2788,7 @@ cursor:pointer;
 display:block;
 width: 300px;
 height: 50px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -161px -46px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -161px -46px;
 float: left;
 margin-right: 5px;
 margin-top: 20px;
@@ -2810,7 +2810,7 @@ cursor:pointer;
 display:block;
 width: 300px;
 height: 50px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -161px -98px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -161px -98px;
 float: left;
 margin-right: 5px;
 margin-top: 20px;
@@ -2822,7 +2822,7 @@ margin-bottom: 40px;
 display:block;
 width: 300px;
 height: 46px;
-background: url("../images/clip.png?v=201510252211") no-repeat scroll -161px -150px;
+background: url(../images/clip.png?v=201510252211) no-repeat scroll -161px -150px;
 float: left;
 margin-right: 5px;
 }
@@ -3213,7 +3213,7 @@ margin-top: 10px;
 margin-left: -160px;
 width: 148px;
 height: 110px;
-background:url("../images/clip.png?v=201510252211") no-repeat scroll -156px -199px;
+background:url(../images/clip.png?v=201510252211) no-repeat scroll -156px -199px;
 }
 
 .newgdfeekback

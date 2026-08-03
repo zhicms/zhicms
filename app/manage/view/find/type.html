@@ -20,14 +20,14 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width:70px;" class="text-center">ID</th>
-                        <th style="width:80px;" class="text-center">图标</th>
+                        <th class="text-center w-70">ID</th>
+                        <th class="text-center w-80">图标</th>
                         <th>分类名称</th>
                         <th>关键字</th>
                         <th>描述</th>
-                        <th style="width:80px;" class="text-center">排序</th>
-                        <th style="width:120px;" class="text-center">文章数</th>
-                        <th style="width:150px;" class="text-center">操作</th>
+                        <th class="text-center w-80">排序</th>
+                        <th class="text-center w-120">文章数</th>
+                        <th class="text-center w-150">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -37,19 +37,19 @@
                         <td class="text-center font-weight-bold"><?php echo $row['id']; ?></td>
                         <td class="text-center">
                             <?php if (!empty($row['pic'])): ?>
-                            <img src="<?php echo $row['pic']; ?>" style="max-width:48px;max-height:48px;border-radius:6px;" alt="">
+                            <img src="<?php echo $row['pic']; ?>" alt="" class="mw-48" style="max-height:48px ; border-radius:6px">
                             <?php else: ?>
                             <span class="text-muted">—</span>
                             <?php endif; ?>
                         </td>
                         <td class="font-weight-600"><?php echo htmlspecialchars($row['name']); ?></td>
                         <td>
-                            <div class="text-truncate" style="max-width:200px;" title="<?php echo htmlspecialchars($row['keywords']); ?>">
+                            <div class="text-truncate mw-200" title="<?php echo htmlspecialchars($row['keywords']); ?>">
                                 <?php echo htmlspecialchars($row['keywords']); ?>
                             </div>
                         </td>
                         <td>
-                            <div class="text-truncate" style="max-width:240px;" title="<?php echo htmlspecialchars($row['dec']); ?>">
+                            <div class="text-truncate mw-240" title="<?php echo htmlspecialchars($row['dec']); ?>">
                                 <?php echo htmlspecialchars($row['dec']); ?>
                             </div>
                         </td>

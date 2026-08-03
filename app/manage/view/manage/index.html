@@ -46,7 +46,7 @@
     </div>
     
     <!-- 可以添加搜索功能 -->
-    <div class="search-form" style="width: 250px;">
+    <div class="search-form w-250">
         <div class="input-group">
             <input type="text" class="form-control" id="keyword" placeholder="搜索管理员..." value="<?php echo isset($keyword) ? $keyword : ''; ?>">
             <div class="input-group-append">
@@ -73,12 +73,12 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-light">
                     <tr>
-                        <th style="width: 80px;" class="text-center">ID</th>
+                        <th class="text-center w-80">ID</th>
                         <th>管理员信息</th>
-                        <th style="width: 120px;">权限等级</th>
-                        <th style="width: 140px;">创建时间</th>
-                        <th style="width: 100px;">最后登录</th>
-                        <th style="width: 140px;" class="text-center">操作</th>
+                        <th class="w-120">权限等级</th>
+                        <th class="w-140">创建时间</th>
+                        <th class="w-100">最后登录</th>
+                        <th class="text-center w-140">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -91,9 +91,9 @@
                         <td>
                             <div class="d-flex align-items-center">
                                 <?php if(!empty($item['avatar'])): ?>
-                                <img src="<?php echo $item['avatar']; ?>" alt="头像" class="rounded-circle mr-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                <img src="<?php echo $item['avatar']; ?>" alt="头像" class="rounded-circle mr-3 w-50 h-50" style="object-fit: cover">
                                 <?php else: ?>
-                                <div class="mr-3 bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold" style="width: 50px; height: 50px;">
+                                <div class="mr-3 bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold w-50 h-50">
                                     <?php echo strtoupper(mb_substr($item['username'], 0, 1, 'UTF-8')); ?>
                                 </div>
                                 <?php endif; ?>

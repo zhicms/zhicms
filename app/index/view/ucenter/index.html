@@ -1,12 +1,12 @@
 {include file="app/index/view/public/header"}
 
-<div class="uc-wrap container" style="max-width:1080px;padding:30px 0;">
-  <div class="uc-layout" style="display:flex;gap:24px;align-items:flex-start;">
+<div class="uc-wrap container mw-1080" style="padding:30px 0">
+  <div class="uc-layout d-flex" style="gap:24px ; align-items:flex-start">
 
     <!-- 左侧：用户信息 + 菜单（emlog 风格） -->
-    <aside class="uc-side" style="width:240px;flex-shrink:0;">
-      <div class="uc-card" style="background:#fff;border-radius:14px;padding:22px;box-shadow:0 4px 20px rgba(0,0,0,.06);text-align:center;">
-        <div class="uc-avatar" style="width:72px;height:72px;border-radius:50%;margin:0 auto 12px;background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:600;">
+    <aside class="uc-side w-240" style="flex-shrink:0">
+      <div class="uc-card text-center" style="background:#fff ; border-radius:14px ; padding:22px ; box-shadow:0 4px 20px rgba(0,0,0,.06)">
+        <div class="uc-avatar w-72 h-72 d-flex" style="border-radius:50% ; margin:0 auto 12px ; background:linear-gradient(135deg,#1677CB,#4a9eff) ; color:#fff ; align-items:center ; justify-content:center ; font-size:30px ; font-weight:600">
           {if !empty($uInfo['username'])}{substr($uInfo['username'],0,1)}{else}{substr($uInfo['mobile'],0,1)}{/if}
         </div>
         <div class="uc-name" style="font-size:16px;font-weight:600;color:#333;">
@@ -33,7 +33,7 @@
       <!-- 我的收藏 -->
       {if $menu=='like'}
         <h3 class="uc-title">我的收藏</h3>
-        <div class="uc-tabs" style="margin:14px 0 20px;display:flex;gap:10px;">
+        <div class="uc-tabs d-flex" style="margin:14px 0 20px ; gap:10px">
           <a href="{url($route='index/ucenter/index', $params=array())}"            class="uc-tab {if $likeModel=='index'}active{/if}">社区帖子</a>
           <a href="{url($route='index/ucenter/index', $params=array('type'=>'article'))}" class="uc-tab {if $likeModel=='article'}active{/if}">文章</a>
         </div>
@@ -101,7 +101,7 @@
       <!-- 个人资料 -->
       {if $menu=='profile'}
         <h3 class="uc-title">个人资料</h3>
-        <form id="profileForm" class="uc-form" style="max-width:420px;margin-top:18px;">
+        <form id="profileForm" class="uc-form mw-420" style="margin-top:18px">
           <div class="form-group">
             <label>手机号</label>
             <input type="text" class="form-control" value="{substr($uInfo['mobile'],0,3)}****{substr($uInfo['mobile'],7)}" disabled>
@@ -121,7 +121,7 @@
       <!-- 修改密码 -->
       {if $menu=='pwd'}
         <h3 class="uc-title">修改密码</h3>
-        <form id="pwdForm" class="uc-form" style="max-width:420px;margin-top:18px;">
+        <form id="pwdForm" class="uc-form mw-420" style="margin-top:18px">
           <div class="form-group">
             <label>原密码</label>
             <input type="password" class="form-control" name="oldpwd" id="oldpwd" maxlength="32">
@@ -144,55 +144,8 @@
 
 {include file="app/index/view/public/footer"}
 
-<style>
-.uc-menu-item{display:block;padding:11px 16px;border-radius:9px;color:#555;font-size:14px;text-decoration:none;margin-bottom:4px;transition:all .2s;}
-.uc-menu-item:hover{background:#f3f7fd;color:#1677CB;}
-.uc-menu-item.active{background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;font-weight:600;}
-.uc-menu-logout{color:#e0284a;}
-.uc-menu-logout:hover{background:#fff0f2;color:#e0284a;}
-.uc-title{font-size:18px;font-weight:600;color:#333;margin:0;border-bottom:2px solid #f0f3f8;padding-bottom:12px;}
-.uc-tab{padding:6px 14px;border-radius:18px;font-size:13px;color:#666;text-decoration:none;background:#f3f5f9;transition:all .2s;}
-.uc-tab.active{background:#1677CB;color:#fff;}
-.uc-list{list-style:none;padding:0;margin:0;}
-.uc-list-item{padding:14px 0;border-bottom:1px solid #f0f3f8;display:flex;flex-direction:column;gap:6px;}
-.uc-link{color:#333;font-size:14px;text-decoration:none;font-weight:500;}
-.uc-link:hover{color:#1677CB;}
-.uc-date{font-size:12px;color:#aaa;}
-.uc-comment-body{font-size:14px;color:#444;line-height:1.6;background:#f8f9fb;border-radius:8px;padding:10px 12px;}
-.uc-comment-meta{display:flex;justify-content:space-between;align-items:center;}
-.uc-empty{text-align:center;color:#bbb;padding:50px 0;font-size:14px;}
-.uc-pager{margin-top:20px;text-align:center;}
-/* 表单区：不依赖 Bootstrap，改用站点主题变量补齐样式 */
-.uc-form{max-width:420px;margin-top:18px;}
-.uc-form .form-group{margin-bottom:16px;}
-.uc-form label{font-size:13px;color:var(--lightColor,#666);margin-bottom:6px;display:block;}
-.uc-form .form-control{
-  display:block;width:100%;padding:10px 12px;font-size:14px;line-height:1.5;
-  color:var(--inputTextColor,#333);background:var(--inputBgColor,#fff);
-  border:1px solid var(--inputBorderColor,#ececec);border-radius:9px;box-sizing:border-box;
-  transition:border-color .2s,box-shadow .2s;outline:none;
-}
-.uc-form .form-control:focus{border-color:var(--buttonBgColor,#1677CB);box-shadow:0 0 0 3px rgba(255,77,79,.12);}
-.uc-form .form-control:disabled{background:var(--surfaceHover,#f7f8fa);color:var(--lightColor,#999);}
-.uc-form .btn-primary{
-  display:inline-block;padding:10px 26px;font-size:14px;font-weight:600;border:none;border-radius:9px;cursor:pointer;
-  color:#fff;background:linear-gradient(135deg,#ff7a45,#ff3b5c);transition:opacity .2s,transform .15s;
-}
-.uc-form .btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,59,92,.35);}
-.uc-form .btn-primary:active{transform:translateY(0);}
-/* 轻提示 Toast（不依赖 Bootstrap） */
-.uc-toast-wrap{position:fixed;top:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
-.uc-toast{min-width:250px;max-width:360px;padding:12px 16px;border-radius:9px;font-size:14px;color:#fff;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);
-  opacity:0;transform:translateX(20px);transition:opacity .3s ease,transform .3s ease;}
-.uc-toast.show{opacity:1;transform:translateX(0);}
-.uc-toast.success{background:#2fa76f;}
-.uc-toast.danger{background:#e0284a;}
-.uc-toast .uc-toast-body{flex:1;}
-.uc-toast .uc-toast-close{background:none;border:none;color:rgba(255,255,255,.85);font-size:16px;line-height:1;cursor:pointer;padding:2px;}
-</style>
-
 <script>
+/* 用户中心交互（showToast 等公共函数来自 common.js，这里只保留页面特有逻辑） */
 function saveProfile(){
   var nick = document.getElementById('nick').value.trim();
   var email = document.getElementById('email').value.trim();
@@ -232,27 +185,5 @@ function savePwd(){
     } catch(e){ showToast('修改失败','danger'); }
   };
   xhr.send(fd);
-}
-function showToast(message, type){
-  type = type || 'success';
-  var wrap = document.getElementById('ucToastWrap');
-  if (!wrap){
-    wrap = document.createElement('div');
-    wrap.id = 'ucToastWrap';
-    wrap.className = 'uc-toast-wrap';
-    document.body.appendChild(wrap);
-  }
-  var toast = document.createElement('div');
-  toast.className = 'uc-toast ' + type;
-  toast.setAttribute('role','alert');
-  toast.innerHTML = '<span class="uc-toast-body">' + message + '</span>' +
-    '<button type="button" class="uc-toast-close" onclick="this.parentElement.remove()">✕</button>';
-  wrap.appendChild(toast);
-  // 强制 reflow 后加 show 触发过渡
-  requestAnimationFrame(function(){ toast.classList.add('show'); });
-  setTimeout(function(){
-    toast.classList.remove('show');
-    setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
-  }, 2500);
 }
 </script>

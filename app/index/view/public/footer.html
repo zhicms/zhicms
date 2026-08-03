@@ -3,27 +3,44 @@
 <footer class="blog-footer">
   <div class="container foot-main">
     <div class="foot-col foot-about">
-      <div class="foot-logo">{obj('base/Base')->SiteConfig('sitename')}</div>
-      <p class="foot-desc">{obj('base/Base')->SiteConfig('about')}</p>
+      <?php $siteAbout = obj('base/Base')->SiteConfig('about'); ?>
+      <div class="foot-logo"><?php echo htmlspecialchars(obj('base/Base')->SiteConfig('sitename'), ENT_QUOTES); ?></div>
+      <?php if (!empty($siteAbout)): ?><p class="foot-desc"><?php echo htmlspecialchars($siteAbout, ENT_QUOTES); ?></p><?php endif; ?>
     </div>
     <div class="foot-col">
       <h4>友情链接</h4>
+      <?php
+      // 友情链接：优先使用控制器注入的 $links；若未注入（如登录/注册/用户中心页），直接查库（带缓存）
+      if (empty($links) && function_exists('obj')) {
+          try {
+              $cache = \app\common\CacheService::instance();
+              $links = $cache->remember('footer_links', function () {
+                  $links = obj("api/ApiData")->dataSelect("yun_link", array(), "`px` ASC, `id` ASC LIMIT 0, 20");
+                  return $links ?: array();
+              }, 600);
+          } catch (\Throwable $e) {
+              $links = array();
+          }
+      }
+      ?>
       <ul class="unstyle-li foot-links">
         <!-- 调用后台设置的友情链接 -->
-        {if !empty($links)}
-          {foreach $links as $link}
-            <li><a href="{$link['link']}" target="_blank" rel="nofollow">{$link['title']}</a></li>
-          {/foreach}
-        {else}
-          <li><a href="{url($route='index/index/index', $params=array())}">网站首页</a></li>
-        {/if}
+        <?php if (!empty($links)): ?>
+          <?php foreach ($links as $link): ?>
+            <li><a href="<?php echo htmlspecialchars($link['link'], ENT_QUOTES); ?>" target="_blank" rel="nofollow"><?php echo htmlspecialchars($link['title'], ENT_QUOTES); ?></a></li>
+          <?php endforeach; ?>
+        <?php else: ?>
+          <li><a href="<?php echo url($route='index/index/index', $params=array()); ?>">网站首页</a></li>
+        <?php endif; ?>
       </ul>
     </div>
     <div class="foot-col">
       <h4>站点信息</h4>
       <ul class="unstyle-li foot-links">
-        {if obj('base/Base')->SiteConfig('banquan')}<li>{obj('base/Base')->SiteConfig('banquan')}</li>{/if}
-        {if obj('base/Base')->SiteConfig('beian')}<li><a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow">{obj('base/Base')->SiteConfig('beian')}</a></li>{/if}
+        <?php $banquan = obj('base/Base')->SiteConfig('banquan'); $beian = obj('base/Base')->SiteConfig('beian'); ?>
+        <?php if (!empty($banquan)): ?><li><?php echo htmlspecialchars($banquan, ENT_QUOTES); ?></li><?php endif; ?>
+        <?php if (empty($banquan)): ?><li>&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars(obj('base/Base')->SiteConfig('sitename'), ENT_QUOTES); ?> 版权所有</li><?php endif; ?>
+        <?php if (!empty($beian)): ?><li><a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow"><?php echo htmlspecialchars($beian, ENT_QUOTES); ?></a></li><?php endif; ?>
       </ul>
     </div>
   </div>
@@ -40,12 +57,12 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
   </div>
   {/if}
-  <div class="side-btn" id="back-to-top" title="返回顶部" style="display:none;">
+  <div class="side-btn d-none" id="back-to-top" title="返回顶部">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
   </div>
   <div class="side-btn" id="theme-toggle" title="切换主题">
     <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
-    <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+    <svg class="icon-sun d-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
   </div>
 </div>
 
@@ -190,79 +207,8 @@
     </div>
 </nav>
 
-<style>
-/* ===== Bootstrap 兼容样式（站点未加载 Bootstrap，仅 blog.css）===== */
-.card{background:var(--conBgcolor,#fff);border:1px solid var(--borderColor,rgba(0,0,0,.06));border-radius:14px;}
-.card-body{padding:1.5rem;}
-.form-group{margin-bottom:1rem;}
-.form-group label{display:block;font-size:13px;color:var(--lightColor,#666);margin-bottom:6px;}
-.form-control{display:block;width:100%;padding:10px 12px;font-size:14px;line-height:1.5;color:var(--inputTextColor,#333);
-  background:var(--inputBgColor,#fff);border:1px solid var(--inputBorderColor,#ececec);border-radius:9px;box-sizing:border-box;outline:none;transition:border-color .2s,box-shadow .2s;}
-.form-control:focus{border-color:var(--buttonBgColor,#ff4d4f);box-shadow:0 0 0 3px rgba(255,77,79,.12);}
-.btn-primary{display:inline-block;padding:11px 22px;font-size:14px;font-weight:600;border:none;border-radius:9px;cursor:pointer;color:#fff;
-  background:linear-gradient(135deg,#ff7a45,#ff3b5c);transition:opacity .2s,transform .15s;text-align:center;}
-.btn-primary:hover{opacity:.92;transform:translateY(-1px);box-shadow:0 4px 14px rgba(255,59,92,.35);}
-.btn-block{display:block;width:100%;}
-.btn-lg{padding:13px 22px;font-size:15px;}
-.alert{border-radius:9px;padding:12px 16px;font-size:14px;margin-bottom:1rem;}
-.alert-warning{background:var(--accentWeak,#fff3e0);color:var(--accent2,#e65100);border:1px solid rgba(255,122,69,.3);}
-.input-group{display:flex;align-items:stretch;}
-.input-group .form-control{flex:1;border-radius:9px 0 0 9px;}
-.input-group-append img{border:1px solid var(--inputBorderColor,#ececec);border-left:none;border-radius:0 9px 9px 0;height:41px;box-sizing:border-box;}
-.text-center{text-align:center;}
-.mt-3{margin-top:1rem;}
-.mb-3{margin-bottom:1rem;}
-.p-4{padding:1.5rem;}
-.m-auto{margin:auto;}
-/* 通用轻提示 Toast */
-.uc-toast-wrap{position:fixed;top:20px;right:20px;z-index:99999;display:flex;flex-direction:column;gap:8px;}
-.uc-toast{min-width:250px;max-width:360px;padding:12px 16px;border-radius:9px;font-size:14px;color:#fff;
-  display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);
-  opacity:0;transform:translateX(20px);transition:opacity .3s ease,transform .3s ease;}
-.uc-toast.show{opacity:1;transform:translateX(0);}
-.uc-toast.success{background:#2fa76f;}
-.uc-toast.danger{background:#e0284a;}
-.uc-toast .uc-toast-body{flex:1;}
-.uc-toast .uc-toast-close{background:none;border:none;color:rgba(255,255,255,.85);font-size:16px;line-height:1;cursor:pointer;padding:2px;}
-</style>
-
-<script>
-function userLogout(){
-    if (!confirm('确定退出登录？')) return;
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'index.php?r=index/login/logout&ajax=1', true);
-    xhr.onreadystatechange = function(){
-        if (xhr.readyState !== 4) return;
-        try {
-            var res = JSON.parse(xhr.responseText);
-            if (res && res.status === 'y') { location.href = '{url($route="index/index/index", $params=array())}'; }
-            else { alert((res && res.info) ? res.info : '退出失败'); }
-        } catch(e) { location.href = '{url($route="index/index/index", $params=array())}'; }
-    };
-    xhr.send();
-}
-function showToast(message, type){
-    type = type || 'success';
-    var wrap = document.getElementById('ucToastWrap');
-    if (!wrap){
-        wrap = document.createElement('div');
-        wrap.id = 'ucToastWrap';
-        wrap.className = 'uc-toast-wrap';
-        document.body.appendChild(wrap);
-    }
-    var toast = document.createElement('div');
-    toast.className = 'uc-toast ' + type;
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = '<span class="uc-toast-body">' + message + '</span>' +
-        '<button type="button" class="uc-toast-close" onclick="this.parentElement.remove()">✕</button>';
-    wrap.appendChild(toast);
-    requestAnimationFrame(function(){ toast.classList.add('show'); });
-    setTimeout(function(){
-        toast.classList.remove('show');
-        setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
-    }, 2500);
-}
-</script>
+<!-- 公共业务脚本置底加载（SEO/渲染最佳实践：JS 在 </body> 前，非阻塞内容渲染）；?v= 版本参数便于缓存刷新 -->
+<script src="{__PUBLIC__}web/js/common.js?v=5.0.2"></script>
 
 </body>
 </html>

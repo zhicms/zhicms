@@ -52,7 +52,7 @@ class IndexController extends \app\base\controller\BaseController
         $this->localVersion = $v;
 
         // 与 FilecheckController 一致：用 Http::doGet 稳健请求更新接口，并容错 JSON 解析
-        $updateUrl = 'https://www.zhicms.cc/update_check.php';
+        $updateUrl = 'https://www.zhi.red/update_check.php';
         $ret = array();
         $json = \ZhiCms\ext\Http::doGet($updateUrl, 8);
         if ($json) {
@@ -153,7 +153,7 @@ class IndexController extends \app\base\controller\BaseController
         $v = \app\common\ConfigStore::load('version', 'version');
 
         // 获取更新信息（与 FilecheckController 一致：Http::doGet 稳健请求 + 容错 JSON 解析）
-        $updateUrl = 'https://www.zhicms.cc/update_check.php';
+        $updateUrl = 'https://www.zhi.red/update_check.php';
         $ret = array();
         $json = \ZhiCms\ext\Http::doGet($updateUrl, 8);
         if ($json) {

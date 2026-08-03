@@ -87,7 +87,7 @@ echo json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
       <input type="email" name="mail" id="commentMail" placeholder="邮箱（选填，不公开）" value="{$visitorMail}" maxlength="60">
     </div>
     {/if}
-    <div class="cf-reply-tip" id="replyTip" style="display:none;">
+    <div class="cf-reply-tip d-none" id="replyTip">
       <span id="replyTipText"></span>
       <a href="javascript:;" id="cancelReply">取消回复</a>
     </div>
@@ -101,7 +101,7 @@ echo json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   <ul class="comment-list" id="commentList">{$commentHtml}</ul>
   {if $commentCount == 0}<div class="comment-empty" id="commentEmpty">还没有评论，快来抢沙发~</div>{/if}
   {else}
-  <div class="comment-closed-tip" style="text-align:center;padding:40px 20px;color:#999;font-size:14px;background:#f9f9f9;border-radius:8px;margin-top:20px;">
+  <div class="comment-closed-tip text-center" style="padding:40px 20px ; color:#999 ; font-size:14px ; background:#f9f9f9 ; border-radius:8px ; margin-top:20px">
     本文已关闭评论功能
   </div>
   {/if}
