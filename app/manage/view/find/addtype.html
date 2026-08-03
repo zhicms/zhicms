@@ -87,16 +87,27 @@ jQuery(function($){
             data: $(this).serialize(),
             dataType: 'json',
             success: function(res){
-                if(res.status == 'y'){
+                if(res && res.need_login){
+                    showToast(res.info || '登录已过期，请重新登录', 'danger');
+                    setTimeout(function(){ window.location.href = 'index.php?r=manage/login/index'; }, 1200);
+                    return;
+                }
+                if(res && res.status == 'y'){
                     showToast(res.info, 'success');
                     setTimeout(function(){ window.location.href = 'index.php?r=manage/find/type'; }, 1500);
                 } else {
-                    showToast(res.info || '保存失败', 'danger');
+                    showToast((res && res.info) || '保存失败', 'danger');
                     btn.prop('disabled', false).html(text);
                 }
             },
-            error: function(){
-                showToast('请求异常', 'danger');
+            error: function(xhr){
+                // 后端统一返回 JSON；若收到非 JSON（如网络/会话异常）也尽量给出可读提示
+                var msg = '请求异常，请稍后重试';
+                try {
+                    var r = JSON.parse(xhr.responseText);
+                    if (r && r.info) msg = r.info;
+                } catch(e) {}
+                showToast(msg, 'danger');
                 btn.prop('disabled', false).html(text);
             }
         });

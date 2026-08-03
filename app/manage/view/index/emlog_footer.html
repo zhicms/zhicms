@@ -129,5 +129,41 @@
         });
     });
     </script>
+
+    <!-- 全局统一轻提示（后台所有页面共用） -->
+    <style>
+    .zc-toast-wrap{position:fixed;top:20px;right:20px;z-index:20000;display:flex;flex-direction:column;gap:8px;}
+    .zc-toast{min-width:240px;max-width:360px;padding:12px 16px;border-radius:8px;font-size:14px;color:#fff;
+      display:flex;align-items:center;justify-content:space-between;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.16);
+      opacity:0;transform:translateX(20px);transition:opacity .3s ease,transform .3s ease;}
+    .zc-toast.show{opacity:1;transform:translateX(0);}
+    .zc-toast.success{background:#2fa76f;}
+    .zc-toast.danger{background:#e0284a;}
+    .zc-toast .zc-toast-body{flex:1;}
+    .zc-toast .zc-toast-close{background:none;border:none;color:rgba(255,255,255,.85);font-size:15px;line-height:1;cursor:pointer;padding:2px;}
+    </style>
+    <script>
+    window.showToast = function(message, type) {
+        type = type || 'success';
+        var wrap = document.getElementById('zcToastWrap');
+        if (!wrap) {
+            wrap = document.createElement('div');
+            wrap.id = 'zcToastWrap';
+            wrap.className = 'zc-toast-wrap';
+            document.body.appendChild(wrap);
+        }
+        var toast = document.createElement('div');
+        toast.className = 'zc-toast ' + type;
+        toast.setAttribute('role', 'alert');
+        toast.innerHTML = '<span class="zc-toast-body">' + (message || '') + '</span>' +
+            '<button type="button" class="zc-toast-close" onclick="this.parentElement.remove()">✕</button>';
+        wrap.appendChild(toast);
+        requestAnimationFrame(function(){ toast.classList.add('show'); });
+        setTimeout(function(){
+            toast.classList.remove('show');
+            setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
+        }, 3000);
+    };
+    </script>
 </body>
 </html>

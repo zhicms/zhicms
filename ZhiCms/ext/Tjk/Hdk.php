@@ -8,6 +8,26 @@ class Hdk {
     public function __construct($apiKey) {
         $this->apiKey = $apiKey;
     }
+
+    /**
+     * 安全地把 API 返回的券时间转换为 date() 可用的时间戳字符串
+     * 兼容：数字时间戳（秒）、数字时间戳字符串、标准日期字符串（如 2026-08-01）
+     * @param mixed $time
+     * @return string 格式化后的日期时间，无法解析则返回 ''
+     */
+    protected static function safeTime($time) {
+        if ($time === '' || $time === null) return '';
+        if (is_numeric($time)) {
+            $ts = intval($time);
+            if ($ts <= 0) return '';
+            // 兼容毫秒级时间戳（13位）
+            if ($ts > 9999999999) $ts = intval($ts / 1000);
+            return date('Y-m-d H:i:s', $ts);
+        }
+        // 日期字符串：用 strtotime 解析，失败则原样返回或置空
+        $ts = strtotime($time);
+        return $ts !== false ? date('Y-m-d H:i:s', $ts) : '';
+    }
     
     protected function request($host, $params) {
         try {
@@ -61,8 +81,10 @@ class Hdk {
                 'desc' => $item['itemdesc'] ?? '',
                 'couponReceiveNum' => 0,
                 'couponLink' => $item['couponurl'] ?? '',
-                'couponEndTime' => isset($item['couponendtime']) ? date('Y-m-d H:i:s', $item['couponendtime']) : '',
-                'couponStartTime' => isset($item['couponstarttime']) ? date('Y-m-d H:i:s', $item['couponstarttime']) : '',
+                // 券时间安全转换：API 返回可能是数字时间戳字符串或日期字符串，
+                // 直接传入 date() 会触发 PHP8 "Argument #2 must be of type ?int" 报错。
+                'couponEndTime' => isset($item['couponendtime']) ? self::safeTime($item['couponendtime']) : '',
+                'couponStartTime' => isset($item['couponstarttime']) ? self::safeTime($item['couponstarttime']) : '',
                 'couponPrice' => $item['couponmoney'] ?? 0,
                 'couponConditions' => '',
                 'activityType' => 0,

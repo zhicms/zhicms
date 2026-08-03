@@ -66,6 +66,7 @@ class ItemsController extends \app\base\controller\BaseController
     public function del(){
 
         $this->checkManageSession();
+        $this->checkCsrfToken();
 
         error_reporting(0);
         $id = intval($this->arg("id"));
@@ -142,6 +143,7 @@ class ItemsController extends \app\base\controller\BaseController
     public function top(){
 
         $this->checkManageSession();
+        $this->checkCsrfToken();
 
         $id = intval($this->arg("id"));
 
@@ -163,13 +165,16 @@ class ItemsController extends \app\base\controller\BaseController
     public function editorTop(){
 
         $this->checkManageSession();
+        $this->checkCsrfToken();
 
         $id = intval($this->arg("id"));
         $lock = $this->arg("lock");
         $where['id'] = $id;
         if($lock == "1"){
             $ret = obj("api/ApiData")->dataSelect("yun_items", $where);
-            $topEtime = strtotime($ret['top_etime']);
+            // 安全解析 top_etime：可能为 '0' 或空，strtotime 返回 false 时用当前时间
+            $topEtime = isset($ret['top_etime']) ? strtotime($ret['top_etime']) : false;
+            if ($topEtime === false || $topEtime <= 0) $topEtime = time();
             $endTime = $topEtime + 60*60*24*7;
             $data['top'] = 1;
             $data['top_etime'] = date("Y-m-d H:i:s",$endTime);

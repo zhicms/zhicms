@@ -6,6 +6,12 @@ class ApiModel extends \app\base\model\BaseModel {
 
     public function isSession($session, $url) {
         if (!isset($_SESSION[$session]) || empty($_SESSION[$session])) {
+            // AJAX 请求（如后台表单提交、列表刷新）session 失效时返回 JSON，
+            // 避免前端收到 302 跳转后的 HTML 导致 "请求异常"（JSON 解析失败）。
+            if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') {
+                header('Content-Type: application/json; charset=utf-8');
+                exit(json_encode(array("info" => "登录已过期，请重新登录", "status" => "n", "need_login" => true)));
+            }
             header("location:{$url}");
             exit;
         }

@@ -82,13 +82,16 @@ ALTER TABLE `yun_user` ADD COLUMN `status` tinyint(4) NOT NULL DEFAULT '1' COMME
 -- 2. yun_user 表：手机号唯一索引（注册查重、登录识别）
 ALTER TABLE `yun_user` ADD UNIQUE KEY `uk_mobile` (`mobile`);
 
--- 3. yun_config 表：用户功能开关默认值（后台「互动设置」读取）
+-- 3. yun_mall 表：新增所属联盟模型字段（union/addmall.html 提交 union_id）
+ALTER TABLE `yun_mall` ADD COLUMN `union_id` int(11) NOT NULL DEFAULT '0' COMMENT '所属联盟模型ID（yun_union.id）' AFTER `name`;
+
+-- 4. yun_config 表：用户功能开关默认值（后台「互动设置」读取）
 INSERT INTO `yun_config` (`key`, `value`, `desc`) VALUES
 ('user_reg_captcha', '1', '注册开启图形验证码 1开/0关'),
 ('user_email_verify', '0', '注册需要邮箱验证 1是/0否（当前仅预留）'),
 ('user_show_login', '1', '前台显示用户登录/注册入口 1显示/0隐藏')
 ON DUPLICATE KEY UPDATE `desc` = VALUES(`desc`);
 
--- 4. 版本号对齐：升级后将 cfg_version 更新为 5.0.2
+-- 5. 版本号对齐：升级后将 cfg_version 更新为 5.0.2
 INSERT INTO `yun_config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')
 ON DUPLICATE KEY UPDATE `value` = '{"version":"5.0.2"}';

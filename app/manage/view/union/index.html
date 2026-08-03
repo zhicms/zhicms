@@ -526,12 +526,15 @@ function showImage(src) {
     var modal = document.querySelector('.image-modal');
     var modalImg = document.getElementById('modalImage');
     modalImg.src = src;
+    // 移除 .d-none（display:none !important）类，否则内联 display 无法覆盖
+    modal.classList.remove('d-none');
     modal.style.display = 'flex';
 }
 
 function closeImageModal() {
     var modal = document.querySelector('.image-modal');
     modal.style.display = 'none';
+    modal.classList.add('d-none');
 }
 
 function collectGoods(goodsId, platform) {
@@ -549,6 +552,8 @@ function collectGoods(goodsId, platform) {
 // 打开分类选择弹窗（拼多多/京东/唯品会）
 function openCatModal(goodsId, platform) {
     var modal = document.getElementById('catModal');
+    // 移除 .d-none（display:none !important）类，否则内联 display 无法覆盖
+    modal.classList.remove('d-none');
     modal.style.display = 'flex';
     var sel = document.getElementById('collectCid');
     sel.value = '';
@@ -565,7 +570,9 @@ function openCatModal(goodsId, platform) {
 }
 
 function closeCatModal() {
-    document.getElementById('catModal').style.display = 'none';
+    var m = document.getElementById('catModal');
+    m.style.display = 'none';
+    m.classList.add('d-none');
 }
 
 // 执行采集（cid>0 表示使用手动选择的本地分类）
@@ -661,15 +668,15 @@ document.getElementById('keyword').addEventListener('keypress', function(e) {
 document.addEventListener('keydown', function(event) {
     if(event.key === 'Escape') {
         var modal = document.querySelector('.image-modal');
-        if (modal) modal.style.display = 'none';
+        if (modal) { modal.style.display = 'none'; modal.classList.add('d-none'); }
         var catModal = document.getElementById('catModal');
-        if (catModal && catModal.style.display !== 'none') catModal.style.display = 'none';
+        if (catModal && catModal.style.display !== 'none') { catModal.style.display = 'none'; catModal.classList.add('d-none'); }
     }
 });
 
 // 点击分类弹窗背景关闭
 document.getElementById('catModal').addEventListener('click', function(e) {
-    if (e.target === this) this.style.display = 'none';
+    if (e.target === this) { this.style.display = 'none'; this.classList.add('d-none'); }
 });
 
 // 淘宝关键词联想（复用淘宝官方 suggest 接口，JSONP，无需后端）

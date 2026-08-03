@@ -92,4 +92,28 @@ class ManageController extends \app\base\controller\BaseController
 
 
    }
+
+   /**
+    * 编辑管理员（视图 manage/index.html 调用 manage/manage/edit）
+    * 转发到 editManage
+    */
+   public function edit(){
+       return $this->editManage();
+   }
+
+   /**
+    * 修改密码（视图 manage/index.html 调用 manage/manage/setpass）
+    * 复用编辑表单（含密码框），转发到 editManage
+    */
+   public function setpass(){
+       return $this->editManage();
+   }
+
+   /**
+    * 删除管理员（视图 manage/index.html 调用 manage/manage/del）
+    * 转发到 deleteManage
+    */
+   public function del(){
+       return $this->deleteManage();
+   }
 }

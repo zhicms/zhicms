@@ -111,7 +111,7 @@
                                 <a href="index.php?r=manage/find/editArticle&id=<?php echo $row['id']; ?>" class="btn btn-outline-primary" title="编辑">
                                     <i class="fas fa-edit"></i>
                                 </a>
-                                <a href="<?php echo $row['url']; ?>" target="_blank" class="btn btn-outline-info" title="预览">
+                                <a href="<?php echo url($route='index/index/view/id=<id>', $params=array('id'=>(int)$row['id'])); ?>" target="_blank" class="btn btn-outline-info" title="预览">
                                     <i class="fas fa-eye"></i>
                                 </a>
                                 <button class="btn btn-outline-danger" onclick="delItem(<?php echo $row['id']; ?>)" title="删除">
@@ -457,6 +457,8 @@ document.getElementById('keyword').addEventListener('keypress', function(e) {
 
 // 一键采集（好单库朋友圈）
 function openCollectModal() {
+    // 移除 .d-none（display:none !important）类，用内联 display 覆盖，否则弹窗无法显示
+    document.getElementById('collectModal').classList.remove('d-none');
     document.getElementById('collectModal').style.display = 'flex';
     var btn = document.getElementById('collectConfirmBtn');
     btn.disabled = false;
@@ -489,7 +491,7 @@ function openCollectModal() {
 
 function closeCollectModal() {
     var m = document.getElementById('collectModal');
-    if (m) m.style.display = 'none';
+    if (m) { m.style.display = 'none'; m.classList.add('d-none'); }
     var btn = document.getElementById('collectConfirmBtn');
     if (btn) { btn.disabled = false; btn.innerText = '开始采集'; }
     var input = document.getElementById('collectPages');
@@ -498,17 +500,19 @@ function closeCollectModal() {
 
 // 点击背景 / Esc 关闭采集弹窗
 document.getElementById('collectModal').addEventListener('click', function(e) {
-    if (e.target === this) this.style.display = 'none';
+    if (e.target === this) { this.style.display = 'none'; this.classList.add('d-none'); }
 });
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         var m = document.getElementById('collectModal');
-        if (m && m.style.display !== 'none') m.style.display = 'none';
+        if (m && m.style.display !== 'none') { m.style.display = 'none'; m.classList.add('d-none'); }
     }
 });
 
 // ===== 资讯采集（聚合数据） =====
 function openNewsModal() {
+    // 移除 .d-none（display:none !important）类，用内联 display 覆盖，否则弹窗无法显示
+    document.getElementById('newsModal').classList.remove('d-none');
     document.getElementById('newsModal').style.display = 'flex';
     var btn = document.getElementById('newsConfirmBtn');
     btn.disabled = false;
@@ -580,13 +584,13 @@ function openNewsModal() {
 
 function closeNewsModal() {
     var m = document.getElementById('newsModal');
-    if (m) m.style.display = 'none';
+    if (m) { m.style.display = 'none'; m.classList.add('d-none'); }
     var btn = document.getElementById('newsConfirmBtn');
     if (btn) { btn.disabled = false; btn.innerText = '开始采集'; }
 }
 
 document.getElementById('newsModal').addEventListener('click', function(e) {
-    if (e.target === this) this.style.display = 'none';
+    if (e.target === this) { this.style.display = 'none'; this.classList.add('d-none'); }
 });
 
 </script>

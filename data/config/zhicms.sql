@@ -472,6 +472,7 @@ DROP TABLE IF EXISTS `__PREFIX__mall`;
 CREATE TABLE `__PREFIX__mall` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(100) DEFAULT NULL,
+  `union_id` int(11) NOT NULL DEFAULT '0' COMMENT '所属联盟模型ID（yun_union.id）',
   `link` varchar(500) DEFAULT NULL,
   `img` varchar(255) DEFAULT NULL,
   `sort` int(11) DEFAULT '0',

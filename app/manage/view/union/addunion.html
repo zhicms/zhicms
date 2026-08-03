@@ -2,7 +2,7 @@
 
 <h1 class="page-title"><i class="fas fa-cogs"></i> <?php echo !empty($this->ret['id']) ? '编辑联盟模型' : '新增联盟模型'; ?></h1>
 
-<form method="post" action="index.php?r=manage/union/<?php echo !empty($this->ret['id']) ? 'editorUnion' : 'addUnion'; ?>">
+<form id="unionForm" method="post" action="index.php?r=manage/union/<?php echo !empty($this->ret['id']) ? 'editorUnion' : 'addUnion'; ?>">
     <?php if(!empty($this->ret['id'])): ?><input type="hidden" name="id" value="<?php echo $this->ret['id']; ?>"><?php endif; ?>
     <div class="form-group">
         <label>名称</label>
@@ -12,8 +12,44 @@
         <label>代码(code)</label>
         <textarea class="form-control" name="code" rows="6"><?php echo base64_decode($this->ret['code'] ?? ''); ?></textarea>
     </div>
-    <button type="submit" class="btn btn-primary">保存</button>
+    <button type="submit" class="btn btn-primary" id="unionSaveBtn">保存</button>
     <a href="index.php?r=manage/union/union" class="btn btn-default">返回</a>
 </form>
 
 {include file="app/manage/view/index/emlog_footer"}
+
+<script>
+jQuery(function($){
+    $('#unionForm').on('submit', function(e){
+        e.preventDefault();
+        var btn = $('#unionSaveBtn'), text = btn.text();
+        btn.prop('disabled', true).text('保存中...');
+        $.ajax({
+            url: $(this).attr('action'),
+            type: 'POST',
+            data: $(this).serialize(),
+            dataType: 'json',
+            success: function(res){
+                if(res && res.need_login){
+                    showToast(res.info || '登录已过期，请重新登录', 'danger');
+                    setTimeout(function(){ window.location.href = 'index.php?r=manage/login/index'; }, 1200);
+                    return;
+                }
+                if(res && res.status == 'y'){
+                    showToast(res.info, 'success');
+                    setTimeout(function(){ window.location.href = 'index.php?r=manage/union/union'; }, 1200);
+                } else {
+                    showToast((res && res.info) || '保存失败', 'danger');
+                    btn.prop('disabled', false).text(text);
+                }
+            },
+            error: function(xhr){
+                var msg = '请求异常，请稍后重试';
+                try { var r = JSON.parse(xhr.responseText); if (r && r.info) msg = r.info; } catch(e) {}
+                showToast(msg, 'danger');
+                btn.prop('disabled', false).text(text);
+            }
+        });
+    });
+});
+</script>

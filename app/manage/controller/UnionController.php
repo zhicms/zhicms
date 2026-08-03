@@ -376,14 +376,16 @@ class UnionController extends \app\base\controller\BaseController
         $this->checkManageSession();
 
         if(!\IS_POST){
-            $this->pageText = array("分类管理", "新建分类");
+            $this->pageText = array("版块管理", "新建版块");
             $this->display('app/manage/view/union/addtype');
             exit;
         }else{
             self::checkTypeForm();
             $data = obj('api/Api')->Form($this->POSTarg());
-            obj('api/ApiData')->insertData('yun_group', $data);
-            echo json_encode(array("info" => "保存成功", "status" => "y"));
+            // 统一操作 yun_bankuai（与 type() 列表一致）
+            $data['px'] = isset($data['px']) && $data['px'] !== '' ? intval($data['px']) : 0;
+            obj('api/ApiData')->insertData('yun_bankuai', $data);
+            exit(json_encode(array("info" => "保存成功", "status" => "y")));
 
         }
     }
@@ -393,10 +395,10 @@ class UnionController extends \app\base\controller\BaseController
         $this->checkManageSession();
 
         if(!\IS_POST){
-            $this->pageText = array("分类管理", "编辑分类");
+            $this->pageText = array("版块管理", "编辑版块");
             $id = intval($this->arg("id"));
             $where['id'] = $id;
-            $ret = obj("api/ApiData")->dataSelect("yun_group",$where);
+            $ret = obj("api/ApiData")->dataSelect("yun_bankuai",$where);
             $this->ret = $ret;
             $this->html = '<input type="hidden" name="id" value="'.$ret['id'].'" />';
             $this->display('app/manage/view/union/addtype');
@@ -404,10 +406,15 @@ class UnionController extends \app\base\controller\BaseController
         }else{
             self::checkTypeForm();
             $id = intval($this->arg("id"));
+            if ($id <= 0) {
+                exit(json_encode(array("info" => "缺少有效的版块 ID", "status" => "n")));
+            }
             $where['id'] = $id;
             $data = obj('api/Api')->Form($this->POSTarg());
-            obj("api/ApiData")->dataUpdate("yun_group",$data,$where);
-            echo json_encode(array("info" => "保存成功", "status" => "y"));
+            unset($data['id']);
+            $data['px'] = isset($data['px']) && $data['px'] !== '' ? intval($data['px']) : 0;
+            obj("api/ApiData")->dataUpdate("yun_bankuai",$data,$where);
+            exit(json_encode(array("info" => "保存成功", "status" => "y")));
         }
 
     }
@@ -418,16 +425,16 @@ class UnionController extends \app\base\controller\BaseController
 
         error_reporting(0);
         $id = intval($this->arg("id"));
-        $where['groupid'] = $id;
-        //查询该分类下面有没有文章
+        // 检查该版块下是否有帖子（yun_forum.bankuai_id）
+        $where['bankuai_id'] = $id;
         $count = obj("api/ApiData")->dataCount("yun_forum", $where);
         if($count>0){
-            exit(json_encode(array("info" => "请先删除改分类下的文章", "status" => "n")));
+            exit(json_encode(array("info" => "该版块下还有帖子，请先删除", "status" => "n")));
         }
 
-        //删除
+        //删除版块
         $where = "`id` = ?";
-        obj('api/ApiData')->deleteThis('yun_group', $where, array($id));
+        obj('api/ApiData')->deleteThis('yun_bankuai', $where, array($id));
         exit(json_encode(array("info" => "删除成功", "status" => "y")));
 
     }
@@ -446,8 +453,8 @@ class UnionController extends \app\base\controller\BaseController
 
         $this->checkManageSession();
 
-        if(!$this->arg("groupname")){
-            exit(json_encode(array("info" => "请填写分类名称", "status" => "n")));
+        if(!$this->arg("name")){
+            exit(json_encode(array("info" => "请填写版块名称", "status" => "n")));
         }
         if(!$this->arg("px")){
             exit(json_encode(array("info" => "请填写排序", "status" => "n")));

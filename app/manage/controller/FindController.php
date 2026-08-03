@@ -627,7 +627,16 @@ class FindController extends \app\base\controller\BaseController
 	} 
 
 
-	public function type(){
+	
+	/**
+	 * 删除文章（视图 find/index.html 调用 manage/find/del）
+	 * 与 delete() 等价，提供 del 入口以匹配前端路由
+	 */
+	public function del(){
+		return $this->delete();
+	}
+
+public function type(){
  
 
 
@@ -654,10 +663,19 @@ class FindController extends \app\base\controller\BaseController
 			exit;
 		}else{
 			self::checkTypeForm();
-			 $data = obj('api/Api')->Form($this->POSTarg());
-			 obj('api/ApiData')->insertData('yun_nav', $data);
-			 echo json_encode(array("info" => "保存成功", "status" => "y"));
-
+			try {
+				$data = obj('api/Api')->Form($this->POSTarg());
+				// 参考 ad/addHuan：px 为 int 列，空字符串插入会触发 MySQL 严格模式报错，
+				// 此处统一转为 int 并给默认值，避免 "请求异常"（返回 HTML 错误页）。
+				$data['px'] = isset($data['px']) && $data['px'] !== '' ? intval($data['px']) : 0;
+				$newId = obj('api/ApiData')->insertData('yun_nav', $data);
+				if (!$newId) {
+					exit(json_encode(array("info" => "保存失败，请重试", "status" => "n")));
+				}
+				exit(json_encode(array("info" => "保存成功", "status" => "y", "id" => $newId)));
+			} catch (\Throwable $e) {
+				exit(json_encode(array("info" => "保存失败：" . $e->getMessage(), "status" => "n")));
+			}
 		}
 	}
 
@@ -679,12 +697,23 @@ class FindController extends \app\base\controller\BaseController
 			$this->display('app/manage/view/find/addtype');
 			exit;
 		}else{
-			 self::checkTypeForm();
-             $id=intval($this->arg("id"));
-			 $where['id'] = $id;
-			 $data = obj('api/Api')->Form($this->POSTarg());
-             obj("api/ApiData")->dataUpdate("yun_nav",$data,$where);
-             echo json_encode(array("info" => "保存成功", "status" => "y"));
+			self::checkTypeForm();
+			$id = intval($this->arg("id"));
+			if ($id <= 0) {
+				exit(json_encode(array("info" => "缺少有效的分类 ID", "status" => "n")));
+			}
+			$where['id'] = $id;
+			try {
+				$data = obj('api/Api')->Form($this->POSTarg());
+				// 移除 data 中的 id，避免与 WHERE 的 id 重复（SET 与 WHERE 共用 :__id 占位符）
+				unset($data['id']);
+				// px 为 int 列，空值转 0 避免 MySQL 严格模式报错
+				$data['px'] = isset($data['px']) && $data['px'] !== '' ? intval($data['px']) : 0;
+				obj("api/ApiData")->dataUpdate("yun_nav", $data, $where);
+				exit(json_encode(array("info" => "保存成功", "status" => "y")));
+			} catch (\Throwable $e) {
+				exit(json_encode(array("info" => "保存失败：" . $e->getMessage(), "status" => "n")));
+			}
 		}
 
 	}
