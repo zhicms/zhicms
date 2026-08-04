@@ -158,8 +158,8 @@ class TaskController extends \app\base\controller\BaseController
                 if (!is_array($apiCfg)) $apiCfg = array();
                 if (isset($_POST['news_key235'])) $apiCfg['juhe_235_key'] = trim($_POST['news_key235']);
                 if (isset($_POST['news_key850'])) $apiCfg['juhe_850_key'] = trim($_POST['news_key850']);
-                $apiCfg['juhe_235_map'] = $this->parseNewsMap($_POST, 'news235', 'news235chk');
-                $apiCfg['juhe_850_map'] = $this->parseNewsMap($_POST, 'news850', 'news850chk');
+                $apiCfg['juhe_235_map'] = $this->parseNewsMap($_POST, 'news235_map', 'news235chk');
+                $apiCfg['juhe_850_map'] = $this->parseNewsMap($_POST, 'news850_map', 'news850chk');
                 \app\common\ConfigStore::save('api', $apiCfg);
             }
         } else {
