@@ -11,6 +11,35 @@
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/public/manage/css/nav-fix.css">
 <link rel="stylesheet" href="{__PUBLIC__}manage/css/utilities.css?v=5.0.2">
+    <script>
+    // 全局注入 X-Requested-With 头：session 失效时后端返回 JSON 而非 302 登录页，
+    // 否则原生 fetch/XMLHttpRequest 拿到登录页 HTML 会导致前端解析失败、报"请求失败"。
+    (function(){
+        var H = 'X-Requested-With', V = 'XMLHttpRequest';
+        var _origOpen = XMLHttpRequest.prototype.open;
+        XMLHttpRequest.prototype.open = function(method, url){
+            this.__zcUrl = url;
+            return _origOpen.apply(this, arguments);
+        };
+        var _origSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.send = function(){
+            try { this.setRequestHeader(H, V); } catch(e){}
+            return _origSend.apply(this, arguments);
+        };
+        if (window.fetch) {
+            var _origFetch = window.fetch;
+            window.fetch = function(input, init){
+                init = init || {};
+                init.headers = init.headers || {};
+                if (!(H in init.headers)) {
+                    if (init.headers instanceof Headers) { init.headers.set(H, V); }
+                    else { init.headers[H] = V; }
+                }
+                return _origFetch.call(this, input, init);
+            };
+        }
+    })();
+    </script>
     <style type="text/css">
         /* 覆盖内联style强制修复子导航白色字体问题 */
         .collapse-inner .collapse-item[style],

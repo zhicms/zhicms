@@ -20,6 +20,9 @@ class AiAssistantController extends \app\base\controller\BaseController
     /** 会话历史存储目录 */
     private $historyDir = '';
 
+    /** 本次对话是否因「AI 模型未配置」而失败（用于前端提示） */
+    private $chatUnconfigured = false;
+
     public function __construct()
     {
         parent::__construct();
@@ -123,7 +126,11 @@ class AiAssistantController extends \app\base\controller\BaseController
         $history[] = ['role' => 'assistant', 'content' => $reply];
         $this->saveHistory($history);
 
-        echo json_encode(['reply' => $reply, 'type' => $respType], JSON_UNESCAPED_UNICODE);
+        $out = ['reply' => $reply, 'type' => $respType];
+        if (!empty($this->chatUnconfigured)) {
+            $out['unconfigured'] = true;
+        }
+        echo json_encode($out, JSON_UNESCAPED_UNICODE);
     }
 
     /**
@@ -1258,7 +1265,9 @@ PROMPT;
         }
 
         if (strpos($response, 'AI 模型未配置') === 0) {
-            return '抱歉，AI 助手暂时不可用😣 网站服务出现异常，请联系站长处理，给您带来不便敬请谅解~';
+            // 标记 unconfigured，前端可明确提示"站长未配置模型"
+            $this->chatUnconfigured = true;
+            return 'unconfigured:AI 助手尚未配置，请站长在后台「AI 设置」中添加并启用对话模型';
         }
 
         if (strpos($response, '大模型处理异常') === 0) {
