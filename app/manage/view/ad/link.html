@@ -159,9 +159,25 @@ function searchLinks() {
 }
 
 function deleteLink(id) {
-    if(confirm('确定要删除这个链接吗？此操作不可恢复！')) {
-        location.href = 'index.php?r=manage/ad/deletelink&id=' + id;
-    }
+    if(!confirm('确定要删除这个链接吗？此操作不可恢复！')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/ad/deletelink&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4) {
+            try {
+                var res = JSON.parse(xhr.responseText);
+                if (res.status === 'y') {
+                    showToast(res.info || '删除成功', 'success');
+                    setTimeout(function(){ location.reload(); }, 800);
+                } else {
+                    showToast(res.info || '删除失败', 'danger');
+                }
+            } catch (e) {
+                showToast('删除失败，请重试', 'danger');
+            }
+        }
+    };
+    xhr.send();
 }
 
 function checkLinks() {

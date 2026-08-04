@@ -75,6 +75,9 @@ class Http{
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array($header));//模拟的header头
+		// 强制使用 HTTP/1.1，避免部分启用了 HTTP/2 的服务器（如 nginx）在带自定义请求头时
+		// 触发 curl error 55（Failed sending HTTP request）导致请求失败（返回 false）。
+		curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 		$result = curl_exec($ch);
 		curl_close($ch);
 		return $result;
@@ -95,6 +98,7 @@ class Http{
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array($header));//模拟的header头
+		curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 		$result = curl_exec($ch);
 		curl_close($ch);
 		return $result;

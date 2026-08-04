@@ -231,7 +231,15 @@ class AiService
     }
 
     /**
-     * 发送非流式 API 请求
+     * 获取模型协议（默认 openai 兼容）
+     */
+    private static function getProtocol($modelInfo)
+    {
+        return isset($modelInfo['protocol']) ? strtolower(trim($modelInfo['protocol'])) : 'openai';
+    }
+
+    /**
+     * 发送非流式 API 请求（按协议分流）
      */
     private static function sendRequest($messages)
     {
@@ -239,20 +247,12 @@ class AiService
         if (!$modelInfo) {
             return json_encode(array('error' => 'AI 模型未配置'));
         }
-
-        $postData = json_encode(array(
-            'messages'    => $messages,
-            'model'       => $modelInfo['model'],
-            'max_tokens'  => 4096,
-            'stream'      => false,
-            'temperature' => 1,
-        ), JSON_UNESCAPED_UNICODE);
-
-        return self::curlRequest($modelInfo['api_url'], $modelInfo['api_key'], $postData, 60);
+        $protocol = self::getProtocol($modelInfo);
+        return self::requestByProtocol($protocol, $modelInfo, $messages, false);
     }
 
     /**
-     * 发送流式 API 请求并直接输出 SSE
+     * 发送流式 API 请求并直接输出 SSE（按协议分流）
      */
     private static function sendStreamRequest($messages)
     {
@@ -262,7 +262,327 @@ class AiService
             echo "data: [DONE]\n\n";
             return '';
         }
+        $protocol = self::getProtocol($modelInfo);
+        return self::streamByProtocol($protocol, $modelInfo, $messages);
+    }
 
+    /**
+     * 按协议构建请求并发送（非流式），返回原始响应字符串
+     */
+    private static function requestByProtocol($protocol, $modelInfo, $messages, $stream)
+    {
+        switch ($protocol) {
+            case 'gemini':
+                return self::requestGemini($modelInfo, $messages, $stream);
+            case 'anthropic':
+                return self::requestAnthropic($modelInfo, $messages, $stream);
+            case 'ernie':
+                return self::requestErnie($modelInfo, $messages, $stream);
+            case 'azure':
+                return self::requestAzure($modelInfo, $messages, $stream);
+            case 'xinghuo':
+                return self::requestXinghuo($modelInfo, $messages, $stream);
+            case 'openai':
+            default:
+                return self::requestOpenAi($modelInfo, $messages, $stream);
+        }
+    }
+
+    /**
+     * OpenAI 兼容协议（DeepSeek/智谱/硅基/豆包/通义/OpenAI/Kimi/MiniMax 等）
+     */
+    private static function requestOpenAi($modelInfo, $messages, $stream)
+    {
+        $postData = json_encode(array(
+            'messages'    => $messages,
+            'model'       => $modelInfo['model'],
+            'max_tokens'  => 4096,
+            'stream'      => $stream,
+            'temperature' => 1,
+        ), JSON_UNESCAPED_UNICODE);
+
+        return self::curlRequest($modelInfo['api_url'], $modelInfo['api_key'], $postData, 60, array(
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'Authorization: Bearer ' . $modelInfo['api_key'],
+        ));
+    }
+
+    /**
+     * Azure OpenAI（与 OpenAI 协议一致，但用 api-key 头并附加 api-version）
+     */
+    private static function requestAzure($modelInfo, $messages, $stream)
+    {
+        $url = $modelInfo['api_url'];
+        if (strpos($url, 'api-version=') === false) {
+            $url .= (strpos($url, '?') === false ? '?' : '&') . 'api-version=2024-02-15-preview';
+        }
+        $postData = json_encode(array(
+            'messages'    => $messages,
+            'max_tokens'  => 4096,
+            'stream'      => $stream,
+            'temperature' => 1,
+        ), JSON_UNESCAPED_UNICODE);
+
+        return self::curlRequest($url, $modelInfo['api_key'], $postData, 60, array(
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'api-key: ' . $modelInfo['api_key'],
+        ));
+    }
+
+    /**
+     * Google Gemini 协议
+     * URL: https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key=KEY
+     */
+    private static function requestGemini($modelInfo, $messages, $stream)
+    {
+        $apiKey = $modelInfo['api_key'];
+        // 支持两种方式：api_url 已含完整 endpoint（含 ?key=），或仅填项目/模型由 key 拼接
+        if (strpos($modelInfo['api_url'], 'generativelanguage.googleapis.com') !== false) {
+            $url = $modelInfo['api_url'];
+            if (strpos($url, 'key=') === false) {
+                $url .= (strpos($url, '?') === false ? '?' : '&') . 'key=' . $apiKey;
+            }
+        } else {
+            $url = 'https://generativelanguage.googleapis.com/v1beta/models/' . $modelInfo['model']
+                . ':generateContent?key=' . $apiKey;
+        }
+
+        // 拆分 system 与对话
+        $systemText = '';
+        $contents = array();
+        foreach ($messages as $m) {
+            if ($m['role'] === 'system') {
+                $systemText = $m['content'];
+                continue;
+            }
+            $role = ($m['role'] === 'assistant') ? 'model' : 'user';
+            $contents[] = array(
+                'role'  => $role,
+                'parts' => array(array('text' => $m['content'])),
+            );
+        }
+        if (empty($contents)) {
+            $contents[] = array('role' => 'user', 'parts' => array(array('text' => '')));
+        }
+
+        $body = array(
+            'contents'         => $contents,
+            'generationConfig' => array('temperature' => 1, 'maxOutputTokens' => 4096),
+        );
+        if ($systemText !== '') {
+            $body['systemInstruction'] = array('parts' => array(array('text' => $systemText)));
+        }
+
+        $postData = json_encode($body, JSON_UNESCAPED_UNICODE);
+        return self::curlRequest($url, $apiKey, $postData, 60, array(
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ));
+    }
+
+    /**
+     * Anthropic Claude 协议
+     */
+    private static function requestAnthropic($modelInfo, $messages, $stream)
+    {
+        $systemText = '';
+        $chatMessages = array();
+        foreach ($messages as $m) {
+            if ($m['role'] === 'system') {
+                $systemText = $m['content'];
+                continue;
+            }
+            $chatMessages[] = array('role' => $m['role'], 'content' => $m['content']);
+        }
+        $body = array(
+            'model'       => $modelInfo['model'],
+            'max_tokens'  => 4096,
+            'temperature' => 1,
+            'messages'    => $chatMessages,
+        );
+        if ($systemText !== '') {
+            $body['system'] = $systemText;
+        }
+        if ($stream) {
+            $body['stream'] = true;
+        }
+        $postData = json_encode($body, JSON_UNESCAPED_UNICODE);
+
+        return self::curlRequest($modelInfo['api_url'], $modelInfo['api_key'], $postData, 60, array(
+            'Content-Type: application/json',
+            'Accept: application/json',
+            'x-api-key: ' . $modelInfo['api_key'],
+            'anthropic-version: 2023-06-01',
+        ));
+    }
+
+    /**
+     * 百度文心 ERNIE 协议（需先用 APIKey+Secret 换取 access_token）
+     */
+    private static function requestErnie($modelInfo, $messages, $stream)
+    {
+        $apiKey    = $modelInfo['api_key'];               // 百度 API Key
+        $apiSecret = isset($modelInfo['api_secret']) ? $modelInfo['api_secret'] : ''; // 百度 Secret Key
+
+        // 获取 access_token（带简单缓存到 runtime）
+        $token = self::getErnieToken($apiKey, $apiSecret);
+        if ($token === false) {
+            return json_encode(array('error' => '文心 access_token 获取失败，请检查 API Key / Secret Key'));
+        }
+
+        // 文心对话地址：https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/{model}
+        if (strpos($modelInfo['api_url'], 'aip.baidubce.com') !== false) {
+            $url = $modelInfo['api_url'];
+        } else {
+            $url = 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/' . $modelInfo['model'];
+        }
+        $url .= (strpos($url, '?') === false ? '?' : '&') . 'access_token=' . $token;
+
+        $body = array(
+            'messages'    => $messages,
+            'temperature' => 1,
+            'stream'      => false,
+        );
+        $postData = json_encode($body, JSON_UNESCAPED_UNICODE);
+        return self::curlRequest($url, $apiKey, $postData, 60, array(
+            'Content-Type: application/json',
+            'Accept: application/json',
+        ));
+    }
+
+    /**
+     * 科大讯飞 MaaS / 星火 HTTP 推理协议（HMAC-SHA256 签名鉴权）
+     * api_key 存 APIKey，api_secret 存 APISecret，api_url 为推理服务地址（需含 app_id 由 model 旁字段给出）
+     */
+    private static function requestXinghuo($modelInfo, $messages, $stream)
+    {
+        $apiKey    = $modelInfo['api_key'];
+        $apiSecret = isset($modelInfo['api_secret']) ? $modelInfo['api_secret'] : '';
+        $appId     = isset($modelInfo['app_id']) ? $modelInfo['app_id'] : '';
+        $url       = $modelInfo['api_url'];
+
+        // 构造签名鉴权头
+        $authHeaders = self::buildXinghuoAuth($url, $apiKey, $apiSecret);
+        if ($authHeaders === false) {
+            return json_encode(array('error' => '讯飞鉴权生成失败，请检查 APIKey / APISecret'));
+        }
+
+        // 讯飞自定义请求体
+        $text = array();
+        foreach ($messages as $m) {
+            $text[] = array('role' => $m['role'], 'content' => $m['content']);
+        }
+        $body = array(
+            'header'    => array('app_id' => $appId, 'uid' => 'zhi_cms'),
+            'parameter' => array('chat' => array('temperature' => 1)),
+            'payload'   => array('message' => array('text' => $text)),
+        );
+        $postData = json_encode($body, JSON_UNESCAPED_UNICODE);
+
+        return self::curlRequest($url, $apiKey, $postData, 60, array_merge(
+            array('Content-Type: application/json', 'Accept: application/json'),
+            $authHeaders
+        ));
+    }
+
+    /**
+     * 构造讯飞通用 URL 鉴权头（HMAC-SHA256）
+     */
+    private static function buildXinghuoAuth($url, $apiKey, $apiSecret)
+    {
+        $parsed = parse_url($url);
+        if ($parsed === false) return false;
+        $host = isset($parsed['host']) ? $parsed['host'] : '';
+        $path = isset($parsed['path']) ? $parsed['path'] : '/';
+        if (isset($parsed['query']) && $parsed['query'] !== '') {
+            $path .= '?' . $parsed['query'];
+        }
+        if ($host === '' || $apiKey === '' || $apiSecret === '') return false;
+
+        $date = gmdate('D, d M Y H:i:s') . ' GMT';
+        $signatureOrigin = "host: {$host}\n";
+        $signatureOrigin .= "date: {$date}\n";
+        $signatureOrigin .= "POST {$path} HTTP/1.1";
+        $signatureSha = hash_hmac('sha256', $signatureOrigin, $apiSecret, true);
+        $signature = base64_encode($signatureSha);
+        $authorization = base64_encode("api_key=\"$apiKey\", algorithm=\"hmac-sha256\", headers=\"host date request-line\", signature=\"$signature\"");
+
+        return array(
+            'Authorization: ' . $authorization,
+            'Host: ' . $host,
+            'Date: ' . $date,
+        );
+    }
+
+    /**
+     * 文心 access_token 获取（runtime 缓存 30 天）
+     */
+    private static function getErnieToken($apiKey, $apiSecret)
+    {
+        if ($apiKey === '' || $apiSecret === '') return false;
+        $cacheFile = \BASE_PATH . 'runtime/ernie_token_' . md5($apiKey) . '.json';
+        if (file_exists($cacheFile)) {
+            $cached = json_decode(file_get_contents($cacheFile), true);
+            if (is_array($cached) && isset($cached['expire']) && $cached['expire'] > time() && !empty($cached['token'])) {
+                return $cached['token'];
+            }
+        }
+        $tokenUrl = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials'
+            . '&client_id=' . urlencode($apiKey) . '&client_secret=' . urlencode($apiSecret);
+        $ch = curl_init();
+        curl_setopt_array($ch, array(
+            CURLOPT_URL            => $tokenUrl,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 15,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+        ));
+        $resp = curl_exec($ch);
+        curl_close($ch);
+        $data = json_decode($resp, true);
+        if (!is_array($data) || empty($data['access_token'])) {
+            return false;
+        }
+        $token = $data['access_token'];
+        $expire = time() + (isset($data['expires_in']) ? intval($data['expires_in']) : 2592000) - 60;
+        @file_put_contents($cacheFile, json_encode(array('token' => $token, 'expire' => $expire)));
+        return $token;
+    }
+
+    /**
+     * 按协议发送流式请求并输出 SSE，返回累积文本
+     */
+    private static function streamByProtocol($protocol, $modelInfo, $messages)
+    {
+        switch ($protocol) {
+            case 'gemini':
+            case 'anthropic':
+            case 'ernie':
+            case 'azure':
+            case 'xinghuo':
+                // 这些协议暂以非流式结果回灌 SSE（统一降级为一次性输出），保证前端可用
+                $raw = self::requestByProtocol($protocol, $modelInfo, $messages, false);
+                $text = self::parseResponseByProtocol($protocol, $raw);
+                if ($text !== '' && strpos($text, '大模型') !== 0 && strpos($text, 'AI 模型') !== 0) {
+                    echo "data: " . json_encode(array('choices' => array(array('delta' => array('content' => $text)))), JSON_UNESCAPED_UNICODE) . "\n\n";
+                } else {
+                    echo "data: " . json_encode(array('error' => $text), JSON_UNESCAPED_UNICODE) . "\n\n";
+                }
+                echo "data: [DONE]\n\n";
+                return $text;
+            case 'openai':
+            default:
+                return self::streamOpenAi($modelInfo, $messages);
+        }
+    }
+
+    /**
+     * OpenAI 流式请求（SSE，逐块输出并累积）
+     */
+    private static function streamOpenAi($modelInfo, $messages)
+    {
         $postData = json_encode(array(
             'messages'    => $messages,
             'model'       => $modelInfo['model'],
@@ -272,7 +592,6 @@ class AiService
         ), JSON_UNESCAPED_UNICODE);
 
         $fullResponse = '';
-
         $ch = curl_init();
         curl_setopt_array($ch, array(
             CURLOPT_URL            => $modelInfo['api_url'],
@@ -293,7 +612,6 @@ class AiService
                 }
                 flush();
 
-                // 解析数据流中 content 部分
                 $lines = explode("\n", $data);
                 foreach ($lines as $line) {
                     $line = trim($line);
@@ -326,13 +644,21 @@ class AiService
     }
 
     /**
-     * 通用 cURL 请求
+     * 通用 cURL 请求（支持自定义 headers）
      */
-    private static function curlRequest($url, $apiKey, $postData, $timeout = 60)
+    private static function curlRequest($url, $apiKey, $postData, $timeout = 60, $headers = null)
     {
         // curl 扩展缺失：返回结构化错误，交由上层降级/提示，避免 PHP 8 下抛 \Error 导致白屏
         if (!extension_loaded('curl')) {
             return json_encode(array('error' => 'curl 扩展未安装，AI 功能不可用。请在 php.ini 中启用 curl 扩展。'));
+        }
+
+        if ($headers === null) {
+            $headers = array(
+                'Content-Type: application/json',
+                'Accept: application/json',
+                'Authorization: Bearer ' . $apiKey,
+            );
         }
 
         $ch = curl_init();
@@ -340,11 +666,7 @@ class AiService
             CURLOPT_URL            => $url,
             CURLOPT_POST           => true,
             CURLOPT_POSTFIELDS     => $postData,
-            CURLOPT_HTTPHEADER     => array(
-                'Content-Type: application/json',
-                'Accept: application/json',
-                'Authorization: Bearer ' . $apiKey,
-            ),
+            CURLOPT_HTTPHEADER     => $headers,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_SSL_VERIFYPEER => false,
             CURLOPT_SSL_VERIFYHOST => false,
@@ -360,24 +682,41 @@ class AiService
             return 'CURL错误: ' . $error;
         }
         if ($httpCode !== 200) {
-            return 'HTTP错误: ' . $httpCode;
+            return 'HTTP错误: ' . $httpCode . ' ' . substr((string)$response, 0, 300);
         }
         return $response;
     }
 
     /**
-     * 解析 API 响应
+     * 解析 API 响应（按协议分发）
      */
     private static function parseResponse($response)
+    {
+        $modelInfo = self::getChatModelInfo();
+        $protocol = $modelInfo ? self::getProtocol($modelInfo) : 'openai';
+        return self::parseResponseByProtocol($protocol, $response);
+    }
+
+    /**
+     * 按协议解析响应为纯文本
+     */
+    private static function parseResponseByProtocol($protocol, $response)
     {
         // 内部错误：AI 模型未配置（sendRequest 返回的）
         if (strpos($response, 'AI 模型未配置') === 0) {
             return $response;
         }
+        // CURL / HTTP 错误前缀
+        if (strpos($response, 'CURL错误') === 0 || strpos($response, 'HTTP错误') === 0) {
+            return $response;
+        }
 
         $data = json_decode($response, true);
+        if (!is_array($data)) {
+            return '大模型处理异常，请稍后再试，错误信息：' . substr($response, 0, 300);
+        }
 
-        // API 返回错误（模型名错误、限流、网络错误等）
+        // 通用 API 错误
         if (isset($data['error'])) {
             $error = $data['error'];
             if (is_array($error) && isset($error['message'])) {
@@ -389,20 +728,54 @@ class AiService
             return '大模型API错误：未知错误';
         }
 
-        // 正常响应
-        if (isset($data['choices'][0]['message']['content'])) {
-            return $data['choices'][0]['message']['content'];
-        }
-        if (isset($data['choices'][0]['text'])) {
-            return $data['choices'][0]['text'];
-        }
+        switch ($protocol) {
+            case 'gemini':
+                if (isset($data['candidates'][0]['content']['parts'][0]['text'])) {
+                    return $data['candidates'][0]['content']['parts'][0]['text'];
+                }
+                if (isset($data['error']['message'])) {
+                    return '大模型API错误：' . $data['error']['message'];
+                }
+                return '大模型处理异常，请稍后再试，错误信息：' . substr($response, 0, 300);
 
-        // 纯文本响应
-        if (is_string($data) && !empty($data)) {
-            return $data;
-        }
+            case 'anthropic':
+                if (isset($data['content'][0]['text'])) {
+                    return $data['content'][0]['text'];
+                }
+                if (isset($data['error']['message'])) {
+                    return '大模型API错误：' . $data['error']['message'];
+                }
+                return '大模型处理异常，请稍后再试，错误信息：' . substr($response, 0, 300);
 
-        return '大模型处理异常，请稍后再试，错误信息：' . $response;
+            case 'ernie':
+                if (isset($data['result'])) {
+                    return $data['result'];
+                }
+                if (isset($data['error_msg'])) {
+                    return '大模型API错误：' . $data['error_msg'];
+                }
+                return '大模型处理异常，请稍后再试，错误信息：' . substr($response, 0, 300);
+
+            case 'xinghuo':
+                if (isset($data['payload']['choices']['text'][0]['content'])) {
+                    return $data['payload']['choices']['text'][0]['content'];
+                }
+                if (isset($data['header']['code']) && $data['header']['code'] != 0) {
+                    return '大模型API错误：讯飞返回错误码 ' . $data['header']['code'];
+                }
+                return '大模型处理异常，请稍后再试，错误信息：' . substr($response, 0, 300);
+
+            case 'openai':
+            case 'azure':
+            default:
+                if (isset($data['choices'][0]['message']['content'])) {
+                    return $data['choices'][0]['message']['content'];
+                }
+                if (isset($data['choices'][0]['text'])) {
+                    return $data['choices'][0]['text'];
+                }
+                return '大模型处理异常，请稍后再试，错误信息：' . substr($response, 0, 300);
+        }
     }
 
     /**

@@ -45,6 +45,25 @@ abstract class BasePlugin {
 	}
 
 	/**
+	 * 前台展示页入口：插件覆写此方法输出自己的展示页。
+	 * 通过 app\index\controller\PlugController::view() 调度，
+	 * 兼容动态与伪静态两种访问。
+	 * @param array $params 除 alias 外的 GET/POST 参数（如 id）
+	 */
+	public function displayPage($params = array()){
+		// 子类覆写：echo 页面内容（可自行 include 插件 view）
+	}
+
+	/**
+	 * 生成本插件展示页链接（伪静态优先，动态兜底）
+	 * @param array $params 参数，如 array('id' => 123)
+	 * @return string
+	 */
+	public function pageUrl($params = array()){
+		return \ZhiCms\base\PluginManager::url($this->alias, $params);
+	}
+
+	/**
 	 * 渲染插件私有视图（plugins/{alias}/view/{tpl}.html）
 	 * 复用框架的 think-template 引擎
 	 */

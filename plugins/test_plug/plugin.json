@@ -1,0 +1,12 @@
+{
+    "alias": "test_plug",
+    "name": "测试展示页插件",
+    "version": "1.0.0",
+    "author": "ZhiCms",
+    "description": "用于验证插件展示页的伪静态/动态访问",
+    "hasSetting": false,
+    "rewrite": {
+        "plug-<alias>-<id>.html": "index/plug/view/alias=<alias>/id=<id>",
+        "plug-<alias>.html": "index/plug/view/alias=<alias>"
+    }
+}

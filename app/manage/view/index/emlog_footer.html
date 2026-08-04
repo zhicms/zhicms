@@ -43,6 +43,7 @@
     <!-- AI 开放平台 -->
     <link rel="stylesheet" href="/public/manage/css/ai-chat.css">
 	<link rel="stylesheet" href="{__PUBLIC__}manage/css/utilities.css?v=5.0.2">
+	<link rel="stylesheet" href="{__PUBLIC__}manage/css/admin-refine.css?v=5.0.3">
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <script src="/public/manage/js/ai-chat.js"></script>
 
@@ -128,6 +129,66 @@
             e.preventDefault();
         });
     });
+    </script>
+
+    <!-- 全局弹窗关闭增强：即使 Bootstrap data-api 偶发未绑定，取消/× 也能关闭弹窗 -->
+    <script>
+    window.zcCloseModal = function(el) {
+        var modal = (el && el.closest) ? el.closest('.modal') : null;
+        if (!modal) return;
+        try {
+            if (window.jQuery && jQuery.fn && jQuery.fn.modal) {
+                jQuery(modal).modal('hide');
+            } else {
+                throw new Error('no-bootstrap');
+            }
+        } catch (e) {
+            modal.classList.remove('show');
+            modal.style.display = 'none';
+            modal.setAttribute('aria-hidden', 'true');
+            modal.removeAttribute('aria-modal');
+            document.body.classList.remove('modal-open');
+            var bd = document.querySelector('.modal-backdrop');
+            if (bd && bd.parentNode) bd.parentNode.removeChild(bd);
+        }
+    };
+    document.addEventListener('click', function(e) {
+        var closer = e.target.closest && e.target.closest('[data-dismiss="modal"]');
+        if (closer) { e.preventDefault(); window.zcCloseModal(closer); }
+    }, true);
+    </script>
+
+    <!-- 全局 tab 切换兜底：当 Bootstrap data-api 未绑定/失效时（如 CDN 加载失败），仍能切换设置页等 bootstrap tab -->
+    <script>
+    (function(){
+        function ensureTabs(){
+            if (window.jQuery && jQuery.fn && jQuery.fn.tab) return; // Bootstrap tab 正常，交给它
+            var links = document.querySelectorAll('[data-toggle="tab"]');
+            for (var i = 0; i < links.length; i++) {
+                (function(link){
+                    link.addEventListener('click', function(e){
+                        var sel = link.getAttribute('href') || link.getAttribute('data-target');
+                        if (!sel) return;
+                        var target = document.querySelector(sel);
+                        if (!target) return;
+                        e.preventDefault();
+                        var content = target.closest('.tab-content') || document;
+                        var panes = content.querySelectorAll('.tab-pane');
+                        for (var j = 0; j < panes.length; j++) panes[j].classList.remove('show', 'active');
+                        target.classList.add('show', 'active');
+                        var tabList = link.closest('.nav');
+                        if (tabList) {
+                            var navs = tabList.querySelectorAll('.nav-link');
+                            for (var k = 0; k < navs.length; k++) navs[k].classList.remove('active');
+                        }
+                        link.classList.add('active');
+                    });
+                })(links[i]);
+            }
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', ensureTabs);
+        else ensureTabs();
+    })();
     </script>
 
     <!-- 全局统一轻提示（后台所有页面共用） -->

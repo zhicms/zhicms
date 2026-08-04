@@ -24,7 +24,8 @@ class Controller{
 	}
 	
 	public function isPost(){
-		return $_SERVER['\REQUEST_METHOD'] == 'POST';
+		// 修复：$_SERVER 键名无反斜杠，'\REQUEST_METHOD' 会取到 null 导致恒为 false
+		return ($_SERVER['REQUEST_METHOD'] ?? '') == 'POST';
 	}
 	
 	public function redirect( $url, $code=302) {

@@ -33,6 +33,24 @@ class PluginManager {
 		} catch (\Throwable $e) {
 			return;
 		}
+		// 合并已启用插件的伪静态规则到框架 REWRITE_RULE（内存态，不写 rule.php），
+		// 使插件展示页既能动态访问（index.php?r=...）也能伪静态访问（plug-xxx.html）。
+		$pluginRules = array();
+		foreach ((array)$rows as $row) {
+			$meta = self::readMeta($row['alias']);
+			if ($meta && !empty($meta['rewrite']) && is_array($meta['rewrite'])) {
+				foreach ($meta['rewrite'] as $rule => $mapper) {
+					if (!isset($pluginRules[$rule])) $pluginRules[$rule] = $mapper;
+				}
+			}
+		}
+		if ($pluginRules) {
+			$cur = \ZhiCms\base\Config::get('REWRITE_RULE');
+			$cur = is_array($cur) ? $cur : array();
+			// 插件规则追加在框架规则之后，避免覆盖系统自带伪静态
+			\ZhiCms\base\Config::set('REWRITE_RULE', array_merge($cur, $pluginRules));
+		}
+
 		foreach ((array)$rows as $row) {
 			self::registerPlugin($row);
 		}
@@ -267,6 +285,82 @@ class PluginManager {
 			return false;
 		}
 		return !empty($row);
+	}
+
+	/**
+	 * 生成插件展示页链接：伪静态开启且有对应 rewrite 规则则返回伪静态 URL，
+	 * 否则回退到动态地址 index.php?r=index/plug/view/alias=<alias>/...
+	 * @param string $alias  插件别名
+	 * @param array  $params 附加参数（键值对，会替换 rewrite 规则中的 <key> 占位符）
+	 * @return string
+	 */
+	public static function url($alias, $params = array()){
+		$meta = self::readMeta($alias);
+		$rewrite = ($meta && !empty($meta['rewrite'])) ? $meta['rewrite'] : array();
+
+		// 动态地址（始终可用）
+		$dyn = 'index.php?r=index/plug/view/alias=' . $alias;
+		if ($params) {
+			foreach ($params as $k => $v) {
+				$dyn .= '&' . $k . '=' . urlencode($v);
+			}
+		}
+
+		// 伪静态未开启或无规则 → 动态
+		if (!\ZhiCms\base\Config::get('REWRITE_ON') || empty($rewrite)) {
+			return $dyn;
+		}
+
+		// 选择一个能容纳所有 params 的规则：优先占位符最多的匹配
+		$best = null; $bestScore = -1;
+		foreach ($rewrite as $rule => $mapper) {
+			preg_match_all('/<([a-zA-Z0-9_]+)>/', $rule, $m);
+			$holders = $m[1];
+			$ok = true;
+			foreach ($holders as $h) {
+				if (!array_key_exists($h, $params)) { $ok = false; break; }
+			}
+			if (!$ok) continue;
+			$score = count($holders);
+			if ($score > $bestScore) { $best = $rule; $bestScore = $score; }
+		}
+		if ($best === null) return $dyn;
+
+		$url = $best;
+		$left = array();
+		foreach ($params as $k => $v) {
+			$count = 0;
+			$url = str_ireplace('<' . $k . '>', $v, $url, $count);
+			if (!$count) $left[$k] = $v;
+		}
+		$url = preg_replace('/<\w+>/', '', $url);
+		if ($left) $url .= (strpos($url, '?') !== false ? '&' : '?') . http_build_query($left);
+		// 去掉入口脚本前缀（rule.php 里的规则均不含 index.php，因此生成的静态 URL 也需一致）
+		$url = ltrim($url, './\\');
+		return $url;
+	}
+
+	/**
+	 * 从插件规则生成到控制器路由的映射（供 routeParseUrl 钩子展示用）
+	 * @return array
+	 */
+	public static function getPluginRewriteRules(){
+		$rules = array();
+		if (!self::tableReady()) return $rules;
+		try {
+			$rows = self::db()->query("SELECT `alias` FROM {pre}plug WHERE `status` = 1");
+		} catch (\Throwable $e) {
+			return $rules;
+		}
+		foreach ($rows as $row) {
+			$meta = self::readMeta($row['alias']);
+			if ($meta && !empty($meta['rewrite']) && is_array($meta['rewrite'])) {
+				foreach ($meta['rewrite'] as $rule => $mapper) {
+					$rules[$rule] = $mapper;
+				}
+			}
+		}
+		return $rules;
 	}
 
 	/* ===================== 表结构自检 / 升级 ===================== */

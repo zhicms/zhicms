@@ -35,10 +35,114 @@ class AiController extends \app\base\controller\BaseController
         $config      = AiService::loadConfig();
         $aiSystemPrompt = isset($config['ai_system_prompt']) ? $config['ai_system_prompt'] : '';
 
+        // 主流平台清单（服务端渲染下拉，避免依赖 JS 填充导致空白）
+        // price: '免费' 表示免费(或免费额度)，否则填写价格说明
+        $aiPlatforms = array(
+            'deepseek'   => array('name' => 'DeepSeek', 'protocol' => 'openai', 'url' => 'https://api.deepseek.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'deepseek-chat', 'price' => '免费'),
+                array('id' => 'deepseek-reasoner', 'price' => '¥1/百万tokens'),
+                array('id' => 'deepseek-coder', 'price' => '免费'),
+            )),
+            'zhipu'      => array('name' => '智谱 AI (GLM)', 'protocol' => 'openai', 'url' => 'https://open.bigmodel.cn/api/paas/v4/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'glm-4.7-flash', 'price' => '免费'),
+                array('id' => 'glm-4-air', 'price' => '免费'),
+                array('id' => 'glm-4-airx', 'price' => '免费'),
+                array('id' => 'glm-4-plus', 'price' => '¥0.5/百万tokens'),
+                array('id' => 'glm-4-long', 'price' => '¥1/百万tokens'),
+                array('id' => 'glm-4v', 'price' => '¥0.4/百万tokens'),
+            )),
+            'qwen'       => array('name' => '通义千问 (阿里百炼)', 'protocol' => 'openai', 'url' => 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'qwen-plus', 'price' => '¥0.4/百万tokens'),
+                array('id' => 'qwen-turbo', 'price' => '免费'),
+                array('id' => 'qwen-max', 'price' => '¥2/百万tokens'),
+                array('id' => 'qwen-max-longcontext', 'price' => '¥3/百万tokens'),
+                array('id' => 'qwen2.5-7b-instruct', 'price' => '免费'),
+                array('id' => 'qwen2.5-72b-instruct', 'price' => '¥1/百万tokens'),
+                array('id' => 'qwen3-235b-a22b', 'price' => '¥2/百万tokens'),
+            )),
+            'siliconflow'=> array('name' => '硅基流动 (SiliconFlow)', 'protocol' => 'openai', 'url' => 'https://api.siliconflow.cn/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'Qwen/Qwen2.5-7B-Instruct', 'price' => '免费'),
+                array('id' => 'Qwen/Qwen2.5-14B-Instruct', 'price' => '免费'),
+                array('id' => 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B', 'price' => '免费'),
+                array('id' => 'THUDM/glm-4-9b-chat', 'price' => '免费'),
+                array('id' => 'Qwen/Qwen2.5-72B-Instruct', 'price' => '¥1.3/百万tokens'),
+                array('id' => 'deepseek-ai/DeepSeek-V3', 'price' => '¥1.7/百万tokens'),
+                array('id' => 'deepseek-ai/DeepSeek-R1', 'price' => '¥4/百万tokens'),
+                array('id' => 'meta-llama/Llama-3.3-70B-Instruct', 'price' => '¥2.2/百万tokens'),
+            )),
+            'doubao'     => array('name' => '豆包 (火山方舟)', 'protocol' => 'openai', 'url' => 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'doubao-seed-1.6-250615', 'price' => '¥0.6/百万tokens'),
+                array('id' => 'doubao-lite-32k', 'price' => '免费'),
+                array('id' => 'doubao-pro-32k', 'price' => '¥1.2/百万tokens'),
+                array('id' => 'doubao-vision-lite-32k', 'price' => '免费'),
+            )),
+            'kimi'       => array('name' => 'Kimi (Moonshot)', 'protocol' => 'openai', 'url' => 'https://api.moonshot.cn/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'moonshot-v1-8k', 'price' => '¥1/百万tokens'),
+                array('id' => 'moonshot-v1-32k', 'price' => '¥2.4/百万tokens'),
+                array('id' => 'moonshot-v1-128k', 'price' => '¥8/百万tokens'),
+                array('id' => 'moonshot-v1-mini', 'price' => '¥0.5/百万tokens'),
+            )),
+            'minimax'    => array('name' => 'MiniMax', 'protocol' => 'openai', 'url' => 'https://api.minimax.chat/v1/text/chatcompletion_v2', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'abab6.5s-chat', 'price' => '¥1/百万tokens'),
+                array('id' => 'abab6.5t-chat', 'price' => '免费'),
+                array('id' => 'abab7-chat-preview', 'price' => '¥2/百万tokens'),
+            )),
+            'stepfun'    => array('name' => '阶跃星辰 (StepFun)', 'protocol' => 'openai', 'url' => 'https://api.stepfun.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'step-1-flash', 'price' => '免费'),
+                array('id' => 'step-1v-8k', 'price' => '¥1/百万tokens'),
+                array('id' => 'step-2-16k', 'price' => '¥2/百万tokens'),
+            )),
+            'baichuan'   => array('name' => '百川智能 (Baichuan)', 'protocol' => 'openai', 'url' => 'https://api.baichuan-ai.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'Baichuan4', 'price' => '¥1.2/百万tokens'),
+                array('id' => 'Baichuan3-Turbo', 'price' => '¥0.8/百万tokens'),
+                array('id' => 'Baichuan2-13B-Chat', 'price' => '免费'),
+            )),
+            'openai'     => array('name' => 'OpenAI', 'protocol' => 'openai', 'url' => 'https://api.openai.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'gpt-4o', 'price' => '$5/百万tokens'),
+                array('id' => 'gpt-4o-mini', 'price' => '$0.6/百万tokens'),
+                array('id' => 'gpt-4.1-mini', 'price' => '$0.8/百万tokens'),
+                array('id' => 'o1', 'price' => '$60/百万tokens'),
+                array('id' => 'o3-mini', 'price' => '$1.1/百万tokens'),
+            )),
+            'azure'      => array('name' => 'Azure OpenAI', 'protocol' => 'azure', 'url' => 'https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'gpt-4o', 'price' => '$5/百万tokens'),
+                array('id' => 'gpt-35-turbo', 'price' => '$0.5/百万tokens'),
+                array('id' => 'gpt-4.1', 'price' => '$10/百万tokens'),
+            )),
+            'gemini'     => array('name' => 'Google Gemini', 'protocol' => 'gemini', 'url' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'gemini-1.5-pro', 'price' => '$1.25/百万tokens'),
+                array('id' => 'gemini-2.0-flash', 'price' => '$0.1/百万tokens'),
+                array('id' => 'gemini-2.0-flash-lite', 'price' => '免费'),
+                array('id' => 'gemini-2.5-pro', 'price' => '$1.25/百万tokens'),
+            )),
+            'anthropic'  => array('name' => 'Anthropic Claude', 'protocol' => 'anthropic', 'url' => 'https://api.anthropic.com/v1/messages', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'claude-3-5-sonnet-20241022', 'price' => '$3/百万tokens'),
+                array('id' => 'claude-3-opus-20240229', 'price' => '$15/百万tokens'),
+                array('id' => 'claude-3-haiku-20240307', 'price' => '$0.25/百万tokens'),
+                array('id' => 'claude-3-5-haiku', 'price' => '$0.8/百万tokens'),
+            )),
+            'ernie'      => array('name' => '百度文心 ERNIE', 'protocol' => 'ernie', 'url' => 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat', 'secret' => true, 'appid' => false, 'models' => array(
+                array('id' => 'ernie-4.0-8k', 'price' => '¥0.8/百万tokens'),
+                array('id' => 'ernie-3.5-8k', 'price' => '¥0.6/百万tokens'),
+                array('id' => 'ernie-speed-128k', 'price' => '免费'),
+                array('id' => 'ernie-speed', 'price' => '免费'),
+                array('id' => 'ernie-4.0-8k-latest', 'price' => '¥0.8/百万tokens'),
+            )),
+            'xinghuo'    => array('name' => '科大讯飞 MaaS / 星火', 'protocol' => 'xinghuo', 'url' => 'wss://maas-api.cn-huabei-1.xf-yun.com/v1.1/chat', 'secret' => true, 'appid' => true, 'models' => array()),
+        );
+        // 默认平台（页面默认选中）
+        $defaultPlatform = 'deepseek';
+        $defaultModels   = $aiPlatforms[$defaultPlatform]['models'];
+        $defaultUrl      = $aiPlatforms[$defaultPlatform]['url'];
+
         $this->assign('aiModels', $aiModels);
         $this->assign('currentChatKey', $currentChat);
         $this->assign('currentImageKey', $currentImage);
         $this->assign('aiSystemPrompt', $aiSystemPrompt);
+        $this->assign('aiPlatforms', $aiPlatforms);
+        $this->assign('defaultPlatform', $defaultPlatform);
+        $this->assign('defaultModels', $defaultModels);
+        $this->assign('defaultUrl', $defaultUrl);
 
         $this->display('app/manage/view/ai/setting');
     }
@@ -50,15 +154,18 @@ class AiController extends \app\base\controller\BaseController
     public function save()
     {
         $this->checkManageSession();
-        if (!$this->isPost()) {
-            $this->redirect('index.php?r=manage/ai/setting');
-            return;
+        if (!\IS_POST) {
+            // 与系统设置(SetController)统一：非 POST 返回 JSON 错误而非重定向，避免 AJAX 收到 302
+            exit(json_encode(array('info' => '请求方式错误', 'status' => 'n')));
         }
 
         $apiUrl   = isset($_POST['ai_api_url']) ? trim($_POST['ai_api_url']) : '';
         $apiKey   = isset($_POST['ai_api_key']) ? trim($_POST['ai_api_key']) : '';
         $model    = isset($_POST['ai_model']) ? trim($_POST['ai_model']) : '';
         $modelType = isset($_POST['ai_model_type']) ? trim($_POST['ai_model_type']) : 'chat';
+        $protocol = isset($_POST['ai_protocol']) ? trim($_POST['ai_protocol']) : 'openai';
+        $apiSecret = isset($_POST['ai_api_secret']) ? trim($_POST['ai_api_secret']) : '';
+        $appId    = isset($_POST['ai_app_id']) ? trim($_POST['ai_app_id']) : '';
 
         if (empty($apiUrl) || empty($apiKey) || empty($model)) {
             echo json_encode(array('info' => '请填写完整的 API 信息', 'status' => 'n'));
@@ -69,12 +176,15 @@ class AiController extends \app\base\controller\BaseController
         $models  = isset($config['ai_models']) ? $config['ai_models'] : array();
 
         // 生成唯一 key
-        $key = substr(md5($apiUrl . $model), 0, 10);
+        $key = substr(md5($apiUrl . $model . $protocol), 0, 10);
         $models[$key] = array(
-            'api_url' => $apiUrl,
-            'api_key' => $apiKey,
-            'model'   => $model,
-            'type'    => $modelType,
+            'api_url'    => $apiUrl,
+            'api_key'    => $apiKey,
+            'model'      => $model,
+            'type'       => $modelType,
+            'protocol'   => $protocol,
+            'api_secret' => $apiSecret,
+            'app_id'     => $appId,
         );
 
         $config['ai_models'] = $models;
@@ -107,6 +217,9 @@ class AiController extends \app\base\controller\BaseController
             $apiKey    = isset($_POST['edit_ai_api_key']) ? trim($_POST['edit_ai_api_key']) : (isset($_POST['ai_api_key']) ? trim($_POST['ai_api_key']) : '');
             $model     = isset($_POST['edit_ai_model']) ? trim($_POST['edit_ai_model']) : (isset($_POST['ai_model']) ? trim($_POST['ai_model']) : '');
             $modelType = isset($_POST['ai_model_type']) ? trim($_POST['ai_model_type']) : 'chat';
+            $protocol  = isset($_POST['edit_ai_protocol']) ? trim($_POST['edit_ai_protocol']) : (isset($_POST['ai_protocol']) ? trim($_POST['ai_protocol']) : 'openai');
+            $apiSecret = isset($_POST['edit_ai_api_secret']) ? trim($_POST['edit_ai_api_secret']) : (isset($_POST['ai_api_secret']) ? trim($_POST['ai_api_secret']) : '');
+            $appId     = isset($_POST['edit_ai_app_id']) ? trim($_POST['edit_ai_app_id']) : (isset($_POST['ai_app_id']) ? trim($_POST['ai_app_id']) : '');
 
             if (empty($key)) {
                 $this->updateAjaxOrRedirect(array('info' => '参数错误', 'status' => 'n'));
@@ -132,6 +245,10 @@ class AiController extends \app\base\controller\BaseController
                 $models[$key]['model'] = $model;
             }
             $models[$key]['type'] = $modelType;
+            // 这些字段即使为空也允许覆盖（如切换协议时清空 secret）
+            $models[$key]['protocol']   = $protocol;
+            $models[$key]['api_secret'] = $apiSecret;
+            $models[$key]['app_id']     = $appId;
 
             $config['ai_models'] = $models;
             AiService::saveConfig($config);

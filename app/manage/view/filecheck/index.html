@@ -45,6 +45,9 @@
     </div>
 </div>
 
+<!-- 文件查询结果展示区 -->
+<div id="queryResult" class="d-none"></div>
+
 <!-- 一键恢复整站 -->
 <div class="card border-danger mb-3">
     <div class="card-header bg-danger text-white font-weight-bold"><i class="fas fa-magic mr-1"></i> 一键恢复整站（急救）</div>
@@ -77,8 +80,8 @@
 <div class="card border-info mb-3">
     <div class="card-header bg-info text-white font-weight-bold"><i class="fas fa-satellite-dish mr-1"></i> 在线升级文件系统（远程下载恢复）</div>
     <div class="card-body">
-        <p class="mb-2">当核心/程序文件被改动、缺失或被篡改时，可<b>直接从官方代码仓（gitee）远程下载最新官方版本覆盖</b>本地文件，相当于“文件级在线升级”，与“在线升级系统”（升级程序大版本）互补。</p>
-        <p class="mb-2 text-muted small">恢复顺序：gitee 官方代码仓 → 本地托底目录 → 官方压缩包（data/repo_ref/zhicms.zip）。点击下方按钮会对所有“与基线不一致”的文件执行远程下载覆盖。</p>
+        <p class="mb-2">当核心/程序文件被改动、缺失或被篡改时，可<b>直接从官方代码仓（gitee）远程下载最新官方版本覆盖</b>本地受保护核心文件，相当于“文件级在线升级”，与“在线升级系统”（升级程序大版本）互补。</p>
+        <p class="mb-2 text-muted small">恢复顺序：gitee 官方代码仓 → 本地托底目录 → 官方压缩包（data/repo_ref/zhicms.zip）。点击下方按钮会对所有“被改动或缺失”的<b>受保护核心文件</b>（ZhiCms/vendor/app/base/app/api/app/common/public 等）执行远程下载覆盖；普通可修改文件（如自定义模板/视图）不会被强制覆盖，以保留你的正常修改。</p>
         <button type="button" class="btn btn-info" onclick="pullAll()"><i class="fas fa-cloud-download-alt mr-1"></i> 一键在线升级全部文件（远程下载覆盖）</button>
     </div>
 </div>
@@ -229,7 +232,7 @@ function restoreAll(){
     postAct('index.php?r=manage/filecheck/restoreAll', {}, '整站恢复完成');
 }
 function pullAll(){
-    if (!confirm('在线升级文件系统：将从官方代码仓/本地托底/官方压缩包远程下载最新版本，覆盖所有与基线不一致（被改动/缺失）的核心文件。确定？')) return;
+    if (!confirm('在线升级文件系统：将从官方代码仓/本地托底/官方压缩包远程下载最新版本，覆盖所有“被改动或缺失”的受保护核心文件（ZhiCms/vendor/app/base/app/api/app/common/public 等）。\n注意：普通可修改文件（如你自定义的模板/视图改动）不会被强制覆盖，以保留你的正常修改。确定？')) return;
     postAct('index.php?r=manage/filecheck/pull', {}, '在线升级完成');
 }
 function downloadZip(){
@@ -238,6 +241,7 @@ function downloadZip(){
 }
 function detectUpdate(){
     var box = document.getElementById('detectResult');
+    box.classList.add('d-none');
     box.style.display = 'none';
     box.innerHTML = '';
     showToast('正在连接代码仓/更新包检测更新，请稍候…', 'success');
@@ -288,6 +292,7 @@ function detectUpdate(){
                 html += '<button type="button" class="btn btn-success" onclick="pullAll()"><i class="fas fa-cloud-download-alt mr-1"></i> 一键在线升级补回这些更新</button>';
             }
             box.innerHTML = html;
+            box.classList.remove('d-none');
             box.style.display = 'block';
         } catch(e) {
             showToast('检测失败：返回数据异常', 'danger');
@@ -301,6 +306,7 @@ function restore(file){
 }
 function queryFile(file){
     if (!confirm('查询文件：' + file + '\n将展示该文件状态（受保护/可写/可恢复）。确定？')) return;
+    var box = document.getElementById('queryResult');
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'index.php?r=manage/filecheck/query', true);
     var fd = new FormData(); fd.append('file', file);
@@ -310,34 +316,18 @@ function queryFile(file){
         try {
             var res = JSON.parse(xhr.responseText);
             if (!res || res.status !== 'y') { showToast('查询失败', 'danger'); return; }
-            var msg = '文件：' + file + '\n';
-            msg += res.protected ? '状态：受保护核心文件（不可在后台修改）\n' : '状态：可修改文件\n';
-            msg += '可写：' + (res.writable ? '是' : '否') + '\n';
-            msg += '可从代码仓恢复：' + (res.restorable ? '是' : '否');
-            alert(msg);
+            var statusTxt = res.protected ? '<span class="badge badge-danger">受保护核心文件（不可在后台修改）</span>' : '<span class="badge badge-success">可修改文件</span>';
+            var html = '<div class="card border-info mb-3"><div class="card-header bg-info text-white font-weight-bold">文件查询结果</div><div class="card-body">';
+            html += '<p class="mb-2"><code>' + file + '</code></p>';
+            html += '<p class="mb-1">状态：' + statusTxt + '</p>';
+            html += '<p class="mb-1">可写：' + (res.writable ? '<span class="text-success">是</span>' : '<span class="text-danger">否</span>') + '</p>';
+            html += '<p class="mb-2">可从代码仓恢复：' + (res.restorable ? '<span class="text-success">是</span>' : '<span class="text-danger">否</span>') + '</p>';
+            html += '<button type="button" class="btn btn-sm btn-light" onclick="document.getElementById(\'queryResult\').classList.add(\'d-none\');document.getElementById(\'queryResult\').innerHTML=\'\'">关闭</button>';
+            html += '</div></div>';
+            box.innerHTML = html;
+            box.classList.remove('d-none');
         } catch(e) { showToast('查询失败', 'danger'); }
     };
     xhr.send(fd);
-}
-
-function showToast(message, type = 'success') {
-    var toast = document.createElement('div');
-    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
-    toast.setAttribute('role', 'alert');
-    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 250px; opacity: 1; transition: opacity .3s ease;';
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} mr-2"></i>
-                ${message}
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button>
-        </div>
-    `;
-    document.body.appendChild(toast);
-    setTimeout(function() {
-        toast.style.opacity = '0';
-        setTimeout(function() { if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
-    }, 3000);
 }
 </script>

@@ -149,6 +149,27 @@ class BaseController extends \ZhiCms\base\Controller {
         }
     }
    
+   /**
+     * 统一 404 处理：发送 404 状态码并输出简洁提示（不抛未定义方法错误）
+     */
+    public function e_404() {
+        header('HTTP/1.1 404 Not Found');
+        header('status: 404 Not Found');
+        header('Content-Type:text/html;charset=utf-8');
+        echo '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">'
+            . '<title>页面不存在 - 404</title><style>'
+            . 'body{font-family:-apple-system,BlinkMacSystemFont,"Microsoft YaHei",sans-serif;background:#f5f6fa;'
+            . 'display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0}'
+            . '.box{background:#fff;padding:40px 50px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.08);'
+            . 'text-align:center;max-width:480px}.box h2{margin:0 0 12px;color:#2d3748}'
+            . '.box p{color:#718096;line-height:1.7;margin:0 0 16px}'
+            . '.box a{color:#ff4d4f;text-decoration:none}.box a:hover{text-decoration:underline}</style></head><body>'
+            . '<div class="box"><h2>404 - 页面不存在</h2>'
+            . '<p>您访问的页面不存在或已被删除。</p>'
+            . '<a href="/">返回首页</a></div></body></html>';
+        exit;
+    }
+
    /*通用上传（已弃用，请使用 FileController 代替）*/
 	public function upload(){
 		$file = isset($_FILES['file']) ? $_FILES['file'] : null;

@@ -51,6 +51,11 @@
                             <i class="fas fa-robot"></i> AI对话
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="tplengine-tab" data-toggle="tab" href="#tplengine" role="tab" aria-controls="tplengine" aria-selected="false">
+                            <i class="fas fa-layer-group"></i> 模板引擎
+                        </a>
+                    </li>
                 </ul>
             </div>
             <div class="card-body">
@@ -808,20 +813,42 @@ https://www.example.com/brand.html"></textarea>
                     <!-- AI对话设置 -->
                     <div class="tab-pane fade" id="aichat" role="tabpanel" aria-labelledby="aichat-tab">
                         <form id="aichat-form" class="mt-4">
-                            <h5 class="section-title"><i class="fas fa-power-off"></i> 基础开关</h5>
+                            <div class="alert alert-primary border-0">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                网站前端的 AI 对话机器人（小淘）与后台 AI 助手<b>共用「AI 开放平台」的模型池</b>。请先在
+                                <a href="index.php?r=manage/ai/setting" target="_blank" class="alert-link">AI 开放平台 → 模型管理</a>
+                                中添加大模型（支持同平台添加多个），再在下方指定用于前端对话的模型即可。
+                            </div>
+
+                            <h5 class="section-title"><i class="fas fa-robot"></i> 前端对话模型</h5>
+                            <div class="form-group">
+                                <label for="front_chat_key" class="font-weight-bold">选择前端 AI 对话使用的模型</label>
+                                <select class="custom-select" id="front_chat_key" name="front_chat_key">
+                                    <option value="">— 未指定（前端对话将不可用）—</option>
+                                    <?php if (!empty($aiChatModels)): ?>
+                                    <?php foreach ($aiChatModels as $mKey => $mVal): ?>
+                                    <option value="<?php echo $mKey; ?>" <?php echo $mKey === $aiChatKey ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($mVal['model'], ENT_QUOTES); ?>
+                                        （<?php echo htmlspecialchars(parse_url($mVal['api_url'], PHP_URL_HOST), ENT_QUOTES); ?>）
+                                    </option>
+                                    <?php endforeach; ?>
+                                    <?php endif; ?>
+                                </select>
+                                <small class="form-text text-muted">该下拉来自「AI 开放平台」中类型为「文本对话」的模型；切换后前端机器人立即生效</small>
+                            </div>
+
+                            <h5 class="section-title mt-4"><i class="fas fa-mobile-alt"></i> 小程序导购（可选）</h5>
                             <div class="form-group">
                                 <div class="custom-control custom-switch">
                                     <input type="checkbox" class="custom-control-input" id="enabled" name="enabled" value="1" <?php echo isset($ret['enabled']) && $ret['enabled'] ? 'checked' : ''; ?>>
-                                    <label class="custom-control-label" for="enabled">开启 AI 对话（小程序智能导购）</label>
+                                    <label class="custom-control-label" for="enabled">开启小程序智能导购</label>
                                 </div>
                                 <small class="form-text text-muted">关闭后小程序将以演示模式运行（使用模拟回复，不消耗配额）</small>
                             </div>
-
-                            <h5 class="section-title mt-4"><i class="fas fa-paint-brush"></i> 小程序外观</h5>
                             <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="theme_color" class="font-weight-bold">主题色</label>
+                                        <label for="theme_color" class="font-weight-bold">小程序主题色</label>
                                         <input type="text" class="form-control" id="theme_color" name="theme_color" placeholder="#6C63FF" value="<?php echo isset($ret['theme_color']) ? $ret['theme_color'] : '#6C63FF'; ?>">
                                         <small class="form-text text-muted">16 进制颜色，如 #6C63FF</small>
                                     </div>
@@ -839,58 +866,10 @@ https://www.example.com/brand.html"></textarea>
                                     </div>
                                 </div>
                             </div>
-
-                            <h5 class="section-title mt-4"><i class="fas fa-microchip"></i> AI 服务商</h5>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="provider" class="font-weight-bold">服务商标识</label>
-                                        <input type="text" class="form-control" id="provider" name="provider" placeholder="deepseek" value="<?php echo isset($ret['provider']) ? $ret['provider'] : 'deepseek'; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-8">
-                                    <div class="form-group">
-                                        <label for="api_url" class="font-weight-bold">接口地址（OpenAI 兼容）</label>
-                                        <input type="text" class="form-control" id="api_url" name="api_url" placeholder="https://api.deepseek.com/v1/chat/completions" value="<?php echo isset($ret['api_url']) ? $ret['api_url'] : ''; ?>">
-                                        <small class="form-text text-muted">如 DeepSeek / 通义千问 / 豆包 等兼容接口</small>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="api_key" class="font-weight-bold">API Key（服务端保管）</label>
-                                        <input type="text" class="form-control" id="api_key" name="api_key" placeholder="sk-..." value="<?php echo isset($ret['api_key']) ? $ret['api_key'] : ''; ?>">
-                                        <small class="form-text text-muted">仅存于服务器，绝不下发到小程序</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="model" class="font-weight-bold">模型名称</label>
-                                        <input type="text" class="form-control" id="model" name="model" placeholder="deepseek-chat" value="<?php echo isset($ret['model']) ? $ret['model'] : ''; ?>">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="temperature" class="font-weight-bold">温度</label>
-                                        <input type="number" step="0.1" class="form-control" id="temperature" name="temperature" value="<?php echo isset($ret['temperature']) ? $ret['temperature'] : 0.7; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="max_tokens" class="font-weight-bold">最大 Token</label>
-                                        <input type="number" class="form-control" id="max_tokens" name="max_tokens" value="<?php echo isset($ret['max_tokens']) ? $ret['max_tokens'] : 1024; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="token" class="font-weight-bold">访问令牌（可选）</label>
-                                        <input type="text" class="form-control" id="token" name="token" placeholder="留空则不校验" value="<?php echo isset($ret['token']) ? $ret['token'] : ''; ?>">
-                                        <small class="form-text text-muted">小程序请求 AI 时需携带，作为 Bearer 令牌</small>
-                                    </div>
-                                </div>
+                            <div class="form-group">
+                                <label for="token" class="font-weight-bold">小程序访问令牌（可选）</label>
+                                <input type="text" class="form-control" id="token" name="token" placeholder="留空则不校验" value="<?php echo isset($ret['token']) ? $ret['token'] : ''; ?>">
+                                <small class="form-text text-muted">小程序请求 AI 时需携带，作为 Bearer 令牌</small>
                             </div>
 
                             <div class="form-group border-top pt-3 mt-4">
@@ -899,6 +878,50 @@ https://www.example.com/brand.html"></textarea>
                                 </button>
                             </div>
                         </form>
+                    </div>
+
+                    <!-- 模板引擎 -->
+                    <div class="tab-pane fade" id="tplengine" role="tabpanel" aria-labelledby="tplengine-tab">
+                        <div class="mt-4">
+                            <?php
+                                $tplEngineShow = isset($tplEngine) ? $tplEngine : 'legacy';
+                                $isLegacy = ($tplEngineShow === 'legacy');
+                            ?>
+                            <div class="alert <?php echo $isLegacy ? 'alert-primary' : 'alert-success'; ?> border-0 d-flex align-items-center">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <div>
+                                    当前使用模板引擎：
+                                    <strong class="h5 mb-0">
+                                        <?php echo $isLegacy ? 'ZhiCms 自研引擎' : 'ThinkTemplate（真·ThinkPHP 引擎）'; ?>
+                                    </strong>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-warning border-0">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                <strong>请勿随意切换模板引擎！</strong>
+                                当前主题的模板文件是按当前引擎的语法编写的。若随意切换到另一种引擎，<strong>前端页面很可能直接报错崩溃（空白页 / 语法错误 / 样式错乱）</strong>。
+                                仅当您已按新引擎语法重写 <code>app/index/view/</code> 下所有模板，才建议切换。
+                                切换后请务必清除模板编译缓存（系统 → 缓存管理 或删除 <code>data/cache/tpl*</code>），并逐个检查前端页面。
+                            </div>
+
+                            <div class="form-group">
+                                <label for="tplEngine" class="font-weight-bold">切换模板引擎（仅供开发 / 已重写模板时使用）</label>
+                                <select class="custom-select" id="tplEngine" name="engine">
+                                    <option value="legacy" <?php echo $isLegacy ? 'selected' : ''; ?>>ZhiCms 自研引擎（原生 &#123;标签&#125; 语法）</option>
+                                    <option value="think" <?php echo !$isLegacy ? 'selected' : ''; ?>>ThinkTemplate（真·ThinkPHP 引擎，支持 &#123;&#58;函数&#125; / 布局继承）</option>
+                                </select>
+                                <small class="form-text text-muted">
+                                    Legacy：兼容历史模板，使用 <code>&#123;&#36;var&#125;</code> / <code>&#123;if&#125;</code> / <code>&#123;foreach&#125;</code> 原生标签；
+                                    ThinkTemplate：与 ThinkPHP 模板语法一致，支持 <code>&#123;&#58;func()&#125;</code> / <code>&#123;include file=&#34;...&#34;&#125;</code> / 布局继承，输出默认原样（不转义）。
+                                </small>
+                            </div>
+                            <div class="form-group border-top pt-3 mt-4">
+                                <button type="button" class="btn btn-warning btn-lg px-5" onclick="saveEngine()">
+                                    <i class="fas fa-exchange-alt"></i> 确认切换
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -953,6 +976,31 @@ function submitForm(type) {
         return encodeURIComponent(k) + '=' + encodeURIComponent(data[k]);
     }).join('&');
     xhr.send(params);
+}
+
+function saveEngine() {
+    var engine = document.getElementById('tplEngine').value;
+    if (engine !== 'legacy' && engine !== 'think') {
+        showToast('请选择有效的模板引擎', 'danger');
+        return;
+    }
+    if (!confirm('警告：当前模板文件是按当前引擎语法编写的，随意切换很可能导致前端崩溃（空白页/语法错误/样式错乱）！\n\n仅当您已用新引擎语法重写 app/index/view/ 下全部模板才应切换。\n\n确定要切换为 ' + (engine === 'think' ? 'ThinkTemplate（真·ThinkPHP 引擎）' : 'ZhiCms 自研引擎') + ' 吗？')) {
+        return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/set/saveTplEngine', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var result = JSON.parse(xhr.responseText);
+                showToast(result.info, result.status === 'y' ? 'success' : 'danger');
+            } catch(e) {
+                showToast('保存失败', 'danger');
+            }
+        }
+    };
+    xhr.send('engine=' + encodeURIComponent(engine));
 }
 
 function uploadImage(field) {

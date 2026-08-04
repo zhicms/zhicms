@@ -21,6 +21,12 @@
                     </div>
 
                     <div class="form-group">
+                        <label for="alias">页面别名 <span class="text-muted small">（用于伪静态访问，如 about 对应 /page-about.html）</span></label>
+                        <input type="text" class="form-control" name="alias" id="alias" placeholder="如 about / privacy / help" value="{$ret['alias']}">
+                        <small class="form-text text-muted">只能包含字母、数字、下划线、中划线；留空则使用 ID 访问（/page-1.html）。建议为"关于我们""隐私政策"等设置易记别名。</small>
+                    </div>
+
+                    <div class="form-group">
                         <label for="keywords">SEO关键词</label>
                         <input type="text" class="form-control" name="keywords" id="keywords" placeholder="关键词，多个用逗号分隔" value="{$ret['keywords']}">
                     </div>

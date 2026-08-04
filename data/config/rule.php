@@ -36,6 +36,7 @@ $rule=array (
     'so.html' => 'index/search/index',
     'so-<key>.html' => 'index/search/index/content=<key>',
     'page-<id>.html' => 'index/page/index/id=<id>',
+    'page-<alias>.html' => 'index/page/index/alias=<alias>',
     'app.html' => 'index/page/app',
     'side.html' => 'index/page/side',
     'login.html' => 'index/login/index',

@@ -26,7 +26,31 @@ class AiController extends ApiBaseController {
         }
 
         if (empty($ai['enabled']) || empty($ai['api_key'])) {
-            $this->json(array('error' => array('message' => 'AI 服务未配置或未开启')), 503);
+            // 小程序未单独配置时，回落到「AI 开放平台」当前对话模型，实现统一管理
+            $chatInfo = \app\common\AiService::getChatModelInfo();
+            if (empty($chatInfo) || empty($chatInfo['api_key'])) {
+                $this->json(array('error' => array('message' => 'AI 服务未配置或未开启，请在「AI 开放平台 → 模型管理」中添加并启用对话模型')), 503);
+            }
+
+            $protocol = isset($chatInfo['protocol']) ? strtolower($chatInfo['protocol']) : 'openai';
+            // OpenAI / Azure 兼容：直接使用原 Bearer 转发，返回原生 OpenAI 格式
+            if ($protocol === 'openai' || $protocol === 'azure') {
+                $ai['api_url'] = $chatInfo['api_url'];
+                $ai['api_key'] = $chatInfo['api_key'];
+                $ai['model']   = $chatInfo['model'];
+                $ai['temperature'] = 0.7;
+                $ai['max_tokens']  = 1024;
+            } else {
+                // 其他协议（Gemini/Claude/文心/讯飞）：用 AiService 统一对话，再包装为 OpenAI 格式返回
+                $reply = \app\common\AiService::chat($payload['messages'] ?? array(), '你是一个有用的助手', false);
+                if (empty($reply) || strpos($reply, '大模型') === 0 || strpos($reply, 'AI 模型') === 0 || strpos($reply, 'CURL错误') === 0 || strpos($reply, 'HTTP错误') === 0) {
+                    $this->json(array('error' => array('message' => 'AI 对话失败：' . $reply)), 502);
+                }
+                $this->json(array(
+                    'choices' => array(array('message' => array('role' => 'assistant', 'content' => $reply), 'index' => 0, 'finish_reason' => 'stop')),
+                    'usage'   => new \stdClass(),
+                ), 200);
+            }
         }
 
         // 解析请求体

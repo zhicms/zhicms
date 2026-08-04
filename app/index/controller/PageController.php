@@ -5,18 +5,39 @@ namespace app\index\controller;
 class PageController extends \app\base\controller\BaseController {
 
 	public function index(){
-	  $id=$this->arg("id");
-      if(!is_numeric($id)){
-            self::e_404();
-            exit;
+        $alias = trim($this->arg("alias"));
+        $id    = $this->arg("id");
+
+        $whereView = array();
+        if ($alias !== '') {
+            // 优先按别名查询；别名为纯数字时兼容按 id 兜底
+            if (is_numeric($alias)) {
+                $whereView[] = "`id` = " . intval($alias);
+            } else {
+                $safeAlias = str_replace(['%', '_', '\\'], ['\%', '\_', '\\\\'], $alias);
+                $whereView[] = "`alias` LIKE '{$safeAlias}'";
+            }
+        } elseif (is_numeric($id)) {
+            $whereView[] = "`id` = " . intval($id);
+        } else {
+            $this->e_404();
         }
-        $whereView[] = "`id` ={$id}";
+
         $viewRet = obj("api/ApiData")->dataSelect("yun_page", $whereView);
         if (empty($viewRet)) {
-            exit('404');
+            $this->e_404();
         }
-        $this->title = $viewRet['title'] ?? '';
-        $this->body = $viewRet['body'] ?? '';
+
+        $title = $viewRet['title'] ?? '';
+        $this->title = $title;
+        $this->body  = $viewRet['body'] ?? '';
+
+        // SEO：单页标题优先，拼接站点名；关键词/描述取页面字段
+        $siteName = obj('base/Base')->SiteConfig('sitename');
+        $this->pageTitle       = $title ? $title . ' - ' . $siteName : $siteName;
+        $this->pageKeywords    = !empty($viewRet['keywords']) ? $viewRet['keywords'] : '';
+        $this->pageDescription = !empty($viewRet['dec']) ? $viewRet['dec'] : '';
+
         $display = !empty($viewRet['display']) ? $viewRet['display'] : 'page';
 		$this->display('app/index/view/page/'.$display);
 	}

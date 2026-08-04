@@ -1,0 +1,69 @@
+/* =====================================================================
+ * login-tech.css — 后台登录页 ZhiCms 科技风（与后台统一视觉）
+ * 仅覆盖登录页样式，不改变任何结构 / JS / PHP 功能。
+ * ===================================================================== */
+
+body.login-page{
+    /* 深色科技背景：径向光晕 + 网格 */
+    background:
+        radial-gradient(1100px 600px at 15% -10%, rgba(34,211,238,.20), transparent 55%),
+        radial-gradient(900px 500px at 95% 110%, rgba(99,102,241,.22), transparent 55%),
+        linear-gradient(135deg, #0b1220 0%, #0e1729 50%, #0b1220 100%) !important;
+    position: relative;
+    min-height: 100vh;
+}
+body.login-page::before{
+    /* 网格纹理 */
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+    background-size: 34px 34px;
+    pointer-events: none;
+}
+.login-container{
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,.06) !important;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255,255,255,.12) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 30px 80px rgba(0,0,0,.45), 0 0 0 1px rgba(34,211,238,.08) !important;
+    padding: 48px !important;
+    color: #e8eefb;
+}
+.login-header h1{
+    font-size: 28px !important; font-weight: 800 !important; margin: 0 0 10px !important;
+    background: linear-gradient(90deg, #22d3ee, #818cf8);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+}
+.login-header p{ color: rgba(255,255,255,.6) !important; font-size: 14px; }
+.login-form .layui-input{
+    height: 46px !important;
+    background: rgba(255,255,255,.07) !important;
+    border: 1px solid rgba(255,255,255,.14) !important;
+    border-radius: 10px !important;
+    color: #fff !important;
+    font-size: 14px;
+    transition: all .2s;
+}
+.login-form .layui-input::placeholder{ color: rgba(255,255,255,.45); }
+.login-form .layui-input:focus{
+    border-color: #22d3ee !important;
+    box-shadow: 0 0 0 3px rgba(34,211,238,.18) !important;
+    background: rgba(255,255,255,.10) !important;
+}
+.login-form .input-icon i{ color: rgba(255,255,255,.5) !important; }
+.login-btn{
+    height: 46px !important; font-size: 16px !important; border-radius: 10px !important;
+    background: linear-gradient(135deg, #22d3ee 0%, #3b82f6 55%, #6366f1 100%) !important;
+    border: none !important; color: #fff !important; font-weight: 700 !important;
+    cursor: pointer; width: 100%;
+    box-shadow: 0 8px 24px rgba(59,130,246,.4);
+    transition: all .3s;
+}
+.login-btn:hover{ transform: translateY(-2px); box-shadow: 0 12px 30px rgba(59,130,246,.5); filter: brightness(1.05); }
+.login-btn:active{ transform: translateY(0); }
+.login-tips{ color: rgba(255,255,255,.45) !important; }
+.error-msg{ color: #fca5a5 !important; }

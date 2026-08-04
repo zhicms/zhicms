@@ -372,8 +372,16 @@ function toggleAll() {
 
 // 显示/隐藏批量按钮
 function updateBatchBtns() {
+    var group = document.getElementById('batchBtnGroup');
     var checked = document.querySelectorAll('.row-checkbox:checked').length;
-    document.getElementById('batchBtnGroup').style.display = checked > 0 ? '' : 'none';
+    if (checked > 0) {
+        // 必须先移除 d-none（display:none !important 优先级高于内联 display），否则按钮不会显示
+        group.classList.remove('d-none');
+        group.style.display = 'inline-flex';
+    } else {
+        group.classList.add('d-none');
+        group.style.display = '';
+    }
 }
 
 // 获取选中的 ID
@@ -504,8 +512,11 @@ document.getElementById('collectModal').addEventListener('click', function(e) {
 });
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        var m = document.getElementById('collectModal');
-        if (m && m.style.display !== 'none') { m.style.display = 'none'; m.classList.add('d-none'); }
+        var ids = ['collectModal', 'newsModal'];
+        for (var i = 0; i < ids.length; i++) {
+            var m = document.getElementById(ids[i]);
+            if (m && m.style.display !== 'none') { m.style.display = 'none'; m.classList.add('d-none'); }
+        }
     }
 });
 

@@ -21,6 +21,9 @@ class SetController extends \app\base\controller\BaseController
 			$apiConfig   = ConfigStore::load('api');
 			$smsConfig   = ConfigStore::load('sms');
 			$aichatCfg   = ConfigStore::load('aichat');
+			// 前端 AI 对话模型由「AI 开放平台」统一管理：读取对话模型池与当前指定
+			$aiChatModels = \app\common\AiService::getModelsByType('chat');
+			$aiChatKey    = \app\common\AiService::getCurrentChatKey();
 			$seopushCfg  = ConfigStore::load('seopush');
 			// rule 保持文件
 			include \CONFIG_PATH . 'rule.php';
@@ -28,9 +31,14 @@ class SetController extends \app\base\controller\BaseController
 			$logFile = \CONFIG_PATH . 'seopush_log.json';
 			$this->pushLog = is_file($logFile) ? json_decode(file_get_contents($logFile), true) : array();
 			$this->ret = array_merge($siteConfig, $seoConfig, $apiConfig, $smsConfig, $aichatCfg, $seopushCfg);
+			$this->assign('aiChatModels', $aiChatModels);
+			$this->assign('aiChatKey', $aiChatKey);
 			$this->DEBUG=(int)$rule['DEBUG'];
 			$this->REWRITE_ON=(int)$rule['REWRITE_ON'];
 			$this->moren=$rule['moren'];
+			// 当前模板引擎（legacy / think），供“模板引擎”切换页回显
+			$tplCfg = \ZhiCms\base\Config::get('TPL');
+			$this->tplEngine = isset($tplCfg['ENGINE']) ? $tplCfg['ENGINE'] : 'legacy';
 
 			// 加载互动开关（yun_config 表）合并到 $ret，供"互动设置"标签页使用
 			$interactKeys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval');
@@ -80,9 +88,47 @@ class SetController extends \app\base\controller\BaseController
 			ConfigStore::save('site', $Siteinfo);
 			ConfigStore::clearCache('site');
 			\ZhiCms\ext\AdminLog::write('setting', '保存了网站基础设置');
-			echo json_encode(array("info" => "设置成功", "status" => "y"));
-		}
+		echo json_encode(array("info" => "设置成功", "status" => "y"));
+	}
 
+	}
+
+	/**
+	 * 模板引擎切换：保存 TPL.ENGINE 到 data/config/global.php
+	 * 仅允许 legacy / think 两种取值，采用原位替换，保留文件其余内容（global.php 为受保护配置，
+	 * 不整体重写以免破坏与 $rule/$db 的合并逻辑）。
+	 */
+	public function saveTplEngine(){
+		$this->checkManageSession();
+		$engine = isset($_POST['engine']) ? trim($_POST['engine']) : '';
+		if (!in_array($engine, array('legacy', 'think'), true)) {
+			echo json_encode(array('info' => '不支持的模板引擎', 'status' => 'n'));
+			return;
+		}
+		$file = \CONFIG_PATH . 'global.php';
+		if (!is_file($file)) {
+			echo json_encode(array('info' => '未找到 global.php 配置文件', 'status' => 'n'));
+			return;
+		}
+		$content = file_get_contents($file);
+		// 精确替换 TPL 数组内的 'ENGINE' => 'xxx'
+		$new = preg_replace(
+			"/('ENGINE'\s*=>\s*')(legacy|think)(')/i",
+			'$1' . $engine . '$3',
+			$content,
+			-1,
+			$count
+		);
+		if ($count === 0) {
+			echo json_encode(array('info' => '配置项中未找到 ENGINE 字段', 'status' => 'n'));
+			return;
+		}
+		if (file_put_contents($file, $new) === false) {
+			echo json_encode(array('info' => '写入 global.php 失败，请检查文件权限', 'status' => 'n'));
+			return;
+		}
+		\ZhiCms\ext\AdminLog::write('setting', '切换模板引擎为：' . $engine);
+		echo json_encode(array('info' => '模板引擎已切换为：' . ($engine === 'think' ? 'ThinkTemplate（真·ThinkPHP 引擎）' : 'ZhiCms 自研引擎'), 'status' => 'y'));
 	}
 
 	public function url(){
@@ -269,8 +315,11 @@ class SetController extends \app\base\controller\BaseController
    }
 
     /**
-     * AI 对话（智能导购）配置
-     * 表单 POST 到 manage/set/aichat，写入 DB
+     * AI 对话配置
+     * 表单 POST 到 manage/set/aichat。
+     * 说明：网站前端 AI 对话的模型由「AI 开放平台」统一管理，此处仅负责：
+     *  1) 指定前端对话使用的模型（写入 ai.php 的 ai_chat）
+     *  2) 保留小程序导购开关（enabled / token 等向后兼容）
      */
     public function aichat() {
 
@@ -281,17 +330,21 @@ class SetController extends \app\base\controller\BaseController
             exit;
         }
 
+        // 1) 指定前端对话模型（来自 AI 开放平台的对话模型池）
+        $frontKey = isset($_POST['front_chat_key']) ? trim($_POST['front_chat_key']) : '';
+        $config = \app\common\AiService::loadConfig();
+        $chatModels = \app\common\AiService::getModelsByType('chat');
+        // 仅当 key 存在于对话模型池时才写入，避免脏数据
+        if ($frontKey !== '' && isset($chatModels[$frontKey])) {
+            $config['ai_chat'] = $frontKey;
+            \app\common\AiService::saveConfig($config);
+        }
+
+        // 2) 小程序导购开关（保留向后兼容，避免影响已有小程序）
         $cfg = array(
             'enabled'       => !empty($_POST['enabled']) ? true : false,
             'theme_color'   => isset($_POST['theme_color']) ? trim($_POST['theme_color']) : '#6C63FF',
             'default_role'  => isset($_POST['default_role']) ? trim($_POST['default_role']) : 'shopping',
-            'provider'      => isset($_POST['provider']) ? trim($_POST['provider']) : 'deepseek',
-            'api_url'       => isset($_POST['api_url']) ? trim($_POST['api_url']) : '',
-            'api_key'       => isset($_POST['api_key']) ? trim($_POST['api_key']) : '',
-            'model'         => isset($_POST['model']) ? trim($_POST['model']) : '',
-            'temperature'   => isset($_POST['temperature']) ? floatval($_POST['temperature']) : 0.7,
-            'max_tokens'    => isset($_POST['max_tokens']) ? intval($_POST['max_tokens']) : 1024,
-            'stream'        => false,
             'token'         => isset($_POST['token']) ? trim($_POST['token']) : '',
         );
 

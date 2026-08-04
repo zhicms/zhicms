@@ -893,8 +893,10 @@ class UnionController extends \app\base\controller\BaseController
             }
 
             // 第3步：入库（写入本地选品库 yun_items），来源按平台区分
+            // 注意：单商品采集用非 newest 动作，让新商品能直接插入
+            // （newest 动作语义是"已存在则更新、不存在则跳过"，会导致新商品不入库）
             $laiyuan = $this->platformToLaiyuan($platform);
-            $result = $this->saveGoodsBatch([$item], 'newest', $laiyuan);
+            $result = $this->saveGoodsBatch([$item], 'collect', $laiyuan);
 
             if ($result['count'] > 0) {
                 exit(json_encode(array("info" => "采集成功", "status" => "y", "count" => $result['count'])));

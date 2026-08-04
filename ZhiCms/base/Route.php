@@ -56,19 +56,30 @@ class Route {
 				if( false === stripos($rule, 'http://')){
 					$rule = $_SERVER['HTTP_HOST'] . $scriptDir . '/' . $rule;
 				}
-				$rule = '/'.str_ireplace(array('\\\\', 'http://', '-', '/', '<', '>',  '.'), array('', '', '\-', '\/', '(?<', ">[a-zA-Z0-9_\-%]+)", '\.'), $rule).'/i';
+				// 将 <key> 占位符转为命名捕获组：id 仅允许数字，其余允许字母/数字/%-等
+				$rule = preg_replace_callback('/<([a-zA-Z0-9_]+)>/', function ($m) {
+					$name = $m[1];
+					// 用 \d / \w 避免被下方 str_ireplace 把 '-' 转义而破坏字母/数字范围
+					$pat  = ($name === 'id') ? '\d+' : '[\w%-]+';
+					return '(?<' . $name . '>' . $pat . ')';
+				}, $rule);
+				$rule = '/'.str_ireplace(array('\\\\', 'http://', '-', '/', '.'), array('', '', '\-', '\/', '\.'), $rule).'/i';
 				if( preg_match($rule, $_SERVER['HTTP_HOST'] . $normUri, $matches) ){
-					foreach($matches as $matchkey => $matchval){
-						if(('app' === $matchkey)){
-							$mapper = str_ireplace('<app>', $matchval, $mapper);
-						}else if('c' === $matchkey){
-							$mapper = str_ireplace('<c>', $matchval, $mapper);
-						}else if('a' === $matchkey){
-							$mapper = str_ireplace('<a>', $matchval, $mapper);
-						} else {
-							if( !is_int($matchkey) ) $_GET[$matchkey] = $matchval;
+				foreach($matches as $matchkey => $matchval){
+					if(('app' === $matchkey)){
+						$mapper = str_ireplace('<app>', $matchval, $mapper);
+					}else if('c' === $matchkey){
+						$mapper = str_ireplace('<c>', $matchval, $mapper);
+					}else if('a' === $matchkey){
+						$mapper = str_ireplace('<a>', $matchval, $mapper);
+					} else {
+						if( !is_int($matchkey) ){
+							$_GET[$matchkey] = $matchval;
+							// 替换 mapper 中对应的 <key> 占位符（如 alias=<alias>），得到真实路由
+							$mapper = str_ireplace('<'.$matchkey.'>', $matchval, $mapper);
 						}
 					}
+				}
 					$_REQUEST['r'] = $mapper;
 					$matched = true;
 					break;
@@ -80,9 +91,17 @@ class Route {
 			unset($_REQUEST['r']);
 		}
 
-	    $rawRoute = isset($_REQUEST['r']) ? $_REQUEST['r'] : '';
-	    $pureRoute = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=\<[a-zA-Z0-9_]+\>/i', '', $rawRoute);
-	    $pureRoute = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=[^\/]+/i', '', $pureRoute);
+    $rawRoute = isset($_REQUEST['r']) ? $_REQUEST['r'] : '';
+    // 1) 先剥离伪静态规则 mapper 中未替换的占位符（如 alias=<alias>），
+    //    其参数已由 rewriteOn 块的命名捕获组写入 $_GET，此处不可覆盖。
+    $pureRoute = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=\<[a-zA-Z0-9_]+\>/i', '', $rawRoute);
+    // 2) 提取真实动态路由参数（如 ?r=index/page/index/id=1）写入 $_GET，与伪静态行为一致。
+    $pureRoute = preg_replace_callback('/\/([a-zA-Z_][a-zA-Z0-9_]*)=([^\/]+)/i', function ($m) {
+        if (!isset($_GET[$m[1]])) {
+            $_GET[$m[1]] = urldecode($m[2]);
+        }
+        return '';
+    }, $pureRoute);
 	    $routeArr = !empty($pureRoute) ? explode("/", $pureRoute) : array();
 	    if(empty($routeArr)){
 	    	$zhicms_404=Config::get('DEFAULT_CONTROLLER');

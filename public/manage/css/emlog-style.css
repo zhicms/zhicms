@@ -1507,6 +1507,58 @@ body {
     background: linear-gradient(90deg, var(--zc-primary), var(--zc-accent));
 }
 
+/* ============ AI 开放平台 - 模型卡片（参考 emlog 风格） ============ */
+.model-card {
+    border: 1px solid var(--zc-border);
+    border-radius: 12px;
+    transition: box-shadow .15s ease, transform .15s ease;
+}
+
+.model-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
+    transform: translateY(-2px);
+}
+
+.model-card .model-name {
+    font-size: 17px;
+    font-weight: 600;
+    color: var(--zc-text);
+    word-break: break-word;
+}
+
+.model-card .model-actions {
+    font-size: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.model-card .model-actions a {
+    position: relative;
+    text-decoration: none;
+}
+
+.model-card .model-actions a:hover {
+    text-decoration: underline;
+}
+
+.model-card .model-actions a + a:not(.set-front-btn)::before,
+.model-card .model-actions .text-success + .text-primary::before,
+.model-card .model-actions .text-info + .text-primary::before,
+.model-card .model-actions .text-primary + .text-danger::before {
+    content: '';
+}
+
+/* 文字链接之间的分隔竖线（除最后一项外） */
+.model-card .model-actions > *:not(:last-child)::after {
+    content: '|';
+    color: var(--zc-border);
+    margin-left: 10px;
+    font-weight: 400;
+}
+
 /* 设置区块标题（基础设置分组） */
 .section-title {
     font-size: 15px;

@@ -45,6 +45,9 @@ class PageController extends \app\base\controller\BaseController
 			 unset($data['editor-md-container-article-html-code']);
 			 $data['date']=date("Y-m-d H:i:s",time());
 			 $data['body']=$_POST['body'];
+			 // 别名：仅允许字母/数字/下划线/中划线，空或非法则存 NULL（唯一索引允许多个 NULL）
+			 $alias = isset($data['alias']) ? trim($data['alias']) : '';
+			 $data['alias'] = ($alias !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $alias)) ? $alias : null;
 			 obj('api/ApiData')->insertData('yun_page', $data);
 			 $url="index.php?r=manage/page/index";
 			 $this->redirect($url, $code = 302);
@@ -84,6 +87,9 @@ class PageController extends \app\base\controller\BaseController
 			 unset($data['editor-md-container-html-code']);
 			 unset($data['editor-md-container-article-html-code']);
 			 $data['body']=$_POST['body'];
+			 // 别名：仅允许字母/数字/下划线/中划线，空或非法则存 NULL（唯一索引允许多个 NULL）
+			 $alias = isset($data['alias']) ? trim($data['alias']) : '';
+			 $data['alias'] = ($alias !== '' && preg_match('/^[a-zA-Z0-9_-]+$/', $alias)) ? $alias : null;
              obj("api/ApiData")->dataUpdate("yun_page",$data,$where);
              $url="index.php?r=manage/page/index";
 			 $this->redirect($url, $code = 302);

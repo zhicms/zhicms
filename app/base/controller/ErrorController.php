@@ -25,7 +25,8 @@ class ErrorController extends BaseController {
 	 * @return void
 	 */
 	public function error($e=null){
-		if(false!==stripos(get_class($e), 'Exception')) {
+		// 兼容 PHP8 的 Error/TypeError（也实现 Throwable，但类名不含 "Exception"）
+		if($e instanceof \Throwable) {
 			$this->errorMessage = $e->getMessage();
 			$this->errorCode = $e->getCode();
 			$this->errorFile = $e->getFile();
