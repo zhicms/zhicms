@@ -588,9 +588,25 @@ function initAiSetting() {
             var isFront = activeBtn.classList.contains('set-front-btn');
             if (!isFront && !confirm('确定切换到该模型？')) return;
             var tip = isFront ? '已指定为前端对话模型' : '切换成功';
-            // active 接口是 redirect，直接刷新即可
-            showToast(tip, 'success');
-            setTimeout(function() { location.reload(); }, 600);
+            // 真正调用 active 接口写入配置（ai_chat / ai_image），成功后再刷新
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'index.php?r=manage/ai/active&key=' + encodeURIComponent(key) + '&type=' + encodeURIComponent(type), true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    try {
+                        var res = JSON.parse(xhr.responseText);
+                        if (res.status === 'y') {
+                            showToast(tip, 'success');
+                            setTimeout(function() { location.reload(); }, 600);
+                        } else {
+                            showToast(res.info || '切换失败', 'danger');
+                        }
+                    } catch (err) {
+                        showToast('切换失败，请重试', 'danger');
+                    }
+                }
+            };
+            xhr.send();
             return;
         }
         var delBtn = e.target.closest('.model-del-btn');
@@ -598,12 +614,12 @@ function initAiSetting() {
             e.preventDefault();
             var dkey = delBtn.getAttribute('data-key');
             if (!confirm('确定删除该模型？此操作不可撤销。')) return;
-            var xhr = new XMLHttpRequest();
-            xhr.open('GET', 'index.php?r=manage/ai/delete&key=' + encodeURIComponent(dkey), true);
-            xhr.onreadystatechange = function() {
-                if (xhr.readyState === 4) {
+            var xhr2 = new XMLHttpRequest();
+            xhr2.open('GET', 'index.php?r=manage/ai/delete&key=' + encodeURIComponent(dkey), true);
+            xhr2.onreadystatechange = function() {
+                if (xhr2.readyState === 4) {
                     try {
-                        var res = JSON.parse(xhr.responseText);
+                        var res = JSON.parse(xhr2.responseText);
                         if (res.status === 'y') {
                             showToast(res.info || '模型已删除', 'success');
                             setTimeout(function() { location.reload(); }, 800);
@@ -615,7 +631,7 @@ function initAiSetting() {
                     }
                 }
             };
-            xhr.send();
+            xhr2.send();
         }
     });
 
