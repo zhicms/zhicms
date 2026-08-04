@@ -373,6 +373,7 @@ class FindController extends \app\base\controller\BaseController
 	 * @return array ['ok'=>bool,'output'=>string]
 	 */
 	public function newsCollectCron(){
+		@set_time_limit(0);
 		$api = \app\common\ConfigStore::load('api');
 		$key235 = isset($api['juhe_235_key']) ? trim($api['juhe_235_key']) : '';
 		$key850 = isset($api['juhe_850_key']) ? trim($api['juhe_850_key']) : '';

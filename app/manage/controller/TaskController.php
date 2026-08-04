@@ -215,6 +215,8 @@ class TaskController extends \app\base\controller\BaseController
      * 立即执行一个任务
      */
     public function runNow(){
+        // 采集类任务会调用外部 API，可能耗时较长，解除执行时长限制避免中途超时报错
+        @set_time_limit(0);
         $this->checkManageSession();
         $id = (int)$this->arg('id', 0);
         $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);

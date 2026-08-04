@@ -91,7 +91,14 @@ function postJSON(url, data, cb){
     }).then(function(r){return r.json();}).then(function(res){
         if (res && res.need_login) { alert(res.info || '登录已过期，请重新登录'); location.href='index.php?r=manage/login/index'; return; }
         cb && cb(res);
-    }).catch(function(){ alert('请求失败，请检查网络或重新登录'); });
+    }).catch(function(e){
+        // 区分网络失败与执行超时：长任务(采集)可能超时，需提示等待而非"请求失败"
+        if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
+            alert('执行超时：任务可能在后台仍在运行，请稍后到任务列表查看结果');
+        } else {
+            alert('请求失败：登录已过期或网络异常，请重新登录后再试');
+        }
+    });
 }
 function runNow(id){
     postJSON('index.php?r=manage/task/runNow', {id:id}, function(res){
