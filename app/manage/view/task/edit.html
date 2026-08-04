@@ -173,8 +173,8 @@
             <div class="col-sm-10">
               <select name="moments_navid" class="form-control">
                 <option value="0">请选择发现分类</option>
-                {foreach $navs as $nav}
-                  <option value="{$nav.id}" {if $nav.id==$momentsNavid}selected{/if}>{$nav.name}</option>
+                {foreach $navs as $nk => $nv}
+                  <option value="{$nk}" {if $nk==$momentsNavid}selected{/if}>{$nv}</option>
                 {/foreach}
               </select>
               <small class="form-text text-muted">采集到的朋友圈文章将归入该发现分类（仅发现分类，不参与电商产品分类）。</small>

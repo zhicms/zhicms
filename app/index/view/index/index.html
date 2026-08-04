@@ -3,9 +3,8 @@
 <!-- PC幻灯banner：值得买精选上方 -->
 {if !empty($banners)}
 <div class="pc_slider w-full mb-20 of-hidden pos-rel" style="border-radius:16px ; box-shadow:0 8px 30px rgba(0,0,0,0.08)">
-  <input type="radio" name="pc-slider" id="pc-slide-0" checked class="d-none">
   {foreach $banners as $k=>$banner}
-    <input type="radio" name="pc-slider" id="pc-slide-<?php echo $k+1; ?>" class="d-none">
+    <input type="radio" name="pc-slider" id="pc-slide-<?php echo $k+1; ?>" class="d-none"{if $k==0} checked{/if}>
   {/foreach}
   <div class="slides w-full pos-rel of-hidden" style="height:0 ; padding-bottom:33.33%">
     <div class="slide-track w-full h-full pos-abs d-flex" style="top:0 ; left:0 ; align-items:center ; transition:transform 0.8s cubic-bezier(0.25,0.46,0.45,0.94) ; transform:translateX(0)">
@@ -19,10 +18,8 @@
     </div>
   </div>
   <div class="controls pos-abs d-flex" style="top:50% ; left:0 ; right:0 ; transform:translateY(-50%) ; justify-content:space-between ; pointer-events:none ; z-index:10">
-    {foreach $banners as $k=>$banner}
-        <label for="pc-slide-<?php echo $k==0 ? count($banners) : $k-1; ?>" class="prev"
-      <label for="pc-slide-<?php echo $k+1; ?>" class="next cur-pointer w-50 h-50 d-flex" style="pointer-events:auto ; align-items:center ; justify-content:center ; background:rgba(0,0,0,0.2) ; color:#fff ; border-radius:50% ; margin-right:20px ; transition:all 0.3s ease ; opacity:0.7">›</label>
-    {/foreach}
+    <label for="pc-slide-{if count($banners)>1}{count($banners)}{else}1{/if}" class="prev cur-pointer w-50 h-50 d-flex" style="pointer-events:auto ; align-items:center ; justify-content:center ; background:rgba(0,0,0,0.2) ; color:#fff ; border-radius:50% ; margin-left:20px ; transition:all 0.3s ease ; opacity:0.7">‹</label>
+    <label for="pc-slide-2" class="next cur-pointer w-50 h-50 d-flex" style="pointer-events:auto ; align-items:center ; justify-content:center ; background:rgba(0,0,0,0.2) ; color:#fff ; border-radius:50% ; margin-right:20px ; transition:all 0.3s ease ; opacity:0.7">›</label>
   </div>
   <div class="dots pos-abs d-flex" style="bottom:20px ; left:0 ; right:0 ; justify-content:center ; gap:10px ; pointer-events:none ; z-index:10">
     {foreach $banners as $k=>$banner}
@@ -117,14 +114,13 @@
   </style>
   <script>
     // 自动播放逻辑（纯JS，无依赖）
-    // 注意：radio 有 N+1 个（pc-slide-0..pc-slide-N），其中最后一个 pc-slide-N 对应
-    // translateX(-N*100%) 会滑出视野、无对应图片，因此只轮换前 N 个（radios.length-1）。
+    // radio 数量与 banner 数量一致（pc-slide-1..pc-slide-N），逐个轮换
     (function() {
       var slider = document.querySelector('.pc_slider');
       if (!slider) return;
       var radios = slider.querySelectorAll('input[name="pc-slider"]');
-      var total = radios.length - 1;   // 有效轮换数（去除最后一个无图 radio）
-      if (total < 1) return;
+      var total = radios.length;
+      if (total < 2) return;   // 仅 1 张时无需轮换
       var idx = 0;
       var interval = null;
       function go() {
@@ -139,7 +135,7 @@
       // 手动切换后同步序号，避免自动轮换错位
       for (var i = 0; i < radios.length; i++) {
         (function(r, i) {
-          r.addEventListener('change', function() { if (r.checked && i < total) idx = i; });
+          r.addEventListener('change', function() { if (r.checked) idx = i; });
         })(radios[i], i);
       }
     })();

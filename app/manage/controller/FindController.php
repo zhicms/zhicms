@@ -190,8 +190,18 @@ class FindController extends \app\base\controller\BaseController
 		if (empty($hdkApiKey)) {
 			return array('ok' => false, 'output' => '请先在后台配置好单库API(key)，方可采集朋友圈');
 		}
+		// 未显式配置归属分类时，自动取第一个发现分类作为兜底，避免“未设置 navid”导致无法采集
 		if ($navid <= 0) {
-			return array('ok' => false, 'output' => '未设置朋友圈文章归属分类(navid)，请在发现管理-朋友圈采集中选择分类后保存');
+			$navs = $this->getFindNavs();
+			if (!empty($navs)) {
+				$navid = intval(key($navs));
+				// 兜底值写回配置，便于下次直接复用
+				$api['moments_navid'] = $navid;
+				\app\common\ConfigStore::save('api', $api);
+			}
+		}
+		if ($navid <= 0) {
+			return array('ok' => false, 'output' => '未设置朋友圈文章归属分类(navid)，请在计划任务-朋友圈采集中选择发现分类后保存，或先在发现管理添加发现分类');
 		}
 
 		$tjk = new \ZhiCms\ext\Tjk(array(
