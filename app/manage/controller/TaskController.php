@@ -132,8 +132,10 @@ class TaskController extends \app\base\controller\BaseController
             $isSystem = !empty($exist) && ($exist['type'] ?? '') === 'system';
             if ($isSystem) {
                 // 系统任务命令在 DB 中存为 job:xxx，而 $systemTasks 以 xxx 为键，需去掉前缀匹配
-                $sysKey = ltrim($exist['command'], 'job:');
-                $cmd = isset($this->systemTasks[$sysKey]) ? $this->systemTasks[$sysKey]['command'] : trim($this->arg('command'));
+                // 注意：必须用前缀判断，不能用 ltrim（ltrim 是按字符集剥除，会误伤）
+                $rawCmd = trim($exist['command']);
+                $sysKey = (strpos($rawCmd, 'job:') === 0) ? substr($rawCmd, 4) : $rawCmd;
+                $cmd = isset($this->systemTasks[$sysKey]) ? $this->systemTasks[$sysKey]['command'] : $rawCmd;
                 $data['command'] = $cmd;
                 $data['exec_type'] = 'php';
             }
@@ -147,7 +149,8 @@ class TaskController extends \app\base\controller\BaseController
             \ZhiCms\ext\AdminLog::write('task', '编辑了计划任务：' . $data['title']);
 
             // 商品采集任务：保存可选分类 cid
-            if ($data['command'] === 'job:goods_collect') {
+            $isGoods = ($data['command'] === 'job:goods_collect' || $data['command'] === 'goods_collect');
+            if ($isGoods) {
                 $cids = isset($_POST['goods_cids']) && is_array($_POST['goods_cids']) ? array_map('intval', $_POST['goods_cids']) : array();
                 $cids = array_values(array_filter($cids));
                 $apiCfg = \app\common\ConfigStore::load('api');
@@ -157,7 +160,8 @@ class TaskController extends \app\base\controller\BaseController
             }
 
             // 资讯采集任务：保存聚合接口 Key 与分类映射（照搬 发现管理→资讯采集，供定时跑读取）
-            if ($data['command'] === 'job:news_collect') {
+            $isNews = ($data['command'] === 'job:news_collect' || $data['command'] === 'news_collect');
+            if ($isNews) {
                 $apiCfg = \app\common\ConfigStore::load('api');
                 if (!is_array($apiCfg)) $apiCfg = array();
                 if (isset($_POST['news_key235'])) $apiCfg['juhe_235_key'] = trim($_POST['news_key235']);
@@ -168,7 +172,8 @@ class TaskController extends \app\base\controller\BaseController
             }
 
             // 朋友圈采集任务：仅保存「发现分类(navid)」与采集页数（不使用电商产品分类 cid）
-            if ($data['command'] === 'job:moments_collect') {
+            $isMoments = ($data['command'] === 'job:moments_collect' || $data['command'] === 'moments_collect');
+            if ($isMoments) {
                 $apiCfg = \app\common\ConfigStore::load('api');
                 if (!is_array($apiCfg)) $apiCfg = array();
                 $apiCfg['moments_navid'] = isset($_POST['moments_navid']) ? intval($_POST['moments_navid']) : 0;
