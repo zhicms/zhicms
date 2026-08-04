@@ -86,13 +86,27 @@ class TaskController extends \app\base\controller\BaseController
         $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
         if (empty($row)) { $this->alert('任务不存在', 'index.php?r=manage/task/index'); }
         $this->task = $row[0];
+        $apiCfg = \app\common\ConfigStore::load('api');
+        if (!is_array($apiCfg)) $apiCfg = array();
+
         // 商品采集可选分类：从 api 配置读取（id=>true 映射，供模板勾选回显）
         $gcCids = array();
-        $apiCfg = \app\common\ConfigStore::load('api');
         if (!empty($apiCfg['goods_collect_cids']) && is_array($apiCfg['goods_collect_cids'])) {
             foreach ($apiCfg['goods_collect_cids'] as $cid) { $gcCids[(int)$cid] = true; }
         }
         $this->gcCids = $gcCids;
+
+        // 资讯采集：注入聚合接口 Key、分类类型、本地发现分类、已保存映射（照搬 发现管理→资讯采集）
+        $this->juheKeys = array(
+            'key235' => isset($apiCfg['juhe_235_key']) ? $apiCfg['juhe_235_key'] : '',
+            'key850' => isset($apiCfg['juhe_850_key']) ? $apiCfg['juhe_850_key'] : '',
+        );
+        $this->juheTypes235 = \app\common\JuheService::types235();
+        $this->juheTypes850 = \app\common\JuheService::types850();
+        $this->navs = $this->getFindNavs();
+        $this->juhe235Map = (isset($apiCfg['juhe_235_map']) && is_array($apiCfg['juhe_235_map'])) ? $apiCfg['juhe_235_map'] : array();
+        $this->juhe850Map = (isset($apiCfg['juhe_850_map']) && is_array($apiCfg['juhe_850_map'])) ? $apiCfg['juhe_850_map'] : array();
+
         $this->pageText = array('编辑任务');
         $this->toolTitle = '编辑计划任务';
         $this->display();
@@ -135,6 +149,17 @@ class TaskController extends \app\base\controller\BaseController
                 $apiCfg = \app\common\ConfigStore::load('api');
                 if (!is_array($apiCfg)) $apiCfg = array();
                 $apiCfg['goods_collect_cids'] = $cids;
+                \app\common\ConfigStore::save('api', $apiCfg);
+            }
+
+            // 资讯采集任务：保存聚合接口 Key 与分类映射（照搬 发现管理→资讯采集，供定时跑读取）
+            if ($data['command'] === 'job:news_collect') {
+                $apiCfg = \app\common\ConfigStore::load('api');
+                if (!is_array($apiCfg)) $apiCfg = array();
+                if (isset($_POST['news_key235'])) $apiCfg['juhe_235_key'] = trim($_POST['news_key235']);
+                if (isset($_POST['news_key850'])) $apiCfg['juhe_850_key'] = trim($_POST['news_key850']);
+                $apiCfg['juhe_235_map'] = $this->parseNewsMap($_POST, 'news235', 'news235chk');
+                $apiCfg['juhe_850_map'] = $this->parseNewsMap($_POST, 'news850', 'news850chk');
                 \app\common\ConfigStore::save('api', $apiCfg);
             }
         } else {
@@ -277,5 +302,39 @@ class TaskController extends \app\base\controller\BaseController
     private function taskSchedule($id){
         $row = obj('api/ApiData')->thisQuery("SELECT `schedule` FROM `yun_cron_task` WHERE `id` = " . (int)$id);
         return !empty($row) ? $row[0]['schedule'] : 'every 30 minute';
+    }
+
+    /**
+     * 解析资讯采集分类映射：仅收集「勾选」且「选择非 0 本地分类」的项
+     * @param array $post $_POST
+     * @param string $mapName 下拉 name 前缀（如 news235_map）
+     * @param string $chkName 复选框 name 前缀（如 news235chk）
+     * @return array code => navid
+     */
+    private function parseNewsMap($post, $mapName, $chkName){
+        $map = array();
+        $chks  = isset($post[$chkName]) && is_array($post[$chkName]) ? $post[$chkName] : array();
+        $maps  = isset($post[$mapName]) && is_array($post[$mapName]) ? $post[$mapName] : array();
+        foreach (array_keys($chks) as $code) {
+            $code = (string)$code;
+            if (isset($maps[$code])) {
+                $navid = (int)$maps[$code];
+                if ($navid > 0) $map[$code] = $navid;
+            }
+        }
+        return $map;
+    }
+
+    /** 本地「发现分类」（yun_nav）列表，供资讯采集映射下拉框使用 */
+    private function getFindNavs(){
+        $list = obj("api/ApiData")->dataSelect("yun_nav", array("1"), "`px` ASC, `id` ASC");
+        $map = array();
+        if (!empty($list)) {
+            if (isset($list['id'])) $list = array($list);
+            foreach ($list as $row) {
+                $map[$row['id']] = $row['name'];
+            }
+        }
+        return $map;
     }
 }
