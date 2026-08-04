@@ -12,17 +12,57 @@
             </div>
             <div class="form-group">
                 <label>执行方式</label>
-                <select class="form-control" name="exec_type">
+                <select class="form-control" name="exec_type" {if $task.type=='system'}disabled{/if}>
                     <option value="url" {if $task.exec_type=='url'}selected{/if}>URL 回调（HTTP 请求该地址）</option>
                     <option value="php" {if $task.exec_type=='php'}selected{/if}>PHP 代码 / 脚本</option>
                     <option value="shell" {if $task.exec_type=='shell'}selected{/if}>Shell 命令</option>
                     <option value="python" {if $task.exec_type=='python'}selected{/if}>Python 脚本 / 代码</option>
                 </select>
+                {if $task.type=='system'}<small class="form-text text-muted">系统内置任务，执行方式固定为 PHP 脚本（内置脚本库），不可更改</small>{/if}
             </div>
             <div class="form-group">
                 <label>命令 / 地址 / 代码</label>
-                <textarea class="form-control" name="command" rows="5" required>{htmlspecialchars($task.command, ENT_QUOTES, 'UTF-8')}</textarea>
+                <textarea class="form-control" name="command" rows="5" {if $task.type=='system'}readonly{/if}>{htmlspecialchars($task.command, ENT_QUOTES, 'UTF-8')}</textarea>
+                {if $task.type=='system'}<small class="form-text text-muted">系统内置脚本（<code>job:xxx</code>），固定不可编辑</small>{/if}
             </div>
+
+            <!-- 安全提示：shell / python 危险命令限制 -->
+            <div class="alert alert-warning d-none" id="danger_tip">
+                <i class="fas fa-exclamation-triangle mr-1"></i>
+                <strong>为了保证服务器的安全稳定，shell / python 脚本中以下危险命令不可使用（执行时会被自动拦截）：</strong>
+                <div class="mt-2">
+                    <code>shutdown</code> <code>reboot</code> <code>halt</code> <code>poweroff</code>
+                    <code>init 0 / init 6</code> <code>telinit 0 / telinit 6</code>
+                    <code>mkfs</code> <code>mkfs.ext</code> <code>mke2fs</code>
+                    <code>fdisk</code> <code>parted</code> <code>format</code>
+                    <code>passwd</code> <code>chpasswd</code> <code>--stdin</code>
+                    <code>rm -rf /</code> <code>dd if=/dev/zero</code>
+                </div>
+            </div>
+
+            {if $task.command=='job:goods_collect'}
+            <!-- 商品采集：可选分类 -->
+            <div class="form-group">
+                <label>采集分类（可多选，留空则全部分类随机）</label>
+                <div class="row">
+                    <div class="col-md-6">
+                        {foreach ['1'=>'女装','2'=>'男装','3'=>'内衣','4'=>'美妆','5'=>'配饰','6'=>'鞋品','7'=>'箱包','8'=>'儿童','9'=>'母婴','10'=>'居家','11'=>'美食','12'=>'文体','13'=>'数码','14'=>'车品','15'=>'其他'] as $ccid => $cname}
+                        <label class="checkbox-inline mr-3">
+                            <input type="checkbox" name="goods_cids[]" value="{$ccid}" {if $gcCids[$ccid]}checked{/if}> {$cname}
+                        </label>
+                        {/foreach}
+                    </div>
+                </div>
+                <small class="form-text text-muted">勾选后，商品采集将只采集所选分类的商品（每页随机一个分类）。</small>
+            </div>
+            {/if}
+
+            {if $task.command=='job:news_collect'}
+            <!-- 资讯采集：映射说明 -->
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> 资讯采集按「发现管理 → 资讯采集」中配置的聚合接口 Key 与分类映射执行（默认 235 头条 + 850 热点）。请到「发现管理 → 资讯采集」配置好 Key 与映射，定时任务即按该映射采集。
+            </div>
+            {/if}
             <div class="form-group">
                 <label>调度周期</label>
                 <input type="hidden" name="schedule" id="schedule" value="{htmlspecialchars($task.schedule, ENT_QUOTES, 'UTF-8')}">
@@ -31,6 +71,7 @@
                         <select class="form-control" id="sch_mode">
                             <option value="interval">每隔</option>
                             <option value="daily">每天固定时间</option>
+                            <option value="random">每天随机时段</option>
                         </select>
                     </div>
                     <div class="col-auto" id="box_interval">
@@ -47,8 +88,12 @@
                         分 <select class="form-control w-75 d-ib" id="daily_m"></select>
                         秒 <select class="form-control w-75 d-ib" id="daily_s"></select>
                     </div>
+                    <div class="col-auto d-none" id="box_random">
+                        起始时 <select class="form-control w-75 d-ib" id="rand_h1"></select>
+                        结束时 <select class="form-control w-75 d-ib" id="rand_h2"></select>
+                    </div>
                 </div>
-                <small class="text-muted">间隔模式：每隔 N 秒/分/时/天执行一次；每天固定时间：在每日指定时分秒执行。当前值：<code id="sch_preview">{htmlspecialchars($task.schedule, ENT_QUOTES, 'UTF-8')}</code></small>
+                <small class="text-muted">间隔模式：每隔 N 秒/分/时/天执行一次；每天固定时间：在每日指定时分秒执行；每天随机时段：每天在该时段内随机一个时刻执行（如 1~8 点）。当前值：<code id="sch_preview">{htmlspecialchars($task.schedule, ENT_QUOTES, 'UTF-8')}</code></small>
             </div>
             <div class="form-group form-check">
                 <input type="checkbox" class="form-check-input" id="status" name="status" value="1" {if $task['status']=='1'}checked{/if}>
@@ -68,11 +113,14 @@
     for (var h=0; h<24; h++){ var o=document.createElement('option'); o.value=h; o.text=pad(h); document.getElementById('daily_h').appendChild(o); }
     for (var m=0; m<60; m++){ var o1=document.createElement('option'); o1.value=m; o1.text=pad(m); document.getElementById('daily_m').appendChild(o1);
         var o2=document.createElement('option'); o2.value=m; o2.text=pad(m); document.getElementById('daily_s').appendChild(o2); }
+    for (var h=0; h<24; h++){ var a=document.createElement('option'); a.value=h; a.text=pad(h); document.getElementById('rand_h1').appendChild(a);
+        var b=document.createElement('option'); b.value=h; b.text=pad(h); document.getElementById('rand_h2').appendChild(b); }
 
     // 解析已有值
     var cur = document.getElementById('schedule').value.trim();
     var m1 = cur.match(/^every\s+(\d+)\s+(second|minute|hour|day)s?$/i);
     var m2 = cur.match(/^(\d+)\s+(\d+)\s+(\d+)\s+\*\s+\*$/);
+    var m3 = cur.match(/^daily\s+random\s+(\d+)-(\d+)$/i);
     if (m1){
         document.getElementById('sch_mode').value='interval';
         document.getElementById('iv_num').value=parseInt(m1[1],10)||1;
@@ -82,6 +130,10 @@
         document.getElementById('daily_s').value=parseInt(m2[1],10);
         document.getElementById('daily_m').value=parseInt(m2[2],10);
         document.getElementById('daily_h').value=parseInt(m2[3],10);
+    } else if (m3){
+        document.getElementById('sch_mode').value='random';
+        document.getElementById('rand_h1').value=parseInt(m3[1],10);
+        document.getElementById('rand_h2').value=parseInt(m3[2],10);
     } else {
         // 其它 cron 或未知，退回间隔默认
         document.getElementById('sch_mode').value='interval';
@@ -94,22 +146,39 @@
         if (mode==='interval'){
             document.getElementById('box_interval').style.display='';
             document.getElementById('box_daily').style.display='none';
+            document.getElementById('box_random').style.display='none';
             var n = parseInt(document.getElementById('iv_num').value,10) || 1;
             var u = document.getElementById('iv_unit').value;
             val = 'every ' + n + ' ' + u;
-        } else {
+        } else if (mode==='daily'){
             document.getElementById('box_interval').style.display='none';
             document.getElementById('box_daily').style.display='';
+            document.getElementById('box_random').style.display='none';
             var h=document.getElementById('daily_h').value, m=document.getElementById('daily_m').value, s=document.getElementById('daily_s').value;
             val = s + ' ' + m + ' ' + h + ' * *';
+        } else {
+            document.getElementById('box_interval').style.display='none';
+            document.getElementById('box_daily').style.display='none';
+            document.getElementById('box_random').style.display='';
+            var h1=parseInt(document.getElementById('rand_h1').value,10), h2=parseInt(document.getElementById('rand_h2').value,10);
+            if (h2 < h1) { var tmp=h1; h1=h2; h2=tmp; document.getElementById('rand_h1').value=h1; document.getElementById('rand_h2').value=h2; }
+            val = 'daily random ' + h1 + '-' + h2;
         }
         document.getElementById('schedule').value = val;
         document.getElementById('sch_preview').textContent = val;
     }
-    ['sch_mode','iv_num','iv_unit','daily_h','daily_m','daily_s'].forEach(function(id){
+    ['sch_mode','iv_num','iv_unit','daily_h','daily_m','daily_s','rand_h1','rand_h2'].forEach(function(id){
         document.getElementById(id).addEventListener('change', build);
         document.getElementById(id).addEventListener('input', build);
     });
     build();
+
+    // 安全提示：shell / python 显示危险命令提示
+    var et = document.querySelector('[name="exec_type"]');
+    var tip = document.getElementById('danger_tip');
+    function toggleDanger(){
+        if (tip && et) tip.classList.toggle('d-none', et.value !== 'shell' && et.value !== 'python');
+    }
+    if (et) { et.addEventListener('change', toggleDanger); toggleDanger(); }
 })();
 </script>

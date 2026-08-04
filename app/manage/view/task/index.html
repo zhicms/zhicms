@@ -59,13 +59,13 @@
                             {/if}
                         </td>
                         <td>
-                            <button class="btn btn-xs btn-outline-success" onclick="runNow({(int)$t['id']})"><i class="fas fa-play"></i></button>
-                            <button class="btn btn-xs btn-outline-secondary" onclick="toggle({(int)$t['id']})"><i class="fas fa-power-off"></i></button>
+                            <button class="btn btn-xs btn-outline-success" onclick="runNow({$t['id']})"><i class="fas fa-play"></i></button>
+                            <button class="btn btn-xs btn-outline-secondary" onclick="toggle({$t['id']})"><i class="fas fa-power-off"></i></button>
+                            <a class="btn btn-xs btn-outline-primary" href="index.php?r=manage/task/edit&id={$t['id']}" title="编辑任务与执行周期"><i class="fas fa-edit"></i></a>
                             {if $t['type']=='custom'}
-                            <a class="btn btn-xs btn-outline-primary" href="index.php?r=manage/task/edit&id={(int)$t['id']}"><i class="fas fa-edit"></i></a>
-                            <button class="btn btn-xs btn-outline-danger" onclick="del({(int)$t['id']})"><i class="fas fa-trash"></i></button>
+                            <button class="btn btn-xs btn-outline-danger" onclick="del({$t['id']})"><i class="fas fa-trash"></i></button>
                             {else}
-                            <span class="text-muted small">系统</span>
+                            <span class="text-muted small" title="系统内置任务不可删除，可编辑执行周期">系统</span>
                             {/if}
                         </td>
                     </tr>

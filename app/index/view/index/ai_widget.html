@@ -763,13 +763,13 @@
   .ai-chat-panel {
     width: calc(100vw - 20px);
     right: 10px;
-    bottom: 86px;
+    bottom: 150px;      /* 移动端聊天面板上移，避免遮住右下角的 AI 机器人按钮 */
     height: 480px;
-    max-height: calc(100vh - 110px);
+    max-height: calc(100vh - 180px);
     border-radius: 12px;
   }
   .ai-assistant-btn {
-    bottom: 20px;
+    bottom: 76px;      /* 移动端：上移到手机底部导航之上，避免与侧边工具按钮重叠 */
     right: 15px;
     width: 50px;
     height: 50px;

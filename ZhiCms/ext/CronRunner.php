@@ -22,6 +22,17 @@ class CronRunner {
             $sec = $unit === 'second' ? 1 : ($unit === 'minute' ? 60 : ($unit === 'hour' ? 3600 : 86400));
             return $from + $n * $sec;
         }
+        // 每日一次、随机时段：daily random H1-H2（每天在 H1~H2 点之间随机一个时刻执行）
+        if (preg_match('/^daily\s+random\s+(\d+)-(\d+)$/i', $schedule, $m)) {
+            $h1 = max(0, min(23, (int)$m[1]));
+            $h2 = max(0, min(23, (int)$m[2]));
+            if ($h2 < $h1) list($h1, $h2) = array($h2, $h1);
+            $hour = mt_rand($h1, $h2);
+            $minute = mt_rand(0, 59);
+            $t = mktime($hour, $minute, 0, (int)date('n', $from), (int)date('j', $from), (int)date('Y', $from));
+            if ($t <= $from) $t += 86400;
+            return $t;
+        }
         // 标准 cron 5 段
         if (substr_count($schedule, ' ') + 1 === 5) {
             return self::nextCron($schedule, $from);
@@ -111,25 +122,45 @@ class CronRunner {
                     break;
 
                 case 'php':
-                    if (preg_match('/\.php$/', trim($cmd)) && is_file($cmd)) {
-                        // 脚本文件
+                    // 支持三种写法：
+                    // 1) PHP CLI 命令（如 php think run -p 8888 / php cli.php）→ 用 php 二进制执行
+                    // 2) .php 脚本文件路径 → include 执行
+                    // 3) PHP 代码段 → eval 执行
+                    $trimCmd = trim($cmd);
+                    if (preg_match('/^php(?:\s+|$)/i', $trimCmd) && $trimCmd !== 'php') {
+                        // 以 "php xxx" 开头的 CLI 命令：改为调用 php 二进制，在项目根目录执行
+                        $phpBin = self::phpBinary();
+                        if (!$phpBin) { $output = '未找到 php 可执行文件'; $ok = false; break; }
+                        // 去掉开头的 "php "，用绝对 php 路径补全
+                        $realCmd = preg_replace('/^php\s+/i', '', $trimCmd, 1);
+                        $full = $phpBin . ' ' . $realCmd;
+                        $block = self::blockedCommand($realCmd);
+                        if ($block) { $output = '危险命令已拦截：' . $block; $ok = false; break; }
+                        $output = self::runProc($full);
+                        $ok = ($output !== null);
+                    } else if (preg_match('/\.php$/', $trimCmd) && is_file($trimCmd)) {
                         ob_start();
-                        include $cmd;
+                        include $trimCmd;
                         $output = substr(ob_get_clean(), 0, 500);
+                        $ok = true;
                     } else {
                         ob_start();
                         eval($cmd);
                         $output = substr(ob_get_clean(), 0, 500);
+                        $ok = true;
                     }
-                    $ok = true;
                     break;
 
                 case 'shell':
+                    $block = self::blockedCommand($cmd);
+                    if ($block) { $output = '危险命令已拦截：' . $block . '（为保证服务器安全，该命令不可执行）'; $ok = false; break; }
                     $output = self::runProc($cmd);
                     $ok = ($output !== null);
                     break;
 
                 case 'python':
+                    $block = self::blockedCommand($cmd);
+                    if ($block) { $output = '危险命令已拦截：' . $block . '（为保证服务器安全，该命令不可执行）'; $ok = false; break; }
                     $py = self::pythonBinary();
                     if (!$py) { $output = '未找到 python 可执行文件'; $ok = false; break; }
                     if (preg_match('/\.py$/', trim($cmd)) && is_file($cmd)) {
@@ -154,10 +185,59 @@ class CronRunner {
         return array('ok' => $ok, 'output' => is_string($output) ? $output : strval($output));
     }
 
-    private static function runProc($command){
+    /**
+     * 危险命令检测：shell / python 任务中禁止使用会危害服务器/操作系统的命令。
+     * @param string $command 命令内容
+     * @return string 命中则返回命中的危险命令；否则返回 ''
+     */
+    private static function blockedCommand($command){
+        if (trim($command) === '') return '';
+        $cmd = strtolower($command);
+
+        // 明确列出的危险命令/参数（多词命令：精确或带分隔边界匹配）
+        $dangerous = array(
+            'init 0', 'init 6', 'telinit 0', 'telinit 6',
+            'mkfs.ext', 'mke2fs',
+            'chpasswd --stdin', 'rm -fr /', 'del /s', 'format c:',
+            'dd if=/dev/zero', '> /dev/sda', '> /dev/hda',
+            'chmod -r /', 'chmod 777 /', 'chown -r /',
+            'kill -9 1', 'killall init',
+        );
+        foreach ($dangerous as $d) {
+            if ($cmd === $d) return $d;
+            // 多词危险命令：要求词边界，避免误伤路径（如 rm -rf /tmp 不拦截，只拦 rm -rf / 根目录）
+            if (preg_match('/(?:^|[^\w])' . preg_quote($d, '/') . '(?:$|[^\w])/', $cmd)) return $d;
+        }
+
+        // rm -rf / （仅根目录本身，不拦 rm -rf /path）
+        if (preg_match('/(?:^|[^\w])rm\s+-[rfrf]{2}\s+\/\s*$/i', $cmd) || preg_match('/(?:^|[^\w])rm\s+-[rfrf]{2}\s+\/\s+["\']?$/', $cmd)) return 'rm -rf /';
+
+        // 词边界匹配单命令危险词（shutdown / mkfs / passwd / reboot 等）
+        $single = array('shutdown', 'reboot', 'halt', 'poweroff', 'mkfs', 'fdisk', 'parted', 'passwd', 'chpasswd');
+        foreach ($single as $s) {
+            if (preg_match('/(?:^|[^\w])' . preg_quote($s, '/') . '(?:$|[^\w])/', $cmd)) return $s;
+        }
+        // mkfs.ext* / mkfs.* 系列（词边界）
+        if (preg_match('/(?:^|[^\w])mkfs(?:\.[a-z0-9]+)?(?:$|[^\w])/', $cmd)) return 'mkfs';
+        // init 0 / init 6 / telinit 0 / telinit 6
+        if (preg_match('/(?:^|[^\w])init\s+[06](?:$|[^\w])/', $cmd)) return 'init 0/6';
+        if (preg_match('/(?:^|[^\w])telinit\s+[06](?:$|[^\w])/', $cmd)) return 'telinit 0/6';
+
+        return '';
+    }
+
+    /**
+     * 在指定工作目录下执行外部命令（默认项目根目录，便于找到 think / 脚本文件等）。
+     * @param string $command 命令
+     * @param string|null $cwd 工作目录；null 时用项目根目录
+     */
+    private static function runProc($command, $cwd = null){
         if (!function_exists('proc_open')) return 'proc_open 不可用';
+        if ($cwd === null) {
+            $cwd = defined('ROOT_PATH') ? ROOT_PATH : (getcwd() ?: null);
+        }
         $descriptors = array(0 => array('pipe','r'), 1 => array('pipe','w'), 2 => array('pipe','w'));
-        $proc = proc_open($command, $descriptors, $pipes);
+        $proc = @proc_open($command, $descriptors, $pipes, $cwd);
         if (!is_resource($proc)) return '无法启动进程';
         $out = stream_get_contents($pipes[1]);
         $err = stream_get_contents($pipes[2]);
@@ -165,6 +245,21 @@ class CronRunner {
         proc_close($proc);
         $result = $out . ($err ? "\n[err] " . $err : '');
         return substr($result, 0, 800);
+    }
+
+    private static function phpBinary(){
+        $candidates = array(PHP_BINARY, 'php', '/usr/bin/php', '/usr/local/bin/php', 'D:/phpstudy_pro/Extensions/php/php8.0.2nts/php.exe');
+        foreach ($candidates as $c) {
+            if ($c && is_string($c) && trim($c) !== '') {
+                if (is_file($c)) return $c;
+            }
+        }
+        // 用 where 探测
+        foreach (array('php', '/usr/bin/php', '/usr/local/bin/php') as $c) {
+            $out = @shell_exec("where $c 2>nul");
+            if ($out && trim($out) !== '') return trim(explode("\n", $out)[0]);
+        }
+        return '';
     }
 
     private static function pythonBinary(){

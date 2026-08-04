@@ -83,7 +83,7 @@ class SetController extends \app\base\controller\BaseController
 				'beian'          => $_POST['beian']          ?? '',
 				'model'          => $_POST['model']          ?? '',
 				'key'            => $_POST['key']            ?? '',
-				'mobile_style'   => isset($_POST['mobile_style']) ? trim($_POST['mobile_style']) : '',
+				// mobile_style 由「移动端」标签页单独保存，这里不处理，避免基础设置覆盖移动端风格
 			);
 			ConfigStore::save('site', $Siteinfo);
 			ConfigStore::clearCache('site');
@@ -353,30 +353,26 @@ class SetController extends \app\base\controller\BaseController
         echo json_encode(array("info" => "AI 设置保存成功", "status" => "y"));
     }
 
-    public function sms(){
+    /**
+     * 移动端设置：保存移动端相关配置（原短信设置已合并移除，改用移动端标签页）
+     * mobile_style 仍存于 site 配置，与前端 m/ 端读取保持一致
+     */
+    public function mobile(){
+        $this->checkManageSession();
+        if(!\IS_POST){
+            $this->pagetext=array("基础设置","移动端");
+            $this->ret=ConfigStore::load('site');
+            $this->display();
+            exit;
+        }else{
+            $site = ConfigStore::load('site');
+            $site['mobile_style'] = isset($_POST['mobile_style']) ? trim($_POST['mobile_style']) : '';
+            ConfigStore::save('site', $site);
+            ConfigStore::clearCache('site');
 
-
-    $this->checkManageSession();
-
-
-      if(!\IS_POST){
-        $this->pagetext=array("基础设置","短信通道");
-        $this->ret=ConfigStore::load('sms');
-        $this->display();
-        exit;
-      }else{
-
-        $sms = array(
-            'smsurl' => $_POST['smsurl'] ?? '',
-            'reg_sms' => $_POST['reg_sms'] ?? '',
-      );
-       ConfigStore::save('sms', $sms);
-       ConfigStore::clearCache('sms');
-
-       echo json_encode(array("info" => "设置成功", "status" => "y"));
-
-      }
-   }
+            echo json_encode(array("info" => "设置成功", "status" => "y"));
+        }
+    }
 
     public function upload(){
         // 统一转发到 FileController 上传接口

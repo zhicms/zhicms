@@ -17,6 +17,11 @@
                         </a>
                     </li>
                     <li class="nav-item">
+                        <a class="nav-link" id="mobile-tab" data-toggle="tab" href="#mobile" role="tab" aria-controls="mobile" aria-selected="false">
+                            <i class="fas fa-mobile-alt"></i> 移动端
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a class="nav-link" id="url-tab" data-toggle="tab" href="#url" role="tab" aria-controls="url" aria-selected="false">
                             <i class="fas fa-link"></i> URL设置
                         </a>
@@ -29,11 +34,6 @@
                     <li class="nav-item">
                         <a class="nav-link" id="api-tab" data-toggle="tab" href="#api" role="tab" aria-controls="api" aria-selected="false">
                             <i class="fas fa-plug"></i> API设置
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" id="sms-tab" data-toggle="tab" href="#sms" role="tab" aria-controls="sms" aria-selected="false">
-                            <i class="fas fa-sms"></i> 短信设置
                         </a>
                     </li>
                     <li class="nav-item">
@@ -90,18 +90,6 @@
                                         <small class="form-text text-muted">多个关键词用逗号分隔</small>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- 移动端风格 -->
-                            <h5 class="section-title"><i class="fas fa-mobile-alt"></i> 移动端风格</h5>
-                            <div class="form-group">
-                                <label for="mobile_style" class="font-weight-bold">移动端首页风格</label>
-                                <select class="form-control" id="mobile_style" name="mobile_style">
-                                    <option value="super_search" <?php echo empty($ret['mobile_style']) || $ret['mobile_style']=='super_search' ? 'selected' : ''; ?>>超级搜索（默认）</option>
-                                    <option value="tb_minishop" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='tb_minishop' ? 'selected' : ''; ?>>小样种草机</option>
-                                    <option value="rt_xb" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='rt_xb' ? 'selected' : ''; ?>>好单线报</option>
-                                </select>
-                                <small class="form-text text-muted">m 端首页（/m.html）展示的页面风格，对应 page 目录下的页面文件</small>
                             </div>
 
                             <!-- 站点状态（关闭站点 + 关闭说明 放在一起） -->
@@ -500,27 +488,23 @@
                         </form>
                     </div>
 
-                    <!-- 短信设置 -->
-                    <div class="tab-pane fade" id="sms" role="tabpanel" aria-labelledby="sms-tab">
-                        <form id="sms-form" class="mt-4">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="smsurl" class="font-weight-bold">短信接口地址</label>
-                                        <input type="text" class="form-control" id="smsurl" name="smsurl" placeholder="请输入短信接口地址" value="<?php echo isset($ret['smsurl']) ? $ret['smsurl'] : ''; ?>">
-                                        <small class="form-text text-muted">配置短信发送接口地址</small>
-                                    </div>
-                                </div>
-                            </div>
-
+                    <!-- 移动端 / 小程序&App -->
+                    <div class="tab-pane fade" id="mobile" role="tabpanel" aria-labelledby="mobile-tab">
+                        <form id="mobile-form" class="mt-4">
+                            <!-- 移动端风格 -->
+                            <h5 class="section-title"><i class="fas fa-mobile-alt"></i> 移动端风格</h5>
                             <div class="form-group">
-                                <label for="reg_sms" class="font-weight-bold">短信验证码模板</label>
-                                <textarea class="form-control" id="reg_sms" name="reg_sms" rows="4" placeholder="请输入短信验证码模板"><?php echo isset($ret['reg_sms']) ? $ret['reg_sms'] : ''; ?></textarea>
-                                <small class="form-text text-muted">用于注册、重置密码等短信验证</small>
+                                <label for="mobile_style" class="font-weight-bold">移动端首页风格</label>
+                                <select class="form-control" id="mobile_style" name="mobile_style">
+                                    <option value="super_search" <?php echo empty($ret['mobile_style']) || $ret['mobile_style']=='super_search' ? 'selected' : ''; ?>>超级搜索（默认）</option>
+                                    <option value="tb_minishop" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='tb_minishop' ? 'selected' : ''; ?>>小样种草机</option>
+                                    <option value="rt_xb" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='rt_xb' ? 'selected' : ''; ?>>好单线报</option>
+                                </select>
+                                <small class="form-text text-muted">m 端首页（/m.html）展示的页面风格，对应 page 目录下的页面文件</small>
                             </div>
 
                             <div class="form-group border-top pt-3 mt-4">
-                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('sms')">
+                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('mobile')">
                                     <i class="fas fa-save"></i> 保存设置
                                 </button>
                             </div>

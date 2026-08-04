@@ -82,6 +82,10 @@ ALTER TABLE `yun_user` ADD COLUMN `status` tinyint(4) NOT NULL DEFAULT '1' COMME
 -- 2. yun_user 表：手机号唯一索引（注册查重、登录识别）
 ALTER TABLE `yun_user` ADD UNIQUE KEY `uk_mobile` (`mobile`);
 
+-- 2.1 yun_user 表：用户名唯一索引（保证用户名唯一，与安装脚本一致）
+-- 注意：若目标库已存在重复 username 会报错（属预期，需先清理重复数据再执行）
+ALTER TABLE `yun_user` ADD UNIQUE KEY `uk_username` (`username`);
+
 -- 3. yun_mall 表：新增所属联盟模型字段（union/addmall.html 提交 union_id）
 ALTER TABLE `yun_mall` ADD COLUMN `union_id` int(11) NOT NULL DEFAULT '0' COMMENT '所属联盟模型ID（yun_union.id）' AFTER `name`;
 
@@ -93,5 +97,35 @@ INSERT INTO `yun_config` (`key`, `value`, `desc`) VALUES
 ON DUPLICATE KEY UPDATE `desc` = VALUES(`desc`);
 
 -- 5. 版本号对齐：升级后将 cfg_version 更新为 5.0.2
+INSERT INTO `yun_config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')
+ON DUPLICATE KEY UPDATE `value` = '{"version":"5.0.2"}';
+
+-- 6. yun_page 表：新增 alias 别名（伪静态访问 page-<alias>.html）+ display 模板字段
+-- 注意：alias 唯一索引，空字符串允许（留空则用 ID 访问）；若已存在字段执行会报错属预期可忽略
+ALTER TABLE `yun_page` ADD COLUMN `alias` varchar(60) NULL DEFAULT NULL COMMENT '页面别名，用于伪静态访问 page-<alias>.html（NULL 允许多条空别名）' AFTER `title`;
+ALTER TABLE `yun_page` ADD COLUMN `display` varchar(30) NOT NULL DEFAULT '' COMMENT '指定显示模板（留空用默认 page）' AFTER `body`;
+ALTER TABLE `yun_page` ADD UNIQUE KEY `alias` (`alias`);
+
+-- 7. 导航管理：新建 yun_navmenu 表（主导航/子导航、拖拽排序、新窗口打开）
+-- 说明：与 yun_nav（文章「发现」分类）不同，本表用于前台顶部主导航菜单
+-- 结构参考 emlog 的 emlog_navi 表（id, naviname, url, newtab, hide, taxis, pid, isdefault, type, type_id）
+CREATE TABLE IF NOT EXISTS `yun_navmenu` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL DEFAULT '' COMMENT '菜单名称',
+  `url` varchar(500) NOT NULL DEFAULT '' COMMENT '链接地址（绝对/相对/伪静态）',
+  `type` varchar(20) NOT NULL DEFAULT 'custom' COMMENT '来源类型：custom自定义 cheaps优惠券 brand大牌 rank风云榜 hot热榜 forum社区 page单页',
+  `type_id` int(11) NOT NULL DEFAULT '0' COMMENT '关联ID（page类型为页面ID，其他栏目为0）',
+  `parent_id` int(11) NOT NULL DEFAULT '0' COMMENT '父级ID，0=主导航',
+  `target` tinyint(1) NOT NULL DEFAULT '0' COMMENT '新窗口打开 1是 0否',
+  `hide` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1隐藏 0显示',
+  `isdefault` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1系统内置不可删除（如首页）',
+  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序（越小越靠前）',
+  `create_time` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `parent_id` (`parent_id`),
+  KEY `type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='前台导航菜单';
+
+-- 8. 版本号对齐：升级后将 cfg_version 更新为 5.0.2（导航管理）
 INSERT INTO `yun_config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')
 ON DUPLICATE KEY UPDATE `value` = '{"version":"5.0.2"}';

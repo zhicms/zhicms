@@ -800,6 +800,75 @@ class UnionController extends \app\base\controller\BaseController
         }
     }
 
+    /**
+     * 商品采集（计划任务专用）：读取后台 API 配置，批量采集「最新商品」并入库（新增，不更新）。
+     * 绕过后台 session / CSRF 校验，供 manage/task/run 定时触发。
+     * @return array ['ok'=>bool,'output'=>string]
+     */
+    public function collectGoodsCron(){
+        try {
+            $client = $this->createTjkClient();
+            if (!$client) {
+                return array('ok' => false, 'output' => '请先在后台配置API参数（API设置-淘宝/好单库）');
+            }
+
+            $pageSize = 50;
+            $maxPages = 3;      // 每次最多采 3 页（约 150 条），避免超时
+            $totalCount = 0;
+            $insertCount = 0;
+            $skipCount = 0;
+            $errors = array();
+
+            // 常用大淘客分类 cid（每页随机取一个分类，避免采到的都是同类商品）
+            // 若后台「商品采集」任务配置了可选分类，则只采集所选分类
+            $apiCfg = \app\common\ConfigStore::load('api');
+            $cfgCids = !empty($apiCfg['goods_collect_cids']) ? $apiCfg['goods_collect_cids'] : array();
+            $cids = array();
+            if (is_array($cfgCids) && !empty($cfgCids)) {
+                foreach ($cfgCids as $cid) { $cid = (int)$cid; if ($cid > 0) $cids[] = $cid; }
+            }
+            if (empty($cids)) {
+                $cids = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
+            }
+            $usedCids = array();
+
+            for ($page = 1; $page <= $maxPages; $page++) {
+                // 本页随机一个尚未用过的分类 cid
+                $avail = array_diff($cids, $usedCids);
+                if (empty($avail)) $avail = $cids;
+                $cid = $avail[array_rand($avail)];
+                $usedCids[] = $cid;
+                $extra = array('cid' => $cid);
+
+                $response = $client->getGoodsList($pageSize, (string)$page, $extra);
+                if ($response['code'] != 1 || empty($response['items'])) {
+                    // 该分类无商品则换下一个分类再试一次
+                    $cid2 = $cids[array_rand($cids)];
+                    $response = $client->getGoodsList($pageSize, (string)$page, array('cid' => $cid2));
+                    if ($response['code'] != 1 || empty($response['items'])) {
+                        break;
+                    }
+                }
+                foreach ($response['items'] as $item) {
+                    $goodsId = $item['goodsId'] ?? $item['goodsSign'] ?? '';
+                    if (empty($goodsId)) continue;
+                    $totalCount++;
+                    // 已存在则跳过（采集=新增）
+                    if ($this->checkGoodsExists($item)) { $skipCount++; continue; }
+                    $res = $this->saveGoodsBatch(array($item), 'collect', 1);
+                    $insertCount += $res['count'];
+                }
+            }
+
+            $msg = "商品采集完成：处理{$totalCount}条，新增{$insertCount}条，已存在跳过{$skipCount}条";
+            if (!empty($errors)) $msg .= '；部分失败：' . implode('；', array_slice($errors, 0, 5));
+            return array('ok' => true, 'output' => $msg);
+
+        } catch (\Throwable $e) {
+            return array('ok' => false, 'output' => '商品采集异常：' . $e->getMessage());
+        }
+    }
+
     public function getGoodsDetailApi(){
 
         $this->checkManageSession();

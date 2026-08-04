@@ -9,8 +9,9 @@ class TaskController extends \app\base\controller\BaseController
 
     /** 系统任务定义（代码注册，不可删） */
     private $systemTasks = array(
-        'goods_collect' => array('title' => '商品采集', 'exec_type' => 'php', 'command' => 'job:goods_collect', 'schedule' => 'every 30 minute'),
-        'news_collect'  => array('title' => '资讯采集', 'exec_type' => 'php', 'command' => 'job:news_collect',  'schedule' => 'every 60 minute'),
+        'goods_collect'   => array('title' => '商品采集',   'exec_type' => 'php', 'command' => 'job:goods_collect',   'schedule' => 'daily random 1-8'),
+        'moments_collect' => array('title' => '朋友圈采集', 'exec_type' => 'php', 'command' => 'job:moments_collect', 'schedule' => 'daily random 1-8'),
+        'news_collect'    => array('title' => '资讯采集',   'exec_type' => 'php', 'command' => 'job:news_collect',    'schedule' => 'daily random 1-8'),
     );
 
     private function runToken(){
@@ -85,6 +86,13 @@ class TaskController extends \app\base\controller\BaseController
         $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
         if (empty($row)) { $this->alert('任务不存在', 'index.php?r=manage/task/index'); }
         $this->task = $row[0];
+        // 商品采集可选分类：从 api 配置读取（id=>true 映射，供模板勾选回显）
+        $gcCids = array();
+        $apiCfg = \app\common\ConfigStore::load('api');
+        if (!empty($apiCfg['goods_collect_cids']) && is_array($apiCfg['goods_collect_cids'])) {
+            foreach ($apiCfg['goods_collect_cids'] as $cid) { $gcCids[(int)$cid] = true; }
+        }
+        $this->gcCids = $gcCids;
         $this->pageText = array('编辑任务');
         $this->toolTitle = '编辑计划任务';
         $this->display();
@@ -101,12 +109,34 @@ class TaskController extends \app\base\controller\BaseController
             'status'    => $this->arg('status') ? 1 : 0,
         );
         $data['next_run'] = \ZhiCms\ext\CronRunner::nextRun($data['schedule']);
+
+        // 系统内置任务：命令与执行方式固定（内置脚本库 job:xxx），不可修改，仅可改周期
+        if ($id) {
+            $exist = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id`=" . $id);
+            $isSystem = !empty($exist) && ($exist['type'] ?? '') === 'system';
+            if ($isSystem) {
+                $cmd = isset($this->systemTasks[$exist['command']]) ? $exist['command'] : trim($this->arg('command'));
+                $data['command'] = $cmd;
+                $data['exec_type'] = 'php';
+            }
+        }
+
         if ($id) {
             obj('api/ApiData')->executeQuery("UPDATE `yun_cron_task` SET `title`='" . addslashes($data['title'])
                 . "', `exec_type`='" . addslashes($data['exec_type']) . "', `command`='" . addslashes($data['command'])
                 . "', `schedule`='" . addslashes($data['schedule']) . "', `status`=" . $data['status']
                 . ", `next_run`=" . (int)$data['next_run'] . " WHERE `id`=" . $id);
             \ZhiCms\ext\AdminLog::write('task', '编辑了计划任务：' . $data['title']);
+
+            // 商品采集任务：保存可选分类 cid
+            if ($data['command'] === 'job:goods_collect') {
+                $cids = isset($_POST['goods_cids']) && is_array($_POST['goods_cids']) ? array_map('intval', $_POST['goods_cids']) : array();
+                $cids = array_values(array_filter($cids));
+                $apiCfg = \app\common\ConfigStore::load('api');
+                if (!is_array($apiCfg)) $apiCfg = array();
+                $apiCfg['goods_collect_cids'] = $cids;
+                \app\common\ConfigStore::save('api', $apiCfg);
+            }
         } else {
             $data['type'] = 'custom';
             $data['create_time'] = time();
@@ -219,16 +249,16 @@ class TaskController extends \app\base\controller\BaseController
             switch ($name) {
                 case 'goods_collect':
                     $c = new \app\manage\controller\UnionController();
-                    ob_start();
-                    $c->collectGoods();
-                    $out = ob_get_clean();
-                    return array('ok' => true, 'output' => '商品采集完成');
+                    // 批量采集（读后台 API 配置，新增商品；不经 session/CSRF 校验）
+                    return $c->collectGoodsCron();
+                case 'moments_collect':
+                    $c = new \app\manage\controller\FindController();
+                    // 朋友圈采集（读后台保存的分类参数）
+                    return $c->collectCron();
                 case 'news_collect':
                     $c = new \app\manage\controller\FindController();
-                    ob_start();
-                    $c->newsCollect();
-                    $out = ob_get_clean();
-                    return array('ok' => true, 'output' => '资讯采集完成');
+                    // 按后台已保存的 Key 与分类映射采集（无需传参）
+                    return $c->newsCollectCron();
                 default:
                     return array('ok' => false, 'output' => '未知系统任务：' . $name);
             }

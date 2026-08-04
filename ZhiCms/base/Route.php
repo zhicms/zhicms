@@ -142,8 +142,9 @@ class Route {
 		// 无下划线：addlink -> Addlink (首字母大写)
 		$action_name = ucfirst($action_name);
 		if( !defined('APP_NAME') ) define('APP_NAME', strtolower($app_name));
-		if( !defined('CONTROLLER_NAME') ) define('CONTROLLER_NAME', ucfirst($controller_name));
-		if( !defined('ACTION_NAME') ) define('ACTION_NAME', $action_name);
+		// CONTROLLER_NAME / ACTION_NAME 统一为小写，便于模板中大小写无关地判断当前页（与 routeCache 缓存路径一致）
+		if( !defined('CONTROLLER_NAME') ) define('CONTROLLER_NAME', strtolower($controller_name));
+		if( !defined('ACTION_NAME') ) define('ACTION_NAME', strtolower($action_name));
 		
 		$routeCache[$cacheKey] = array(
 			'app' => strtolower($app_name),

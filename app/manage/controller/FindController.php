@@ -81,6 +81,14 @@ class FindController extends \app\base\controller\BaseController
         $pages = max(1, intval($this->arg("pages", 5)));
         $minId = intval($this->arg("min_id", 1));
 
+        // 持久化本次采集参数，供「计划任务-朋友圈采集」定时跑时复用
+        $apiTmp = \app\common\ConfigStore::load('api');
+        if (!is_array($apiTmp)) $apiTmp = array();
+        $apiTmp['moments_cid'] = $cid;
+        $apiTmp['moments_navid'] = $navid;
+        $apiTmp['moments_pages'] = $pages;
+        \app\common\ConfigStore::save('api', $apiTmp);
+
         $success = 0;
         $skip = 0;
         $pageDone = 0;
@@ -167,6 +175,84 @@ class FindController extends \app\base\controller\BaseController
 	}
 
 	/**
+	 * 朋友圈采集（计划任务专用）：读取后台保存的分类参数，定时跑无需传参。
+	 * 复用 collect() 的好单库朋友圈素材库采集逻辑。
+	 * @return array ['ok'=>bool,'output'=>string]
+	 */
+	public function collectCron(){
+		set_time_limit(0);
+		$api = \app\common\ConfigStore::load('api');
+		$cid   = isset($api['moments_cid'])   ? intval($api['moments_cid'])   : 0;
+		$navid = isset($api['moments_navid']) ? intval($api['moments_navid']) : 0;
+		$pages = isset($api['moments_pages']) ? max(1, intval($api['moments_pages'])) : 3;
+		$minId = 1;
+
+		$hdkApiKey = $api['hdk_appkey'] ?? '';
+		if (empty($hdkApiKey)) {
+			return array('ok' => false, 'output' => '请先在后台配置好单库API(key)，方可采集朋友圈');
+		}
+		if ($navid <= 0) {
+			return array('ok' => false, 'output' => '未设置朋友圈文章归属分类(navid)，请在发现管理-朋友圈采集中选择分类后保存');
+		}
+
+		$tjk = new \ZhiCms\ext\Tjk(array(
+			'DtkappKey'    => $api['dtk_appkey']    ?? '',
+			'DtkappSecret' => $api['dtk_appsecret'] ?? '',
+			'HdkApiKey'    => $hdkApiKey,
+		));
+		$hdk = $tjk->getHdk();
+		if (!$hdk) return array('ok' => false, 'output' => '好单库API未配置');
+
+		$success = 0; $skip = 0; $pageDone = 0;
+		for ($p = 0; $p < $pages; $p++) {
+			$res = $hdk->FriendsCircleItems($minId);
+			if ($res['code'] != 1) break;
+			$list = $res['data'];
+			if (empty($list) || !is_array($list)) break;
+
+			foreach ($list as $item) {
+				$itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? '');
+				if (empty($itemid)) continue;
+				$chk = obj("api/ApiData")->dataCount("yun_article", ["`goodsId` = '" . addslashes($itemid) . "'"]);
+				if ($chk > 0) { $skip++; continue; }
+
+				$title = trim($item['items']['itemshorttitle'] ?? '');
+				$mainPic = $item['items']['itempic'] ?? '';
+				$commentHtml = $item['comment']['copy_content'] ?? '';
+				$descText = $item['items']['itemdesc'] ?? '';
+				$contentText = '';
+				if ($commentHtml !== '') $contentText .= '<p>' . $commentHtml . '</p>';
+				if ($descText !== '')    $contentText .= '<p>' . $descText . '</p>';
+
+				$data = array(
+					'goodsId'  => $itemid,
+					'itemLink' => $item['items']['couponurl'] ?? ('https://item.taobao.com/item.htm?id=' . $itemid),
+					'title'    => $title,
+					'content'  => $contentText,
+					'cid'      => $cid,
+					'navid'    => $navid,
+					'mainPic'  => $mainPic,
+					'keywords' => $title,
+					'dec'      => mb_substr(strip_tags($commentHtml), 0, 120, 'UTF-8'),
+					'view'     => 0,
+					'like'     => 0,
+					'lock'     => 0,
+					'status'   => 1,
+					'couponEndTime' => '',
+					'date'     => date("Y-m-d H:i:s", time()),
+				);
+				obj("api/ApiData")->insertData("yun_article", $data);
+				$success++;
+			}
+			$pageDone++;
+			$nextMinId = intval($res['min_id'] ?? 0);
+			if ($nextMinId > 0 && $nextMinId != $minId) { $minId = $nextMinId; } else { break; }
+			usleep(300000);
+		}
+		return array('ok' => true, 'output' => "朋友圈采集完成：翻页{$pageDone}次，成功入库{$success}条，跳过重复{$skip}条");
+	}
+
+	/**
 	 * 资讯采集（聚合数据 235 新闻头条 + 850 AI新闻简报）
 	 * 接收两个独立 key 与分类映射（聚合分类 => 本地发现分类 navid），逐类拉取新闻入库 yun_article。
 	 */
@@ -203,6 +289,9 @@ class FindController extends \app\base\controller\BaseController
         if (!is_array($api)) $api = array();
         if (!empty($key235)) $api['juhe_235_key'] = $key235;
         if (!empty($key850)) $api['juhe_850_key'] = $key850;
+        // 持久化分类映射，供「计划任务-资讯采集」定时跑时使用（无需每次传 map）
+        $api['juhe_235_map'] = $map235;
+        $api['juhe_850_map'] = $map850;
         \app\common\ConfigStore::save('api', $api);
 
         $success = 0;
@@ -268,6 +357,63 @@ class FindController extends \app\base\controller\BaseController
             "info" => "资讯采集完成：成功入库 {$success} 条，跳过重复 {$skip} 条",
             "status" => "y"
         )));
+	}
+
+	/**
+	 * 资讯采集（计划任务专用）：读取后台已保存的聚合接口 Key 与分类映射，定时跑无需传参。
+	 * @return array ['ok'=>bool,'output'=>string]
+	 */
+	public function newsCollectCron(){
+		$api = \app\common\ConfigStore::load('api');
+		$key235 = isset($api['juhe_235_key']) ? trim($api['juhe_235_key']) : '';
+		$key850 = isset($api['juhe_850_key']) ? trim($api['juhe_850_key']) : '';
+		$map235 = (isset($api['juhe_235_map']) && is_array($api['juhe_235_map'])) ? $api['juhe_235_map'] : array();
+		$map850 = (isset($api['juhe_850_map']) && is_array($api['juhe_850_map'])) ? $api['juhe_850_map'] : array();
+		$pages  = 3;
+
+		if (empty($key235) && empty($key850)) {
+			return array('ok' => false, 'output' => '尚未配置聚合接口 Key（后台「发现-资讯采集」或 API 设置中填写）');
+		}
+		if ((!empty($key235) && empty($map235)) && (!empty($key850) && empty($map850))) {
+			return array('ok' => false, 'output' => '已配置 Key 但未设置分类映射，无法采集');
+		}
+
+		$success = 0; $skip = 0; $failMsg = array();
+		if (!empty($key235) && !empty($map235)) {
+			foreach ($map235 as $type => $navid) {
+				$navid = intval($navid);
+				if ($navid <= 0) continue;
+				$type = preg_replace('/[^a-z0-9]/i', '', $type);
+				if ($type === '') continue;
+				$res = \app\common\JuheService::fetch235($key235, $type, $pages);
+				if (!$res['ok']) { $failMsg[] = "235[{$type}]: " . $res['error']; continue; }
+				foreach ($res['list'] as $news) {
+					if (empty($news['title'])) continue;
+					if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) { $skip++; continue; }
+					$this->insertNews($news, $navid, 'juhe_235');
+					$success++;
+				}
+			}
+		}
+		if (!empty($key850) && !empty($map850)) {
+			foreach ($map850 as $type => $navid) {
+				$navid = intval($navid);
+				if ($navid <= 0) continue;
+				$type = preg_replace('/[^a-z0-9]/i', '', $type);
+				if ($type === '') continue;
+				$res = \app\common\JuheService::fetch850($key850, $type, $pages);
+				if (!$res['ok']) { $failMsg[] = "850[{$type}]: " . $res['error']; continue; }
+				foreach ($res['list'] as $news) {
+					if (empty($news['title'])) continue;
+					if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) { $skip++; continue; }
+					$this->insertNews($news, $navid, 'juhe_850');
+					$success++;
+				}
+			}
+		}
+		$msg = "资讯采集完成：成功入库 {$success} 条，跳过重复 {$skip} 条";
+		if (!empty($failMsg)) $msg .= '；部分分类失败：' . implode('；', $failMsg);
+		return array('ok' => true, 'output' => $msg);
 	}
 
 	/**

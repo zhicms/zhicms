@@ -67,6 +67,39 @@ function url($route = null, $params = array()){
 }
 
 /**
+ * 导航高亮判断（前台导航用）：根据导航 URL 与当前路由判断是否 active
+ * @param array $nav yun_navmenu 的一行（含 url / type）
+ * @return string 'active' 或 ''
+ */
+function is_active_nav($nav = array()){
+	if (empty($nav) || empty($nav['url'])) return '';
+	$url = (string)$nav['url'];
+	$active = '';
+	if (defined('\CONTROLLER_NAME') && defined('\ACTION_NAME')) {
+		$ctrl = strtolower(CONTROLLER_NAME);
+		$act  = strtolower(ACTION_NAME);
+		// 固定栏目：命中控制器即高亮
+		foreach (array('cheaps', 'brand', 'rank', 'hot', 'forum') as $seg) {
+			if (strpos($url, '/' . $seg . '/') !== false || strpos($url, $seg . '/') === 0 || $url === 'index/' . $seg . '/index') {
+				if ($ctrl === $seg) { $active = 'active'; break; }
+			}
+		}
+		// 首页
+		if (!$active && (strpos($url, 'index/index/index') !== false || $url === '/' )) {
+			if ($ctrl === 'index' && $act === 'index') { $active = 'active'; }
+		}
+		// 单页
+		if (!$active && stripos($url, 'page') !== false) {
+			$reqPage = intval(isset($_GET['id']) ? $_GET['id'] : 0);
+			$reqAlias = isset($_GET['alias']) ? trim($_GET['alias']) : '';
+			if (preg_match('/page(?:-|=|&)(\d+)/i', $url, $m) && $reqPage == $m[1]) $active = 'active';
+			elseif (preg_match('/page-(.+?)(?:\.html|$)/i', $url, $m2) && $reqAlias !== '' && strpos($url, $reqAlias) !== false) $active = 'active';
+		}
+	}
+	return $active;
+}
+
+/**
  * 模板原样输出过滤：配合 think-template 使用，
  * 将 default_filter 设为该函数可保持与旧引擎一致的不转义输出。
  */

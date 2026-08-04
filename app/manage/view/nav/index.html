@@ -1,0 +1,420 @@
+{include file="app/manage/view/index/emlog_nav"}
+<style>
+#navTbody tr.dragging{ opacity:.5; }
+#navTbody tr.drag-over{ outline:2px dashed #3b82f6; outline-offset:-2px; }
+</style>
+
+<!-- 页面标题 -->
+<h1 class="page-title">
+    <i class="fas fa-bars"></i>
+    导航管理
+</h1>
+
+<!-- 操作栏 -->
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <button class="btn btn-primary" onclick="openAddNavModal()">
+            <i class="fas fa-plus"></i> 添加导航
+        </button>
+        <button class="btn btn-success" onclick="openColumnModal()">
+            <i class="fas fa-list-check"></i> 勾选栏目/单页
+        </button>
+    </div>
+    <div class="text-muted">
+        <small>拖拽左侧手柄可排序；主导航右侧可展开/收起子导航</small>
+    </div>
+</div>
+
+<!-- 导航列表 -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-bars"></i> 前台导航</h5>
+        <button class="btn btn-sm btn-outline-success" onclick="saveNavSort()">
+            <i class="fas fa-save"></i> 保存排序
+        </button>
+    </div>
+    <div class="card-body">
+        <table class="table table-hover align-middle" id="navTable">
+            <thead>
+                <tr>
+                    <th style="width:36px"></th>
+                    <th style="width:60px">ID</th>
+                    <th>导航名称</th>
+                    <th>类型</th>
+                    <th style="width:90px">排序</th>
+                    <th>新窗口</th>
+                    <th>链接</th>
+                    <th style="width:220px">操作</th>
+                </tr>
+            </thead>
+            <tbody id="navTbody">
+                <?php if (!empty($navs)): foreach ($navs as $n): ?>
+                <tr class="nav-parent" draggable="true" data-id="<?php echo $n['id']; ?>" data-type="<?php echo $n['type']; ?>" data-default="<?php echo $n['isdefault']; ?>">
+                    <td><i class="fas fa-grip-vertical drag-handle" style="cursor:grab;color:#9aa7b4" title="拖拽排序"></i></td>
+                    <td><?php echo $n['id']; ?></td>
+                    <td>
+                        <i class="fas fa-chevron-down fold-btn text-muted" style="cursor:pointer" data-id="<?php echo $n['id']; ?>" title="展开/收起子导航"></i>
+                        <?php echo $n['name']; ?>
+                        <?php if (!empty($n['hide'])): ?><span class="badge badge-secondary ml-1">已隐藏</span><?php endif; ?>
+                        <?php if (!empty($n['isdefault'])): ?><span class="badge badge-info ml-1">系统</span><?php endif; ?>
+                    </td>
+                    <td><?php echo $n['type_name']; ?></td>
+                    <td><input type="number" class="form-control form-control-sm sort-input" style="width:70px" value="<?php echo (int)$n['sort']; ?>" data-id="<?php echo $n['id']; ?>"></td>
+                    <td><?php echo $n['target'] ? '<span class="text-success"><i class="fas fa-external-link-alt"></i></span>' : '<span class="text-muted">—</span>'; ?></td>
+                    <td class="text-truncate" style="max-width:260px"><a href="<?php echo $n['url']; ?>" target="_blank"><?php echo $n['url']; ?></a></td>
+                    <td>
+                        <?php if (empty($n['isdefault'])): ?>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editNav(<?php echo $n['id']; ?>)"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleHide(<?php echo $n['id']; ?>)"><?php echo $n['hide'] ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>'; ?></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="delNav(<?php echo $n['id']; ?>)"><i class="fas fa-trash"></i></button>
+                        <?php else: ?>
+                        <span class="badge badge-secondary text-muted" title="系统默认导航不可编辑">固定</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php if (!empty($navChildren[$n['id']])): foreach ($navChildren[$n['id']] as $c): ?>
+                <tr class="nav-child" draggable="true" data-parent="<?php echo $n['id']; ?>" data-id="<?php echo $c['id']; ?>" data-type="<?php echo $c['type']; ?>" data-default="<?php echo $c['isdefault']; ?>">
+                    <td><i class="fas fa-grip-vertical drag-handle" style="cursor:grab;color:#9aa7b4" title="拖拽排序"></i></td>
+                    <td><?php echo $c['id']; ?></td>
+                    <td class="pl-4 text-muted"><i class="fas fa-angle-right"></i> <?php echo $c['name']; ?>
+                        <?php if (!empty($c['hide'])): ?><span class="badge badge-secondary ml-1">已隐藏</span><?php endif; ?>
+                    </td>
+                    <td><?php echo $c['type_name']; ?></td>
+                    <td><input type="number" class="form-control form-control-sm sort-input" style="width:70px" value="<?php echo (int)$c['sort']; ?>" data-id="<?php echo $c['id']; ?>"></td>
+                    <td><?php echo $c['target'] ? '<span class="text-success"><i class="fas fa-external-link-alt"></i></span>' : '<span class="text-muted">—</span>'; ?></td>
+                    <td class="text-truncate" style="max-width:260px"><a href="<?php echo $c['url']; ?>" target="_blank"><?php echo $c['url']; ?></a></td>
+                    <td>
+                        <?php if (empty($c['isdefault'])): ?>
+                        <button class="btn btn-sm btn-outline-primary" onclick="editNav(<?php echo $c['id']; ?>)"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="toggleHide(<?php echo $c['id']; ?>)"><?php echo $c['hide'] ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>'; ?></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="delNav(<?php echo $c['id']; ?>)"><i class="fas fa-trash"></i></button>
+                        <?php else: ?>
+                        <span class="badge badge-secondary text-muted" title="系统默认导航不可编辑">固定</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; endif; ?>
+                <?php endforeach; else: ?>
+                <tr><td colspan="7" class="text-center text-muted py-4">暂无导航，点击右上角「添加导航」或「勾选栏目/单页」</td></tr>
+                <?php endif; ?>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 添加导航弹窗（自定义） -->
+<div class="modal fade d-none" id="addNavModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="addNavTitle">添加自定义导航</h5>
+                <button type="button" class="close" onclick="closeModal('addNavModal')" aria-label="Close"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <form id="addNavForm">
+                    <input type="hidden" id="editId" value="0">
+                    <div class="form-group">
+                        <label>导航名称</label>
+                        <input type="text" class="form-control" id="nName" placeholder="如：关于我们">
+                    </div>
+                    <div class="form-group">
+                        <label>链接地址</label>
+                        <input type="text" class="form-control" id="nUrl" placeholder="https:// 或 index.php?r=... 或 page-xxx.html">
+                    </div>
+                    <div class="form-group">
+                        <label>上级导航（不选则为主导航）</label>
+                        <select class="custom-select" id="nPid">
+                            <option value="0">— 主导航 —</option>
+                            <?php if (!empty($navs)): foreach ($navs as $n): ?>
+                                <option value="<?php echo $n['id']; ?>"><?php echo $n['name']; ?></option>
+                            <?php endforeach; endif; ?>
+                        </select>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="nTarget">
+                        <label class="form-check-label" for="nTarget">新窗口打开</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" onclick="closeModal('addNavModal')">取消</button>
+                <button type="button" class="btn btn-primary" onclick="saveNav()"><i class="fas fa-save"></i> 保存</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 勾选栏目/单页弹窗 -->
+<div class="modal fade d-none" id="columnModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">勾选添加栏目 / 单页</h5>
+                <button type="button" class="close" onclick="closeModal('columnModal')" aria-label="Close"><span>&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <h6 class="font-weight-bold text-primary"><i class="fas fa-th-large"></i> 固定栏目</h6>
+                    <?php foreach ($columns as $col): ?>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input column-check" type="checkbox" value="<?php echo $col['key']; ?>" id="col_<?php echo $col['key']; ?>" <?php echo $col['added'] ? 'checked disabled' : ''; ?>>
+                        <label class="form-check-label" for="col_<?php echo $col['key']; ?>"><?php echo $col['name']; ?><?php echo $col['added'] ? ' <span class="badge badge-light">已添加</span>' : ''; ?></label>
+                    </div>
+                    <?php endforeach; ?>
+                </div>
+                <div class="mb-3">
+                    <h6 class="font-weight-bold text-success"><i class="fas fa-file-alt"></i> 单页</h6>
+                    <?php if (!empty($pageList)): foreach ($pageList as $p): ?>
+                    <div class="form-check form-check-inline">
+                        <input class="form-check-input page-check" type="checkbox" value="<?php echo $p['id']; ?>" id="page_<?php echo $p['id']; ?>" <?php echo $p['added'] ? 'checked disabled' : ''; ?>>
+                        <label class="form-check-label" for="page_<?php echo $p['id']; ?>"><?php echo $p['title']; ?><?php echo $p['added'] ? ' <span class="badge badge-light">已添加</span>' : ''; ?></label>
+                    </div>
+                    <?php endforeach; else: ?>
+                    <p class="text-muted mb-0">暂无单页，请先在「单页管理」中创建。</p>
+                    <?php endif; ?>
+                </div>
+                <div class="form-group mb-0">
+                    <label class="font-weight-bold text-secondary"><i class="fas fa-link"></i> 自定义导航</label>
+                    <div class="d-flex">
+                        <input type="text" class="form-control mr-2" id="qName" placeholder="名称">
+                        <input type="text" class="form-control" id="qUrl" placeholder="链接地址">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" onclick="closeModal('columnModal')">取消</button>
+                <button type="button" class="btn btn-success" onclick="saveColumnAdd()"><i class="fas fa-save"></i> 添加所选</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// 初始化排序与折叠 + 拖拽排序
+(function() {
+    // 折叠按钮
+    document.querySelectorAll('.fold-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var id = btn.getAttribute('data-id');
+            var children = document.querySelectorAll('#navTbody tr.nav-child[data-parent="'+id+'"]');
+            children.forEach(function(tr) { tr.style.display = tr.style.display === 'none' ? '' : 'none'; });
+            btn.classList.toggle('fa-chevron-right');
+        });
+    });
+    // 隐藏子导航行，默认折叠
+    document.querySelectorAll('#navTbody tr.nav-child').forEach(function(tr) {
+        tr.style.display = 'none';
+    });
+
+    // HTML5 原生拖拽排序：通过拖拽手柄移动行
+    var tbody = document.getElementById('navTbody');
+    var dragRow = null;
+    tbody.addEventListener('dragstart', function(e) {
+        var tr = e.target.closest('tr');
+        if (!tr || !tr.querySelector('.drag-handle')) return;
+        dragRow = tr;
+        tr.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+    });
+    tbody.addEventListener('dragend', function(e) {
+        if (dragRow) { dragRow.classList.remove('dragging'); dragRow = null; }
+        e.target.closest('tr') && e.target.closest('tr').classList.remove('drag-over');
+    });
+    tbody.addEventListener('dragover', function(e) {
+        if (!dragRow) return;
+        e.preventDefault();
+        var target = e.target.closest('tr');
+        if (!target || target === dragRow) return;
+        // 仅允许同组内拖拽（主导航↔主导航、子导航↔同父级子导航）
+        var sameGroup = (dragRow.classList.contains('nav-parent') && target.classList.contains('nav-parent'))
+            || (dragRow.classList.contains('nav-child') && target.classList.contains('nav-child') && dragRow.getAttribute('data-parent') === target.getAttribute('data-parent'));
+        if (!sameGroup) return;
+        var rect = target.getBoundingClientRect();
+        var after = (e.clientY - rect.top) > rect.height / 2;
+        if (after) target.after(dragRow); else target.before(dragRow);
+        target.classList.add('drag-over');
+    });
+    tbody.addEventListener('drop', function(e) { e.preventDefault(); });
+})();
+
+// 保存排序：读取每行排序输入框值（id=值），并自动按行顺序重排 sort
+function saveNavSort() {
+    var pairs = [];
+    var order = 10;
+    document.querySelectorAll('#navTbody tr.nav-parent').forEach(function(tr) {
+        var id = tr.getAttribute('data-id');
+        var input = tr.querySelector('.sort-input');
+        var v = input ? parseInt(input.value, 10) : order;
+        if (isNaN(v)) v = order;
+        pairs.push({ id: id, v: v });
+        order += 10;
+    });
+    if (!pairs.length) { showToast('暂无导航可排序', 'info'); return; }
+    var data = [];
+    pairs.forEach(function(p) { data.push('sort[' + p.id + ']=' + p.v); });
+    // 子导航
+    document.querySelectorAll('#navTbody tr.nav-child').forEach(function(tr) {
+        var id = tr.getAttribute('data-id');
+        var input = tr.querySelector('.sort-input');
+        var v = input ? parseInt(input.value, 10) : order;
+        if (isNaN(v)) v = order;
+        data.push('sort[' + id + ']=' + v);
+        order += 10;
+    });
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/nav/sort', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try { var r = JSON.parse(xhr.responseText); showToast(r.info, r.status === 'y' ? 'success' : 'danger'); }
+            catch(e){ showToast('保存失败', 'danger'); }
+        }
+    };
+    // 用 JSON 传输 id=>sort 映射，避免 PHP 把数字字符串数组键转成整数导致后端误判格式
+    xhr.send('navsort=' + encodeURIComponent(JSON.stringify({
+        parent: (function(){ var m = {}; document.querySelectorAll('#navTbody tr.nav-parent').forEach(function(tr){ var i = tr.querySelector('.sort-input'); m[tr.getAttribute('data-id')] = i ? (parseInt(i.value,10)||0) : 0; }); return m; })(),
+        child: (function(){ var m = {}; document.querySelectorAll('#navTbody tr.nav-child').forEach(function(tr){ var i = tr.querySelector('.sort-input'); m[tr.getAttribute('data-id')] = i ? (parseInt(i.value,10)||0) : 0; }); return m; })()
+    })));
+}
+
+// 添加/编辑自定义导航弹窗
+function openAddNavModal() {
+    document.getElementById('editId').value = 0;
+    document.getElementById('nName').value = '';
+    document.getElementById('nUrl').value = '';
+    document.getElementById('nPid').value = 0;
+    document.getElementById('nTarget').checked = false;
+    document.getElementById('addNavTitle').textContent = '添加自定义导航';
+    openModal('addNavModal');
+}
+
+function editNav(id) {
+    var tr = document.querySelector('#navTbody tr.nav-parent[data-id="'+id+'"], #navTbody tr.nav-child[data-id="'+id+'"]');
+    var name = tr.children[2].textContent.replace(/已隐藏|系统/g,'').trim();
+    var urlEl = tr.children[5].querySelector('a');
+    var target = tr.children[4].querySelector('.text-success') ? true : false;
+    var pid = tr.classList.contains('nav-child') ? tr.getAttribute('data-parent') : 0;
+    document.getElementById('editId').value = id;
+    document.getElementById('nName').value = name;
+    document.getElementById('nUrl').value = urlEl ? urlEl.getAttribute('href') : '';
+    document.getElementById('nPid').value = pid;
+    document.getElementById('nTarget').checked = target;
+    document.getElementById('addNavTitle').textContent = '编辑导航 #' + id;
+    openModal('addNavModal');
+}
+
+// 保存（新增或编辑）
+function saveNav() {
+    var id = document.getElementById('editId').value;
+    var name = document.getElementById('nName').value.trim();
+    var url = document.getElementById('nUrl').value.trim();
+    if (!name || !url) { showToast('请填写名称和链接', 'danger'); return; }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/nav/saveOne', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                showToast(r.info, r.status === 'y' ? 'success' : 'danger');
+                if (r.status === 'y') { closeModal('addNavModal'); setTimeout(function(){ location.reload(); }, 600); }
+            } catch(e){ showToast('保存失败', 'danger'); }
+        }
+    };
+    var params = 'id=' + id + '&name=' + encodeURIComponent(name) + '&url=' + encodeURIComponent(url)
+        + '&pid=' + document.getElementById('nPid').value + '&target=' + (document.getElementById('nTarget').checked ? 1 : 0);
+    xhr.send(params);
+}
+
+// 勾选栏目/单页弹窗
+function openColumnModal() { openModal('columnModal'); }
+
+function saveColumnAdd() {
+    var cols = [], pages = [];
+    document.querySelectorAll('.column-check:checked:not(:disabled)').forEach(function(c){ cols.push(c.value); });
+    document.querySelectorAll('.page-check:checked:not(:disabled)').forEach(function(c){ pages.push(c.value); });
+    var name = document.getElementById('qName').value.trim();
+    var url = document.getElementById('qUrl').value.trim();
+    if (!cols.length && !pages.length && !name) { showToast('请至少勾选一项或填写自定义导航', 'danger'); return; }
+    var params = '';
+    cols.forEach(function(c){ params += '&columns[]=' + encodeURIComponent(c); });
+    pages.forEach(function(p){ params += '&pages[]=' + encodeURIComponent(p); });
+    if (name && url) { params += '&name=' + encodeURIComponent(name) + '&url=' + encodeURIComponent(url); }
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/nav/add', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                showToast(r.info, r.status === 'y' ? 'success' : 'danger');
+                if (r.status === 'y') { closeModal('columnModal'); setTimeout(function(){ location.reload(); }, 600); }
+            } catch(e){ showToast('保存失败', 'danger'); }
+        }
+    };
+    xhr.send(params);
+}
+
+// 删除
+function delNav(id) {
+    if (!confirm('确定删除该导航及其子导航？')) return;
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/nav/del&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try { var r = JSON.parse(xhr.responseText); showToast(r.info, r.status === 'y' ? 'success' : 'danger'); if (r.status === 'y') location.reload(); }
+            catch(e){ showToast('操作失败', 'danger'); }
+        }
+    };
+    xhr.send();
+}
+
+// 显示/隐藏
+function toggleHide(id) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'index.php?r=manage/nav/toggle&id=' + id, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try { var r = JSON.parse(xhr.responseText); showToast(r.info, r.status === 'y' ? 'success' : 'danger'); if (r.status === 'y') location.reload(); }
+            catch(e){ showToast('操作失败', 'danger'); }
+        }
+    };
+    xhr.send();
+}
+
+// 弹窗开关（配合全局 zcCloseModal；先移除 d-none 再设 display，并加 show 让 fade 生效，避免 opacity:0 不可见）
+function openModal(id) {
+    var m = document.getElementById(id);
+    if (m) {
+        m.classList.remove('d-none');
+        m.classList.add('show');
+        m.style.display = 'block';
+        addBackdrop(id);
+    }
+}
+function closeModal(id) {
+    var m = document.getElementById(id);
+    if (m) {
+        m.classList.add('d-none');
+        m.classList.remove('show');
+        m.style.display = 'none';
+        removeBackdrop(id);
+    }
+}
+// 弹窗遮罩：点击遮罩关闭弹窗
+function addBackdrop(id) {
+    if (document.getElementById('bd_' + id)) return;
+    var bd = document.createElement('div');
+    bd.id = 'bd_' + id;
+    bd.className = 'modal-backdrop fade show';
+    bd.addEventListener('click', function() { closeModal(id); });
+    document.body.appendChild(bd);
+}
+function removeBackdrop(id) {
+    var bd = document.getElementById('bd_' + id);
+    if (bd) bd.parentNode.removeChild(bd);
+}
+</script>
+
+{include file="app/manage/view/index/emlog_footer"}

@@ -1,5 +1,22 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+<?php
+// ===== 前台导航：从 yun_navmenu 读取（若表不存在或为空则回退到内置导航）=====
+$zcNavs = array(); $zcNavChildren = array();
+try {
+    $__navRows = @obj('api/ApiData')->dataSelect('yun_navmenu', array("`hide` = 0"), '`sort` ASC, `id` ASC');
+    if ($__navRows) {
+        if (isset($__navRows['id'])) $__navRows = array($__navRows);
+        foreach ($__navRows as $__r) {
+            if ((int)$__r['parent_id'] === 0) {
+                $zcNavs[$__r['id']] = $__r;
+            } else {
+                $zcNavChildren[$__r['parent_id']][] = $__r;
+            }
+        }
+    }
+} catch (\Throwable $e) { $zcNavs = array(); }
+?>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -62,12 +79,27 @@ echo '{"@context":"https://schema.org","@type":"WebSite","name":' . $siteName . 
 
     <div class="blog-header-nav" id="blogNav">
       <ul class="nav-list">
+      <?php if (!empty($zcNavs)): ?>
+        <?php foreach ($zcNavs as $__id => $__nav): ?>
+        <li class="nav-item<?php echo !empty($zcNavChildren[$__id]) ? ' has-sub' : ''; ?>">
+          <a class="nav-link <?php echo is_active_nav($__nav); ?>" href="<?php echo htmlspecialchars($__nav['url']); ?>"<?php echo $__nav['target'] ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo htmlspecialchars($__nav['name']); ?></a>
+          <?php if (!empty($zcNavChildren[$__id])): ?>
+          <ul class="sub-nav">
+            <?php foreach ($zcNavChildren[$__id] as $__sub): ?>
+            <li><a href="<?php echo htmlspecialchars($__sub['url']); ?>"<?php echo $__sub['target'] ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo htmlspecialchars($__sub['name']); ?></a></li>
+            <?php endforeach; ?>
+          </ul>
+          <?php endif; ?>
+        </li>
+        <?php endforeach; ?>
+      <?php else: ?>
         <li><a class="nav-link {if CONTROLLER_NAME=='index' && ACTION_NAME=='index' && !isset($_GET['list']) && !isset($_GET['id'])}active{/if}" href="{url($route='index/index/index', $params=array())}">首页</a></li>
         <li><a class="nav-link {if CONTROLLER_NAME=='cheaps'}active{/if}" href="{url($route='index/cheaps/index', $params=array())}">优惠券</a></li>
         <li><a class="nav-link {if CONTROLLER_NAME=='brand'}active{/if}" href="{url($route='index/brand/index', $params=array())}">大牌</a></li>
         <li><a class="nav-link {if CONTROLLER_NAME=='rank'}active{/if}" href="{url($route='index/rank/index', $params=array())}">风云榜</a></li>
         <li><a class="nav-link {if CONTROLLER_NAME=='hot'}active{/if}" href="{url($route='index/hot/index', $params=array())}">热榜</a></li>
         <li><a class="nav-link {if CONTROLLER_NAME=='forum'}active{/if}" href="{url($route='index/forum/index', $params=array())}">社区</a></li>
+      <?php endif; ?>
       </ul>
     </div>
   </div>

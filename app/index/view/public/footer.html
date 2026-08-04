@@ -60,6 +60,12 @@
   <div class="side-btn d-none" id="back-to-top" title="返回顶部">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
   </div>
+  <a class="side-btn" id="mobile-user-center" href="{url($route='index/ucenter/index', $params=array())}" title="用户中心">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+  </a>
+  <button class="side-btn" id="mobile-ai-btn" type="button" title="AI导购" onclick="document.getElementById('aiAssistantBtn').click();">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+  </button>
   <div class="side-btn" id="theme-toggle" title="切换主题">
     <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
     <svg class="icon-sun d-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
@@ -78,7 +84,17 @@
       nav.classList.toggle('show');
       if (overlay) overlay.classList.toggle('show', nav.classList.contains('show'));
     });
-    nav.addEventListener('click', function (e) { if (e.target.tagName === 'A') closeNav(); });
+    nav.addEventListener('click', function (e) {
+      // 移动端子导航：点击父级展开/收起，不关闭抽屉；点击叶子链接才关闭
+      var li = e.target.closest ? e.target.closest('li.has-sub') : null;
+      var isMobile = window.matchMedia && window.matchMedia('(max-width: 767px)').matches;
+      if (isMobile && li && li.querySelector('.sub-nav')) {
+        e.preventDefault(); e.stopPropagation();
+        li.classList.toggle('has-open');
+        return;
+      }
+      if (e.target.tagName === 'A') closeNav();
+    });
     if (overlay) overlay.addEventListener('click', closeNav);
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeNav(); });
     document.addEventListener('click', function (e) {

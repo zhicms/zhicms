@@ -133,11 +133,20 @@ class PluginManager {
 					$meta = \ZhiCms\base\compat\Compat::readCompatMeta($alias, $type);
 				}
 			}
-			if (empty($meta['menu']) || !is_array($meta['menu'])) continue;
-			foreach ($meta['menu'] as $m) {
+			// 插件显式声明的菜单（menu）
+			if (!empty($meta['menu']) && is_array($meta['menu'])) {
+				foreach ($meta['menu'] as $m) {
+					$menus[] = array(
+						'title' => $m['title'] ?? ($meta['name'] ?? $alias),
+						'url'   => $m['url']   ?? ('index.php?r=manage/plugin/setting&alias=' . $alias),
+					);
+				}
+			}
+			// 插件有设置项（hasSetting）但未声明 menu 时，自动追加「设置」入口，方便用户配置
+			if (!empty($meta['hasSetting']) && empty($meta['menu'])) {
 				$menus[] = array(
-					'title' => $m['title'] ?? ($meta['name'] ?? $alias),
-					'url'   => $m['url']   ?? ('index.php?r=manage/plugin/setting&alias=' . $alias),
+					'title' => ($meta['name'] ?? $alias) . '设置',
+					'url'   => 'index.php?r=manage/plugin/setting&alias=' . $alias,
 				);
 			}
 		}

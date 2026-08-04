@@ -43,7 +43,7 @@
             <hr class="sidebar-divider my-0">
 
             <!-- Nav Item - Dashboard -->
-            <li class="nav-item {if CONTROLLER_NAME=='index'}active{/if}">
+            <li class="nav-item {if strtolower(CONTROLLER_NAME)=='index'}active{/if}">
                 <a class="nav-link" href="index.php?r=manage/index/index">
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>控制台</span>
@@ -56,14 +56,21 @@
             <!-- ============ 网站管理 ============ -->
             <div class="sidebar-heading">网站管理</div>
 
-            <li class="nav-item {if CONTROLLER_NAME=='set'}active{/if}">
-                <a class="nav-link" href="index.php?r=manage/set/index">
+            <!-- 系统设置（折叠）：系统设置 + 导航管理 -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseSite" aria-expanded="false" aria-controls="collapseSite">
                     <i class="fas fa-fw fa-cogs"></i>
                     <span>系统设置</span>
                 </a>
+                <div id="collapseSite" class="collapse {if strtolower(CONTROLLER_NAME)=='set' || strtolower(CONTROLLER_NAME)=='nav'}show{/if}" aria-labelledby="headingSite" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='set'}active{/if}" href="index.php?r=manage/set/index">基础设置</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='nav'}active{/if}" href="index.php?r=manage/nav/index">导航管理</a>
+                    </div>
+                </div>
             </li>
 
-            <li class="nav-item {if CONTROLLER_NAME=='user' || CONTROLLER_NAME=='manage'}active{/if}">
+            <li class="nav-item {if strtolower(CONTROLLER_NAME)=='user' || strtolower(CONTROLLER_NAME)=='manage'}active{/if}">
                 <a class="nav-link" href="index.php?r=manage/user/index">
                     <i class="fas fa-fw fa-user"></i>
                     <span>用户管理</span>
@@ -76,10 +83,10 @@
                     <i class="fas fa-fw fa-ad"></i>
                     <span>广告管理</span>
                 </a>
-                <div id="collapseAd" class="collapse" aria-labelledby="headingAd" data-parent="#accordionSidebar">
+                <div id="collapseAd" class="collapse {if strtolower(CONTROLLER_NAME)=='ad'}show{/if}" aria-labelledby="headingAd" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="index.php?r=manage/ad/huan">幻灯广告</a>
-                        <a class="collapse-item" href="index.php?r=manage/ad/link">友情链接</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='ad' && ACTION_NAME=='huan'}active{/if}" href="index.php?r=manage/ad/huan">幻灯广告</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='ad' && ACTION_NAME=='link'}active{/if}" href="index.php?r=manage/ad/link">友情链接</a>
                     </div>
                 </div>
             </li>
@@ -91,7 +98,7 @@
                 </a>
             </li>
 
-            <li class="nav-item {if CONTROLLER_NAME=='ai'}active{/if}">
+            <li class="nav-item {if strtolower(CONTROLLER_NAME)=='ai'}active{/if}">
                 <a class="nav-link" href="index.php?r=manage/ai/setting">
                     <i class="fas fa-fw fa-robot"></i>
                     <span>AI 开放平台</span>
@@ -110,10 +117,10 @@
                     <i class="fas fa-fw fa-edit"></i>
                     <span>发现管理</span>
                 </a>
-                <div id="collapseArticles" class="collapse" aria-labelledby="headingArticles" data-parent="#accordionSidebar">
+                <div id="collapseArticles" class="collapse {if strtolower(CONTROLLER_NAME)=='find'}show{/if}" aria-labelledby="headingArticles" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="index.php?r=manage/find/index">发现列表</a>
-                        <a class="collapse-item" href="index.php?r=manage/find/type">分类管理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='find' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/find/index">发现列表</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='find' && ACTION_NAME=='type'}active{/if}" href="index.php?r=manage/find/type">分类管理</a>
                     </div>
                 </div>
             </li>
@@ -124,12 +131,12 @@
                     <i class="fas fa-fw fa-comments"></i>
                     <span>社区管理</span>
                 </a>
-                <div id="collapseForum" class="collapse" aria-labelledby="headingForum" data-parent="#accordionSidebar">
+                <div id="collapseForum" class="collapse {if strtolower(CONTROLLER_NAME)=='forum'}show{/if}" aria-labelledby="headingForum" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="index.php?r=manage/forum/index">帖子列表</a>
-                        <a class="collapse-item" href="index.php?r=manage/forum/comment">评论管理</a>
-                        <a class="collapse-item" href="index.php?r=manage/forum/board">板块管理</a>
-                        <a class="collapse-item" href="index.php?r=manage/forum/group">小组管理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='forum' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/forum/index">帖子列表</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='forum' && ACTION_NAME=='comment'}active{/if}" href="index.php?r=manage/forum/comment">评论管理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='forum' && ACTION_NAME=='board'}active{/if}" href="index.php?r=manage/forum/board">板块管理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='forum' && ACTION_NAME=='group'}active{/if}" href="index.php?r=manage/forum/group">小组管理</a>
                     </div>
                 </div>
             </li>
@@ -140,15 +147,15 @@
                     <i class="fas fa-fw fa-shopping-cart"></i>
                     <span>电商宝库</span>
                 </a>
-                <div id="collapseGoods" class="collapse" aria-labelledby="headingGoods" data-parent="#accordionSidebar">
+                <div id="collapseGoods" class="collapse {if strtolower(CONTROLLER_NAME)=='items' || strtolower(CONTROLLER_NAME)=='union'}show{/if}" aria-labelledby="headingGoods" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="index.php?r=manage/items/index">选品库</a>
-                        <a class="collapse-item" href="index.php?r=manage/union/index">联盟库</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='items'}active{/if}" href="index.php?r=manage/items/index">选品库</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='union'}active{/if}" href="index.php?r=manage/union/index">联盟库</a>
                     </div>
                 </div>
             </li>
 
-            <li class="nav-item {if CONTROLLER_NAME=='page'}active{/if}">
+            <li class="nav-item {if strtolower(CONTROLLER_NAME)=='page'}active{/if}">
                 <a class="nav-link" href="index.php?r=manage/page/index">
                     <i class="fas fa-fw fa-file"></i>
                     <span>页面管理</span>
@@ -161,68 +168,31 @@
             <!-- ============ 系统管理 ============ -->
             <div class="sidebar-heading">系统管理</div>
 
-            <li class="nav-item {if CONTROLLER_NAME=='env'}active{/if}">
-                <a class="nav-link" href="index.php?r=manage/env/index">
-                    <i class="fas fa-fw fa-stethoscope"></i>
-                    <span>环境检测</span>
-                </a>
-            </li>
-
-            <!-- 缓存管理（折叠） -->
+            <!-- 系统维护（折叠）：环境检测/缓存管理/数据库管理/系统日志/文件校对 -->
             <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseCache" aria-expanded="false" aria-controls="collapseCache">
-                    <i class="fas fa-fw fa-sync-alt"></i>
-                    <span>缓存管理</span>
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseMaint" aria-expanded="false" aria-controls="collapseMaint">
+                    <i class="fas fa-fw fa-tools"></i>
+                    <span>系统维护</span>
                 </a>
-                <div id="collapseCache" class="collapse" aria-labelledby="headingCache" data-parent="#accordionSidebar">
+                <div id="collapseMaint" class="collapse {if strtolower(CONTROLLER_NAME)=='env' || strtolower(CONTROLLER_NAME)=='cache' || strtolower(CONTROLLER_NAME)=='database' || strtolower(CONTROLLER_NAME)=='log' || strtolower(CONTROLLER_NAME)=='filecheck' || strtolower(CONTROLLER_NAME)=='spider' || strtolower(CONTROLLER_NAME)=='word'}show{/if}" aria-labelledby="headingMaint" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="index.php?r=manage/cache/index">缓存概览</a>
-                        <a class="collapse-item" href="javascript:;" onclick="cacheClear('all')">一键全站清理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='env'}active{/if}" href="index.php?r=manage/env/index">环境检测</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='cache'}active{/if}" href="index.php?r=manage/cache/index">缓存管理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='database'}active{/if}" href="index.php?r=manage/database/index">数据库管理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='log'}active{/if}" href="index.php?r=manage/log/index">系统日志</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='filecheck'}active{/if}" href="index.php?r=manage/filecheck/index">文件校对</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='spider'}active{/if}" href="index.php?r=manage/spider/index">蜘蛛限制</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='word'}active{/if}" href="index.php?r=manage/word/index">违规词检测</a>
                     </div>
                 </div>
             </li>
 
-            <!-- 数据库管理（折叠） -->
-            <li class="nav-item {if CONTROLLER_NAME=='database'}active{/if}">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseDb" aria-expanded="false" aria-controls="collapseDb">
-                    <i class="fas fa-fw fa-database"></i>
-                    <span>数据库管理</span>
+            <!-- 计划任务（独立导航，重要） -->
+            <li class="nav-item {if strtolower(CONTROLLER_NAME)=='task'}active{/if}">
+                <a class="nav-link" href="index.php?r=manage/task/index">
+                    <i class="fas fa-fw fa-tasks"></i>
+                    <span>计划任务</span>
                 </a>
-                <div id="collapseDb" class="collapse {if CONTROLLER_NAME=='database'}show{/if}" aria-labelledby="headingDb" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item {if CONTROLLER_NAME=='database' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/database/index">备份与还原</a>
-                        <a class="collapse-item {if CONTROLLER_NAME=='database' && ACTION_NAME=='index'}active{/if}" href="index.php?r=manage/database/index#optimize">优化与修复</a>
-                    </div>
-                </div>
-            </li>
-
-            <li class="nav-item {if CONTROLLER_NAME=='log'}active{/if}">
-                <a class="nav-link" href="index.php?r=manage/log/index">
-                    <i class="fas fa-fw fa-list"></i>
-                    <span>系统日志</span>
-                </a>
-            </li>
-
-            <li class="nav-item {if CONTROLLER_NAME=='filecheck'}active{/if}">
-                <a class="nav-link" href="index.php?r=manage/filecheck/index">
-                    <i class="fas fa-fw fa-fingerprint"></i>
-                    <span>文件校对</span>
-                </a>
-            </li>
-
-            <!-- 安全与运维（折叠） -->
-            <li class="nav-item">
-                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseSec" aria-expanded="false" aria-controls="collapseSec">
-                    <i class="fas fa-fw fa-shield-alt"></i>
-                    <span>安全与运维</span>
-                </a>
-                <div id="collapseSec" class="collapse" aria-labelledby="headingSec" data-parent="#accordionSidebar">
-                    <div class="bg-white py-2 collapse-inner rounded">
-                        <a class="collapse-item" href="index.php?r=manage/spider/index">蜘蛛限制</a>
-                        <a class="collapse-item" href="index.php?r=manage/word/index">违规词检测</a>
-                        <a class="collapse-item" href="index.php?r=manage/task/index">计划任务</a>
-                    </div>
-                </div>
             </li>
 
             <!-- 插件注入菜单（保留钩子，原生 PHP 输出兼容模板引擎） -->

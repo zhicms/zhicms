@@ -524,12 +524,40 @@ DROP TABLE IF EXISTS `__PREFIX__page`;
 CREATE TABLE `__PREFIX__page` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `title` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `alias` varchar(60) COLLATE utf8mb4_unicode_ci NULL DEFAULT NULL COMMENT '页面别名，用于伪静态访问 page-<alias>.html（NULL 允许多条空别名）',
   `keywords` varchar(300) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `dec` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   `body` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `display` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '指定显示模板（留空用默认 page）',
   `date` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `alias` (`alias`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Table structure for table `__PREFIX__navmenu`
+--
+
+DROP TABLE IF EXISTS `__PREFIX__navmenu`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `__PREFIX__navmenu` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '菜单名称',
+  `url` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '链接地址（绝对/相对/伪静态）',
+  `type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'custom' COMMENT '来源类型：custom自定义 cheaps优惠券 brand大牌 rank风云榜 hot热榜 forum社区 page单页',
+  `type_id` int(11) NOT NULL DEFAULT '0' COMMENT '关联ID（page类型为页面ID，其他栏目为0）',
+  `parent_id` int(11) NOT NULL DEFAULT '0' COMMENT '父级ID，0=主导航',
+  `target` tinyint(1) NOT NULL DEFAULT '0' COMMENT '新窗口打开 1是 0否',
+  `hide` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1隐藏 0显示',
+  `isdefault` tinyint(1) NOT NULL DEFAULT '0' COMMENT '1系统内置不可删除（如首页）',
+  `sort` int(11) NOT NULL DEFAULT '0' COMMENT '排序（越小越靠前）',
+  `create_time` int(11) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`id`),
+  KEY `parent_id` (`parent_id`),
+  KEY `type` (`type`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='前台导航菜单';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -632,7 +660,8 @@ CREATE TABLE `__PREFIX__user` (
   `lock` tinyint(4) DEFAULT '0',
   `date` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_mobile` (`mobile`)
+  UNIQUE KEY `uk_mobile` (`mobile`),
+  UNIQUE KEY `uk_username` (`username`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
