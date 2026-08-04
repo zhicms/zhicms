@@ -8,9 +8,8 @@
 </h1>
 
 <div class="alert alert-secondary">
-    <i class="fas fa-info-circle mr-1"></i> 系统任务（商品/资讯/订单采集、订单匹配）由程序自动注册；自定义任务支持
-    <b>URL 回调 / PHP 代码 / Shell / Python</b> 四种执行方式。在服务器 crontab 中加入：<br>
-    <code>* * * * * curl -s "你的域名/index.php?r=manage/task/run&token=你的令牌"</code> 即可每分钟触发到点任务。
+    <i class="fas fa-info-circle mr-1"></i>
+    <div class="alert-body">系统任务（商品/资讯/订单采集、订单匹配）由程序自动注册；自定义任务支持 <b>URL 回调 / PHP 代码 / Shell / Python</b> 四种执行方式。在服务器 crontab 中加入 <code>* * * * * curl -s "你的域名/index.php?r=manage/task/run&token=你的令牌"</code> 即可每分钟触发到点任务。</div>
 </div>
 
 <div class="alert {if $cronStatus=='ok'}alert-success{else}alert-warning{/if}">

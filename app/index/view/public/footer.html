@@ -37,10 +37,15 @@
     <div class="foot-col">
       <h4>站点信息</h4>
       <ul class="unstyle-li foot-links">
-        <?php $banquan = obj('base/Base')->SiteConfig('banquan'); $beian = obj('base/Base')->SiteConfig('beian'); ?>
+        <?php $banquan = obj('base/Base')->SiteConfig('banquan'); $beian = obj('base/Base')->SiteConfig('beian'); $ewm = obj('base/Base')->SiteConfig('ewm'); ?>
         <?php if (!empty($banquan)): ?><li><?php echo htmlspecialchars($banquan, ENT_QUOTES); ?></li><?php endif; ?>
         <?php if (empty($banquan)): ?><li>&copy; <?php echo date('Y'); ?> <?php echo htmlspecialchars(obj('base/Base')->SiteConfig('sitename'), ENT_QUOTES); ?> 版权所有</li><?php endif; ?>
         <?php if (!empty($beian)): ?><li><a href="https://beian.miit.gov.cn/" target="_blank" rel="nofollow"><?php echo htmlspecialchars($beian, ENT_QUOTES); ?></a></li><?php endif; ?>
+        <?php if (!empty($ewm)): ?>
+        <li class="foot-ewm">
+          <img src="<?php echo htmlspecialchars($ewm, ENT_QUOTES); ?>" alt="<?php echo htmlspecialchars(obj('base/Base')->SiteConfig('sitename'), ENT_QUOTES); ?> 二维码" loading="lazy">
+        </li>
+        <?php endif; ?>
       </ul>
     </div>
   </div>
@@ -113,10 +118,11 @@
   var tbtn = document.getElementById('theme-toggle');
   if (tbtn) {
     var moon = tbtn.querySelector('.icon-moon'), sun = tbtn.querySelector('.icon-sun');
+    // 用 classList 控制 d-none，避免 utilities.css 的 .d-none{display:none!important} 压制内联样式
     function syncIcon() {
       var dark = document.documentElement.getAttribute('data-theme') === 'dark';
-      if (moon) moon.style.display = dark ? 'none' : 'block';
-      if (sun) sun.style.display = dark ? 'block' : 'none';
+      if (moon) moon.classList.toggle('d-none', dark);       // 深色隐藏月亮
+      if (sun) sun.classList.toggle('d-none', !dark);        // 深色显示太阳
     }
     syncIcon();
     tbtn.addEventListener('click', function () {

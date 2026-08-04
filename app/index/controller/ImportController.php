@@ -11,8 +11,11 @@ class ImportController extends \app\base\controller\BaseController {
     private function getApiKey() {
         static $key = null;
         if ($key === null) {
-            $apiConfig = \app\common\ConfigStore::load('api');
-            $key = isset($apiConfig['secretkey']) && !empty($apiConfig['secretkey']) ? $apiConfig['secretkey'] : 'zhangyuan';
+            // 统一使用后台「网站设置 → 安全 Key」（site.security_key），兼容旧版 api.secretkey
+            $siteConfig = \app\common\ConfigStore::load('site');
+            $key = (isset($siteConfig['security_key']) && !empty($siteConfig['security_key']))
+                ? $siteConfig['security_key']
+                : (\app\common\ConfigStore::load('api')['secretkey'] ?? 'zhangyuan');
         }
         return $key;
     }
@@ -98,7 +101,11 @@ class ImportController extends \app\base\controller\BaseController {
         $Siteinfo = \app\common\ConfigStore::load('site');
         $token = new \ZhiCms\ext\Weixin;
 
-        if ($this->arg("key") != $Siteinfo['key']) {
+        // 统一使用后台「安全 Key」（site.security_key），兼容旧版 site.key
+        $securityKey = (isset($Siteinfo['security_key']) && !empty($Siteinfo['security_key']))
+            ? $Siteinfo['security_key']
+            : (isset($Siteinfo['key']) ? $Siteinfo['key'] : 'zhicms');
+        if ($this->arg("key") != $securityKey) {
             exit("key error!");
         }
 

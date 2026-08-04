@@ -17,17 +17,15 @@ body {
 
 /* 侧边栏 */
 .sidebar {
-    min-height: 100vh;
     width: 250px;
     background: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
     color: #fff;
     transition: all 0.3s;
-    /* 菜单项超出视口时可独立滚动，避免底部选项被截掉 */
+    /* 高度由导航项与展开的子菜单自然撑开，随按钮增减/子菜单展开而伸缩 */
     position: sticky;
     top: 0;
-    max-height: 100vh;
-    overflow-y: auto;
-    overflow-x: hidden;
+    height: auto;
+    align-self: flex-start;
 }
 
 .sidebar .sidebar-brand {

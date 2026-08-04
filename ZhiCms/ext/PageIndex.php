@@ -136,27 +136,22 @@ class PageIndex
  
   public function nowBar($style='otherPageNum',$nowIndex_style='active')
  {
-	$plus=ceil($this->pageBarNum/2);
-	
-	if($this->pageBarNum-$plus+$this->nowIndex>$this->totalPage)
-		$plus=($this->pageBarNum-$this->totalPage+$this->nowIndex);
-		
-	$begin=$this->nowIndex-$plus+1;
-	$begin=($begin>=1)?$begin:1;
 	$return='';
-	for($i=$begin;$i<$begin+$this->pageBarNum;$i++)
+	// 统一分页：页数<=3 显示全部页码；页数>3 只显示当前页（首页/上一页/下一页/尾页由 show() 提供）
+	if($this->totalPage<=3)
 	{
-		if($i<=$this->totalPage)
+		for($i=1;$i<=$this->totalPage;$i++)
 		{
 			if($i!=$this->nowIndex)
 				$return.=$this->_getText('<li>'.$this->_getLink($this->_getUrl($i),$i,'').'</li>');
 			else 
 				$return.=$this->_getText('<li class="'.$nowIndex_style.'"><a href="#">'.$i.'</a></li>');
+			$return.=" ";
 		}
-		else
-		{
-			break;
-		}
+	}
+	else
+	{
+		$return.=$this->_getText('<li class="'.$nowIndex_style.'"><a href="#">'.$this->nowIndex.'</a></li>');
 		$return.=" ";
 	}
 	return $return;
@@ -214,6 +209,9 @@ $mode，显示风格，参数可为整数1，2，3，4任意一个
 				return $this->firstPage().$this->prePage().$this->nextPage().$this->lastPage();
 				break;
 			case 4:
+				// 统一分页：页数<=3 显示全部页码；页数>3 显示 首页|上一页|当前页|下一页|尾页
+				if($this->totalPage>3)
+					return $this->firstPage().$this->prePage().$this->nowBar().$this->nextPage().$this->lastPage();
 				return $this->prePage().$this->nowBar().$this->nextPage();
 				break;
 			case 5:

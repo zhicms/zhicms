@@ -17,184 +17,249 @@
     </a>
 </div>
 <?php } ?>
-<!-- 上传插件 -->
-<div class="card shadow mb-4">
-    <div class="card-header">
-        <h5 class="mb-0"><i class="fas fa-upload mr-2"></i>上传安装插件</h5>
-    </div>
-    <div class="card-body">
-        <form action="index.php?r=manage/plugin/upload" method="post" enctype="multipart/form-data" class="form-inline">
-            <div class="custom-file mr-3 w-360">
-                <input type="file" class="custom-file-input" name="file" id="pluginFile" accept=".zip,.zba">
-                <label class="custom-file-label" for="pluginFile">选择插件文件 (.zip / .zba)</label>
-            </div>
-            <button type="submit" class="btn btn-success btn-sm">
-                <i class="fas fa-cloud-upload-alt"></i> 上传并解压
+
+<!-- 工具栏：上传安装 + 统计 -->
+<div class="filter-bar mb-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+        <div class="filter-title mb-3 mb-md-0">
+            <i class="fas fa-plug"></i>
+            <span>已安装插件 <span class="small font-weight-light">(<span id="count_active"><?php echo count((array)$list); ?></span>)</span></span>
+        </div>
+        <div class="d-flex flex-wrap" style="gap: 10px;">
+            <button class="btn btn-success btn-sm shadow-sm" data-toggle="modal" data-target="#addModal">
+                <i class="fas fa-plus"></i> 上传安装插件
             </button>
-            <small class="text-muted ml-3">支持 .zip（原生/Z-Blog/WordPress/Emlog）和 .zba（Z-Blog App 包）</small>
-        </form>
+        </div>
     </div>
 </div>
 
-<!-- 已安装插件 -->
+<!-- 已安装插件（表格列表，参考 emlog 风格，非卡片式） -->
 <div class="card shadow mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-plug mr-2"></i>已安装插件</h5>
-        <small class="text-muted">共 <?php echo count((array)$list); ?> 个</small>
-    </div>
-    <div class="card-body">
-        <?php if (!empty($list)) { ?>
-        <div class="row">
-            <?php foreach ($list as $row) {
-                $valid = !empty($row['_valid']);
-                $type = $row['_type'] ?? 'native';
-                $initial = mb_substr($row['name'] ?? $row['alias'], 0, 1);
-                $borderStyle = '';
-                if ($type === 'zblog') $borderStyle = 'border-left: 4px solid #E6A23C;';
-                elseif ($type === 'emlog') $borderStyle = 'border-left: 4px solid #67C23A;';
-                elseif ($type === 'wordpress') $borderStyle = 'border-left: 4px solid #0073aa;';
-                else $borderStyle = 'border-left: 4px solid #4e73df;';
-
-                if (!$valid) $borderStyle = 'border-left: 4px solid #e74a3b;';
-            ?>
-            <div class="col-lg-6 col-xl-4 mb-3">
-                <div class="card h-100" style="<?php echo $borderStyle; ?>">
-                    <div class="card-body pb-2">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-shrink-0 mr-3">
-                                <div class="rounded-lg d-flex align-items-center justify-content-center text-white font-weight-bold" style="width: 48px; height: 48px; background: <?php
-                                    $colors = ['native' => '#4e73df', 'zblog' => '#E6A23C', 'emlog' => '#67C23A', 'wordpress' => '#0073aa'];
-                                    echo $colors[$type] ?? '#4e73df';
-                                ?>; font-size: 18px;">
-                                    <?php echo htmlspecialchars($initial); ?>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover plugin-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:34%;">插件</th>
+                        <th style="width:10%;">状态</th>
+                        <th style="width:12%;">类型</th>
+                        <th style="width:12%;">作者</th>
+                        <th style="width:10%;">版本</th>
+                        <th style="width:22%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($list)) { ?>
+                        <?php foreach ($list as $row) {
+                            $valid = !empty($row['_valid']);
+                            $type = $row['_type'] ?? 'native';
+                            $initial = mb_substr($row['name'] ?? $row['alias'], 0, 1);
+                            $colors = ['native' => '#4e73df', 'zblog' => '#E6A23C', 'emlog' => '#67C23A', 'wordpress' => '#0073aa'];
+                            $color = $colors[$type] ?? '#4e73df';
+                            $typeLabels = ['zblog' => 'Z-Blog', 'emlog' => 'Emlog', 'wordpress' => 'WP'];
+                            if (!$valid) $color = '#e74a3b';
+                            $typeBadge = isset($typeLabels[$type]) ? $typeLabels[$type] : '原生';
+                            $typeBadgeClass = $type === 'zblog' ? 'badge-warning' : ($type === 'emlog' ? 'badge-success' : ($type === 'wordpress' ? 'badge-info' : 'badge-secondary'));
+                        ?>
+                        <tr>
+                            <td class="plugin-cell">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-shrink-0 mr-3">
+                                        <div class="rounded-lg d-flex align-items-center justify-content-center text-white font-weight-bold" style="width: 42px; height: 42px; background: <?php echo $color; ?>; font-size: 16px;">
+                                            <?php echo htmlspecialchars($initial); ?>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 min-width-0">
+                                        <div class="font-weight-bold" style="font-size: 15px; color: var(--zc-text);">
+                                            <?php echo htmlspecialchars($row['name'] ?? $row['alias']); ?>
+                                        </div>
+                                        <div class="text-muted small" style="white-space: normal; line-height: 1.5;">
+                                            <?php echo htmlspecialchars($row['description'] ?? ''); ?>
+                                            <?php if (!empty($row['url'])): ?>
+                                                <a href="<?php echo htmlspecialchars($row['url']); ?>" target="_blank" class="text-muted ml-1" title="插件主页"><i class="fas fa-external-link-alt"></i></a>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div class="flex-grow-1 min-width-0">
-                                <h6 class="mb-1 text-truncate" style="font-weight: 600;"><?php echo htmlspecialchars($row['name'] ?? $row['alias']); ?></h6>
-                                <div>
+                            </td>
+                            <td>
+                                <?php if (!$valid): ?>
+                                    <span class="badge badge-danger"><i class="fas fa-exclamation-circle mr-1"></i>文件缺失</span>
+                                <?php elseif ($row['status'] == 1): ?>
+                                    <span class="badge badge-success"><i class="fas fa-check mr-1"></i>启用</span>
+                                <?php else: ?>
+                                    <span class="badge badge-secondary"><i class="fas fa-pause mr-1"></i>停用</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <span class="badge <?php echo $typeBadgeClass; ?>"><?php echo $typeBadge; ?></span>
+                            </td>
+                            <td class="text-muted small">
+                                <?php echo htmlspecialchars($row['author'] ?? ''); ?>
+                            </td>
+                            <td class="text-muted small">
+                                v<?php echo htmlspecialchars($row['version'] ?? '1.0.0'); ?>
+                            </td>
+                            <td>
+                                <div class="d-flex flex-wrap" style="gap: 6px;">
+                                    <?php if ($valid && !empty($row['hasSetting'])): ?>
+                                        <a href="index.php?r=manage/plugin/setting&alias=<?php echo $row['alias']; ?>" class="btn btn-primary btn-sm">
+                                            <i class="fas fa-cog"></i> 设置
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if ($valid && !empty($row['hasShow'])): ?>
+                                        <a href="index.php?r=plug/plugin/show&alias=<?php echo $row['alias']; ?>" target="_blank" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-eye"></i> 前台
+                                        </a>
+                                    <?php endif; ?>
                                     <?php if ($valid): ?>
                                         <?php if ($row['status'] == 1): ?>
-                                            <span class="badge badge-success"><i class="fas fa-check mr-1"></i>启用</span>
+                                            <a href="index.php?r=manage/plugin/disable&alias=<?php echo $row['alias']; ?>" class="btn btn-outline-warning btn-sm">
+                                                <i class="fas fa-power-off"></i> 停用
+                                            </a>
                                         <?php else: ?>
-                                            <span class="badge badge-secondary"><i class="fas fa-pause mr-1"></i>停用</span>
+                                            <a href="index.php?r=manage/plugin/enable&alias=<?php echo $row['alias']; ?>" class="btn btn-outline-success btn-sm">
+                                                <i class="fas fa-play"></i> 启用
+                                            </a>
                                         <?php endif; ?>
-                                    <?php else: ?>
-                                        <span class="badge badge-danger"><i class="fas fa-exclamation-circle mr-1"></i>文件缺失</span>
+                                        <a href="index.php?r=manage/plugin/uninstall&alias=<?php echo $row['alias']; ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('确定卸载该插件吗？');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                        <a href="index.php?r=manage/plugin/uninstall&alias=<?php echo $row['alias']; ?>&del=1" class="btn btn-outline-secondary btn-sm" onclick="return confirm('确定卸载并删除插件文件吗？此操作不可恢复！');" title="卸载并删除文件">
+                                            <i class="fas fa-eraser"></i>
+                                        </a>
                                     <?php endif; ?>
-                                    <?php
-                                        $typeClasses = ['zblog' => 'badge-warning', 'emlog' => 'badge-success', 'wordpress' => ''];
-                                        $typeLabels = ['zblog' => 'Z-Blog', 'emlog' => 'Emlog', 'wordpress' => 'WP'];
-                                        if (isset($typeLabels[$type])) {
-                                            $class = $typeClasses[$type] ?? 'badge-info';
-                                            echo '<span class="badge ' . $class . ' ml-1" style="font-size: 10px;">' . $typeLabels[$type] . '</span>';
-                                        }
-                                    ?>
                                 </div>
-                            </div>
-                        </div>
-                        <p class="card-text text-muted small mb-2" style="min-height: 38px; line-height: 1.6;">
-                            <?php echo htmlspecialchars($row['description'] ?? ''); ?>
-                        </p>
-                        <div class="text-muted small mb-3">
-                            <i class="fas fa-user mr-1"></i><?php echo htmlspecialchars($row['author'] ?? ''); ?>
-                            <span class="mx-2">|</span>
-                            <i class="fas fa-code-branch mr-1"></i>v<?php echo htmlspecialchars($row['version'] ?? '1.0.0'); ?>
-                            <?php if (!empty($row['url'])): ?>
-                            <span class="mx-2">|</span>
-                            <a href="<?php echo htmlspecialchars($row['url']); ?>" target="_blank" class="text-muted" title="插件主页"><i class="fas fa-external-link-alt"></i></a>
-                            <?php endif; ?>
-                        </div>
-                        <div class="d-flex flex-wrap" style="gap: 6px;">
-                            <?php if ($valid && !empty($row['hasSetting'])): ?>
-                                <a href="index.php?r=manage/plugin/setting&alias=<?php echo $row['alias']; ?>" class="btn btn-primary btn-sm">
-                                    <i class="fas fa-cog"></i> 设置
-                                </a>
-                            <?php endif; ?>
-                            <?php if ($valid && !empty($row['hasShow'])): ?>
-                                <a href="index.php?r=plug/plugin/show&alias=<?php echo $row['alias']; ?>" target="_blank" class="btn btn-outline-info btn-sm">
-                                    <i class="fas fa-eye"></i> 前台
-                                </a>
-                            <?php endif; ?>
-                            <?php if ($valid): ?>
-                                <?php if ($row['status'] == 1): ?>
-                                    <a href="index.php?r=manage/plugin/disable&alias=<?php echo $row['alias']; ?>" class="btn btn-outline-warning btn-sm">
-                                        <i class="fas fa-power-off"></i> 停用
-                                    </a>
-                                <?php else: ?>
-                                    <a href="index.php?r=manage/plugin/enable&alias=<?php echo $row['alias']; ?>" class="btn btn-outline-success btn-sm">
-                                        <i class="fas fa-play"></i> 启用
-                                    </a>
-                                <?php endif; ?>
-                                <a href="index.php?r=manage/plugin/uninstall&alias=<?php echo $row['alias']; ?>" class="btn btn-outline-danger btn-sm" onclick="return confirm('确定卸载该插件吗？');">
-                                    <i class="fas fa-trash"></i> 卸载
-                                </a>
-                                <a href="index.php?r=manage/plugin/uninstall&alias=<?php echo $row['alias']; ?>&del=1" class="btn btn-outline-secondary btn-sm" onclick="return confirm('确定卸载并删除插件文件吗？此操作不可恢复！');" title="卸载并删除文件">
-                                    <i class="fas fa-eraser"></i>
-                                </a>
-                            <?php endif; ?>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <?php } ?>
+                            </td>
+                        </tr>
+                        <?php } ?>
+                    <?php } else { ?>
+                        <tr>
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <i class="fas fa-plug fa-3x text-muted mb-3"></i>
+                                    <h5 class="text-muted">暂无已安装插件</h5>
+                                    <p class="text-muted">上传或安装一个插件吧</p>
+                                </div>
+                            </td>
+                        </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
         </div>
-        <?php } else { ?>
-        <div class="empty-state">
-            <i class="fas fa-plug fa-3x text-muted mb-3"></i>
-            <h5 class="text-muted">暂无已安装插件</h5>
-            <p class="text-muted">上传或安装一个插件吧</p>
-        </div>
-        <?php } ?>
     </div>
 </div>
 
-<!-- 待安装插件 -->
+<!-- 待安装插件（已上传未安装） -->
 <?php if (!empty($available)) { ?>
-<div class="card shadow mb-4">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0"><i class="fas fa-box-open mr-2"></i>待安装插件（已上传未安装）</h5>
-        <small class="text-muted">共 <?php echo count($available); ?> 个</small>
+<div class="filter-bar mb-4">
+    <div class="filter-title">
+        <i class="fas fa-box-open"></i>
+        <span>待安装插件（已上传未安装） <span class="small font-weight-light">(<?php echo count($available); ?>)</span></span>
     </div>
-    <div class="card-body">
-        <div class="row">
-            <?php foreach ($available as $meta) {
-                $at = $meta['type'] ?? '';
-                $aBorder = 'border-left: 4px solid #36b9cc;';
-                if ($at === 'zblog') $aBorder = 'border-left: 4px solid #E6A23C;';
-                elseif ($at === 'emlog') $aBorder = 'border-left: 4px solid #67C23A;';
-                elseif ($at === 'wordpress') $aBorder = 'border-left: 4px solid #0073aa;';
-            ?>
-            <div class="col-lg-6 col-xl-4 mb-3">
-                <div class="card h-100" style="<?php echo $aBorder; ?>">
-                    <div class="card-body pb-2">
-                        <div class="d-flex align-items-center mb-2">
-                            <h6 class="mb-0" style="font-weight: 600;"><?php echo htmlspecialchars($meta['name'] ?? $meta['alias']); ?></h6>
-                            <span class="badge badge-light ml-2">未安装</span>
-                            <?php
-                                $alt = ['zblog' => 'Z-Blog', 'emlog' => 'Emlog', 'wordpress' => 'WP'];
-                                if (isset($alt[$at])) echo '<span class="badge badge-info ml-1" style="font-size:10px;">' . $alt[$at] . '</span>';
-                            ?>
-                        </div>
-                        <div class="text-muted small mb-2">
-                            <i class="fas fa-user mr-1"></i><?php echo htmlspecialchars($meta['author'] ?? ''); ?>
-                            <span class="mx-1">|</span> v<?php echo htmlspecialchars($meta['version'] ?? '1.0.0'); ?>
-                        </div>
-                        <p class="card-text text-muted small mb-3" style="min-height: 38px; line-height: 1.6;">
-                            <?php echo htmlspecialchars($meta['description'] ?? ''); ?>
-                        </p>
-                        <a href="index.php?r=manage/plugin/install&alias=<?php echo $meta['alias']; ?>" class="btn btn-success btn-sm">
-                            <i class="fas fa-plus-circle"></i> 安装并启用
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <?php } ?>
+</div>
+<div class="card shadow mb-4">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover plugin-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width:46%;">插件</th>
+                        <th style="width:14%;">类型</th>
+                        <th style="width:14%;">作者</th>
+                        <th style="width:10%;">版本</th>
+                        <th style="width:16%;">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($available as $meta) {
+                        $at = $meta['type'] ?? '';
+                        $aColor = '#36b9cc';
+                        if ($at === 'zblog') $aColor = '#E6A23C';
+                        elseif ($at === 'emlog') $aColor = '#67C23A';
+                        elseif ($at === 'wordpress') $aColor = '#0073aa';
+                        $alt = ['zblog' => 'Z-Blog', 'emlog' => 'Emlog', 'wordpress' => 'WP'];
+                        $aBadge = isset($alt[$at]) ? $alt[$at] : '原生';
+                        $aBadgeClass = $at === 'zblog' ? 'badge-warning' : ($at === 'emlog' ? 'badge-success' : ($at === 'wordpress' ? 'badge-info' : 'badge-secondary'));
+                        $aInitial = mb_substr($meta['name'] ?? $meta['alias'], 0, 1);
+                    ?>
+                    <tr>
+                        <td class="plugin-cell">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0 mr-3">
+                                    <div class="rounded-lg d-flex align-items-center justify-content-center text-white font-weight-bold" style="width: 42px; height: 42px; background: <?php echo $aColor; ?>; font-size: 16px;">
+                                        <?php echo htmlspecialchars($aInitial); ?>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1 min-width-0">
+                                    <div class="font-weight-bold" style="font-size: 15px; color: var(--zc-text);">
+                                        <?php echo htmlspecialchars($meta['name'] ?? $meta['alias']); ?>
+                                    </div>
+                                    <div class="text-muted small" style="white-space: normal; line-height: 1.5;">
+                                        <?php echo htmlspecialchars($meta['description'] ?? ''); ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                        <td><span class="badge badge-light">未安装</span> <span class="badge <?php echo $aBadgeClass; ?> ml-1" style="font-size:10px;"><?php echo $aBadge; ?></span></td>
+                        <td class="text-muted small"><?php echo htmlspecialchars($meta['author'] ?? ''); ?></td>
+                        <td class="text-muted small">v<?php echo htmlspecialchars($meta['version'] ?? '1.0.0'); ?></td>
+                        <td>
+                            <a href="index.php?r=manage/plugin/install&alias=<?php echo $meta['alias']; ?>" class="btn btn-success btn-sm">
+                                <i class="fas fa-plus-circle"></i> 安装并启用
+                            </a>
+                        </td>
+                    </tr>
+                    <?php } ?>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 <?php } ?>
 
+<!-- 上传安装插件模态框（参考 emlog addModal） -->
+<div class="modal fade" id="addModal">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0">
+                <h5 class="modal-title"><i class="fas fa-upload mr-2"></i>上传安装插件</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="index.php?r=manage/plugin/upload" method="post" enctype="multipart/form-data">
+                <div class="modal-body px-4">
+                    <div class="custom-file mb-2">
+                        <input type="file" class="custom-file-input" name="file" id="pluginFile" accept=".zip,.zba">
+                        <label class="custom-file-label" for="pluginFile">选择插件文件 (.zip / .zba)</label>
+                    </div>
+                    <small class="form-text text-muted mt-2">
+                        支持 .zip（原生/Z-Blog/WordPress/Emlog）和 .zba（Z-Blog App 包）
+                    </small>
+                </div>
+                <div class="modal-footer border-0">
+                    <button type="button" class="btn btn-sm btn-light" data-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-sm btn-success"><i class="fas fa-cloud-upload-alt"></i> 上传并解压</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {include file="app/manage/view/index/emlog_footer"}
+
+<style>
+/* 插件表格：第一列允许换行（覆盖全局 nowrap !important，避免描述被截断） */
+table.plugin-table td.plugin-cell {
+    white-space: normal !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+}
+table.plugin-table td .min-width-0 {
+    min-width: 0;
+}
+</style>
 
 <script>
 // 上传文件选择后更新 label

@@ -1705,6 +1705,13 @@ body {
     font-size: 16px;
 }
 
+/* 说明文字容器：作为单个 flex item，内部文本整体流动，避免被 flex 拆成多块 */
+.alert-body {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.7;
+}
+
 .alert-info {
     border-left-color: var(--zc-primary);
 }

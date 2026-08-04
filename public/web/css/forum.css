@@ -155,6 +155,22 @@
 /* ===== 空状态 / 分页 ===== */
 .empty-state { text-align: center; padding: 60px 20px; }
 .pagination-box { text-align: center; margin-top: 20px; }
+/* 分页：弹性换行居中，避免页数多时超出内容区错位 */
+.pagination-box { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+.pagination-box li { margin: 0; list-style: none; }
+.pagination-box li.pageEllipsis span {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 28px; height: 36px; color: #999; background: transparent; border: none; cursor: default;
+}
+/* 论坛分页页码按钮 */
+.pagination-box li a,
+.pagination-box li.active a {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 36px; height: 36px; padding: 0 12px; border-radius: 10px;
+    background: #fff; color: #333; border: 1px solid #eee; font-size: 14px;
+}
+.pagination-box li a:hover { border-color: #1890ff; color: #1890ff; }
+.pagination-box li.active a { background: #1890ff; border-color: transparent; color: #fff; cursor: default; }
 
 /* ===== 小组信息卡片（forum/group 页）===== */
 .group-info-card {
@@ -223,4 +239,9 @@
     .group-info-card{background:linear-gradient(135deg,var(--conBgcolor,#1a1d24),var(--surfaceHover,#23272f));border-color:var(--borderColor,rgba(255,255,255,.08));}
     .gic-info h3{color:var(--fontColor,#e8eaed);}
     .gic-stats{color:var(--lightColor,#828a96);}
+    .pagination-box li a,
+    .pagination-box li.active a{background:var(--conBgcolor,#1a1d24);color:var(--fontColor,#e8eaed);border-color:var(--borderColor,rgba(255,255,255,.1));}
+    .pagination-box li a:hover{border-color:var(--aHoverColor,#ff6a6e);color:var(--aHoverColor,#ff6a6e);}
+    .pagination-box li.active a{background:var(--gradient,#ff4d4f);border-color:transparent;color:#fff;}
+    .pagination-box li.pageEllipsis span{color:var(--lightColor,#828a96);}
 }

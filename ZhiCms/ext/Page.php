@@ -136,30 +136,31 @@ class Page
  
   public function nowBar($style='pages',$nowIndex_style='active')
  {
-	$plus=ceil($this->pageBarNum/2);
-	
-	if($this->pageBarNum-$plus+$this->nowIndex>$this->totalPage)
-		$plus=($this->pageBarNum-$this->totalPage+$this->nowIndex);
-		
-	$begin=$this->nowIndex-$plus+1;
-	$begin=($begin>=1)?$begin:1;
 	$return='';
-	for($i=$begin;$i<$begin+$this->pageBarNum;$i++)
+	// 统一分页：页数<=3 显示全部页码；页数>3 只显示当前页（首页/上一页/下一页/尾页由 show() 提供）
+	if($this->totalPage<=3)
 	{
-		if($i<=$this->totalPage)
+		for($i=1;$i<=$this->totalPage;$i++)
 		{
-			if($i!=$this->nowIndex)
-				$return.=$this->_getText($this->_getLink($this->_getUrl($i),$i,$style));
-			else 
-				$return.=$this->_getText('<li class="'.$nowIndex_style.'"><a href="javascript:;"> '.$i.'</a></li>');
+			$return.=$this->_pageItem($i,$style,$nowIndex_style)." ";
 		}
-		else
-		{
-			break;
-		}
-		$return.=" ";
+	}
+	else
+	{
+		$return.=$this->_pageItem($this->nowIndex,$style,$nowIndex_style)." ";
 	}
 	return $return;
+ }
+
+ /**
+  * 生成单个页码项（当前页高亮）
+  */
+ private function _pageItem($i,$style,$nowIndex_style)
+ {
+	if($i!=$this->nowIndex)
+		return $this->_getText($this->_getLink($this->_getUrl($i),$i,$style));
+	else 
+		return $this->_getText('<li class="'.$nowIndex_style.'"><a href="javascript:;"> '.$i.'</a></li>');
  }
  /**
   * 获取显示跳转按钮的代码
@@ -214,6 +215,9 @@ $mode，显示风格，参数可为整数1，2，3，4任意一个
 				return $this->firstPage().$this->prePage().$this->nextPage().$this->lastPage();
 				break;
 			case 4:
+				// 统一分页：页数<=3 显示全部页码；页数>3 显示 首页|上一页|当前页|下一页|尾页
+				if($this->totalPage>3)
+					return $this->firstPage().$this->prePage().$this->nowBar().$this->nextPage().$this->lastPage();
 				return $this->prePage().$this->nowBar().$this->nextPage();
 				break;
 			case 5:

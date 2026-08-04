@@ -497,7 +497,14 @@ a.nav-link[target="_blank"]::after,
 
 /* ===================== 分页 ===================== */
 .pagination { font-size: 14px; padding: 24px 10px; text-align: center; }
-.pagination li { display: inline-block; margin: 0 4px; list-style: none; vertical-align: top; }
+/* 分页使用弹性布局，页数多时可自动换行居中，避免超出主要内容区导致错位 */
+.pagination {
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: 8px; padding: 24px 10px;
+}
+.pagination li { display: inline-block; margin: 0; list-style: none; vertical-align: top; }
+/* 兼容部分页面用 <ul> 包裹分页（如搜索页）：重置 ul 默认样式，并让其内部同样居中换行 */
+.pagination ul { padding: 0; margin: 0; list-style: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
 .pagination li a,
 .pagination li.active a,
 .pagination li span {
@@ -518,6 +525,11 @@ a.nav-link[target="_blank"]::after,
 .pagination li.previous a,
 .pagination li.nextPage a {
     background: var(--conBgcolor); border-color: var(--buttonBgColor); color: var(--buttonBgColor);
+}
+.pagination li.pageEllipsis span {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 32px; height: 40px; padding: 0 6px; color: var(--lightColor);
+    background: transparent; border: none; cursor: default;
 }
 .pagination li.previous a:hover,
 .pagination li.nextPage a:hover { background: var(--gradient); color: #fff; }
@@ -642,6 +654,15 @@ a.nav-link[target="_blank"]::after,
 .foot-links li { margin-bottom: 10px; font-size: 13px; }
 .foot-links a { color: var(--lightColor); }
 .foot-links a:hover { color: var(--aHoverColor); }
+/* 底部站点信息二维码 */
+.foot-ewm { margin-top: 6px; }
+.foot-ewm img {
+    display: block; width: 110px; height: 110px; object-fit: contain;
+    border-radius: 10px; padding: 6px; background: #fff; box-sizing: border-box;
+    border: 1px solid var(--borderColor); transition: transform .25s ease;
+}
+.foot-ewm img:hover { transform: scale(1.05); }
+[data-theme="dark"] .foot-ewm img { background: #fff; }
 .foot-bar {
     border-top: 1px solid var(--borderColor); padding: 18px 16px;
     text-align: center; font-size: 12.5px; color: var(--lightColor);
@@ -804,6 +825,37 @@ a.nav-link[target="_blank"]::after,
 .side-btn svg { width: 20px; height: 20px; }
 /* 用户中心 / AI导购 边按钮仅移动端显示（桌面端 AI 助手走独立悬浮球） */
 #mobile-user-center, #mobile-ai-btn { display: none; }
+
+/* ============ 主题切换按钮（月亮/太阳，更显眼） ============ */
+#theme-toggle {
+    /* 浅色模式默认月亮：柔和暖色渐变背景，暗色月亮轮廓清晰 */
+    background: linear-gradient(135deg, #ffd76a, #ffb347);
+    border: 2px solid #fff;
+    color: #5a4632;
+    box-shadow: 0 3px 14px rgba(255, 179, 71, .45);
+}
+#theme-toggle svg { width: 22px; height: 22px; stroke-width: 2.4; }
+#theme-toggle:hover {
+    background: linear-gradient(135deg, #ffe08a, #ffc15e);
+    color: #5a4632;
+    border-color: #fff;
+    box-shadow: 0 5px 18px rgba(255, 179, 71, .55);
+    transform: translateY(-2px) rotate(12deg);
+}
+/* dark 模式显示太阳：深底 + 亮黄太阳，同样醒目 */
+[data-theme="dark"] #theme-toggle {
+    background: linear-gradient(135deg, #3a3f4b, #2a2e37);
+    border: 2px solid #ffc15e;
+    color: #ffd76a;
+    box-shadow: 0 3px 14px rgba(0,0,0,.4), 0 0 12px rgba(255, 209, 106, .25);
+}
+[data-theme="dark"] #theme-toggle:hover {
+    background: linear-gradient(135deg, #4a5060, #363b46);
+    color: #ffe08a;
+    border-color: #ffd76a;
+    box-shadow: 0 5px 18px rgba(0,0,0,.5), 0 0 16px rgba(255, 209, 106, .35);
+    transform: translateY(-2px) rotate(-12deg);
+}
 
 /* ===================== 响应式 ===================== */
 @media (max-width: 767px) {

@@ -74,7 +74,17 @@
 .uc-comment-body{font-size:14px;color:#444;line-height:1.6;background:#f8f9fb;border-radius:8px;padding:10px 12px;}
 .uc-comment-meta{display:flex;justify-content:space-between;align-items:center;}
 .uc-empty{text-align:center;color:#bbb;padding:50px 0;font-size:14px;}
-.uc-pager{margin-top:20px;text-align:center;}
+.uc-pager{margin-top:20px;text-align:center;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px;}
+.uc-pager li{margin:0;list-style:none;}
+.uc-pager li a,.uc-pager li.active a{
+    display:inline-flex;align-items:center;justify-content:center;
+    min-width:36px;height:36px;padding:0 12px;border-radius:10px;
+    background:var(--conBgcolor,#fff);color:var(--fontColor,#333);
+    border:1px solid var(--borderColor,#eee);font-size:14px;
+}
+.uc-pager li a:hover{border-color:var(--buttonBgColor,#ff4d4f);color:var(--buttonBgColor,#ff4d4f);}
+.uc-pager li.active a{background:var(--gradient,#ff4d4f);border-color:transparent;color:#fff;cursor:default;}
+.uc-pager li.pageEllipsis span{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:36px;color:var(--lightColor,#999);background:transparent;border:none;cursor:default;}
 /* 用户中心表单（复用公共 .form-group/.form-control/.btn-primary，这里仅补充布局） */
 .uc-form{max-width:420px;margin-top:18px;}
 .uc-form .form-group{margin-bottom:16px;}

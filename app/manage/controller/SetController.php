@@ -21,6 +21,16 @@ class SetController extends \app\base\controller\BaseController
 			$apiConfig   = ConfigStore::load('api');
 			$smsConfig   = ConfigStore::load('sms');
 			$aichatCfg   = ConfigStore::load('aichat');
+
+			// 统一「安全 Key」：不存在则自动生成（用于火车头/简数采集免登、在线升级、小程序/App API 等）
+			$securityKey = isset($siteConfig['security_key']) ? trim((string)$siteConfig['security_key']) : '';
+			if ($securityKey === '') {
+			    $securityKey = $this->generateSecurityKey();
+			    $siteConfig['security_key'] = $securityKey;
+			    ConfigStore::save('site', $siteConfig);
+			    ConfigStore::clearCache('site');
+			}
+			$this->securityKey = $securityKey;
 			// 前端 AI 对话模型由「AI 开放平台」统一管理：读取对话模型池与当前指定
 			$aiChatModels = \app\common\AiService::getModelsByType('chat');
 			$aiChatKey    = \app\common\AiService::getCurrentChatKey();
@@ -83,14 +93,54 @@ class SetController extends \app\base\controller\BaseController
 				'beian'          => $_POST['beian']          ?? '',
 				'model'          => $_POST['model']          ?? '',
 				'key'            => $_POST['key']            ?? '',
+				// 统一安全 Key：仅在显式提交时保存（重置由 resetSecurityKey 单独处理），避免误覆盖自动生成值
+				'security_key'   => isset($_POST['security_key']) ? trim($_POST['security_key']) : '',
 				// mobile_style 由「移动端」标签页单独保存，这里不处理，避免基础设置覆盖移动端风格
 			);
+			// 若未提交 security_key（老表单/其它方式），回退为现有值，避免被清空
+			if (empty($Siteinfo['security_key'])) {
+			    $oldSite = ConfigStore::load('site');
+			    $Siteinfo['security_key'] = isset($oldSite['security_key']) ? $oldSite['security_key'] : '';
+			}
 			ConfigStore::save('site', $Siteinfo);
 			ConfigStore::clearCache('site');
 			\ZhiCms\ext\AdminLog::write('setting', '保存了网站基础设置');
 		echo json_encode(array("info" => "设置成功", "status" => "y"));
 	}
 
+	}
+
+	/**
+	 * 生成安全 Key：40 位随机字母数字，足够熵防暴力猜测
+	 */
+	private function generateSecurityKey() {
+	    $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+	    $key = '';
+	    $max = strlen($alphabet) - 1;
+	    for ($i = 0; $i < 40; $i++) {
+	        $key .= $alphabet[random_int(0, $max)];
+	    }
+	    return $key;
+	}
+
+	/**
+	 * 重置安全 Key：后台点击「重置」时调用，生成新 key 并保存
+	 * 访问：index.php?r=manage/set/resetSecurityKey
+	 */
+	public function resetSecurityKey() {
+	    $this->checkManageSession();
+	    if (!\IS_POST) {
+	        echo json_encode(array('info' => '非法请求', 'status' => 'n'));
+	        return;
+	    }
+	    $newKey = $this->generateSecurityKey();
+	    $siteConfig = ConfigStore::load('site');
+	    if (!is_array($siteConfig)) $siteConfig = array();
+	    $siteConfig['security_key'] = $newKey;
+	    ConfigStore::save('site', $siteConfig);
+	    ConfigStore::clearCache('site');
+	    \ZhiCms\ext\AdminLog::write('setting', '重置了网站安全 Key');
+	    echo json_encode(array('info' => '安全 Key 已重置', 'status' => 'y', 'security_key' => $newKey));
 	}
 
 	/**
