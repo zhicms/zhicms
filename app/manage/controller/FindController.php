@@ -76,7 +76,7 @@ class FindController extends \app\base\controller\BaseController
         }
         $dtk = $tjk->getDtk();
 
-        $cid = intval($this->arg("cid", 0));
+        $cid = 0; // 朋友圈采集不使用电商产品分类(cid)，仅用发现分类(navid)
         $navid = intval($this->arg("navid", 0));
         $pages = max(1, intval($this->arg("pages", 5)));
         $minId = intval($this->arg("min_id", 1));
@@ -84,7 +84,6 @@ class FindController extends \app\base\controller\BaseController
         // 持久化本次采集参数，供「计划任务-朋友圈采集」定时跑时复用
         $apiTmp = \app\common\ConfigStore::load('api');
         if (!is_array($apiTmp)) $apiTmp = array();
-        $apiTmp['moments_cid'] = $cid;
         $apiTmp['moments_navid'] = $navid;
         $apiTmp['moments_pages'] = $pages;
         \app\common\ConfigStore::save('api', $apiTmp);
@@ -182,7 +181,7 @@ class FindController extends \app\base\controller\BaseController
 	public function collectCron(){
 		set_time_limit(0);
 		$api = \app\common\ConfigStore::load('api');
-		$cid   = isset($api['moments_cid'])   ? intval($api['moments_cid'])   : 0;
+		$cid   = 0; // 朋友圈采集不使用电商产品分类(cid)，仅用发现分类(navid)
 		$navid = isset($api['moments_navid']) ? intval($api['moments_navid']) : 0;
 		$pages = isset($api['moments_pages']) ? max(1, intval($api['moments_pages'])) : 3;
 		$minId = 1;

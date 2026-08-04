@@ -106,6 +106,8 @@ class TaskController extends \app\base\controller\BaseController
         $this->navs = $this->getFindNavs();
         $this->juhe235Map = (isset($apiCfg['juhe_235_map']) && is_array($apiCfg['juhe_235_map'])) ? $apiCfg['juhe_235_map'] : array();
         $this->juhe850Map = (isset($apiCfg['juhe_850_map']) && is_array($apiCfg['juhe_850_map'])) ? $apiCfg['juhe_850_map'] : array();
+        $this->momentsNavid = isset($apiCfg['moments_navid']) ? intval($apiCfg['moments_navid']) : 0;
+        $this->momentsPages = isset($apiCfg['moments_pages']) ? intval($apiCfg['moments_pages']) : 3;
 
         $this->pageText = array('编辑任务');
         $this->toolTitle = '编辑计划任务';
@@ -129,7 +131,9 @@ class TaskController extends \app\base\controller\BaseController
             $exist = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id`=" . $id);
             $isSystem = !empty($exist) && ($exist['type'] ?? '') === 'system';
             if ($isSystem) {
-                $cmd = isset($this->systemTasks[$exist['command']]) ? $exist['command'] : trim($this->arg('command'));
+                // 系统任务命令在 DB 中存为 job:xxx，而 $systemTasks 以 xxx 为键，需去掉前缀匹配
+                $sysKey = ltrim($exist['command'], 'job:');
+                $cmd = isset($this->systemTasks[$sysKey]) ? $this->systemTasks[$sysKey]['command'] : trim($this->arg('command'));
                 $data['command'] = $cmd;
                 $data['exec_type'] = 'php';
             }
@@ -160,6 +164,15 @@ class TaskController extends \app\base\controller\BaseController
                 if (isset($_POST['news_key850'])) $apiCfg['juhe_850_key'] = trim($_POST['news_key850']);
                 $apiCfg['juhe_235_map'] = $this->parseNewsMap($_POST, 'news235_map', 'news235chk');
                 $apiCfg['juhe_850_map'] = $this->parseNewsMap($_POST, 'news850_map', 'news850chk');
+                \app\common\ConfigStore::save('api', $apiCfg);
+            }
+
+            // 朋友圈采集任务：仅保存「发现分类(navid)」与采集页数（不使用电商产品分类 cid）
+            if ($data['command'] === 'job:moments_collect') {
+                $apiCfg = \app\common\ConfigStore::load('api');
+                if (!is_array($apiCfg)) $apiCfg = array();
+                $apiCfg['moments_navid'] = isset($_POST['moments_navid']) ? intval($_POST['moments_navid']) : 0;
+                $apiCfg['moments_pages'] = isset($_POST['moments_pages']) ? max(1, intval($_POST['moments_pages'])) : 3;
                 \app\common\ConfigStore::save('api', $apiCfg);
             }
         } else {

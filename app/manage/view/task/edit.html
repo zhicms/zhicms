@@ -163,6 +163,34 @@
             </div>
         </div>
     </div>
+    <!-- 朋友圈采集（好单库素材库）：仅用发现分类(navid)，不使用电商产品分类(cid) -->
+    {if $task.command=='job:moments_collect'}
+      <div class="card mb-4">
+        <div class="card-header bg-white font-weight-bold"><i class="fas fa-comments mr-1 text-info"></i>朋友圈采集设置</div>
+        <div class="card-body">
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">归属发现分类 <span class="text-danger">*</span></label>
+            <div class="col-sm-10">
+              <select name="moments_navid" class="form-control">
+                <option value="0">请选择发现分类</option>
+                {foreach $navs as $nav}
+                  <option value="{$nav.id}" {if $nav.id==$momentsNavid}selected{/if}>{$nav.name}</option>
+                {/foreach}
+              </select>
+              <small class="form-text text-muted">采集到的朋友圈文章将归入该发现分类（仅发现分类，不参与电商产品分类）。</small>
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">采集页数</label>
+            <div class="col-sm-10">
+              <input type="number" name="moments_pages" class="form-control" min="1" max="50" value="{$momentsPages|default=3}">
+              <small class="form-text text-muted">每次定时采集翻页次数，建议 3-10。</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
     <a href="index.php?r=manage/task/index" class="btn btn-outline-secondary">返回</a>
 </form>

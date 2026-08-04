@@ -240,18 +240,7 @@
             <i class="fas fa-bolt text-warning mr-2"></i> 一键采集（好单库朋友圈）
         </div>
         <div class="cat-modal-body">
-            <p class="text-muted small mb-3">将从好单库朋友圈素材库拉取最新发圈文案并生成文章（含商品卡片）</p>
-            <div class="form-group">
-                <label class="small text-muted">入库分类</label>
-                <select class="form-control" id="collectCate">
-                    <option value="0">未分类</option>
-                    <?php if(isset($categories)): ?>
-                    <?php foreach($categories as $k => $v): ?>
-                    <option value="<?php echo $k; ?>"><?php echo $v; ?></option>
-                    <?php endforeach; ?>
-                    <?php endif; ?>
-                </select>
-            </div>
+            <p class="text-muted small mb-3">将从好单库朋友圈素材库拉取最新发圈文案并生成文章（含商品卡片）。仅归入「发现分类」，不使用电商产品分类。</p>
             <div class="form-group">
                 <label class="small text-muted">发现分类（前台频道）</label>
                 <select class="form-control" id="collectNav">
@@ -472,13 +461,12 @@ function openCollectModal() {
     btn.disabled = false;
     btn.innerText = '开始采集';
     btn.onclick = function() {
-        var cid = document.getElementById('collectCate').value;
         var navid = document.getElementById('collectNav').value;
         var pages = document.getElementById('collectPages').value || 5;
         btn.disabled = true;
         btn.innerText = '采集中（请耐心等待）...';
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'index.php?r=manage/find/collect&cid=' + cid + '&navid=' + navid + '&pages=' + pages, true);
+        xhr.open('GET', 'index.php?r=manage/find/collect&navid=' + navid + '&pages=' + pages, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4 && xhr.status == 200) {
                 try {
