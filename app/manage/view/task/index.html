@@ -82,47 +82,36 @@
 
 <script>
 function postJSON(url, data, cb){
-    var fd = new FormData();
-    for (var k in data) fd.append(k, data[k]);
-    fetch(url, {
-        method:'POST',
-        body:fd,
-        headers:{'X-Requested-With':'XMLHttpRequest'}
-    }).then(function(r){
-        // 先检查 HTTP 状态：302/非 2xx 通常是 session 失效被跳转（登录页 HTML），
-        // 不要直接 r.json()（HTML 会解析失败），先判断 content-type 再决定如何解析。
-        var ct = r.headers.get('Content-Type') || '';
-        if (ct.indexOf('application/json') === -1) {
-            if (r.status === 302 || r.redirected) {
-                return r.text().then(function(){ return {need_login:true, info:'登录已过期，请重新登录'}; });
+    // 与后台其他设置页（系统设置/AI设置等）保持一致的 $.ajax 写法
+    $.ajax({
+        url: url,
+        type: 'POST',
+        data: data,
+        dataType: 'json',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success: function(res){
+            // 后端登录失效时返回 {need_login:true}
+            if (res && res.need_login) {
+                showToast(res.info || '登录已过期，请重新登录', 'danger');
+                setTimeout(function(){ location.href = 'index.php?r=manage/login/index'; }, 1200);
+                return;
             }
-            return r.text().then(function(txt){
-                return {__raw:txt};
-            });
-        }
-        return r.json();
-    }).then(function(res){
-        if (res && res.need_login) { alert(res.info || '登录已过期，请重新登录'); location.href='index.php?r=manage/login/index'; return; }
-        if (res && res.__raw !== undefined) {
-            // 后端未返回 JSON（可能是 fatal error 输出），给出真实提示而非笼统“登录过期”
-            console.error('非 JSON 响应：', res.__raw.slice(0, 500));
-            alert('请求返回了非预期内容，可能后端执行出错，请查看控制台或后台日志');
-            return;
-        }
-        cb && cb(res);
-    }).catch(function(e){
-        // 区分网络失败与执行超时：长任务(采集)可能超时，需提示等待而非"请求失败"
-        if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
-            alert('执行超时：任务可能在后台仍在运行，请稍后到任务列表查看结果');
-        } else {
-            alert('请求失败：网络异常，请稍后重试');
+            cb && cb(res);
+        },
+        error: function(xhr, type, err){
+            // 仅网络层错误（连接中断/超时）才会进这里；后端返回 JSON 异常由 success 处理
+            if (xhr.status === 0) {
+                showToast('执行超时：任务可能在后台仍在运行，请稍后到任务列表查看结果', 'warning');
+            } else {
+                showToast('请求失败，请重试', 'danger');
+            }
         }
     });
 }
 function runNow(id){
     postJSON('index.php?r=manage/task/runNow', {id:id}, function(res){
-        if (res && res.status==='y') { layer.msg(res.info, {icon:1}); setTimeout(function(){location.reload();},700); }
-        else alert((res&&res.info)?res.info:'执行失败');
+        if (res && res.status==='y') { showToast(res.info, 'success'); setTimeout(function(){location.reload();},700); }
+        else showToast((res&&res.info)?res.info:'执行失败', 'danger');
     });
 }
 function toggle(id){
