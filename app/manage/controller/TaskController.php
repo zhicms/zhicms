@@ -218,12 +218,25 @@ class TaskController extends \app\base\controller\BaseController
         // 采集类任务会调用外部 API，可能耗时较长，解除执行时长限制避免中途超时报错
         @set_time_limit(0);
         $this->checkManageSession();
-        $id = (int)$this->arg('id', 0);
-        $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
-        if (empty($row)) exit(json_encode(array('info' => '任务不存在', 'status' => 'n')));
-        $res = $this->executeTask($row[0]);
-        $this->updateResult($id, $res);
-        exit(json_encode(array('info' => ($res['ok'] ? '执行成功' : '执行失败') . '：' . mb_substr($res['output'], 0, 120), 'status' => $res['ok'] ? 'y' : 'n')));
+        // 隔离采集过程（调外部 API、DB 查询等）可能产生的直接输出（warning/notice/echo），
+        // 否则这些输出会在 json_encode 之前被写入响应体，导致前端 JSON.parse 失败 → 误报“请求失败”。
+        ob_start();
+        try {
+            $id = (int)$this->arg('id', 0);
+            $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
+            if (empty($row)) {
+                $out = array('info' => '任务不存在', 'status' => 'n');
+            } else {
+                $res = $this->executeTask($row[0]);
+                $this->updateResult($id, $res);
+                $out = array('info' => ($res['ok'] ? '执行成功' : '执行失败') . '：' . mb_substr($res['output'], 0, 120), 'status' => $res['ok'] ? 'y' : 'n');
+            }
+        } catch (\Throwable $e) {
+            $out = array('info' => '执行异常：' . $e->getMessage(), 'status' => 'n');
+        }
+        ob_end_clean();
+        header('Content-Type: application/json; charset=utf-8');
+        exit(json_encode($out));
     }
 
     /**

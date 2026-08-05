@@ -88,15 +88,34 @@ function postJSON(url, data, cb){
         method:'POST',
         body:fd,
         headers:{'X-Requested-With':'XMLHttpRequest'}
-    }).then(function(r){return r.json();}).then(function(res){
+    }).then(function(r){
+        // 先检查 HTTP 状态：302/非 2xx 通常是 session 失效被跳转（登录页 HTML），
+        // 不要直接 r.json()（HTML 会解析失败），先判断 content-type 再决定如何解析。
+        var ct = r.headers.get('Content-Type') || '';
+        if (ct.indexOf('application/json') === -1) {
+            if (r.status === 302 || r.redirected) {
+                return r.text().then(function(){ return {need_login:true, info:'登录已过期，请重新登录'}; });
+            }
+            return r.text().then(function(txt){
+                return {__raw:txt};
+            });
+        }
+        return r.json();
+    }).then(function(res){
         if (res && res.need_login) { alert(res.info || '登录已过期，请重新登录'); location.href='index.php?r=manage/login/index'; return; }
+        if (res && res.__raw !== undefined) {
+            // 后端未返回 JSON（可能是 fatal error 输出），给出真实提示而非笼统“登录过期”
+            console.error('非 JSON 响应：', res.__raw.slice(0, 500));
+            alert('请求返回了非预期内容，可能后端执行出错，请查看控制台或后台日志');
+            return;
+        }
         cb && cb(res);
     }).catch(function(e){
         // 区分网络失败与执行超时：长任务(采集)可能超时，需提示等待而非"请求失败"
         if (e && (e.name === 'AbortError' || e.name === 'TimeoutError')) {
             alert('执行超时：任务可能在后台仍在运行，请稍后到任务列表查看结果');
         } else {
-            alert('请求失败：登录已过期或网络异常，请重新登录后再试');
+            alert('请求失败：网络异常，请稍后重试');
         }
     });
 }
