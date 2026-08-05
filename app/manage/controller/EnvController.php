@@ -68,6 +68,40 @@ class EnvController extends \app\base\controller\BaseController
             'suggest'  => $phpPass ? '' : '请升级 PHP 到 ' . $phpMin . ' 或更高版本',
         );
 
+        // 1.1 运行环境（Web Server）
+        $serverSoft = isset($_SERVER['SERVER_SOFTWARE']) ? $_SERVER['SERVER_SOFTWARE'] : '未知';
+        $items[] = array(
+            'name'     => '运行环境 (Web Server)',
+            'current'  => $serverSoft,
+            'required' => 'Apache / Nginx / IIS 等',
+            'pass'     => !empty($serverSoft),
+            'level'    => 'optional',
+            'suggest'  => '',
+        );
+
+        // 1.2 文件上传限制
+        $uploadMax = ini_get('upload_max_filesize');
+        $postMax   = ini_get('post_max_size');
+        $items[] = array(
+            'name'     => '文件上传限制 (upload_max_filesize)',
+            'current'  => $uploadMax . '（post_max_size: ' . $postMax . '）',
+            'required' => '>= 2M（视业务需要）',
+            'pass'     => true,
+            'level'    => 'optional',
+            'suggest'  => '如需上传大文件，请调大 php.ini 中的 upload_max_filesize 与 post_max_size。',
+        );
+
+        // 1.3 脚本内存限制
+        $memLimit = ini_get('memory_limit');
+        $items[] = array(
+            'name'     => '脚本内存限制 (memory_limit)',
+            'current'  => $memLimit,
+            'required' => '>= 128M（推荐 256M+）',
+            'pass'     => true,
+            'level'    => 'optional',
+            'suggest'  => '采集/图片处理等大内存操作若失败，请调大 php.ini 中的 memory_limit。',
+        );
+
         // 2. 数据库驱动
         $driver = $this->getAvailableDriver();
         $items[] = array(

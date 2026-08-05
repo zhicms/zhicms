@@ -13,7 +13,7 @@
     </div>
     <div class="card-body">
         <div class="action-buttons">
-            <button class="btn btn-primary" onclick="clearCache()">
+            <button class="btn btn-primary" onclick="zcClearCache()">
                 <i class="fas fa-sync-alt"></i> 清除缓存
             </button>
             <a href="index.php?r=manage/user/index" class="btn btn-outline-primary">
@@ -44,53 +44,83 @@
                     <table class="table table-bordered">
                         <tbody>
                             <tr>
-                                <th class="w-150">系统版本</th>
-                                <td>ZhiCms <?php echo isset($localVersion) ? $localVersion : '1.0'; ?></td>
-                            </tr>
-                            <?php if($updateAvailable && isset($updateInfo)): ?>
-                            <tr>
-                                <th>最新版本</th>
+                                <th class="w-150">本地版本</th>
                                 <td>
-                                    <span class="badge badge-danger"><?php echo $updateInfo['version']; ?></span>
-                                    <span class="text-muted ml-2">有可用更新</span>
+                                    <span class="badge badge-secondary">ZhiCms <?php echo htmlspecialchars($localVersion, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <?php if(!empty($serverVersion) && $serverVersion != $localVersion): ?>
+                                        <span class="text-muted ml-1">最新：<?php echo htmlspecialchars($serverVersion, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                             <tr>
-                                <th>更新说明</th>
-                                <td><?php echo $updateInfo['vlist']; ?></td>
+                                <th>更新标题</th>
+                                <td>
+                                    <?php if(!empty($vinfo)): ?>
+                                        <strong><?php echo htmlspecialchars($vinfo, ENT_QUOTES, 'UTF-8'); ?></strong>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>更新时间</th>
+                                <td>
+                                    <?php if(!empty($updateTime)): ?>
+                                        <?php echo htmlspecialchars($updateTime, ENT_QUOTES, 'UTF-8'); ?>
+                                    <?php else: ?>
+                                        <span class="text-muted">—</span>
+                                    <?php endif; ?>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>更新内容</th>
+                                <td>
+                                    <?php if(!empty($updateInfo)): ?>
+                                        <div class="update-info-box" style="max-height:200px;overflow:auto;white-space:pre-wrap;font-size:13px;line-height:1.6;background:#f7f8fa;border:1px solid #eaecef;border-radius:6px;padding:10px 12px;color:#444;"><?php echo nl2br(htmlspecialchars($updateInfo, ENT_QUOTES, 'UTF-8')); ?></div>
+                                    <?php endif; ?>
+                                    <?php if(!empty($vlistHtml)): ?>
+                                        <ul class="update-vlist" style="margin:8px 0 0;padding-left:20px;"><?php echo $vlistHtml; ?></ul>
+                                    <?php elseif(!empty($vlist) && is_array($vlist)): ?>
+                                        <ul class="update-vlist" style="margin:8px 0 0;padding-left:20px;">
+                                            <?php foreach($vlist as $vi): ?>
+                                            <li style="font-size:13px;line-height:1.8;color:#444;"><?php echo htmlspecialchars($vi, ENT_QUOTES, 'UTF-8'); ?></li>
+                                            <?php endforeach; ?>
+                                        </ul>
+                                    <?php elseif(empty($updateInfo)): ?>
+                                        <span class="text-muted">暂无更新信息</span>
+                                    <?php endif; ?>
+                                    <?php if(!empty($patchMd5)): ?>
+                                        <div class="form-text text-muted">补丁包 MD5：<code><?php echo htmlspecialchars($patchMd5, ENT_QUOTES, 'UTF-8'); ?></code></div>
+                                    <?php endif; ?>
+                                </td>
                             </tr>
                             <tr>
                                 <th>升级操作</th>
                                 <td>
-                                    <button class="btn btn-sm btn-primary" onclick="doUpdate('hot')">
-                                        热更新 <?php echo isset($updateInfo['hot_size']) ? '('.$updateInfo['hot_size'].')' : ''; ?>
-                                    </button>
-                                    <button class="btn btn-sm btn-danger" onclick="doUpdate('full')">
-                                        整包更新 <?php echo isset($updateInfo['full_size']) ? '('.$updateInfo['full_size'].')' : ''; ?>
-                                    </button>
-                                    <div class="form-text">热更新：仅更新必要文件；整包更新：完整覆盖，适合修复问题</div>
+                                    <?php if(empty($installed)): ?>
+                                        <button class="btn btn-sm btn-success" onclick="doUpdate('install')">
+                                            <i class="fas fa-download"></i> 立即安装
+                                        </button>
+                                        <div class="form-text">检测到尚未安装，安装将下载完整程序包并写入数据库与版本号（用户配置不会被覆盖）。</div>
+                                    <?php elseif(!empty($canUpgrade)): ?>
+                                        <button class="btn btn-sm btn-primary" onclick="doUpdate('upgrade')">
+                                            <i class="fas fa-arrow-up"></i>
+                                            <?php if(!empty($isPatch)): ?>
+                                                立即打补丁（同版本）
+                                            <?php else: ?>
+                                                立即升级到 <?php echo htmlspecialchars($serverVersion, ENT_QUOTES, 'UTF-8'); ?>
+                                            <?php endif; ?>
+                                        </button>
+                                        <?php if(!empty($isPatch)): ?>
+                                            <span class="badge badge-warning ml-1">补丁更新</span>
+                                            <div class="form-text">版本号未变，但服务器有新的补丁包（MD5 未应用过），点击后将记录该补丁 MD5，避免重复提示。</div>
+                                        <?php else: ?>
+                                            <div class="form-text">后台升级：下载更新包、安全覆盖文件并执行数据库升级（用户配置不会被覆盖）。</div>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="text-muted"><i class="fas fa-ban"></i> 当前不可升级（官网已关闭升级通道或已应用最新补丁）</span>
+                                    <?php endif; ?>
                                 </td>
-                            </tr>
-                            <?php endif; ?>
-                            <tr>
-                                <th>PHP版本</th>
-                                <td><?php echo phpversion(); ?></td>
-                            </tr>
-                            <tr>
-                                <th>数据库</th>
-                                <td>MySQL</td>
-                            </tr>
-                            <tr>
-                                <th>运行环境</th>
-                                <td><?php echo htmlspecialchars($_SERVER['SERVER_SOFTWARE'], ENT_QUOTES, 'UTF-8'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>文件上传限制</th>
-                                <td><?php echo ini_get('upload_max_filesize'); ?></td>
-                            </tr>
-                            <tr>
-                                <th>脚本内存限制</th>
-                                <td><?php echo ini_get('memory_limit'); ?></td>
                             </tr>
                         </tbody>
                     </table>
@@ -161,41 +191,34 @@
 {include file="app/manage/view/index/emlog_footer"}
 
 <script>
-function clearCache() {
-    if(confirm('确定要清除缓存吗？')) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'index.php?r=manage/index/delcache', true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4 && xhr.status == 200) {
-                alert('缓存已清除');
-                location.reload();
-            }
-        };
-        xhr.send();
+function doUpdate(mode) {
+    mode = mode || 'upgrade';
+    var tipText = mode === 'install' ? '正在安装，请稍候…' : '正在升级，请稍候…';
+    if(typeof showToast === 'function') {
+        showToast(tipText, 'info');
     }
-}
-function doUpdate(type) {
-    type = type || 'hot';
-    var typeName = type == 'hot' ? '热更新' : '整包更新';
-    if(confirm('确定要执行' + typeName + '吗？升级过程中请不要关闭页面！')) {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'index.php?r=manage/index/downloadfile&type=' + type, true);
-        xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4 && xhr.status == 200) {
-                try {
-                    var ret = JSON.parse(xhr.responseText);
-                    if(ret.status == 'y') {
-                        alert(ret.info);
-                        location.reload();
-                    } else {
-                        alert(ret.info);
-                    }
-                } catch(e) {
-                    alert('升级返回数据异常');
-                }
+    $.ajax({
+        url: 'index.php?r=manage/index/downloadFile',
+        type: 'POST',
+        data: { mode: mode },
+        dataType: 'json',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success: function(ret) {
+            if (ret && ret.status == 'y') {
+                showToast && showToast(ret.info, 'success');
+                setTimeout(function(){ location.reload(); }, 1500);
+            } else {
+                showToast && showToast((ret && ret.info) ? ret.info : '操作失败', 'danger');
             }
-        };
-        xhr.send();
-    }
+        },
+        error: function(xhr) {
+            var msg = '请求失败';
+            try {
+                var m = xhr.responseText.match(/\{.*\}/s);
+                if (m) { var j = JSON.parse(m[0]); if (j && j.info) msg = j.info; }
+            } catch(e) {}
+            showToast && showToast(msg, 'danger');
+        }
+    });
 }
 </script>

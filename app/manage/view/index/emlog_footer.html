@@ -225,6 +225,43 @@
             setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350);
         }, 3000);
     };
+
+    // 全局清除缓存：原生实现，不依赖 layer/ajaxget（避免未引入 layui 时失效）
+    window.zcClearCache = function() {
+        if (!confirm('确定要清除缓存吗？')) return;
+        var url = 'index.php?r=manage/cache/clear&type=all';
+        var done = function(ok, msg) {
+            if (window.showToast) {
+                showToast(msg || (ok ? '缓存已清除' : '清除缓存失败'), ok ? 'success' : 'danger');
+            } else {
+                alert(msg || (ok ? '缓存已清除' : '清除缓存失败'));
+            }
+            if (ok) { try { setTimeout(function(){ location.reload(); }, 1200); } catch(e){} }
+        };
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', url, true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        var ok = true, info = '缓存已清除';
+                        try {
+                            var ret = JSON.parse(xhr.responseText);
+                            if (ret && ret.status === 'n') { ok = false; info = ret.info || '清除缓存失败'; }
+                            else if (ret && ret.info) { info = ret.info; }
+                        } catch (e) {}
+                        done(ok, info);
+                    } else {
+                        done(false, '清除缓存请求失败（HTTP ' + xhr.status + '）');
+                    }
+                }
+            };
+            xhr.onerror = function() { done(false, '清除缓存网络错误'); };
+            xhr.send();
+        } catch (e) {
+            done(false, '清除缓存出错：' + e.message);
+        }
+    };
     </script>
 </body>
 </html>

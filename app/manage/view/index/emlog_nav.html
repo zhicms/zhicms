@@ -268,12 +268,12 @@
                             </a>
                             <!-- Dropdown - User Information -->
                             <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-                                <a class="dropdown-item" href="#" onclick="ZhiCmsConfirm('确定要清除缓存吗？','是的','取消','index.php?r=manage/index/delcache','清除缓存中...')">
+                                <a class="dropdown-item" href="javascript:void(0);" onclick="zcClearCache()">
                                     <i class="fas fa-sync-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     清除缓存
                                 </a>
                                 <div class="dropdown-divider"></div>
-                                <a class="dropdown-item" href="index.php?r=manage/login/logout">
+                                <a class="dropdown-item" href="index.php?r=manage/login/logout" onclick="if(confirm('确定要退出登录吗？')) location.href='index.php?r=manage/login/logout'; return false;">
                                     <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
                                     退出登录
                                 </a>
