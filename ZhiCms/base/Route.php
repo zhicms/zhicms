@@ -56,11 +56,12 @@ class Route {
 				if( false === stripos($rule, 'http://')){
 					$rule = $_SERVER['HTTP_HOST'] . $scriptDir . '/' . $rule;
 				}
-				// 将 <key> 占位符转为命名捕获组：id 仅允许数字，其余允许字母/数字/%-等
+				// 将 <key> 占位符转为命名捕获组：商品/文章等 id 可能是好单库编码（字母数字混合，如 POG60...），
+				// 故统一允许字母/数字/%-等，避免 tb-POG60mWHOPp9x2OmFb.html 这类链接因 id 非纯数字而无法匹配、回退首页。
 				$rule = preg_replace_callback('/<([a-zA-Z0-9_]+)>/', function ($m) {
 					$name = $m[1];
-					// 用 \d / \w 避免被下方 str_ireplace 把 '-' 转义而破坏字母/数字范围
-					$pat  = ($name === 'id') ? '\d+' : '[\w%-]+';
+					// 用 \w 避免被下方 str_ireplace 把 '-' 转义而破坏字母/数字范围
+					$pat  = '[\w%-]+';
 					return '(?<' . $name . '>' . $pat . ')';
 				}, $rule);
 				$rule = '/'.str_ireplace(array('\\\\', 'http://', '-', '/', '.'), array('', '', '\-', '\/', '\.'), $rule).'/i';
@@ -178,14 +179,39 @@ class Route {
 			}
 		}
 		$baseRoute = $app.'/'.$controller.'/'.$action;
+
+		// 兜底：若 Route::parseUrl 因常量已定义而被跳过，self::$rewriteOn 会停留在类初始值 false，
+		// 导致 URL 退化成动态地址且占位符（<platform>/<id>）原样残留。此处从 Config 重新同步，
+		// 保证伪静态开关真正生效。
+		$rewriteOn = self::$rewriteOn;
+		$rewriteRule = self::$rewriteRule;
+		if (!$rewriteOn) {
+			if (class_exists('\\ZhiCms\\base\\Config')) {
+				$cfgOn = \ZhiCms\base\Config::get('REWRITE_ON');
+				$cfgRule = \ZhiCms\base\Config::get('REWRITE_RULE');
+				if ($cfgOn) {
+					$rewriteOn = $cfgOn;
+					if (!empty($cfgRule)) $rewriteRule = $cfgRule;
+				}
+			}
+		}
+
 		$paramStr = empty($params) ? '' : '&' . http_build_query($params);
-		$url = $_SERVER["SCRIPT_NAME"] . '?r=' . $baseRoute . $paramStr;
+		// 动态 URL 兜底：把路由中的 <占位符> 用参数值替换，避免伪静态未生效时
+		// 生成 index.php?r=.../platform=%3Cplatform%3E 这类畸形链接。
+		$cleanRoute = $baseRoute;
+		if (!empty($params)) {
+			foreach ($params as $k => $v) {
+				$cleanRoute = str_ireplace('<'.$k.'>', $v, $cleanRoute);
+			}
+		}
+		$url = $_SERVER["SCRIPT_NAME"] . '?r=' . $cleanRoute . $paramStr;
 			
-		if( self::$rewriteOn && !empty(self::$rewriteRule ) ) {
+		if( $rewriteOn && !empty($rewriteRule ) ) {
 			static $urlArray = array();
 			if( !isset($urlArray[$url]) ){
 				$routeBase = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=\<[a-zA-Z0-9_]+\>/i', '', $baseRoute);
-				foreach(self::$rewriteRule as $rule => $mapper){
+				foreach($rewriteRule as $rule => $mapper){
 					$mapperBase = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=\<[a-zA-Z0-9_]+\>/i', '', $mapper);
 					
 					if( $mapperBase == $routeBase ){

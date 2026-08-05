@@ -204,6 +204,9 @@ class Hdk {
      */
     public function SearchJdGoods($keyword, $back = 20, $minId = 1, $sort = '', $hasCoupon = '') {
         $host = 'http://v3.api.haodanku.com/jd_goods_search';
+        // 好单库京东接口 back 仅允许 1/2/5/10/20/30/50，超出则回退 20
+        $allowed = [1, 2, 5, 10, 20, 30, 50];
+        $back = in_array(intval($back), $allowed) ? intval($back) : 20;
         $params = [
             'apikey' => $this->apiKey,
             'keyword' => $keyword,
@@ -256,10 +259,13 @@ class Hdk {
      */
     public function SearchVipGoods($keyword, $minSize = 20, $minId = 1) {
         $host = 'http://v2.api.haodanku.com/vip_goods_search';
+        // 好单库唯品会接口实际以 back 控制每页条数，仅允许 1/2/5/10/20/50，超出则回退 20
+        $allowed = [1, 2, 5, 10, 20, 50];
+        $back = in_array(intval($minSize), $allowed) ? intval($minSize) : 20;
         $params = [
             'apikey' => $this->apiKey,
             'keyword' => $keyword,
-            'min_size' => $minSize,
+            'back' => $back,
             'min_id' => $minId,
         ];
 

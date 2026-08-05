@@ -104,6 +104,9 @@ class UnionController extends \app\base\controller\BaseController
                     if ($response['code'] == 1 && !empty($response['items'])) {
                         $items = $response['items'];
                         $total = $response['total'] ?? 0;
+                    } else {
+                        // 记录真实错误，避免误导“请先配置 API 密钥”
+                        $this->apiError = $response['message'] ?? '搜索接口未返回数据';
                     }
                 }
 
@@ -113,11 +116,9 @@ class UnionController extends \app\base\controller\BaseController
 
                 $items = array_slice($items, 0, $pageSize);
             } else {
-                // 淘宝：使用 get-goods-list 全量商品列表（返回完整字段含标题/主图），替代定时拉取
-                if ($platform !== 'taobao') {
-                    $items = [];
-                    $total = 0;
-                } else {
+                // 无关键词浏览模式
+                if ($platform === 'taobao') {
+                    // 淘宝：使用 get-goods-list 全量商品列表（返回完整字段含标题/主图），替代定时拉取
                     // sort 映射：get-goods-list API 排序值: 0=综合, 1=券后价升序, 2=券后价降序, 3=月销量降序
                     $apiSort = '0';
                     if ($sort === '5') {
@@ -141,6 +142,15 @@ class UnionController extends \app\base\controller\BaseController
                     } else {
                         // 将API错误信息传到视图，便于排查
                         $this->apiError = $response['message'] ?? 'API未返回数据';
+                    }
+                } else {
+                    // 京东/拼多多/唯品会：无关键词时按分类/综合拉取第一页商品（与前端行为一致）
+                    $response = $client->searchGoods('', $platform, $page, $pageSize, 1, $sort, $hasCoupon);
+                    if ($response['code'] == 1 && !empty($response['items'])) {
+                        $items = $response['items'];
+                        $total = $response['total'] ?? count($items);
+                    } else {
+                        $this->apiError = $response['message'] ?? '该平台暂无可浏览商品';
                     }
                 }
             }

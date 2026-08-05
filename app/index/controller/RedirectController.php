@@ -41,22 +41,49 @@ class RedirectController extends \app\base\controller\BaseController
         $id       = trim($this->arg('id', ''));
 
         $allow = array('tb', 'jd', 'pdd', 'vip');
-        if (!in_array($platform, $allow) || empty($id)) {
-            header('HTTP/1.1 400 Bad Request');
-            echo '参数错误：platform 和 id 不能为空';
-            exit;
-        }
 
-        // 以数据库真实 platform 为准，纠正模板可能传错/硬编码的平台，
-        // 确保京东/拼多多/唯品会商品跳转到对应平台而非误跳淘宝。
-        if (is_numeric($id)) {
+        // 规范兼容：taobao -> tb，其余未知值标记为空交由下方纠正
+        if ($platform === 'taobao') $platform = 'tb';
+
+        // 以数据库真实记录为准做「纠正」，但必须用 goodsId 列匹配
+        // （模板传入的 id 是各平台商品 id，如淘宝 num_iid，绝非 yun_items 自增主键 id），
+        // 否则会把正确的淘宝 num_iid 当成主键去查、张冠李戴导致平台错 + id 错。
+        // 仅当：传入 platform 非法 或 传入 id 能匹配到数据库记录时，才采纳库内值。
+        $dbPlatform = '';
+        $dbGoodsId  = '';
+        if (!empty($id)) {
             try {
-                $item = obj('api/ApiData')->dataSelect('yun_items', array('id' => intval($id)));
-                if (!empty($item) && !empty($item['platform']) && in_array($item['platform'], $allow)) {
-                    $platform = $item['platform'];
+                $item = obj('api/ApiData')->dataSelect('yun_items', array('goodsId' => $id));
+                if (!empty($item) && !empty($item['platform'])) {
+                    $dbPlatform = strtolower($item['platform']);
+                    if ($dbPlatform === 'taobao') $dbPlatform = 'tb';
+                    $dbGoodsId  = $item['goodsId'];
+                    if (!in_array($dbPlatform, $allow)) $dbPlatform = '';
                 }
             } catch (\Exception $e) {
             }
+        }
+
+        // 1) 传入 platform 合法 -> 以传入为准（模板已正确标记平台）
+        // 2) 传入 platform 非法但有库记录 -> 用库内正确平台
+        if (!in_array($platform, $allow)) {
+            if (!empty($dbPlatform)) {
+                $platform = $dbPlatform;
+            } else {
+                header('HTTP/1.1 400 Bad Request');
+                echo '参数错误：无法识别 platform';
+                exit;
+            }
+        }
+        // 若数据库能匹配到该商品，用库内 goodsId 兜底（保证 id 正确）
+        if (!empty($dbGoodsId)) {
+            $id = $dbGoodsId;
+        }
+
+        if (empty($id)) {
+            header('HTTP/1.1 400 Bad Request');
+            echo '参数错误：id 不能为空';
+            exit;
         }
 
         $cacheKey = 'link_redirect_' . $platform . '_' . md5($id);
@@ -82,12 +109,19 @@ class RedirectController extends \app\base\controller\BaseController
                 // 淘宝走大淘客/好单库高佣转链
                 $url = $this->resolveTbLink($tjk, $id);
                 if (!empty($url)) return $url;
-            } else {
-                // 京东/拼多多/唯品会：当前 Tjk 体系（get-privilege-link / ratesurl）
-                // 仅支持淘宝，误用会转错链接。这些平台暂未接入各自联盟转链，
-                // 直接回退到对应平台正确的商品落地页，保证「跳转对应平台正确」。
-                return $this->buildFallbackUrl($platform, $id);
-            }
+                // 转链失败：若 id 不是正常淘宝 num_iid（纯数字，可能误标平台或旧链接残留），
+                // 回退到淘宝搜索而非生成无效 tmall 商品页（如旧 AI 卡片把京东/拼多多 id 标成 tb）。
+                if (!ctype_digit((string) $id)) {
+                    return 'https://s.taobao.com/search?q=' . urlencode($id);
+                }
+        } else {
+            // 京东/拼多多/唯品会：好单库 RatesUrl 接口支持多平台转链（按 itemid 自动识别），
+            // 调用 getPrivilegeLink 走 RatesUrl 生成带推广位的佣金链接。
+            // 仅在转链失败时才回退到平台正确商品落地页，保证「跳转对应平台正确」。
+            $url = $this->resolveOtherLink($tjk, $platform, $id);
+            if (!empty($url)) return $url;
+            return $this->buildFallbackUrl($platform, $id);
+        }
             return '';
         } catch (\Exception $e) {
             return '';
@@ -117,6 +151,39 @@ class RedirectController extends \app\base\controller\BaseController
             }
         }
         return '';
+    }
+
+    /**
+     * 京东/拼多多/唯品会转链：好单库 RatesUrl 接口（getPrivilegeLink 内部调用）
+     * 支持多平台，按 itemid 自动识别平台，返回带推广位的佣金链接（couponurl）。
+     */
+    private function resolveOtherLink($tjk, $platform, $id)
+    {
+        $map = array(
+            'jd'  => 'jd',
+            'pdd' => 'pdd',
+            'vip' => 'vip',
+        );
+        $p = isset($map[$platform]) ? $map[$platform] : $platform;
+        // 转链结果按 platform+id 缓存，避免每次点击都打好单库 RatesUrl（rate limit + 慢）
+        $cacheKey = 'jump_ratesurl_' . $p . '_' . $id;
+        $cached = tcache($cacheKey, function () use ($tjk, $p, $id) {
+            $result = $tjk->getPrivilegeLink($id, '', $p);
+            if (isset($result['code']) && $result['code'] == 1) {
+                $data = $result['data'] ?? array();
+                // 好单库 RatesUrl 返回的佣金链接字段
+                $url = $data['couponLink']
+                    ?? $data['couponurl']
+                    ?? $data['shortLink']
+                    ?? $data['url']
+                    ?? '';
+                if (!empty($url) && preg_match('#^https?://#i', $url)) {
+                    return $url;
+                }
+            }
+            return '';
+        }, 3600);
+        return $cached;
     }
 
     private function buildFallbackUrl($platform, $id)

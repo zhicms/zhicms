@@ -79,7 +79,7 @@ class Tjk {
                 $dtkRes = $this->dtk->SearchGoods($keyword, $pageNum, $pageSize);
                 if ($dtkRes['code'] == 1 && !empty($dtkRes['items'])) {
                     foreach ($dtkRes['items'] as $it) {
-                        $it['item_from'] = 'taobao';
+                        $it['item_from'] = 'tb';
                         $merged['items'][] = $it;
                     }
                     $merged['total'] += intval($dtkRes['total'] ?? 0);
@@ -90,7 +90,7 @@ class Tjk {
                 $hdkRes = $this->hdk->SearchGoods($keyword, $pageSize, $minId);
                 if ($hdkRes['code'] == 1 && !empty($hdkRes['items'])) {
                     foreach ($hdkRes['items'] as $it) {
-                        $it['item_from'] = 'taobao';
+                        $it['item_from'] = 'tb';
                         $merged['items'][] = $it;
                     }
                     $merged['total'] += intval($hdkRes['total'] ?? 0);
@@ -221,33 +221,35 @@ class Tjk {
      *                               避免混入 pdd/vip 影响详情页跳转）
      */
     public function searchAllPlatforms($keyword, $pageNum = 1, $pageSize = 5, $platforms = null) {
+        // 比价路线：以淘宝联盟库为主，优先返回淘宝结果；淘宝不足时用京东/拼多多/唯品会补充。
         $allItems = [];
+        $byPlat   = ['tb' => [], 'jd' => [], 'pdd' => [], 'vip' => []];
 
-        $wantTaobao = $this->dtk && (is_null($platforms) || in_array('taobao', $platforms));
-        $wantHdk    = $this->hdk && (is_null($platforms) || !empty(array_intersect(['jd', 'pdd', 'vip'], (array) $platforms)));
-        $wantJd     = $this->hdk && (is_null($platforms) || in_array('jd', $platforms));
-        $wantPdd    = $this->hdk && (is_null($platforms) || in_array('pdd', $platforms));
-        $wantVip    = $this->hdk && (is_null($platforms) || in_array('vip', $platforms));
+        $wantTb  = $this->dtk && (is_null($platforms) || in_array('tb', (array) $platforms) || in_array('taobao', (array) $platforms));
+        $wantJd  = $this->hdk && (is_null($platforms) || in_array('jd', (array) $platforms));
+        $wantPdd = $this->hdk && (is_null($platforms) || in_array('pdd', (array) $platforms));
+        $wantVip = $this->hdk && (is_null($platforms) || in_array('vip', (array) $platforms));
+        $wantHdk = $this->hdk && ($wantJd || $wantPdd || $wantVip);
 
-        // 1) 淘宝/天猫：大淘客
-        if ($wantTaobao) {
+        // 1) 淘宝/天猫：大淘客（优先，优先填满目标数量）
+        if ($wantTb) {
             $result = $this->dtk->SearchGoods($keyword, $pageNum, $pageSize);
             if ($result['code'] == 1 && !empty($result['items'])) {
                 foreach ($result['items'] as $item) {
-                    $item['item_from'] = 'taobao';
-                    $allItems[] = $item;
+                    $item['item_from'] = 'tb';
+                    $byPlat['tb'][] = $item;
                 }
             }
         }
 
-        // 2) 京东 / 拼多多 / 唯品会：好单库（每个平台前 $pageSize 条）
+        // 2) 京东 / 拼多多 / 唯品会：好单库（作为淘宝比价的补充）
         if ($wantHdk) {
             if ($wantJd) {
                 $jd = $this->hdk->SearchJdGoods($keyword, $pageSize, 1);
                 if ($jd['code'] == 1 && !empty($jd['items'])) {
                     foreach ($jd['items'] as $item) {
                         $item['item_from'] = 'jd';
-                        $allItems[] = $item;
+                        $byPlat['jd'][] = $item;
                     }
                 }
             }
@@ -256,7 +258,7 @@ class Tjk {
                 if ($pdd['code'] == 1 && !empty($pdd['items'])) {
                     foreach ($pdd['items'] as $item) {
                         $item['item_from'] = 'pdd';
-                        $allItems[] = $item;
+                        $byPlat['pdd'][] = $item;
                     }
                 }
             }
@@ -265,7 +267,7 @@ class Tjk {
                 if ($vip['code'] == 1 && !empty($vip['items'])) {
                     foreach ($vip['items'] as $item) {
                         $item['item_from'] = 'vip';
-                        $allItems[] = $item;
+                        $byPlat['vip'][] = $item;
                     }
                 }
             }
@@ -273,27 +275,30 @@ class Tjk {
 
         // 去重（同平台同商品ID视为重复；无ID则用标题）
         $seen = [];
-        $dedup = [];
-        foreach ($allItems as $it) {
-            $id  = $it['goodsId'] ?? '';
-            $key = ($it['item_from'] ?? '') . ':' . ($id !== '' ? $id : (mb_substr($it['title'] ?? '', 0, 20)));
-            if (isset($seen[$key])) {
-                continue;
+        foreach (['tb', 'jd', 'pdd', 'vip'] as $p) {
+            foreach ($byPlat[$p] as $it) {
+                $id  = $it['goodsId'] ?? '';
+                $key = $p . ':' . ($id !== '' ? $id : (mb_substr($it['title'] ?? '', 0, 20)));
+                if (isset($seen[$key])) continue;
+                $seen[$key] = 1;
+                $allItems[] = $it;
             }
-            $seen[$key] = 1;
-            $dedup[] = $it;
         }
 
-        // 按销量降序
-        usort($dedup, function($a, $b) {
+        // 排序：淘宝优先（比价主推），其余按京东/拼多多/唯品会顺序；同平台按销量降序
+        $platOrder = ['tb' => 0, 'jd' => 1, 'pdd' => 2, 'vip' => 3];
+        usort($allItems, function($a, $b) use ($platOrder) {
+            $pa = $platOrder[$a['item_from'] ?? 'vip'] ?? 9;
+            $pb = $platOrder[$b['item_from'] ?? 'vip'] ?? 9;
+            if ($pa !== $pb) return $pa - $pb;
             return ($b['monthSales'] ?? 0) - ($a['monthSales'] ?? 0);
         });
 
         return [
             'code' => 1,
             'message' => 'success',
-            'items' => $dedup,
-            'total' => count($dedup),
+            'items' => $allItems,
+            'total' => count($allItems),
         ];
     }
     
@@ -464,7 +469,15 @@ class Tjk {
             $out[$f] = is_numeric($out[$f]) ? intval($out[$f]) : 0;
         }
         // 来源标记（优先用原始 item_from，否则用传入兜底值）
-        $out['item_from'] = $item['item_from'] ?? $itemFrom ?? '';
+        $src = $item['item_from'] ?? $itemFrom ?? '';
+        // 统一平台编码：淘宝=tb，京东=jd，拼多多=pdd，唯品会=vip（全链路一致，避免 taobao/tb 混用）
+        $srcMap = array(
+            'taobao' => 'tb', 'tb' => 'tb', 'dtk' => 'tb',
+            'jd' => 'jd', 'j d' => 'jd',
+            'pdd' => 'pdd', 'pinduoduo' => 'pdd',
+            'vip' => 'vip', 'vipshop' => 'vip', 'wph' => 'vip',
+        );
+        $out['item_from'] = $srcMap[strtolower(trim($src))] ?? strtolower(trim($src));
         return $out;
     }
 }

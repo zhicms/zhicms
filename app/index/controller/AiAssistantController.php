@@ -952,21 +952,42 @@ PROMPT;
             return $this->handleAiChat($originalMessage, $this->loadHistory());
         }
 
+        // 意图澄清：用户点了引导按钮后发送「产品本身 / 配件周边」，剥离澄清词避免循环引导
+        $explicit = '';
+        $rawMsg   = $originalMessage ?: $keyword;
+        if (preg_match('/(本身|产品本身|手机本身|原装)/u', $rawMsg)) {
+            $explicit = 'main';
+        } elseif (preg_match('/(配件|周边|附件|耗材)/u', $rawMsg)) {
+            $explicit = 'accessory';
+        }
+        // 剥离澄清词得到干净搜索词（如「iphone 14 产品本身」→「iphone 14」）
+        $searchKw = preg_replace('/(产品本身|本身|配件周边|配件|周边|附件|耗材|手机本身|原装)/u', '', $keyword);
+        $searchKw = trim(preg_replace('/\s+/u', ' ', $searchKw));
+        if ($searchKw === '') {
+            $searchKw = $keyword;
+        }
+        // 配件模式：在搜索词后追加「配件」，让联盟库更精准返回周边
+        if ($explicit === 'accessory') {
+            $searchKw2 = $searchKw . ' 配件';
+        } else {
+            $searchKw2 = $searchKw;
+        }
+
         // 1. 搜索站内 yun_article 表
-        $escaped = addslashes($keyword);
+        $escaped = addslashes($searchKw2);
         $where = ["`title` LIKE '%{$escaped}%'"];
         $articles = obj("api/ApiData")->dataSelect("yun_article", $where, "`id` DESC LIMIT 0, 5");
 
         if (!empty($articles)) {
-            return $this->formatArticleResults($articles, $keyword);
+            return $this->formatArticleResults($articles, $searchKw2);
         }
 
         // 2. 站内无结果，尝试大淘客全网搜索
         try {
             $tjk = new \ZhiCms\ext\Tjk();
-            $tjkResult = $tjk->searchAllPlatforms($keyword, 1, 5);
+            $tjkResult = $tjk->searchAllPlatforms($searchKw2, 1, 5);
             if ($tjkResult['code'] == 1 && !empty($tjkResult['items'])) {
-                return $this->formatTjkResults($tjkResult['items'], $keyword);
+                return $this->formatTjkResults($tjkResult['items'], $searchKw2, $explicit);
             }
         } catch (\Exception $e) {
             // 大淘客不可用时静默 fallback
@@ -1021,20 +1042,36 @@ PROMPT;
     {
         $title   = htmlspecialchars($item['title'] ?? $item['dtitle'] ?? '', ENT_QUOTES, 'UTF-8');
         $goodsId = $item['goodsId'] ?? '';
-        $link    = url($route = 'index/redirect/jump/platform=<platform>/id=<id>', $params = ['platform' => 'tb', 'id' => $goodsId]);
+        $from    = isset($item['item_from']) ? strtolower($item['item_from']) : '';
+        if ($from === 'taobao' || $from === 'dtk') $from = 'tb';
+        if (!in_array($from, ['tb', 'jd', 'pdd', 'vip'])) $from = 'tb';
+
+        // 淘宝/大淘客：优先使用商品自带的 couponLink（已带推广位佣金），无则回退统一跳转入口。
+        // 京东/拼多多/唯品会：搜索接口返回的 couponLink 多为无佣金落地页（如唯品会 itemurl），
+        // 必须统一走 index/redirect/jump 入口，由 RedirectController 调好单库 RatesUrl 二次转链，
+        // 生成带推广位的佣金链接，否则站长拿不到返利。
+        if ($from === 'tb') {
+            $couponLink = isset($item['couponLink']) ? trim($item['couponLink']) : '';
+            if (!empty($couponLink) && preg_match('#^https?://#i', $couponLink)) {
+                $link = $couponLink;
+            } else {
+                $link = url('index/redirect/jump', ['platform' => $from, 'id' => $goodsId]);
+            }
+        } else {
+            // jd / pdd / vip：统一走转链入口，保证带佣金
+            $link = url('index/redirect/jump', ['platform' => $from, 'id' => $goodsId]);
+        }
         $pic     = isset($item['mainPic']) ? htmlspecialchars($item['mainPic']) : '';
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;
         $sales   = isset($item['monthSales']) ? intval($item['monthSales']) : 0;
-        $from    = isset($item['item_from']) ? $item['item_from'] : '';
 
         $fromLabel = [
-            'taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会',
-            'dtk' => '淘宝', 'hdk' => '京东',
+            'tb' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会',
         ];
         $fromText = isset($fromLabel[$from]) ? '【' . $fromLabel[$from] . '】' : '';
 
-        $html = '<a href="' . $link . '" target="_blank" class="ai-product-item">';
+        $html = '<a href="' . $link . '" target="_blank" rel="nofollow" class="ai-product-item">';
         if ($pic) {
             $html .= '<img src="' . $pic . '" class="ai-product-pic" alt="' . $title . '">';
         }
@@ -1052,19 +1089,144 @@ PROMPT;
     }
 
     /**
-     * 格式化大淘客全网搜索结果
+     * 配件/周边词表（用于把"产品本身"与"配件周边"区分开，避免搜 iphone 14 先出手机壳）
      */
-    private function formatTjkResults($items, $keyword)
+    private static $ACCESSORY_WORDS = [
+        // 3C 数码配件
+        '手机壳', '保护壳', '壳', '保护套', '手机套', '套', '钢化膜', '膜', '贴膜', '保护膜',
+        '数据线', '充电线', '充电线', '电源线', '充电器', '充电头', '充电宝', '电源适配器',
+        '支架', '底座', '支撑架', '指环', '挂绳', '镜头膜', '防尘塞', '转接头', '转换器',
+        '收纳包', '硬壳', '软壳', '透明壳', '硅胶壳', '皮套', '保护壳',
+        // 服装/配饰
+        '项链', '耳环', '耳钉', '手链', '戒指', '腰带', '皮带', '围巾', '帽子', '袜', '鞋垫', '鞋带',
+        '打底', '内搭', '搭配', '配饰', '胸针', '发饰', '发圈', '墨镜', '包中包', '钥匙扣',
+        // 家居/通用
+        '收纳', '防尘', '保护罩', '桌布', '桌垫', '防尘盖', '盖布', '窗帘', '挂钩', '替换装',
+        '滤芯', '耗材', '配件', '周边', '附件', '配套', '备件', '易损件',
+    ];
+
+    /**
+     * 判断是否为"泛品类词"（如"手机/耳机/连衣裙"），这类不需要"产品本身 vs 配件"的澄清引导
+     */
+    private function isGenericCategory($kw)
+    {
+        $generic = [
+            '手机', '耳机', '电脑', '笔记本', '平板', '手表', '鞋子', '鞋', '衣服', '裙子',
+            '裤子', '外套', '包', '包包', '相机', '电视', '空调', '冰箱', '洗衣机', '被子',
+            '枕头', '床单', '文具', '玩具', '水杯', '杯', '锅', '表', '键盘', '鼠标', '充电宝',
+        ];
+        $k = mb_strtolower(trim($kw));
+        foreach ($generic as $g) {
+            if ($k === $g || $k === mb_strtolower($g)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * 判断用户是否搜的是"具体型号/明确单品"（iphone 14、华为mate60、某款连衣裙），需要引导澄清
+     */
+    private function looksLikeSpecificModel($kw)
+    {
+        if ($this->isGenericCategory($kw)) return false;
+        // 含数字型号（14 / 16 / pro / max / ultra ...）
+        if (preg_match('/[\x{4e00}-\x{9fa5}]*\d{1,3}(\s?(pro|plus|max|ultra|mini|air|se))?/i', $kw)) return true;
+        // 含明确品牌+系列信号
+        if (preg_match('/(iphone|华为|huawei|小米|xiaomi|荣耀|honor|oppo|vivo|samsung|三星|mate|ipad|macbook|switch|ps5|airpods|苹果|apple|联想|lenovo|戴尔|dell|佳能|尼康|索尼|sony)/i', $kw)) return true;
+        // 关键词较长（>=4 字且不是单纯品类），倾向具体需求
+        if (mb_strlen(preg_replace('/\s+/u', '', $kw)) >= 4) return true;
+        return false;
+    }
+
+    /**
+     * 将商品列表分为"主产品"与"配件/周边"
+     */
+    private function classifyProducts($items, $keyword)
+    {
+        $main = [];
+        $accessory = [];
+        // 核心词：去掉空白后的关键词，用于判断"精确命中产品本身"
+        $core = preg_replace('/\s+/u', '', $keyword);
+        foreach ($items as $item) {
+            $title = mb_strtolower(strip_tags($item['title'] ?? $item['dtitle'] ?? ''));
+            $isAcc = false;
+            foreach (self::$ACCESSORY_WORDS as $w) {
+                if (mb_strpos($title, mb_strtolower($w)) !== false) {
+                    $isAcc = true;
+                    break;
+                }
+            }
+            // 含配件词 → 配件；否则若标题精确含核心词（或核心词去掉末位型号仍命中）→ 主产品；其余保守归配件
+            if ($isAcc) {
+                $accessory[] = $item;
+            } else {
+                $hitCore = ($core !== '' && mb_strpos($title, mb_strtolower($core)) !== false);
+                if ($hitCore) {
+                    $main[] = $item;
+                } else {
+                    // 标题不含配件词但也不含核心词：偏向配件/周边（避免淹没主产品）
+                    $accessory[] = $item;
+                }
+            }
+        }
+        return ['main' => $main, 'accessory' => $accessory];
+    }
+
+    /**
+     * 生成"产品本身 vs 配件"的澄清引导区块
+     */
+    private function renderDisambiguation($keyword)
+    {
+        $kw = htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8');
+        $msgMain = htmlspecialchars($keyword . ' 产品本身', ENT_QUOTES, 'UTF-8');
+        $msgAcc  = htmlspecialchars($keyword . ' 配件周边', ENT_QUOTES, 'UTF-8');
+        $html  = '<div class="ai-guide">';
+        $html .= '<div class="ai-guide-tip">🤔 您搜的“<b>' . $kw . '</b>”，结果里大多是配件/周边，是想看<b>产品本身</b>还是<b>配件</b>呢？</div>';
+        $html .= '<div class="ai-guide-btns">';
+        $html .= '<button class="ai-guide-btn" data-msg="' . $msgMain . '">🛍️ 看 ' . $kw . ' 本身</button>';
+        $html .= '<button class="ai-guide-btn" data-msg="' . $msgAcc . '">🔌 看 ' . $kw . ' 配件/周边</button>';
+        $html .= '</div>';
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * 格式化大淘客全网搜索结果
+     * @param string $explicit 已明确的意图：'' / 'main'（产品本身）/ 'accessory'（配件周边）
+     */
+    private function formatTjkResults($items, $keyword, $explicit = '')
     {
         $html = '<div class="ai-product-header">🔍 为您找到关于 "<b>' . htmlspecialchars($keyword) . '</b>" 的全网优惠：</div>';
-        $html .= '<div class="ai-product-list">';
 
+        // 智能引导：若返回结果多为配件/周边、而用户搜的是具体型号/单品，且尚未明确意图，先澄清
+        $cls = $this->classifyProducts($items, $keyword);
+        $needGuide = empty($explicit)
+            && $this->looksLikeSpecificModel($keyword)
+            && count($cls['main']) < 2
+            && count($cls['accessory']) >= 1;
+
+        if ($needGuide) {
+            $html .= $this->renderDisambiguation($keyword);
+            $html .= '<div class="ai-product-sub">📦 先为您展示相关结果（含部分配件）：</div>';
+        } elseif ($explicit === 'main' && !empty($cls['main'])) {
+            // 已选「产品本身」：优先展示主产品，配件折叠标注
+            $html .= '<div class="ai-product-sub">🛍️ 已为您优先展示「产品本身」：</div>';
+            $items = array_merge($cls['main'], $cls['accessory']);
+        } elseif ($explicit === 'accessory' && !empty($cls['accessory'])) {
+            $html .= '<div class="ai-product-sub">🔌 已为您优先展示「配件/周边」：</div>';
+            $items = array_merge($cls['accessory'], $cls['main']);
+        }
+
+        $html .= '<div class="ai-product-list">';
         foreach ($items as $item) {
             $html .= $this->renderTjkItem($item);
         }
-
         $html .= '</div>';
-        $html .= '<div class="ai-product-footer">💡 以上商品来自全网比价，点击即可领券购买。还没找到心仪的？告诉我更多需求吧~</div>';
+
+        if ($needGuide) {
+            $html .= '<div class="ai-product-footer">👆 点击上方按钮可精准切换「产品本身」或「配件周边」。也可直接告诉我更具体的需求~</div>';
+        } else {
+            $html .= '<div class="ai-product-footer">💡 以上按淘宝比价优先排序（已含京东/拼多多/唯品会补充），点击卡片即可领券购买。没找到满意的？告诉我更多需求，我帮您再找~</div>';
+        }
         return $html;
     }
 

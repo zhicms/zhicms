@@ -318,7 +318,7 @@ class GoodsController extends ApiBaseController {
 
         $goodsId = $it['goodsId'] ?? '';
         $detailUrl = $goodsId !== ''
-            ? $this->siteUrl() . 'index.php?r=index/view/detail/id=' . urlencode($goodsId) . '/type=' . urlencode($itemFrom ?: 'taobao')
+            ? $this->siteUrl() . 'index.php?r=index/view/detail/id=' . urlencode($goodsId) . '/type=' . urlencode($itemFrom ?: 'tb')
             : '';
 
         return array(

@@ -75,7 +75,8 @@
         $detailId = !empty($item['id']) ? $item['id'] : (!empty($item['ID']) ? $item['ID'] : 0);
         $itemTitle = !empty($item['title']) ? $item['title'] : (!empty($item['goods_name']) ? $item['goods_name'] : (!empty($item['name']) ? $item['name'] : '品牌商品'));
         $goodsId = !empty($item['goodsId']) ? $item['goodsId'] : (!empty($item['goods_id']) ? $item['goods_id'] : $detailId);
-        $itemFrom = !empty($item['item_from']) ? $item['item_from'] : 'taobao';
+        $itemFrom = !empty($item['item_from']) ? $item['item_from'] : 'tb';
+        if ($itemFrom == 'taobao') $itemFrom = 'tb';
         $detailUrl = url('index/view/detail', ['id' => $goodsId, 'type' => $itemFrom]);
         $couponVal = !empty($item['couponPrice']) ? $item['couponPrice'] : (!empty($item['coupon_price']) ? $item['coupon_price'] : (!empty($item['coupon']) ? $item['coupon'] : ''));
         $actualPrice = !empty($item['actualPrice']) ? $item['actualPrice'] : (!empty($item['goodsVipPrice']) ? $item['goodsVipPrice'] : (!empty($item['price']) ? $item['price'] : (!empty($item['unit_price']) ? $item['unit_price'] : (!empty($item['now_price']) ? $item['now_price'] : ''))));

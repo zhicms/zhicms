@@ -22,14 +22,14 @@ class ViewController extends \app\base\controller\BaseController
     	public function detail(){
         $goodsId=$this->arg('id');
         $type=$this->arg('type');
-        $valid=array('taobao','jd','pdd','vip','tb');
+        $valid=array('tb','jd','pdd','vip','taobao');
         $platform = '';
-        
+
         if($type && in_array($type,$valid)){
             $platform = $type;
-            if($platform == 'tb') $platform = 'taobao';
+            if($platform == 'taobao') $platform = 'tb';
         } else {
-            $platform = 'taobao';
+            $platform = 'tb';
         }
         
         $item = null;
