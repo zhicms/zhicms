@@ -549,11 +549,33 @@ class FindController extends \app\base\controller\BaseController
     		$this->display();
 			exit;
 		}else{
-			// 清理可能的编辑器额外字段
-			unset($_POST['editor-md-container-html-code']);
-			unset($_POST['editor-md-container-article-html-code']);
- 
+    		// 清理可能的编辑器额外字段
+    		unset($_POST['editor-md-container-html-code']);
+    		unset($_POST['editor-md-container-article-html-code']);
+
     		 
+    		// TP 风格表单校验（validator 借鉴 think\Validate 设计，零依赖可复用）
+    		$validator = \app\common\Validator::make(
+    			array(
+    				'title' => 'require|max:120',
+    				'navid' => 'number',
+    				'cid'   => 'number',
+    				'sort'  => 'integer',
+    				'hits'  => 'integer',
+    			),
+    			array(
+    				'title.require' => '文章标题不能为空',
+    				'title.max'     => '文章标题不能超过120个字符',
+    				'navid.number'  => '分类ID必须为数字',
+    				'cid.number'    => '栏目ID必须为数字',
+    			),
+    			array('title' => '标题', 'navid' => '分类', 'cid' => '栏目')
+    		);
+    		if (!$validator->check($_POST)) {
+    			$this->redirect(url('manage/find/addarticle') . '?error=' . urlencode($validator->getError()));
+    			return;
+    		}
+
     		$goodsId=$this->arg("goodsid");
     		$title=$this->arg("title");
     		$cid=$this->arg("cid");
@@ -561,7 +583,11 @@ class FindController extends \app\base\controller\BaseController
     		$pic=$this->arg("pic");
     		$keywords=$this->arg("keywords");
     		$dec=$this->arg("dec");
-    		$content=$this->arg("body");
+    		// 富文本正文：arg() 会对 & 做 htmlspecialchars，导致编辑器产生的 &nbsp; 变成 &amp;nbsp;
+    		// 前台直接输出后浏览器会原样显示 "&nbsp;"。这里先 decode 还原合法 HTML 实体，
+    		// 再用白名单 strip_tags 过滤危险标签（在解码后的真实 HTML 上过滤才有效）。
+    		$allowedTags = '<p><br><a><img><strong><b><em><i><u><strike><sub><sup><ul><ol><li><blockquote><pre><code><h1><h2><h3><h4><h5><h6><hr><table><thead><tbody><tr><td><th><span><div><font><center><figure><figcaption>';
+    		$content = strip_tags(htmlspecialchars_decode($this->arg("body"), ENT_QUOTES), $allowedTags);
     		$status=$this->arg("status", 0);
     		$author=$this->arg("author", '');
     		$laiyuan=$this->arg("laiyuan", '');
@@ -683,13 +709,35 @@ class FindController extends \app\base\controller\BaseController
 			unset($_POST['editor-md-container-article-html-code']);
 
 			 $id=intval($this->arg("id"));
+    		// TP 风格表单校验
+    		$validator = \app\common\Validator::make(
+    			array(
+    				'title' => 'require|max:120',
+    				'navid' => 'number',
+    				'cid'   => 'number',
+    				'id'    => 'require|number',
+    			),
+    			array(
+    				'title.require' => '文章标题不能为空',
+    				'id.require'    => '文章ID缺失',
+    				'navid.number'  => '分类ID必须为数字',
+    				'cid.number'    => '栏目ID必须为数字',
+    			),
+    			array('title' => '标题', 'navid' => '分类', 'cid' => '栏目', 'id' => 'ID')
+    		);
+    		if (!$validator->check($_POST)) {
+    			$this->redirect(url('manage/find/editorarticle', array('id' => $id)) . '?error=' . urlencode($validator->getError()));
+    			return;
+    		}
     		$title=$this->arg("title");
     		$pic=$this->arg("pic");
     		$cid=$this->arg("cid");
     		$navid=intval($this->arg("navid"));
     		$keywords=$this->arg("keywords");
     		$dec=$this->arg("dec");
-    		$content=$this->arg("body");
+    		// 富文本正文：同 addArticle，先还原 htmlspecialchars 再白名单过滤，避免 &amp;nbsp; 字面显示
+    		$allowedTags = '<p><br><a><img><strong><b><em><i><u><strike><sub><sup><ul><ol><li><blockquote><pre><code><h1><h2><h3><h4><h5><h6><hr><table><thead><tbody><tr><td><th><span><div><font><center><figure><figcaption>';
+    		$content = strip_tags(htmlspecialchars_decode($this->arg("body"), ENT_QUOTES), $allowedTags);
     		$status=$this->arg("status", 0);
     		$author=$this->arg("author", '');
     		$laiyuan=$this->arg("laiyuan", '');
@@ -766,7 +814,8 @@ class FindController extends \app\base\controller\BaseController
 				exit(json_encode(array("info" => "已批量取消发布 {$count} 篇文章", "status" => "y")));
 
 			case 'delete':
-				obj('api/ApiData')->table('yun_article', true)->where($where)->delete();
+				$_m = obj('api/ApiData');
+				$_m->table($_m->realTable('yun_article'), true)->where($where)->delete();
 				exit(json_encode(array("info" => "已批量删除 {$count} 篇文章", "status" => "y")));
 
 			default:

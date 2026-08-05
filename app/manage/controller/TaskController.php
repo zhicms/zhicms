@@ -217,6 +217,7 @@ class TaskController extends \app\base\controller\BaseController
     public function runNow(){
         // 诊断/运行日志（写入项目 runtime，目录必然存在）
         $trace = function($msg) {
+            if (!getenv('ZHI_DEBUG')) return;
             @file_put_contents(dirname(__DIR__, 3) . '/runtime/runnow_trace.log',
                 date('Y-m-d H:i:s') . ' | ' . $msg . "\n", FILE_APPEND);
         };

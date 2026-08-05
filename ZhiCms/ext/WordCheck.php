@@ -111,7 +111,7 @@ class WordCheck {
 
     public static function delWord($id){
         try {
-            obj('api/ApiData')->executeQuery("DELETE FROM `yun_sensitive_word` WHERE `id` = " . (int)$id);
+            obj('api/ApiData')->executeQuery("DELETE FROM `" . obj('api/ApiData')->realTable('yun_sensitive_word') . "` WHERE `id` = " . (int)$id);
             return true;
         } catch (\Throwable $e) { return false; }
     }

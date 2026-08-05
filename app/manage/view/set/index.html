@@ -525,6 +525,15 @@
                                 <small class="form-text text-muted">m 端首页（/m.html）展示的页面风格，对应 page 目录下的页面文件</small>
                             </div>
 
+                            <!-- M 端自动跳转开关 -->
+                            <div class="form-group">
+                                <label for="mobile_redirect" class="font-weight-bold">M 端自动跳转</label>
+                                <div class="custom-control custom-switch mt-2">
+                                    <input type="checkbox" class="custom-control-input" id="mobile_redirect" name="mobile_redirect" value="1" <?php echo !empty($ret['mobile_redirect']) ? 'checked' : ''; ?>>
+                                    <label class="custom-control-label" for="mobile_redirect">开启后，手机访问自动跳转到 M 端（/m.html），电脑访问保持电脑版；关闭则全端自适应（默认关闭）</label>
+                                </div>
+                            </div>
+
                             <div class="form-group border-top pt-3 mt-4">
                                 <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('mobile')">
                                     <i class="fas fa-save"></i> 保存设置

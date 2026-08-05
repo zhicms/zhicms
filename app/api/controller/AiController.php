@@ -17,6 +17,13 @@ class AiController extends ApiBaseController {
 
         $ai = $this->loadAiConfig();
 
+        // 先在解析请求体前取出 messages，后续回落分支也会用到
+        $payload = $this->body();
+        if (empty($payload)) {
+            $payload = $this->raw();
+        }
+        $reqMessages = $payload['messages'] ?? array();
+
         // 令牌校验
         $token = $ai['token'] ?? '';
         if ($token !== '') {
@@ -25,89 +32,29 @@ class AiController extends ApiBaseController {
             }
         }
 
-        if (empty($ai['enabled']) || empty($ai['api_key'])) {
-            // 小程序未单独配置时，回落到「AI 开放平台」当前对话模型，实现统一管理
-            $chatInfo = \app\common\AiService::getChatModelInfo();
-            if (empty($chatInfo) || empty($chatInfo['api_key'])) {
-                $this->json(array('error' => array('message' => 'AI 服务未配置或未开启，请在「AI 开放平台 → 模型管理」中添加并启用对话模型')), 503);
-            }
-
-            $protocol = isset($chatInfo['protocol']) ? strtolower($chatInfo['protocol']) : 'openai';
-            // OpenAI / Azure 兼容：直接使用原 Bearer 转发，返回原生 OpenAI 格式
-            if ($protocol === 'openai' || $protocol === 'azure') {
-                $ai['api_url'] = $chatInfo['api_url'];
-                $ai['api_key'] = $chatInfo['api_key'];
-                $ai['model']   = $chatInfo['model'];
-                $ai['temperature'] = 0.7;
-                $ai['max_tokens']  = 1024;
-            } else {
-                // 其他协议（Gemini/Claude/文心/讯飞）：用 AiService 统一对话，再包装为 OpenAI 格式返回
-                $reply = \app\common\AiService::chat($payload['messages'] ?? array(), '你是一个有用的助手', false);
-                if (empty($reply) || strpos($reply, '大模型') === 0 || strpos($reply, 'AI 模型') === 0 || strpos($reply, 'CURL错误') === 0 || strpos($reply, 'HTTP错误') === 0) {
-                    $this->json(array('error' => array('message' => 'AI 对话失败：' . $reply)), 502);
-                }
-                $this->json(array(
-                    'choices' => array(array('message' => array('role' => 'assistant', 'content' => $reply), 'index' => 0, 'finish_reason' => 'stop')),
-                    'usage'   => new \stdClass(),
-                ), 200);
-            }
+        // 统一先尝试用 AiService 处理（支持 openai / 文心 / 讯飞 / 智谱 / Gemini / Claude 等所有协议）
+        // AiService::chat 内部已按模型配置选择协议并做 SSL 校验与错误归一化。
+        if (!empty($ai['enabled']) && !empty($ai['api_key'])) {
+            // 小程序单独配置：直接把 messages 透传给 AiService 转发（其配置即小程序侧模型）
+            $reply = \app\common\AiService::chat(
+                $this->messagesToPrompt($reqMessages),
+                $ai['system_prompt'] ?? '你是一个有用的助手',
+                false
+            );
+            $this->outputOpenAiCompat($reply);
         }
 
-        // 解析请求体
-        $payload = $this->body();
-        if (empty($payload)) {
-            $payload = $this->raw();
+        // 小程序未单独配置时，回落到「AI 开放平台」当前对话模型，实现统一管理
+        $chatInfo = \app\common\AiService::getChatModelInfo();
+        if (empty($chatInfo) || empty($chatInfo['api_key'])) {
+            $this->json(array('error' => array('message' => 'AI 服务未配置或未开启，请在「AI 开放平台 → 模型管理」中添加并启用对话模型')), 503);
         }
 
-        $messages = $payload['messages'] ?? array();
-        if (empty($messages) || !is_array($messages)) {
-            $this->json(array('error' => array('message' => 'messages 不能为空')), 400);
-        }
-
-        $model       = !empty($payload['model']) ? $payload['model'] : ($ai['model'] ?? '');
-        $temperature = isset($payload['temperature']) ? floatval($payload['temperature']) : ($ai['temperature'] ?? 0.7);
-        $maxTokens   = isset($payload['max_tokens']) ? intval($payload['max_tokens']) : ($ai['max_tokens'] ?? 1024);
-
-        // 统一以非流式转发，兼容小程序 uni.request
-        $forward = array(
-            'model'       => $model,
-            'messages'    => $messages,
-            'temperature' => $temperature,
-            'max_tokens'  => $maxTokens,
-            'stream'      => false,
+        $reply = \app\common\AiService::chat(
+            $this->messagesToPrompt($reqMessages),
+            '你是一个有用的助手',
+            false
         );
-
-        $ch = curl_init($ai['api_url']);
-        curl_setopt_array($ch, array(
-            CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => array(
-                'Content-Type: application/json',
-                'Authorization: Bearer ' . $ai['api_key'],
-            ),
-            CURLOPT_POSTFIELDS     => json_encode($forward, JSON_UNESCAPED_UNICODE),
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 60,
-            CURLOPT_CONNECTTIMEOUT => 10,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-        ));
-
-        $resp     = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $curlErr  = curl_error($ch);
-        curl_close($ch);
-
-        if ($resp === false) {
-            $this->json(array('error' => array('message' => 'AI 网关请求失败：' . $curlErr)), 502);
-        }
-
-        // 原样返回提供商响应（OpenAI 格式），由小程序插件解析
-        header('Access-Control-Allow-Origin: *');
-        header('Content-Type: application/json; charset=utf-8');
-        if ($httpCode > 0) {
-            http_response_code($httpCode);
-        }
-        echo $resp;
-        exit;
+        $this->outputOpenAiCompat($reply);
     }
 }

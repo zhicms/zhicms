@@ -74,7 +74,7 @@ class LogController extends \app\base\controller\BaseController
         $this->checkManageSession();
         try {
             \ZhiCms\ext\AdminLog::ensureTable();
-            obj('api/ApiData')->executeQuery("TRUNCATE TABLE `yun_admin_log`");
+            obj('api/ApiData')->executeQuery("TRUNCATE TABLE `" . obj('api/ApiData')->realTable('yun_admin_log') . "`");
             \ZhiCms\ext\AdminLog::write('log', '清空了全部操作日志');
             exit(json_encode(array('info' => '日志已清空', 'status' => 'y')));
         } catch (\Throwable $e) {

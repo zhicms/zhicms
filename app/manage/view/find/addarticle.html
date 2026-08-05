@@ -1,5 +1,7 @@
 {include file="app/manage/view/index/emlog_nav"}
 
+<?php if (!empty($_GET['error'])): ?><script>alert('<?php echo htmlspecialchars($_GET['error'], ENT_QUOTES); ?>');</script><?php endif; ?>
+
 <!-- 页面标题 -->
 <h1 class="page-title">
     <i class="fas fa-edit"></i>

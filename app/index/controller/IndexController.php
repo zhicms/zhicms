@@ -344,7 +344,8 @@ class IndexController extends \app\base\controller\BaseController
             return array();
         }
         $offset = mt_rand(0, max(0, $count - $limit));
-        return obj("api/ApiData")->table("yun_article", true)
+        $model = obj("api/ApiData");
+        return $model->table($model->realTable("yun_article"), true)
             ->where($where)
             ->order("`id` DESC")
             ->limit("{$offset}, {$limit}")

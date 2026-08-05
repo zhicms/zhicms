@@ -512,6 +512,15 @@ function executeDatabaseUpdate($sqlFile) {
     $pdo = new PDO($dsn, $conf['DB_USER'], $conf['DB_PWD'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 
     $sqlContent = file_get_contents($sqlFile);
+    // 表前缀归一化：建表 SQL 里硬编码的 yun_ 前缀必须替换为站点真实前缀（DB_PREFIX），
+    // 否则自定义前缀安装后，业务层 realTable() 把 yun_xxx 转成 真实前缀_xxx，
+    // 但表实际仍叫 yun_xxx，导致全站查询失败（数据丢失级）。默认 yun_ 时此处等价无操作。
+    $realPrefix = isset($conf['DB_PREFIX']) ? $conf['DB_PREFIX'] : 'yun_';
+    if ($realPrefix !== 'yun_') {
+        $sqlContent = preg_replace('/\byun_([a-zA-Z0-9_]+)\b/', $realPrefix . '$1', $sqlContent);
+    }
+    // 兼容升级 SQL 中的 {pre} / __PREFIX__ 占位符
+    $sqlContent = str_replace(array('{pre}', '__PREFIX__'), $realPrefix, $sqlContent);
     $sqlContent = preg_replace('/--.*$/m', '', $sqlContent);
     $sqlContent = preg_replace('/\/\*[\s\S]*?\*\//', '', $sqlContent);
     $statements = array_filter(explode(';', $sqlContent), function($v) { return trim($v) !== ''; });
@@ -532,6 +541,14 @@ function executeDatabaseUpdate($sqlFile) {
         }
     }
     if ($skipped > 0) echo '<div class="step">ℹ️ 已跳过 '.$skipped.' 条“字段/索引已存在”语句（正常）</div>';
+
+    // 五.3 前缀连通性自检：建表完成后，用真实前缀查询 config 表首行，
+    // 确认「建表前缀」与「业务层 realTable() 前缀」一致，避免安装后全站 500。
+    $checkTable = $realPrefix . 'config';
+    $chk = $pdo->query("SELECT 1 FROM `{$checkTable}` LIMIT 1");
+    if ($chk === false) {
+        throw new Exception("表前缀自检失败：无法访问 `{$checkTable}`，请检查安装时填写的表前缀与建表语句是否一致");
+    }
 }
 
 function updateVersionConfig($version) {
@@ -547,7 +564,8 @@ function updateVersionConfig($version) {
         $dsn = "mysql:host={$conf['DB_HOST']};port={$conf['DB_PORT']};dbname={$conf['DB_NAME']};charset={$conf['DB_CHARSET']}";
         $pdo = new PDO($dsn, $conf['DB_USER'], $conf['DB_PWD'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
         $jsonValue = json_encode(['version' => $version], JSON_UNESCAPED_UNICODE);
-        $upsertSql = "INSERT INTO `yun_config` (`key`, `value`, `desc`) VALUES ('cfg_version', :val, '版本号') "
+        $cfgTable = isset($conf['DB_PREFIX']) ? $conf['DB_PREFIX'] . 'config' : 'yun_config';
+        $upsertSql = "INSERT INTO `{$cfgTable}` (`key`, `value`, `desc`) VALUES ('cfg_version', :val, '版本号') "
             . "ON DUPLICATE KEY UPDATE `value` = :val2";
         $stmt = $pdo->prepare($upsertSql);
         $stmt->execute([':val' => $jsonValue, ':val2' => $jsonValue]);

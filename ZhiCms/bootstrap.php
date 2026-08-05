@@ -28,6 +28,18 @@ function _isMobileUA(){
     return (bool) preg_match('/ipad|iphone os|ipod|midp|rv:1\.2\.3\.4|ucweb|android|windows ce|windows mobile|blackberry|webos|micromessenger|mobile/i', $ua);
 }
 function _mobileRedirectToM(){
+    // 读取站点开关：是否启用「移动端自动跳转到 m 端」。默认关闭（前端自适应）。
+    // bootstrap 阶段框架/DB 尚未加载，直接 include 轻量文件（SetController 保存时已同步写回）。
+    $mobileRedirect = false;
+    $siteFile = dirname(__DIR__) . '/data/config/siteconfig.php';
+    if (is_file($siteFile)) {
+        include $siteFile;
+        if (isset($Siteinfo) && !empty($Siteinfo['mobile_redirect'])) {
+            $mobileRedirect = true;
+        }
+    }
+    if (!$mobileRedirect) return; // 开关关闭：前端自适应，不跳转
+
     $reqUri  = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
     $reqPath = parse_url($reqUri, PHP_URL_PATH);
     // 桌面模式标记：点频道进入站内页时带 ?m=1，或显式 ?pc=1，均不再跳回 m 端
@@ -40,6 +52,13 @@ function _mobileRedirectToM(){
     // 只对 HTML 页面/首页做重定向（/go/ 等功能性路由不重定向）
     $isHtmlPage = ($reqPath === '/' || $reqPath === '' || preg_match('/\.html$/i', $reqPath));
     if (!$isHtmlPage) return;
+    // 仅移动端 UA 跳转（电脑版访问保持电脑版）
+    if (!_isMobileUA()) return;
+    // 302 跳转 m 端，并带上原始查询串（如 ?id=123 之类的参数视情况保留）
+    $query = parse_url($reqUri, PHP_URL_QUERY);
+    $target = '/m.html' . ($query !== null && $query !== '' ? ('?' . $query) : '');
+    header('Location: ' . $target, true, 302);
+    exit;
 }
 _mobileRedirectToM();
 
@@ -77,7 +96,7 @@ function customErrorHandler($errno, $errstr, $errfile, $errline) {
 }
 
 // 自定义异常处理函数
-function customExceptionHandler($exception) {
+function customExceptionHandler(\Throwable $exception) {
     global $logFile;
     $errorMsg = "\n[Exception] " . date('Y-m-d H:i:s') . ": " . $exception->getMessage() . " in " . $exception->getFile() . " on line " . $exception->getLine();
     $errorMsg .= "\n堆栈跟踪:\n" . $exception->getTraceAsString();

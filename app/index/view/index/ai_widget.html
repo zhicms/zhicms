@@ -878,7 +878,9 @@
 
 <script>
 (function() {
-  var API_BASE = '{url($route="index/aiAssistant/index", $params=array())}';
+  // API_BASE 需以 '/' 结尾，后续拼接 chat / getHistory 等 action；
+  // 真实控制器类名 AiAssistantController，框架按“段名+Controller”解析且不区分大小写，故路由段用 index/aiAssistant 即可
+  var API_BASE = '{url($route="index/aiAssistant/index", $params=array())}'.replace(/\/index$/, '/');
   var isOpen = false;
   var isLoading = false;
   var chatBody, inputEl, sendBtn, panel, btn, welcome, dot;

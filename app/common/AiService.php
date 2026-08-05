@@ -32,7 +32,62 @@ class AiService
         }
         include $configFile;
         self::$config = isset($AI) ? $AI : array('ai_chat' => '', 'ai_image' => '', 'ai_system_prompt' => '', 'ai_models' => array());
+        self::$config = self::migrateEndpoints(self::$config);
         return self::$config;
+    }
+
+    /**
+     * 老配置的接口地址迁移。
+     *
+     * 部分厂商已把接口迁移到 OpenAI 兼容协议，旧地址要么无法访问（讯飞的 wss://
+     * 是 WebSocket，PHP curl 根本连不上），要么域名已变更。这里在读取配置时
+     * 自动纠正，避免用户升级后还得手动逐个重填模型。
+     *
+     * @param array $config
+     * @return array
+     */
+    private static function migrateEndpoints($config)
+    {
+        if (empty($config['ai_models']) || !is_array($config['ai_models'])) {
+            return $config;
+        }
+
+        $changed = false;
+        foreach ($config['ai_models'] as $key => $model) {
+            if (!is_array($model) || empty($model['api_url'])) continue;
+            $url = trim($model['api_url']);
+
+            // 1) 讯飞星火：WebSocket / 老 MaaS 地址 -> OpenAI 兼容 HTTP 接口
+            if (stripos($url, 'maas-api') !== false
+                || stripos($url, 'spark-api.xf-yun.com') !== false
+                || stripos($url, 'wss://') === 0) {
+                $config['ai_models'][$key]['api_url']  = 'https://spark-api-open.xf-yun.com/v1/chat/completions';
+                $config['ai_models'][$key]['protocol'] = 'openai';
+                $changed = true;
+                continue;
+            }
+
+            // 2) 百度文心：aip.baidubce.com 老接口 -> 千帆 V2 OpenAI 兼容接口
+            if (stripos($url, 'aip.baidubce.com') !== false) {
+                $config['ai_models'][$key]['api_url']  = 'https://qianfan.baidubce.com/v2/chat/completions';
+                $config['ai_models'][$key]['protocol'] = 'openai';
+                $changed = true;
+                continue;
+            }
+
+            // 3) MiniMax 域名变更 api.minimax.chat -> api.minimaxi.com
+            if (stripos($url, 'api.minimax.chat') !== false) {
+                $config['ai_models'][$key]['api_url'] = str_ireplace('api.minimax.chat', 'api.minimaxi.com', $url);
+                $changed = true;
+            }
+        }
+
+        // 迁移结果落盘一次，避免每次请求重复计算
+        if ($changed) {
+            $content = "<?php\n/**\n * AI 开放平台配置\n */\n\n\$AI = " . var_export($config, true) . ";\n";
+            @file_put_contents(\CONFIG_PATH . 'ai.php', $content, LOCK_EX);
+        }
+        return $config;
     }
 
     /**
@@ -522,7 +577,18 @@ class AiService
     private static function getErnieToken($apiKey, $apiSecret)
     {
         if ($apiKey === '' || $apiSecret === '') return false;
-        $cacheFile = \BASE_PATH . 'runtime/ernie_token_' . md5($apiKey) . '.json';
+        // 凭证缓存放在独立目录并写入 .htaccess 禁止 Web 访问，避免 access_token 被直接下载
+        $cacheDir = \BASE_PATH . 'runtime/credential/';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0700, true);
+        }
+        if (!is_file($cacheDir . '.htaccess')) {
+            @file_put_contents($cacheDir . '.htaccess', "Order deny,allow\nDeny from all\n<IfModule mod_authz_core.c>\nRequire all denied\n</IfModule>\n");
+        }
+        if (!is_file($cacheDir . 'index.html')) {
+            @file_put_contents($cacheDir . 'index.html', '');
+        }
+        $cacheFile = $cacheDir . 'ernie_token_' . md5($apiKey) . '.json';
         if (file_exists($cacheFile)) {
             $cached = json_decode(file_get_contents($cacheFile), true);
             if (is_array($cached) && isset($cached['expire']) && $cached['expire'] > time() && !empty($cached['token'])) {
@@ -532,12 +598,10 @@ class AiService
         $tokenUrl = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials'
             . '&client_id=' . urlencode($apiKey) . '&client_secret=' . urlencode($apiSecret);
         $ch = curl_init();
-        curl_setopt_array($ch, array(
+        curl_setopt_array($ch, self::sslOptions() + array(
             CURLOPT_URL            => $tokenUrl,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 15,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
         ));
         $resp = curl_exec($ch);
         curl_close($ch);
@@ -601,8 +665,6 @@ class AiService
                 'Content-Type: application/json',
                 'Authorization: Bearer ' . $modelInfo['api_key'],
             ),
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_TIMEOUT        => 600,
             CURLOPT_RETURNTRANSFER => false,
             CURLOPT_WRITEFUNCTION  => function ($curl, $data) use (&$fullResponse) {
@@ -632,7 +694,7 @@ class AiService
                 }
                 return strlen($data);
             },
-        ));
+        ) + self::sslOptions());
 
         curl_exec($ch);
         if (curl_errno($ch)) {
@@ -668,10 +730,8 @@ class AiService
             CURLOPT_POSTFIELDS     => $postData,
             CURLOPT_HTTPHEADER     => $headers,
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_TIMEOUT        => $timeout,
-        ));
+        ) + self::sslOptions());
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -685,6 +745,60 @@ class AiService
             return 'HTTP错误: ' . $httpCode . ' ' . substr((string)$response, 0, 300);
         }
         return $response;
+    }
+
+    /**
+     * 统一的 SSL 校验选项。
+     *
+     * 安全考量：本类的请求头里携带用户的 AI API Key，关闭证书校验会带来中间人窃取风险，
+     * 因此默认开启校验；仅在服务器确实找不到 CA 证书包时才降级，避免升级后接口全挂。
+     *
+     * @return array curl 选项数组
+     */
+    public static function sslOptions()
+    {
+        static $opts = null;
+        if ($opts !== null) return $opts;
+
+        $caBundle = '';
+        // 1) php.ini 已配置 curl.cainfo / openssl.cafile 时，curl 自行使用，无需干预
+        $ini = ini_get('curl.cainfo');
+        if (!$ini) $ini = ini_get('openssl.cafile');
+        if ($ini && is_file($ini)) {
+            $caBundle = $ini;
+        } else {
+            // 2) 尝试常见位置（含随程序分发的证书包）
+            $candidates = array(
+                \BASE_PATH . 'data/cacert.pem',
+                '/etc/ssl/certs/ca-certificates.crt',
+                '/etc/pki/tls/certs/ca-bundle.crt',
+                '/usr/local/etc/openssl/cert.pem',
+            );
+            foreach ($candidates as $c) {
+                if (is_file($c)) { $caBundle = $c; break; }
+            }
+        }
+
+        if ($caBundle) {
+            $opts = array(
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+                CURLOPT_CAINFO         => $caBundle,
+            );
+        } elseif ($ini) {
+            // php.ini 配好了但文件路径读不到，仍交给 curl 默认行为并开启校验
+            $opts = array(
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+            );
+        } else {
+            // 环境确实没有 CA 包，降级但保持可用（并记录一次告警）
+            $opts = array(
+                CURLOPT_SSL_VERIFYPEER => false,
+                CURLOPT_SSL_VERIFYHOST => 0,
+            );
+        }
+        return $opts;
     }
 
     /**
@@ -799,9 +913,7 @@ class AiService
             ),
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT        => 120,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
-        ));
+        ) + self::sslOptions());
 
         $response = curl_exec($ch);
         $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);

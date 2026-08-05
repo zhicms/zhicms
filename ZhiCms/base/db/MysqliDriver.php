@@ -545,7 +545,7 @@ class MysqliDriver implements DbInterface {
 				}
 				$mysqli->set_charset($db['DB_CHARSET'] ?? 'utf8mb4');
 				break;
-			}catch(\Exception $e){
+			}catch(\Throwable $e){
 				$error = $e->getMessage();
 				$mysqli = null;
 			}

@@ -82,10 +82,10 @@ class AiController extends \app\base\controller\BaseController
                 array('id' => 'moonshot-v1-128k', 'price' => '¥8/百万tokens'),
                 array('id' => 'moonshot-v1-mini', 'price' => '¥0.5/百万tokens'),
             )),
-            'minimax'    => array('name' => 'MiniMax', 'protocol' => 'openai', 'url' => 'https://api.minimax.chat/v1/text/chatcompletion_v2', 'secret' => false, 'appid' => false, 'models' => array(
+            'minimax'    => array('name' => 'MiniMax', 'protocol' => 'openai', 'url' => 'https://api.minimaxi.com/v1/text/chatcompletion_v2', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'MiniMax-Text-01', 'price' => '¥1/百万tokens'),
                 array('id' => 'abab6.5s-chat', 'price' => '¥1/百万tokens'),
                 array('id' => 'abab6.5t-chat', 'price' => '免费'),
-                array('id' => 'abab7-chat-preview', 'price' => '¥2/百万tokens'),
             )),
             'stepfun'    => array('name' => '阶跃星辰 (StepFun)', 'protocol' => 'openai', 'url' => 'https://api.stepfun.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
                 array('id' => 'step-1-flash', 'price' => '免费'),
@@ -121,14 +121,25 @@ class AiController extends \app\base\controller\BaseController
                 array('id' => 'claude-3-haiku-20240307', 'price' => '$0.25/百万tokens'),
                 array('id' => 'claude-3-5-haiku', 'price' => '$0.8/百万tokens'),
             )),
-            'ernie'      => array('name' => '百度文心 ERNIE', 'protocol' => 'ernie', 'url' => 'https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat', 'secret' => true, 'appid' => false, 'models' => array(
+            // 百度千帆 V2 已提供 OpenAI 兼容接口，鉴权直接用千帆 API Key（Bearer），
+            // 无需再用 AK/SK 换取 access_token。旧的 aip.baidubce.com 协议保留兼容（protocol=ernie）。
+            'ernie'      => array('name' => '百度文心 ERNIE (千帆V2)', 'protocol' => 'openai', 'url' => 'https://qianfan.baidubce.com/v2/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'ernie-4.5-turbo-128k', 'price' => '¥0.8/百万tokens'),
                 array('id' => 'ernie-4.0-8k', 'price' => '¥0.8/百万tokens'),
                 array('id' => 'ernie-3.5-8k', 'price' => '¥0.6/百万tokens'),
                 array('id' => 'ernie-speed-128k', 'price' => '免费'),
-                array('id' => 'ernie-speed', 'price' => '免费'),
-                array('id' => 'ernie-4.0-8k-latest', 'price' => '¥0.8/百万tokens'),
+                array('id' => 'ernie-speed-8k', 'price' => '免费'),
             )),
-            'xinghuo'    => array('name' => '科大讯飞 MaaS / 星火', 'protocol' => 'xinghuo', 'url' => 'wss://maas-api.cn-huabei-1.xf-yun.com/v1.1/chat', 'secret' => true, 'appid' => true, 'models' => array()),
+            // 讯飞星火现已提供 OpenAI 兼容 HTTP 接口，鉴权用控制台的 APIPassword（格式 key:secret）
+            // 原 wss://maas-api... 是 WebSocket，PHP curl 无法直接调用，已废弃
+            'xinghuo'    => array('name' => '科大讯飞星火', 'protocol' => 'openai', 'url' => 'https://spark-api-open.xf-yun.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'lite', 'price' => '免费'),
+                array('id' => 'generalv3', 'price' => '¥0.6/百万tokens'),
+                array('id' => 'pro-128k', 'price' => '¥0.8/百万tokens'),
+                array('id' => 'generalv3.5', 'price' => '¥1.2/百万tokens'),
+                array('id' => 'max-32k', 'price' => '¥1.2/百万tokens'),
+                array('id' => '4.0Ultra', 'price' => '¥1.5/百万tokens'),
+            )),
         );
         // 默认平台（页面默认选中）
         $defaultPlatform = 'deepseek';

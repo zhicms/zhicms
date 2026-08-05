@@ -9,11 +9,27 @@ namespace ZhiCms\ext;
  */
 class AdminLog {
 
-    /** @var string 表名（带前缀） */
-    private static $table = 'yun_admin_log';
+    /** @var string 表名（不带前缀的基准名，运行期通过 realTable 解析为真实表名） */
+    private static $baseTable = 'yun_admin_log';
 
     /** @var array 内存缓存，避免同请求重复建表检测 */
     private static $ensured = false;
+
+    /**
+     * 取得真实表名（兼容自定义表前缀）
+     * @return string
+     */
+    private static function table() {
+        static $resolved = null;
+        if ($resolved === null) {
+            try {
+                $resolved = obj('api/ApiData')->realTable(self::$baseTable);
+            } catch (\Throwable $e) {
+                $resolved = self::$baseTable;
+            }
+        }
+        return $resolved;
+    }
 
     /**
      * 写入一条操作日志
@@ -33,7 +49,7 @@ class AdminLog {
                 'url'         => isset($_SERVER['REQUEST_URI']) ? substr($_SERVER['REQUEST_URI'], 0, 500) : '',
                 'create_time' => time(),
             );
-            obj('api/ApiData')->insertData(self::$table, $data);
+            obj('api/ApiData')->insertData(self::table(), $data);
             return true;
         } catch (\Throwable $e) {
             // 日志写入失败不应影响业务
@@ -47,7 +63,7 @@ class AdminLog {
     public static function ensureTable() {
         if (self::$ensured) return;
         try {
-            $sql = "CREATE TABLE IF NOT EXISTS `" . self::$table . "` (
+            $sql = "CREATE TABLE IF NOT EXISTS `" . self::table() . "` (
                 `id` int(11) NOT NULL AUTO_INCREMENT,
                 `type` varchar(50) NOT NULL DEFAULT '',
                 `content` varchar(500) NOT NULL DEFAULT '',

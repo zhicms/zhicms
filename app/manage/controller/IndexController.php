@@ -188,6 +188,7 @@ class IndexController extends \ZhiCms\base\Controller {
      */
     public function downloadFile() {
         $trace = function($msg) {
+            if (!getenv('ZHI_DEBUG')) return;
             @file_put_contents(dirname(__DIR__, 3) . '/runtime/update_trace.log',
                 date('Y-m-d H:i:s') . ' | ' . $msg . "\n", FILE_APPEND);
         };
@@ -264,9 +265,14 @@ class IndexController extends \ZhiCms\base\Controller {
             $sqlFile = $type === 'install'
                 ? $dir . '/zhicms.sql'
                 : $dir . '/zhicms_update.sql';
+            $sqlErrors = array();
             if (is_file($sqlFile)) {
-                $this->execSqlFile($sqlFile);
-                $trace('sql executed: ' . basename($sqlFile));
+                $sqlResult = $this->execSqlFile($sqlFile);
+                $sqlErrors = $sqlResult['errors'];
+                $trace('sql executed: ' . basename($sqlFile) . ' ok=' . $sqlResult['ok'] . ' err=' . count($sqlErrors));
+                foreach ($sqlErrors as $se) {
+                    $trace('SQL ERROR: ' . $se);
+                }
             }
 
             // 6) 记录版本号 + 已应用补丁 md5（同版本号补丁也能识别"点过没点过"）
@@ -278,10 +284,21 @@ class IndexController extends \ZhiCms\base\Controller {
             @unlink($tmp);
             $this->delDir($dir);
 
+            // 数据库脚本有失败时必须如实告知，不能"假成功"
+            if (!empty($sqlErrors)) {
+                exit(json_encode(array(
+                    'info'   => ($type === 'install' ? '安装' : '升级') . '已完成文件更新，但有 ' . count($sqlErrors)
+                                . ' 条数据库语句执行失败，请检查数据库权限或手动导入 SQL。首条错误：' . $sqlErrors[0],
+                    'status' => 'n',
+                    'sql_errors' => array_slice($sqlErrors, 0, 10),
+                    'version' => $newVersion,
+                ), JSON_UNESCAPED_UNICODE));
+            }
+
             exit(json_encode(array(
                 'info'   => ($type === 'install' ? '安装' : '升级') . '完成，当前版本：' . $newVersion,
                 'status' => 'y',
-            )));
+            ), JSON_UNESCAPED_UNICODE));
         } catch (\Throwable $e) {
             $trace('EXCEPTION ' . get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
             exit(json_encode(array('info' => '升级失败：' . $e->getMessage(), 'status' => 'n')));
@@ -300,10 +317,12 @@ class IndexController extends \ZhiCms\base\Controller {
             CURLOPT_HEADER         => false,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_TIMEOUT        => 300,
-            CURLOPT_SSL_VERIFYPEER => false,
-            CURLOPT_SSL_VERIFYHOST => false,
             CURLOPT_USERAGENT      => 'ZhiCms-Updater',
         ));
+        // 启用 TLS 证书校验（仅在环境无 CA 证书包时降级），避免中间人篡改升级包
+        foreach (\ZhiCms\ext\Http::sslOpts() as $k => $v) {
+            curl_setopt($ch, $k, $v);
+        }
         $ok = curl_exec($ch);
         $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
@@ -401,11 +420,26 @@ class IndexController extends \ZhiCms\base\Controller {
      * 执行 SQL 文件（与 install.php 一致：按 ; 拆分，跳过注释/空行）
      */
     private function execSqlFile($file) {
+        $errors = array();
+        $okCount = 0;
         $sql = @file_get_contents($file);
-        if ($sql === false) return;
+        if ($sql === false) {
+            return array('ok' => 0, 'errors' => array('无法读取升级SQL文件: ' . basename($file)));
+        }
+
+        // 关键：把 SQL 中的表前缀统一为当前站点真实前缀
+        // 升级包 SQL 里既可能写 __PREFIX__ 占位符，也可能历史遗留硬编码 yun_
+        $prefix = $this->currentDbPrefix();
+        $sql = str_replace('__PREFIX__', $prefix, $sql);
+        $sql = str_replace('{pre}', $prefix, $sql);
+        if ($prefix !== 'yun_') {
+            $sql = preg_replace('/\byun_([a-zA-Z0-9_]+)\b/', $prefix . '$1', $sql);
+        }
+
         $sql = str_replace("\r\n", "\n", $sql);
         $lines = explode("\n", $sql);
         $buffer = '';
+        $statements = array();
         foreach ($lines as $line) {
             $line = trim($line);
             if ($line === '' || strpos($line, '--') === 0 || strpos($line, '#') === 0) {
@@ -415,20 +449,53 @@ class IndexController extends \ZhiCms\base\Controller {
             if (substr(rtrim($line), -1) === ';') {
                 $stmt = trim($buffer);
                 $buffer = '';
-                if ($stmt !== '') {
-                    try {
-                        obj("api/ApiData")->executeQuery($stmt);
-                    } catch (\Exception $e) {
-                        // 单条失败不中断（兼容已存在字段等）
-                    }
-                }
+                if ($stmt !== '') $statements[] = $stmt;
             }
         }
-        if (trim($buffer) !== '') {
+        if (trim($buffer) !== '') $statements[] = trim($buffer);
+
+        foreach ($statements as $stmt) {
             try {
-                obj("api/ApiData")->executeQuery(trim($buffer));
-            } catch (\Exception $e) {}
+                obj("api/ApiData")->executeQuery($stmt);
+                $okCount++;
+            } catch (\Throwable $e) {
+                // 「已存在/重复」类错误属于重复执行升级包的正常现象，静默跳过
+                if ($this->isIgnorableSqlError($e->getMessage())) {
+                    $okCount++;
+                    continue;
+                }
+                // 其余错误必须上报，避免升级"假成功"
+                $errors[] = mb_substr(preg_replace('/\s+/', ' ', $stmt), 0, 80) . ' => ' . $e->getMessage();
+            }
         }
+        return array('ok' => $okCount, 'errors' => $errors);
+    }
+
+    /**
+     * 读取当前站点真实表前缀
+     */
+    private function currentDbPrefix() {
+        $prefix = \ZhiCms\base\Config::get('DB.default.DB_PREFIX');
+        return $prefix ? $prefix : 'yun_';
+    }
+
+    /**
+     * 判断 SQL 错误是否可忽略（重复执行升级包时的幂等性错误）
+     */
+    private function isIgnorableSqlError($msg) {
+        $ignorable = array(
+            'Duplicate column name',
+            'Duplicate key name',
+            'Duplicate entry',
+            'already exists',
+            "Can't DROP",
+            'check that column/key exists',
+            'Multiple primary key defined',
+        );
+        foreach ($ignorable as $kw) {
+            if (stripos($msg, $kw) !== false) return true;
+        }
+        return false;
     }
 
     private function delDir($dir) {

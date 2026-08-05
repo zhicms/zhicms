@@ -11,6 +11,7 @@ class DataService {
     public function type($lock, $id, $table) {
         if ($lock != "y") return null;
         if ($id != 'null') {
+            $id = (int)$id;
             $where[] = " `id` ={$id}";
             return obj("api/ApiData")->dataSelect($table, $where);
         }
@@ -20,6 +21,7 @@ class DataService {
 
     public function mallType($lock, $id, $table, $type) {
         if ($lock != "y") return null;
+        $id = (int)$id;
         $where[] = " `mallType` ={$id}";
         if ($type != 'null') {
             return obj("api/ApiData")->dataSelect($table, $where);
@@ -29,6 +31,7 @@ class DataService {
 
     public function yqfType($lock, $id, $table, $type) {
         if ($lock != "y") return null;
+        $id = (int)$id;
         $where[] = " `mallType` ={$id}";
         if ($type != 'null') {
             return obj("api/ApiData")->dataSelect($table, $where);
@@ -38,6 +41,7 @@ class DataService {
 
     public function yqfMallType($lock, $id, $table, $type) {
         if ($lock != "y") return null;
+        $id = (int)$id;
         $where[] = " `id` ={$id}";
         if ($type != 'null') {
             return obj("api/ApiData")->dataSelect($table, $where);
@@ -58,20 +62,26 @@ class DataService {
 
     public function union($lock, $mallId) {
         if ($lock != "y") return null;
+        $mallId = (int)$mallId;
         $where[] = "  `id` ={$mallId} ";
         $retMall = obj("api/ApiData")->dataSelect("yun_mall", $where);
-        if ($retMall['union'] == "") {
+        if (empty($retMall) || empty($retMall['union'])) {
             exit('该商城未指定联盟类型!');
         }
-        $whereUnion[] = "`id` ={$retMall['union']}";
+        $whereUnion[] = "`id` =" . (int)$retMall['union'];
         $retUnion = obj("api/ApiData")->dataSelect("yun_union", $whereUnion);
         return $retUnion["type"];
     }
 
     public function loadMall($lock, $type) {
         if ($lock != "y") return null;
-        $where[] = "`yun_home_mall`.union =  `yun_union`.id and `view` ={$type}";
-        $ret = obj("api/ApiData")->dataSelect("yun_home_mall`,`yun_union", $where, "`px` ASC");
+        $type = (int)$type;
+        // 多表 JOIN：直接拼 SQL（{pre} 会被 realTable 替换为真实前缀，且 where 条件里不再硬编码表名）
+        $ret = obj("api/ApiData")->thisQuery(
+            "SELECT `{pre}home_mall`.* FROM `{pre}home_mall` "
+            . "INNER JOIN `{pre}union` ON `{pre}home_mall`.union = `{pre}union`.id "
+            . "WHERE `{pre}home_mall`.view = {$type} ORDER BY `{pre}home_mall`.px ASC"
+        );
 
         $newData = array();
         foreach ($ret as $key => $value) {
@@ -87,6 +97,7 @@ class DataService {
     public function aType($lock, $id) {
         if ($lock != "y") return null;
         if ($id != 'null') {
+            $id = (int)$id;
             $where[] = " `id` ={$id}";
             return obj("api/ApiData")->dataSelect("yun_nav", $where);
         }
@@ -106,6 +117,7 @@ class DataService {
             $safeUid = str_replace(['%', '_', '\\'], ['\%', '\_', '\\\\'], $uid);
             $where[] = "  `mobile` LIKE  '{$safeUid}'";
         } else {
+            $uid = (int)$uid;
             $where[] = " `id` ={$uid}";
         }
         return obj("api/ApiData")->dataSelect("yun_user", $where);
@@ -113,6 +125,7 @@ class DataService {
 
     public function getList($table, $lock, $pid) {
         if ($lock != "y") return null;
+        $pid = (int)$pid;
         $where[] = "`pid` ={$pid}";
         return obj("api/ApiData")->dataSelect($table, $where, "`id` ASC  ");
     }

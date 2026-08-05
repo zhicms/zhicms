@@ -417,11 +417,25 @@ class SetController extends \app\base\controller\BaseController
         }else{
             $site = ConfigStore::load('site');
             $site['mobile_style'] = isset($_POST['mobile_style']) ? trim($_POST['mobile_style']) : '';
+            // M 端自动跳转开关（默认关闭，开启后手机访问跳 m 端、电脑访问电脑版，关闭则前端自适应）
+            $site['mobile_redirect'] = isset($_POST['mobile_redirect']) && $_POST['mobile_redirect'] ? 1 : 0;
             ConfigStore::save('site', $site);
             ConfigStore::clearCache('site');
+            // 同步写回轻量文件，供 bootstrap.php 在框架加载前读取开关（避免每次请求查 DB）
+            $this->syncSiteFile($site);
 
             echo json_encode(array("info" => "设置成功", "status" => "y"));
         }
+    }
+
+    /**
+     * 把 site 配置同步写回 data/config/siteconfig.php（保持 $Siteinfo 变量名，兼容 bootstrap 读取）
+     */
+    private function syncSiteFile(array $site){
+        $file = \CONFIG_PATH . 'siteconfig.php';
+        if (!is_dir(dirname($file))) return;
+        $content = "<?php\r\n\$Siteinfo=" . var_export($site, true) . ";\n";
+        @file_put_contents($file, $content);
     }
 
     public function upload(){
@@ -518,7 +532,19 @@ class SetController extends \app\base\controller\BaseController
      */
     public function migrateConfig() {
         $this->checkManageSession();
-        require_once \CONFIG_PATH . 'migrate_to_db.php';
+        $migrateFile = \CONFIG_PATH . 'migrate_to_db.php';
+        if (!is_file($migrateFile)) {
+            echo json_encode(array(
+                'info'   => '迁移脚本（migrate_to_db.php）不存在，可能已完成迁移或无需迁移',
+                'status' => 'n',
+            ));
+            return;
+        }
+        require_once $migrateFile;
+        if (!function_exists('migrate_all_to_db')) {
+            echo json_encode(array('info' => '迁移函数未定义', 'status' => 'n'));
+            return;
+        }
         $result = migrate_all_to_db();
         
         $success = $result['success'];

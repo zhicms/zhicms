@@ -29,13 +29,59 @@ class ApiBaseController extends Controller {
      * 处理 CORS 预检请求
      */
     protected function options() {
-        if (isset($_SERVER['\REQUEST_METHOD']) && $_SERVER['\REQUEST_METHOD'] === 'OPTIONS') {
+        if (($_SERVER['REQUEST_METHOD'] ?? '') === 'OPTIONS') {
             header('Access-Control-Allow-Origin: *');
             header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
             header('Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With');
             header('HTTP/1.1 204 No Content');
             exit;
         }
+    }
+
+    /**
+     * 将 OpenAI 格式 messages 数组折叠为单条 prompt（取最后一条 user 消息），
+     * 供 AiService::chat 使用（AiService 接受字符串 prompt）。
+     * @param array $messages
+     * @return string
+     */
+    protected function messagesToPrompt($messages) {
+        if (!is_array($messages) || empty($messages)) {
+            return '';
+        }
+        // 倒序找第一条 user 消息内容作为主 prompt
+        for ($i = count($messages) - 1; $i >= 0; $i--) {
+            if (($messages[$i]['role'] ?? '') === 'user') {
+                return is_array($messages[$i]['content'])
+                    ? json_encode($messages[$i]['content'], JSON_UNESCAPED_UNICODE)
+                    : (string)$messages[$i]['content'];
+            }
+        }
+        $last = end($messages);
+        return is_array($last['content'] ?? null)
+            ? json_encode($last['content'], JSON_UNESCAPED_UNICODE)
+            : (string)($last['content'] ?? '');
+    }
+
+    /**
+     * 将 AiService::chat 的字符串回复包装为 OpenAI 兼容格式输出（非流式）。
+     * @param string|array $reply
+     */
+    protected function outputOpenAiCompat($reply) {
+        if (is_array($reply) && isset($reply['error'])) {
+            $this->json(array('error' => array('message' => $reply['error'])), 502);
+        }
+        if (empty($reply) || strpos((string)$reply, '大模型') === 0 || strpos((string)$reply, 'AI 模型') === 0
+            || strpos((string)$reply, 'CURL错误') === 0 || strpos((string)$reply, 'HTTP错误') === 0) {
+            $this->json(array('error' => array('message' => 'AI 对话失败：' . $reply)), 502);
+        }
+        $this->json(array(
+            'choices' => array(array(
+                'message'      => array('role' => 'assistant', 'content' => (string)$reply),
+                'index'        => 0,
+                'finish_reason' => 'stop',
+            )),
+            'usage'   => new \stdClass(),
+        ), 200);
     }
 
     /**

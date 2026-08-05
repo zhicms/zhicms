@@ -69,7 +69,7 @@ class Model{
 		if( !empty($this->options['pager']) ){
 			$count = $this->getDb()->Count($table, $where);
 			$this->_pager($this->options['pager']['page'], $this->options['pager']['pageSize'], 
-						$this->options['pager']['scope'] = 10, $count);
+						$this->options['pager']['scope'], $count);
 			$this->options['pager'] = array();
 			$limit = $this->pager['offset'] . ',' . $this->pager['limit'];
 		}
@@ -173,7 +173,7 @@ class Model{
 
 	public function pager($page, $pageSize = 10, $scope = 10){
 		$page = max(intval($page), 1);
-		$this->options['pager'] = compact(array('page', 'pageSize', 'scope'));
+		$this->options['pager'] = compact('page', 'pageSize', 'scope');
 		return $this;
 	}
 	
@@ -194,9 +194,9 @@ class Model{
 			$dbType = $this->config['DB_TYPE'];
 			$driverMap = array(
 				'mysqlpdo' => 'MysqlPdo',
-				'mysqlpdo' => 'MysqlPdo',
-				'mysqli' => 'Mysqli',
-				'mysql' => 'Mysql',
+				'pdo'      => 'MysqlPdo',
+				'mysqli'   => 'Mysqli',
+				'mysql'    => 'Mysql',
 			);
 			if (isset($driverMap[strtolower($dbType)])) {
 				$dbType = $driverMap[strtolower($dbType)];
@@ -251,7 +251,8 @@ class Model{
 		}elseif( $page <= $scope/2) {
 			$this->pager['allPages'] = range(1, $scope);
 		}elseif( $page <= $totalPage - $scope/2 ){
-			$right = $pager + (int)($scope/2);
+			// 修复：原代码误用未定义变量 $pager，PHP8 下会抛 Undefined variable 警告并算出错误页码
+			$right = $page + (int)($scope/2);
 			$this->pager['allPages'] = range($right-$scope+1, $right);
 		}else{
 			$this->pager['allPages'] = range($totalPage-$scope+1, $totalPage);

@@ -62,6 +62,54 @@ class Http{
 			default:return false;	
 		}
 	}	
+	/**
+	 * 计算 TLS 证书校验选项。
+	 * 默认开启完整校验（VERIFYPEER=true, VERIFYHOST=2），仅在环境中确实找不到任何
+	 * CA 证书包时才降级关闭校验，以保证可用性。避免硬编码关闭校验带来的中间人/供应链风险。
+	 * @return array
+	 */
+	static public function sslOpts()
+	{
+		static $opts = null;
+		if ($opts !== null) return $opts;
+
+		$caBundle = '';
+		$ini = ini_get('curl.cainfo');
+		if (!$ini) $ini = ini_get('openssl.cafile');
+		if ($ini && is_file($ini)) {
+			$caBundle = $ini;
+		} else {
+			$candidates = array(
+				\BASE_PATH . 'data/cacert.pem',
+				'/etc/ssl/certs/ca-certificates.crt',
+				'/etc/pki/tls/certs/ca-bundle.crt',
+				'/usr/local/etc/openssl/cert.pem',
+			);
+			foreach ($candidates as $c) {
+				if (is_file($c)) { $caBundle = $c; break; }
+			}
+		}
+
+		if ($caBundle) {
+			$opts = array(
+				CURLOPT_SSL_VERIFYPEER => true,
+				CURLOPT_SSL_VERIFYHOST => 2,
+				CURLOPT_CAINFO         => $caBundle,
+			);
+		} elseif ($ini) {
+			$opts = array(
+				CURLOPT_SSL_VERIFYPEER => true,
+				CURLOPT_SSL_VERIFYHOST => 2,
+			);
+		} else {
+			$opts = array(
+				CURLOPT_SSL_VERIFYPEER => false,
+				CURLOPT_SSL_VERIFYHOST => 0,
+			);
+		}
+		return $opts;
+	}
+
 	//通过curl get数据
 	static public function curlGet($url,$timeout=5,$header="") 
 	{
@@ -72,8 +120,9 @@ class Http{
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
 		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+		foreach (self::sslOpts() as $k => $v) {
+			curl_setopt($ch, $k, $v);
+		}
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array($header));//模拟的header头
 		// 强制使用 HTTP/1.1，避免部分启用了 HTTP/2 的服务器（如 nginx）在带自定义请求头时
 		// 触发 curl error 55（Failed sending HTTP request）导致请求失败（返回 false）。
@@ -95,8 +144,9 @@ class Http{
 		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
 		curl_setopt($ch, CURLOPT_TIMEOUT, $timeout);
 		curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+		foreach (self::sslOpts() as $k => $v) {
+			curl_setopt($ch, $k, $v);
+		}
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array($header));//模拟的header头
 		curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
 		$result = curl_exec($ch);

@@ -10,4 +10,21 @@ RewriteRule ^ZhiCms/(.*)\.php$ - [F,L]
 RewriteRule ^public/(.*)\.php$ - [F,L]
 RewriteRule ^upload/(.*)\.php$ - [F,L]
 RewriteRule ^data/(.*)\.php$ - [F,L]
+
+# 运行时目录：含缓存、日志、AI凭证(access_token)，禁止任何 Web 访问
+RewriteRule ^runtime/ - [F,L]
+# 依赖目录与版本控制目录
+RewriteRule ^vendor/ - [F,L]
+RewriteRule ^\.git/ - [F,L]
 </IfModule>
+
+# 禁止直接下载数据库脚本、备份、日志与锁文件
+<FilesMatch "\.(sql|log|bak|lock|ini)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>

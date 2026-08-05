@@ -220,7 +220,7 @@ function obj($class, $layer = 'model'){
 			$obj = $container->make($className);
 			$objArr[$className] = $obj;
 			return $obj;
-		} catch (\Exception $e) {
+		} catch (\Throwable $e) {
 			unset($objArr[$className]);
 		}
 	}
