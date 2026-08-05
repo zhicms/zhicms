@@ -1045,9 +1045,13 @@ class AiService
         }
 
         $result = trim($result);
+        // 去掉首尾非关键词字符（保留中英文、数字、逗号、顿号、空格）
         $result = preg_replace('/^[^\p{Han}a-zA-Z0-9,，、\s]+|[^\p{Han}a-zA-Z0-9,，、\s]+$/u', '', $result);
+        // 统一中文逗号、顿号为英文逗号
         $result = str_replace(array('，', '、'), ',', $result);
-        $parts = array_filter(array_map('trim', explode(',', $result)));
+        // 同时支持英文逗号、空格、制表符等作为分隔符拆分（AI 常返回空格分隔的关键词）
+        $parts = preg_split('/[,\s]+/u', $result);
+        $parts = array_filter(array_map('trim', $parts));
         $parts = array_slice(array_unique($parts), 0, 5);
 
         if (empty($parts)) {
