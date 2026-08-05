@@ -215,28 +215,46 @@ class TaskController extends \app\base\controller\BaseController
      * 立即执行一个任务
      */
     public function runNow(){
-        // 采集类任务会调用外部 API，可能耗时较长，解除执行时长限制避免中途超时报错
+        // 采集类任务会调用外部 API，可能耗时较长（十秒级以上）。
+        // 本地环境不限时能跑通，但服务器（nginx+php-fpm）常有 fastcgi_read_timeout / request_terminate_timeout，
+        // 同步等采集完成再返回会导致请求被掐断 → 前端收不到 JSON → 误报“请求失败”。
+        // 因此改为：先立即返回“已提交”，再用 ignore_user_abort + fastcgi_finish_request 让采集在后台继续跑。
         @set_time_limit(0);
+        @ignore_user_abort(true);
         $this->checkManageSession();
-        // 隔离采集过程（调外部 API、DB 查询等）可能产生的直接输出（warning/notice/echo），
-        // 否则这些输出会在 json_encode 之前被写入响应体，导致前端 JSON.parse 失败 → 误报“请求失败”。
-        ob_start();
-        try {
-            $id = (int)$this->arg('id', 0);
-            $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
-            if (empty($row)) {
-                $out = array('info' => '任务不存在', 'status' => 'n');
-            } else {
-                $res = $this->executeTask($row[0]);
-                $this->updateResult($id, $res);
-                $out = array('info' => ($res['ok'] ? '执行成功' : '执行失败') . '：' . mb_substr($res['output'], 0, 120), 'status' => $res['ok'] ? 'y' : 'n');
-            }
-        } catch (\Throwable $e) {
-            $out = array('info' => '执行异常：' . $e->getMessage(), 'status' => 'n');
+
+        $id = (int)$this->arg('id', 0);
+        $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
+        if (empty($row)) {
+            header('Content-Type: application/json; charset=utf-8');
+            while (ob_get_level()) ob_end_clean();
+            exit(json_encode(array('info' => '任务不存在', 'status' => 'n')));
         }
-        ob_end_clean();
+
+        // 立即返回纯净 JSON，避免等待长任务被服务器超时打断
+        $out = array('info' => '已提交执行，请稍后刷新查看结果', 'status' => 'y');
         header('Content-Type: application/json; charset=utf-8');
-        exit(json_encode($out));
+        while (ob_get_level()) ob_end_clean();   // 清空 bootstrap 的 gzip 缓冲及任何残留输出
+        echo json_encode($out);
+        // 将响应立即发送给客户端并关闭连接，后续采集在后台继续（php-fpm 环境）
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } else {
+            // 通用兜底：冲刷输出
+            if (ob_get_level()) ob_end_flush();
+            flush();
+        }
+
+        // 以下在后台静默执行，不受前端连接影响
+        try {
+            $res = $this->executeTask($row[0]);
+            $this->updateResult($id, $res);
+        } catch (\Throwable $e) {
+            // 后台异常仅记录，不影响已返回的响应
+            @file_put_contents(__DIR__ . '/../../runtime/runnow_error.log',
+                date('Y-m-d H:i:s') . ' | runNow background error: ' . $e->getMessage() . "\n", FILE_APPEND);
+        }
+        exit;
     }
 
     /**

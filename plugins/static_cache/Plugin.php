@@ -121,7 +121,9 @@ class Plugin extends BasePlugin
     {
         $config = $this->getConfig();
         
-        if (!empty($config['exclude_admin']) && defined('APP_NAME') && \APP_NAME === 'manage') {
+        // 后台(manage)页面永远不缓存：实时数据且修改后需立即生效，
+        // 避免因配置缺失(exclude_admin 未设置)导致后台页面被缓存成旧版本。
+        if (defined('APP_NAME') && \APP_NAME === 'manage') {
             return true;
         }
         

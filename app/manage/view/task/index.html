@@ -110,7 +110,11 @@ function postJSON(url, data, cb){
 }
 function runNow(id){
     postJSON('index.php?r=manage/task/runNow', {id:id}, function(res){
-        if (res && res.status==='y') { showToast(res.info, 'success'); setTimeout(function(){location.reload();},700); }
+        if (res && res.status==='y') {
+            showToast(res.info || '已提交执行', 'success');
+            // 后台异步执行采集，稍等几秒让采集完成再刷新列表（看最新执行时间）
+            setTimeout(function(){location.reload();}, 2500);
+        }
         else showToast((res&&res.info)?res.info:'执行失败', 'danger');
     });
 }

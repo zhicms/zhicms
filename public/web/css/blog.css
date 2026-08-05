@@ -881,6 +881,8 @@ a.nav-link[target="_blank"]::after,
     .side-btn { width: 40px; height: 40px; }
     /* 移动端：侧边按钮竖排顺序 用户中心 → AI导购 → 黑暗模式 */
     #mobile-user-center, #mobile-ai-btn { display: flex; }
+    /* 移动端已有右下角用户中心边按钮，侧栏登录/用户卡片冗余，隐藏 */
+    .side-bar .widget-user { display: none; }
     .ai-assistant-btn { display: none !important; }
     /* 首页热榜文字截断 */
     .blog-hotbar-item { max-width: 55vw; overflow: hidden; text-overflow: ellipsis; }
