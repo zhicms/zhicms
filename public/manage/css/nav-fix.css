@@ -17,3 +17,34 @@
     background-color: #E8F4FF !important;
     font-weight: bold !important;
 }
+
+/* 修复后台右上角用户下拉菜单（含「退出登录」）难点中 / 鼠标不变手指 / 点击穿透：
+ * .topbar 原本无 position/z-index，其绝对定位的 .dropdown-menu 与下方 .container-fluid
+ * 内容处于同一层级，按 DOM 顺序后渲染的内容区会覆盖在菜单之上，导致菜单被透明遮挡。
+ * 给 .topbar 建立 stacking context 并置于内容区之上，菜单即可正常 hover/点击。 */
+.topbar {
+    position: relative;
+    z-index: 1030;
+}
+.topbar .dropdown {
+    position: relative;
+}
+.topbar .dropdown-menu {
+    z-index: 1031;
+}
+.topbar .dropdown-item {
+    cursor: pointer;
+}
+
+/* 在「退出登录」下方补一个空占位，避免菜单底部最后一个 item 因 padding/相邻容器
+ * 重叠导致难点中、点击穿透。::after 作为内联块占位，撑起底部空间且不可点击。 */
+.topbar .dropdown-menu {
+    padding-bottom: 0.25rem;
+}
+.topbar .dropdown-menu::after {
+    content: "";
+    display: block;
+    height: 10px;
+    width: 100%;
+    pointer-events: none;
+}

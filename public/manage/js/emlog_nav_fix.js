@@ -102,6 +102,48 @@
     function run() {
         try { fixCollapse(); } catch (e1) { if (window.console) console.warn(e1); }
         try { fixActive();   } catch (e2) { if (window.console) console.warn(e2); }
+        try { fixUserDropdown(); } catch (e3) { if (window.console) console.warn(e3); }
+    }
+
+    // 用户头像下拉菜单原生兜底：即使 Bootstrap CDN 加载失败，也能展开/收起
+    function fixUserDropdown() {
+        var toggle = document.getElementById('userDropdown');
+        if (!toggle) return;
+        var menu = toggle.parentNode ? toggle.parentNode.querySelector('.dropdown-menu') : null;
+        if (!menu) return;
+
+        // 若 Bootstrap 已接管（能正常展开），则不再重复绑定
+        var hasBootstrap = !!(window.jQuery && jQuery.fn && jQuery.fn.dropdown);
+        if (hasBootstrap) return;
+
+        toggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            var open = menu.classList.contains('show');
+            closeAllDropdowns();
+            if (!open) {
+                menu.classList.add('show');
+                toggle.setAttribute('aria-expanded', 'true');
+            }
+        });
+
+        function closeAllDropdowns() {
+            var all = document.querySelectorAll('.dropdown-menu.show');
+            for (var i = 0; i < all.length; i++) {
+                all[i].classList.remove('show');
+            }
+            var toggles = document.querySelectorAll('[data-toggle="dropdown"]');
+            for (var j = 0; j < toggles.length; j++) {
+                toggles[j].setAttribute('aria-expanded', 'false');
+            }
+        }
+
+        document.addEventListener('click', function(e) {
+            if (!menu.contains(e.target) && e.target !== toggle) {
+                menu.classList.remove('show');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
     }
 
     function schedule() {
