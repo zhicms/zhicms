@@ -51,6 +51,6 @@ $rule=array (
     'm-rank.html' => 'index/m/rank',
     'm-cheaps.html' => 'index/m/cheaps',
     'm-search-<key>.html' => 'index/m/search/key=<key>',
-    '<platform>-<id>.html' => 'index/redirect/jump/platform=<platform>/id=<id>',
+    'buy-<platform>-<id>.html' => 'index/redirect/jump/platform=<platform>/id=<id>',
   ),
 );
