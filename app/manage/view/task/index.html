@@ -99,11 +99,24 @@ function postJSON(url, data, cb){
             cb && cb(res);
         },
         error: function(xhr, type, err){
-            // 仅网络层错误（连接中断/超时）才会进这里；后端返回 JSON 异常由 success 处理
+            // 网络层错误（连接中断/超时）或后端返回了非 JSON 内容都会进这里。
+            // 尝试从响应体解析后端真实错误（runNow 已用 try/catch 把异常转成 JSON），
+            // 优先展示后端给出的可读原因，而非笼统“请求失败”。
+            var msg = null;
+            try {
+                var body = xhr.responseText ? xhr.responseText : '';
+                var m = body.match(/\{.*\}/s);   // 从可能被 warning 污染的响应中提取 JSON
+                if (m) {
+                    var j = JSON.parse(m[0]);
+                    if (j && j.info) msg = j.info;
+                }
+            } catch (e) {}
             if (xhr.status === 0) {
-                showToast('执行超时：任务可能在后台仍在运行，请稍后到任务列表查看结果', 'warning');
+                showToast(msg || '执行超时：任务可能在后台仍在运行，请稍后到任务列表查看结果', 'warning');
+            } else if (msg) {
+                showToast('执行出错：' + msg, 'danger');
             } else {
-                showToast('请求失败，请重试', 'danger');
+                showToast('请求失败（HTTP ' + xhr.status + '），请重试', 'danger');
             }
         }
     });

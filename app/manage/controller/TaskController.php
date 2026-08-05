@@ -215,44 +215,57 @@ class TaskController extends \app\base\controller\BaseController
      * 立即执行一个任务
      */
     public function runNow(){
+        // 诊断/运行日志（写入项目 runtime，目录必然存在）
+        $trace = function($msg) {
+            @file_put_contents(dirname(__DIR__, 3) . '/runtime/runnow_trace.log',
+                date('Y-m-d H:i:s') . ' | ' . $msg . "\n", FILE_APPEND);
+        };
+        $trace('ENTER id=' . ($_POST['id'] ?? '-') . ' XRW=' . ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? 'none')
+            . ' SAPI=' . PHP_SAPI . ' hasFinish=' . (function_exists('fastcgi_finish_request') ? 1 : 0));
+
         // 采集类任务会调用外部 API，可能耗时较长（十秒级以上）。
         // 本地环境不限时能跑通，但服务器（nginx+php-fpm）常有 fastcgi_read_timeout / request_terminate_timeout，
         // 同步等采集完成再返回会导致请求被掐断 → 前端收不到 JSON → 误报“请求失败”。
         // 因此改为：先立即返回“已提交”，再用 ignore_user_abort + fastcgi_finish_request 让采集在后台继续跑。
-        @set_time_limit(0);
-        @ignore_user_abort(true);
-        $this->checkManageSession();
-
-        $id = (int)$this->arg('id', 0);
-        $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
-        if (empty($row)) {
-            header('Content-Type: application/json; charset=utf-8');
-            while (ob_get_level()) ob_end_clean();
-            exit(json_encode(array('info' => '任务不存在', 'status' => 'n')));
-        }
-
-        // 立即返回纯净 JSON，避免等待长任务被服务器超时打断
-        $out = array('info' => '已提交执行，请稍后刷新查看结果', 'status' => 'y');
-        header('Content-Type: application/json; charset=utf-8');
-        while (ob_get_level()) ob_end_clean();   // 清空 bootstrap 的 gzip 缓冲及任何残留输出
-        echo json_encode($out);
-        // 将响应立即发送给客户端并关闭连接，后续采集在后台继续（php-fpm 环境）
-        if (function_exists('fastcgi_finish_request')) {
-            fastcgi_finish_request();
-        } else {
-            // 通用兜底：冲刷输出
-            if (ob_get_level()) ob_end_flush();
-            flush();
-        }
-
-        // 以下在后台静默执行，不受前端连接影响
+        // 整个流程包在 try/catch 中，任何异常都转成 JSON 返回，绝不让框架输出 HTML 错误页。
         try {
+            @set_time_limit(0);
+            @ignore_user_abort(true);
+            $this->checkManageSession();
+
+            $id = (int)$this->arg('id', 0);
+            $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
+            if (empty($row)) {
+                $trace('task not found id=' . $id);
+                header('Content-Type: application/json; charset=utf-8');
+                while (ob_get_level()) ob_end_clean();
+                exit(json_encode(array('info' => '任务不存在', 'status' => 'n')));
+            }
+
+            // 立即返回纯净 JSON，避免等待长任务被服务器超时打断
+            $out = array('info' => '已提交执行，请稍后刷新查看结果', 'status' => 'y');
+            header('Content-Type: application/json; charset=utf-8');
+            while (ob_get_level()) ob_end_clean();   // 清空 bootstrap 的 gzip 缓冲及任何残留输出
+            echo json_encode($out);
+            $trace('RESPONDED json, flushing');
+            // 将响应立即发送给客户端并关闭连接，后续采集在后台继续（php-fpm 环境）
+            if (function_exists('fastcgi_finish_request')) {
+                fastcgi_finish_request();
+            } else {
+                if (ob_get_level()) ob_end_flush();
+                flush();
+            }
+
+            // 以下在后台静默执行，不受前端连接影响
             $res = $this->executeTask($row[0]);
             $this->updateResult($id, $res);
+            $trace('BACKGROUND done ok=' . ($res['ok'] ? 1 : 0) . ' output=' . mb_substr($res['output'], 0, 80));
         } catch (\Throwable $e) {
-            // 后台异常仅记录，不影响已返回的响应
-            @file_put_contents(__DIR__ . '/../../runtime/runnow_error.log',
-                date('Y-m-d H:i:s') . ' | runNow background error: ' . $e->getMessage() . "\n", FILE_APPEND);
+            // 任何异常都转成纯 JSON 返回，避免框架 App::run 的 catch 输出 HTML 错误页导致前端解析失败
+            $trace('EXCEPTION ' . get_class($e) . ': ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine());
+            header('Content-Type: application/json; charset=utf-8');
+            while (ob_get_level()) ob_end_clean();
+            echo json_encode(array('info' => '执行异常：' . $e->getMessage(), 'status' => 'n'));
         }
         exit;
     }
