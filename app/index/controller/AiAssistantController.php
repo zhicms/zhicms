@@ -1021,7 +1021,7 @@ PROMPT;
     {
         $title   = htmlspecialchars($item['title'] ?? $item['dtitle'] ?? '', ENT_QUOTES, 'UTF-8');
         $goodsId = $item['goodsId'] ?? '';
-        $link    = url($route = 'index/redirect/go/platform/<platform>/id=<id>', $params = ['platform' => 'tb', 'id' => $goodsId]);
+        $link    = url($route = 'index/redirect/jump/platform=<platform>/id=<id>', $params = ['platform' => 'tb', 'id' => $goodsId]);
         $pic     = isset($item['mainPic']) ? htmlspecialchars($item['mainPic']) : '';
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;

@@ -80,7 +80,7 @@
         $couponVal = !empty($item['couponPrice']) ? $item['couponPrice'] : (!empty($item['coupon_price']) ? $item['coupon_price'] : (!empty($item['coupon']) ? $item['coupon'] : ''));
         $actualPrice = !empty($item['actualPrice']) ? $item['actualPrice'] : (!empty($item['goodsVipPrice']) ? $item['goodsVipPrice'] : (!empty($item['price']) ? $item['price'] : (!empty($item['unit_price']) ? $item['unit_price'] : (!empty($item['now_price']) ? $item['now_price'] : ''))));
         $originalPrice = !empty($item['originalPrice']) ? $item['originalPrice'] : (!empty($item['original_price']) ? $item['original_price'] : (!empty($item['originPrice']) ? $item['originPrice'] : (!empty($item['marketPrice']) ? $item['marketPrice'] : '')));
-        $couponUrl = url('index/redirect/go', ['platform' => $itemFrom, 'id' => $goodsId]);
+        $couponUrl = url('index/redirect/jump', ['platform' => $itemFrom, 'id' => $goodsId]);
       ?>
       <article class="shadow-theme mobile-card-full minw-280 mw-400 of-hidden" style="flex:1 ; border-radius:12px ; border:1px solid rgba(0,0,0,0.06) ; transition:all 0.3s ease">
         <a href="{$detailUrl}" target="_blank" class="d-block pos-rel of-hidden">

@@ -363,7 +363,13 @@ class IndexController extends \app\base\controller\BaseController
         $itemsUrl= $itemsId['0']['0'];
         $itemsUrl=preg_replace('/\[\/ZhiCmsUrl]/','',$itemsUrl);
         $content=urldecode($itemsUrl);
-        // 用本地 Tjk 接口替代已废弃的 App.Search.zfy 远程 API
+        // 先用 URL 域名识别平台：非淘宝/天猫的直接走兜底卡片（已按真实平台生成链接），
+        // 避免被误当成淘宝解析（否则卡片会显示 tb 且跳转平台错）
+        $isTaobao = (strpos($content, 'taobao.com') !== false || strpos($content, 'tmall.com') !== false);
+        if (!$isTaobao) {
+            return $this->buildFallbackBtn($content);
+        }
+        // 淘宝/天猫：用本地 Tjk 接口解析 [ZhiCmsUrl] 短链
         $card = $this->resolveLinkCard($content);
         if ($card !== null) return $card;
         // 解析失败时，渲染兜底「去购买」按钮

@@ -250,7 +250,7 @@ class SearchController extends \app\base\controller\BaseController
 
         // 统一走 Tjk 转链，不再用 itemLink 直跳（itemLink 为原始链接，无佣金）
         if (!empty($goodsId)) {
-            $item['buyUrl'] = url($route='index/Redirect/go', ['platform' => $platform, 'id' => $goodsId]);
+            $item['buyUrl'] = url($route='index/redirect/jump', ['platform' => $platform, 'id' => $goodsId]);
         } else {
             $title = urlencode($item['title'] ?? '');
             switch ($platform) {

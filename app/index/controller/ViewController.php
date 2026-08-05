@@ -115,7 +115,7 @@ class ViewController extends \app\base\controller\BaseController
         $this->showOriginalPrice = $originalPrice > 0 && $originalPrice > $actualPrice;
         $this->showCouponEndTime = !empty($item['couponEndTime']) && $item['couponEndTime'] != '0';
         $this->showCouponStartTime = !empty($item['couponStartTime']) && $item['couponStartTime'] != '0';
-        $this->buyUrl = url('index/redirect/go', ['platform' => $platformClass, 'id' => $item['goodsId']]);
+        $this->buyUrl = url('index/redirect/jump', ['platform' => $platformClass, 'id' => $item['goodsId']]);
     }
     
     private function parseDetailPics($item){
@@ -152,7 +152,7 @@ class ViewController extends \app\base\controller\BaseController
               );
 	    $rootUrl = $host . '&' . http_build_query($arr);
 		$data=obj("api/Api")->objectArray(json_decode($newData->http($rootUrl)));
-		$url=url($route='index/redirect/go/platform/<platform>/id=<id>', $params=array('platform'=>'tb', 'id'=>$data['data']['goodsId']));
+		$url=url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform'=>'tb', 'id'=>$data['data']['goodsId']));
         $html = '<section style="padding:5px;color: #333;float: left;width:100%">
 <section style="box-shadow: 0px 0px 6px rgb(211,211,211);border:1px solid #e5e5e5 ;border-radius:20px ;">
 <section style="padding-top: 2em;"><section style="width: 100%;height: 1px;border-bottom:1px solid #e5e5e5 ;"></section>

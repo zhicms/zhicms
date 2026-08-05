@@ -47,6 +47,18 @@ class RedirectController extends \app\base\controller\BaseController
             exit;
         }
 
+        // 以数据库真实 platform 为准，纠正模板可能传错/硬编码的平台，
+        // 确保京东/拼多多/唯品会商品跳转到对应平台而非误跳淘宝。
+        if (is_numeric($id)) {
+            try {
+                $item = obj('api/ApiData')->dataSelect('yun_items', array('id' => intval($id)));
+                if (!empty($item) && !empty($item['platform']) && in_array($item['platform'], $allow)) {
+                    $platform = $item['platform'];
+                }
+            } catch (\Exception $e) {
+            }
+        }
+
         $cacheKey = 'link_redirect_' . $platform . '_' . md5($id);
         $redirectUrl = tcache($cacheKey, function () use ($platform, $id) {
             return $this->resolveLink($platform, $id);
@@ -67,11 +79,14 @@ class RedirectController extends \app\base\controller\BaseController
             $tjk = new \ZhiCms\ext\Tjk();
 
             if ($platform === 'tb') {
+                // 淘宝走大淘客/好单库高佣转链
                 $url = $this->resolveTbLink($tjk, $id);
                 if (!empty($url)) return $url;
             } else {
-                $url = $this->resolveHdkLink($tjk, $id);
-                if (!empty($url)) return $url;
+                // 京东/拼多多/唯品会：当前 Tjk 体系（get-privilege-link / ratesurl）
+                // 仅支持淘宝，误用会转错链接。这些平台暂未接入各自联盟转链，
+                // 直接回退到对应平台正确的商品落地页，保证「跳转对应平台正确」。
+                return $this->buildFallbackUrl($platform, $id);
             }
             return '';
         } catch (\Exception $e) {
@@ -99,27 +114,6 @@ class RedirectController extends \app\base\controller\BaseController
                     ?? $raw['data']['couponClickUrl']
                     ?? '';
                 if (!empty($url)) return $url;
-            }
-        }
-        return '';
-    }
-
-    private function resolveHdkLink($tjk, $id)
-    {
-        $hdk = $tjk->getHdk();
-        if ($hdk) {
-            $raw = $hdk->RatesUrl($id);
-            if (isset($raw['code']) && ($raw['code'] == 1 || $raw['code'] == 200)) {
-                $url = $raw['data']['shortUrl']
-                    ?? $raw['data']['couponClickUrl']
-                    ?? $raw['data']['clickUrl']
-                    ?? $raw['data']['url']
-                    ?? $raw['data']['itemUrl']
-                    ?? '';
-                if (!empty($url)) return $url;
-            }
-            if (isset($raw['url']) && !empty($raw['url'])) {
-                return $raw['url'];
             }
         }
         return '';

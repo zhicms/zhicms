@@ -40,7 +40,7 @@
         $goodsId    = !empty($item['goodsId']) ? $item['goodsId'] : ($item['id'] ?? 0);
         $itemTitle  = !empty($item['title']) ? $item['title'] : (!empty($item['dtitle']) ? $item['dtitle'] : '热销商品');
         $detailUrl  = url('index/view/detail', ['id' => $goodsId, 'type' => 'taobao']);
-        $couponUrl  = url('index/redirect/go', ['platform' => 'taobao', 'id' => $goodsId]);
+        $couponUrl  = url('index/redirect/jump', ['platform' => 'taobao', 'id' => $goodsId]);
         $couponVal  = !empty($item['couponPrice']) ? $item['couponPrice'] : '';
         $actual     = !empty($item['actualPrice']) ? $item['actualPrice'] : '';
         $origin     = !empty($item['originalPrice']) ? $item['originalPrice'] : '';
