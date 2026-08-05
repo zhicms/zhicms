@@ -46,7 +46,7 @@ class CacheController extends \app\base\controller\BaseController
         $type = isset($_GET['type']) ? trim($_GET['type']) : 'all';
 
         if ($type === 'all') {
-            \app\manage\controller\IndexController::clearAllCache();
+            self::clearAllCache();
             $msg = '已清理全站缓存';
         } elseif (isset(self::$types[$type])) {
             $t = self::$types[$type];
@@ -55,7 +55,7 @@ class CacheController extends \app\base\controller\BaseController
                 // 数据缓存：清理 data/cache 下松散 php 文件，但保留 tpl/db 子目录
                 $this->clearLoose($dir);
             } else {
-                \app\manage\controller\IndexController::delDirContents($dir);
+                self::delDirContents($dir);
             }
             $msg = '已清理「' . $t['name'] . '」';
         } else {
@@ -80,7 +80,7 @@ class CacheController extends \app\base\controller\BaseController
             if (is_dir($full)) {
                 // 保留 tpl / db 子目录（由各自类型处理）
                 if (in_array($file, array('tpl', 'db'))) continue;
-                \app\manage\controller\IndexController::delDirContents($full);
+                self::delDirContents($full);
                 @rmdir($full);
             } else {
                 @unlink($full);
@@ -136,5 +136,65 @@ class CacheController extends \app\base\controller\BaseController
         if ($bytes < 1048576) return round($bytes / 1024, 1) . ' KB';
         if ($bytes < 1073741824) return round($bytes / 1048576, 1) . ' MB';
         return round($bytes / 1073741824, 2) . ' GB';
+    }
+
+    // ===== 静态清理方法（供 CacheController::clear 与 LoginController::logout 复用）=====
+
+    /**
+     * 递归删除目录内容（保留目录自身）
+     */
+    public static function delDirContents($dir){
+        if (!is_dir($dir)) return;
+        $items = scandir($dir);
+        foreach ($items as $it) {
+            if ($it === '.' || $it === '..') continue;
+            $p = $dir . '/' . $it;
+            if (is_dir($p)) {
+                self::delDirContents($p);
+                @rmdir($p);
+            } else {
+                @unlink($p);
+            }
+        }
+    }
+
+    private static function clearTpl(){
+        self::delDirContents(\ROOT_PATH . 'data/cache/tpl');
+    }
+
+    private static function clearDb(){
+        self::delDirContents(\ROOT_PATH . 'data/cache/db');
+    }
+
+    private static function clearData(){
+        $dir = \ROOT_PATH . 'data/cache';
+        if (!is_dir($dir)) return;
+        $dh = opendir($dir);
+        while ($f = readdir($dh)) {
+            if ($f === '.' || $f === '..') continue;
+            $full = $dir . '/' . $f;
+            if (is_dir($full)) {
+                if (in_array($f, array('tpl', 'db'))) continue;
+                self::delDirContents($full);
+                @rmdir($full);
+            } else {
+                @unlink($full);
+            }
+        }
+        closedir($dh);
+    }
+
+    private static function clearStatic(){
+        self::delDirContents(\ROOT_PATH . 'runtime/static_cache');
+    }
+
+    /**
+     * 一键全站清理（静态，不 exit，便于 logout 等场景复用）
+     */
+    public static function clearAllCache(){
+        self::clearTpl();
+        self::clearDb();
+        self::clearData();
+        self::clearStatic();
     }
 }

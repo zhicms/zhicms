@@ -44,8 +44,8 @@ class LoginController extends \app\base\controller\BaseController {
         obj("api/Api")->unsetSession("manage_uid");
         obj("api/Api")->unsetSession("manage_pic");
         // 退出前一键清理全站缓存
-        if (class_exists('\\app\\manage\\controller\\IndexController')) {
-            \app\manage\controller\IndexController::clearAllCache();
+        if (class_exists('\\app\\manage\\controller\\CacheController')) {
+            \app\manage\controller\CacheController::clearAllCache();
         }
         $url = 'index.php?r=manage';
         $this->redirect($url, $code = 302);
