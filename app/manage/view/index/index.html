@@ -195,7 +195,7 @@ function doUpdate(mode) {
     mode = mode || 'upgrade';
     var tipText = mode === 'install' ? '正在安装，请稍候…' : '正在升级，请稍候…';
     if(typeof showToast === 'function') {
-        showToast(tipText, 'info');
+        showToast(tipText, 'success');
     }
     $.ajax({
         url: 'index.php?r=manage/index/downloadFile',

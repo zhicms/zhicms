@@ -627,6 +627,8 @@ class FindController extends \app\base\controller\BaseController
     		// 再用白名单 strip_tags 过滤危险标签（在解码后的真实 HTML 上过滤才有效）。
     		$allowedTags = '<p><br><a><img><strong><b><em><i><u><strike><sub><sup><ul><ol><li><blockquote><pre><code><h1><h2><h3><h4><h5><h6><hr><table><thead><tbody><tr><td><th><span><div><font><center><figure><figcaption>';
     		$content = strip_tags(htmlspecialchars_decode($this->arg("body"), ENT_QUOTES), $allowedTags);
+		// 清除正文中残留的模板标签字面量（如 {$ret['content']|raw}），避免前台原样显示
+		$content = $this->cleanTemplateTags($content);
     		$status=$this->arg("status", 0);
     		$author=$this->arg("author", '');
     		$laiyuan=$this->arg("laiyuan", '');
@@ -788,6 +790,8 @@ class FindController extends \app\base\controller\BaseController
     		// 富文本正文：同 addArticle，先还原 htmlspecialchars 再白名单过滤，避免 &amp;nbsp; 字面显示
     		$allowedTags = '<p><br><a><img><strong><b><em><i><u><strike><sub><sup><ul><ol><li><blockquote><pre><code><h1><h2><h3><h4><h5><h6><hr><table><thead><tbody><tr><td><th><span><div><font><center><figure><figcaption>';
     		$content = strip_tags(htmlspecialchars_decode($this->arg("body"), ENT_QUOTES), $allowedTags);
+		// 清除正文中残留的模板标签字面量（如 {$ret['content']|raw}），避免前台原样显示
+		$content = $this->cleanTemplateTags($content);
     		$status=$this->arg("status", 0);
     		$author=$this->arg("author", '');
     		$laiyuan=$this->arg("laiyuan", '');
@@ -1086,6 +1090,25 @@ public function type(){
 	 * @param string $content 文章内容
 	 * @return array
 	 */
+	/**
+	 * 清洗正文中残留的模板标签字面量（如 {$ret['content']|raw}、{if}、{foreach}、{/if} 等）。
+	 * 这些标签若被当作正文存库，前台用 {$content} 输出时会原样显示为可见文本。
+	 * 仅清除典型的模板语法（{$var}、{if/foreach/for/while}、{/xx}、{* *}），
+	 * 普通大括号文字（如 {示例}）不受影响。
+	 */
+	private function cleanTemplateTags($html){
+		if (!is_string($html) || $html === '') return $html;
+		// {$var}、{$var|modifier}、{$arr['k']}
+		$html = preg_replace('/\{\s*\$[^}]*\}/', '', $html);
+		// {if ...}、{foreach ...}、{for ...}、{while ...}、{else}、{elseif ...}
+		$html = preg_replace('/\{\s*\/?\s*(if|elseif|else|foreach|for|while|switch|case|break|continue|php|literal|section|include|assign)\b[^}]*\}/i', '', $html);
+		// 闭合标签 {/if}、{/foreach} 等
+		$html = preg_replace('/\{\s*\/[a-zA-Z_]+\s*\}/', '', $html);
+		// 注释 {* ... *} 及配对标签 {tag}{/tag} 的残留
+		$html = preg_replace('/\{\*.*?\*\}/s', '', $html);
+		return $html;
+	}
+
 	private function aiMatchAndBuildGoods($title, $content)
 	{
 		$result = \app\common\AiService::matchGoodsByAi($title, $content, 'taobao');
