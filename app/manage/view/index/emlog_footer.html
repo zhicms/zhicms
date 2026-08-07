@@ -22,30 +22,30 @@
         <i class="fas fa-angle-up"></i>
     </a>
 
-    <!-- Bootstrap core JavaScript-->
-    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <!-- Bootstrap core JavaScript（本地化，避免 CDN 阻塞后台加载）-->
+    <script src="https://cdn.vt5.cn/js/jquery-1.11.3.min.js"></script>
     <script>window.jQuery || document.write('<script src="/public/web/js/jquery.min.js"><\/script>');</script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.vt5.cn/js/bootstrap.bundle.min.js"></script>
 
     <!-- Core plugin JavaScript-->
 
     <!-- Custom scripts for all pages-->
-    <script src="/public/manage/js/sb-admin-2.min.js?v=20260730fix"></script>
+    <script src="https://cdn.vt5.cn/js/sb-admin-2.min.js?v=20260730fix"></script>
 
     <!-- MyMessage 消息提示库 -->
-    <link rel="stylesheet" href="/public/manage/css/jquery.my-message.1.1.css" />
-    <script src="/public/manage/js/jquery.my-message.1.1.js"></script>
+    <link rel="stylesheet" href="https://cdn.vt5.cn/css/jquery.my-message.1.1.css" />
+    <script src="https://cdn.vt5.cn/js/jquery.my-message.1.1.js"></script>
 
     <!-- Page level plugins -->
-    <script src="/public/manage/js/index.js?v=20260729"></script>
-    <script src="/public/manage/js/emlog_nav_fix.js?v=20260730v6"></script>
+    <script src="https://cdn.vt5.cn/js/index.js?v=20260729"></script>
+    <script src="https://cdn.vt5.cn/js/emlog_nav_fix.js?v=20260730v6"></script>
 
     <!-- AI 开放平台 -->
-    <link rel="stylesheet" href="/public/manage/css/ai-chat.css">
-	<link rel="stylesheet" href="{__PUBLIC__}manage/css/utilities.css?v=5.0.2">
-	<link rel="stylesheet" href="{__PUBLIC__}manage/css/admin-refine.css?v=5.0.3">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="/public/manage/js/ai-chat.js"></script>
+    <link rel="stylesheet" href="https://cdn.vt5.cn/css/ai-chat.css">
+	<link rel="stylesheet" href="https://cdn.vt5.cn/css/utilities.css?v=5.0.2">
+	<link rel="stylesheet" href="https://cdn.vt5.cn/css/admin-refine.css?v=5.0.3">
+    <script src="https://cdn.vt5.cn/js/marked.min.js"></script>
+    <script src="https://cdn.vt5.cn/js/ai-chat.js"></script>
 
     <!-- AI Chat Modal -->
     <div class="modal fade" id="aiChatModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -260,6 +260,47 @@
             xhr.send();
         } catch (e) {
             done(false, '清除缓存出错：' + e.message);
+        }
+    };
+
+    // 手动检查更新：绕过 1 小时缓存，强制请求远程升级接口，完成后刷新页面显示最新结果
+    window.zcCheckUpdate = function() {
+        var btn = document.getElementById('btn-check-update');
+        if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 检查中…'; }
+        if (window.showToast) showToast('正在检查更新…', 'success');
+        try {
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', 'index.php?r=manage/index/checkUpdate&force=1', true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState === 4) {
+                    if (xhr.status === 200) {
+                        try {
+                            var ret = JSON.parse(xhr.responseText);
+                            if (ret && ret.status === 'y') {
+                                if (window.showToast) showToast('检查完成，页面即将刷新', 'success');
+                                setTimeout(function(){ location.reload(); }, 900);
+                                return;
+                            }
+                            var msg = (ret && ret.info) ? ret.info : '检查更新失败';
+                            if (window.showToast) showToast(msg, 'danger'); else alert(msg);
+                        } catch (e) {
+                            if (window.showToast) showToast('返回数据解析失败', 'danger'); else alert('返回数据解析失败');
+                        }
+                    } else {
+                        if (window.showToast) showToast('检查更新请求失败（HTTP ' + xhr.status + '）', 'danger');
+                        else alert('检查更新请求失败');
+                    }
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 检查更新'; }
+                }
+            };
+            xhr.onerror = function() {
+                if (window.showToast) showToast('检查更新网络错误', 'danger'); else alert('检查更新网络错误');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 检查更新'; }
+            };
+            xhr.send();
+        } catch (e) {
+            if (window.showToast) showToast('检查更新出错：' + e.message, 'danger'); else alert('检查更新出错：' + e.message);
+            if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 检查更新'; }
         }
     };
     </script>

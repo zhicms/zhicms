@@ -97,6 +97,9 @@
                             <tr>
                                 <th>升级操作</th>
                                 <td>
+                                    <button class="btn btn-sm btn-outline-secondary mr-2" id="btn-check-update" onclick="zcCheckUpdate()">
+                                        <i class="fas fa-cloud-download-alt"></i> 检查更新
+                                    </button>
                                     <?php if(empty($installed)): ?>
                                         <button class="btn btn-sm btn-success" onclick="doUpdate('install')">
                                             <i class="fas fa-download"></i> 立即安装
@@ -118,7 +121,7 @@
                                             <div class="form-text">后台升级：下载更新包、安全覆盖文件并执行数据库升级（用户配置不会被覆盖）。</div>
                                         <?php endif; ?>
                                     <?php else: ?>
-                                        <span class="text-muted"><i class="fas fa-ban"></i> 当前不可升级（官网已关闭升级通道或已应用最新补丁）</span>
+                                        <span class="text-muted ml-2"><i class="fas fa-ban"></i> 当前不可升级（官网已关闭升级通道或已应用最新补丁）</span>
                                     <?php endif; ?>
                                 </td>
                             </tr>

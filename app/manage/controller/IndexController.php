@@ -68,7 +68,26 @@ class IndexController extends \ZhiCms\base\Controller {
 
         try {
             $updateUrl = self::UPDATE_URL . '?ver=' . rawurlencode($localVersion);
-            $json = \ZhiCms\ext\Http::doGet($updateUrl, 8);
+            // 升级检查加文件缓存（1 小时），避免每次打开控制台都同步请求远程接口导致后台卡顿。
+            // 远程慢/不可达时直接读缓存（无缓存则降级为空，不阻塞页面）。
+            $cacheFile = \BASE_PATH . 'runtime/cache/update_check.json';
+            $cached = null;
+            if (is_file($cacheFile)) {
+                $cached = @json_decode(@file_get_contents($cacheFile), true);
+                if (!is_array($cached) || (time() - ($cached['__t'] ?? 0)) > 3600) {
+                    $cached = null; // 超过 1 小时，视为过期
+                }
+            }
+            $json = false;
+            if ($cached && isset($cached['json'])) {
+                $json = $cached['json'];
+            } else {
+                $json = \ZhiCms\ext\Http::doGet($updateUrl, 2); // 超时从 8s 降到 2s
+                // 无论成功失败，都写入缓存（成功存真实结果；失败存空串），避免频繁重试拖慢
+                $toCache = array('__t' => time(), 'json' => $json ?: '');
+                if (!is_dir(dirname($cacheFile))) @mkdir(dirname($cacheFile), 0777, true);
+                @file_put_contents($cacheFile, json_encode($toCache));
+            }
             if (!empty($json)) {
                 $ret = json_decode($json, true);
                 if (is_array($ret)) {
@@ -161,6 +180,100 @@ class IndexController extends \ZhiCms\base\Controller {
         ));
 
         return $this->display();
+    }
+
+    /**
+     * 手动检查更新（绕过 1 小时缓存，强制请求远程接口）
+     * 由控制台首页"检查更新"按钮触发。成功后更新缓存并返回最新版本信息 JSON。
+     */
+    public function checkUpdate() {
+        $this->checkManageSession();
+        $force = ($this->arg('force', 0) == 1) ? true : false;
+
+        $localVersion = \app\common\ConfigStore::load('version', 'version');
+        if (empty($localVersion)) {
+            $localVersion = defined('VERSION') ? VERSION : '未知';
+        }
+
+        $result = array(
+            'version'        => '',
+            'patchMd5'       => '',
+            'vinfo'          => '',
+            'updateTime'     => '',
+            'updateInfo'     => '',
+            'vlist'          => array(),
+            'vlistHtml'      => '',
+            'getup'          => 0,
+            'canUpgrade'     => 0,
+            'isPatch'        => 0,
+            'serverVersion'  => '',
+        );
+
+        $appliedPatches = \app\common\ConfigStore::load('version', 'applied_patches');
+        if (!is_array($appliedPatches)) $appliedPatches = array();
+
+        try {
+            $updateUrl = self::UPDATE_URL . '?ver=' . rawurlencode($localVersion);
+            $json = \ZhiCms\ext\Http::doGet($updateUrl, 5); // 手动检查给足 5s 超时
+
+            // 无论成功失败都刷新缓存（与 index() 共用缓存文件）
+            $cacheFile = \BASE_PATH . 'runtime/cache/update_check.json';
+            if (!is_dir(dirname($cacheFile))) @mkdir(dirname($cacheFile), 0777, true);
+            @file_put_contents($cacheFile, json_encode(array('__t' => time(), 'json' => $json ?: '')));
+
+            if (!empty($json)) {
+                $ret = json_decode($json, true);
+                if (is_array($ret)) {
+                    if (!empty($ret['version']))       $result['serverVersion'] = $ret['version'];
+                    if (!empty($ret['full_md5']))        $result['patchMd5'] = $ret['full_md5'];
+                    elseif (!empty($ret['patch_md5']))   $result['patchMd5'] = $ret['patch_md5'];
+                    if (!empty($ret['vinfo']))           $result['vinfo'] = $ret['vinfo'];
+                    if (!empty($ret['time']))            $result['updateTime'] = $ret['time'];
+                    if (!empty($ret['update_content']))  $result['updateInfo'] = $ret['update_content'];
+
+                    $vlist = array(); $vlistHtml = '';
+                    if (isset($ret['vlist']) && $ret['vlist'] !== '') {
+                        $raw = $ret['vlist'];
+                        if (is_array($raw)) {
+                            $vlist = $raw;
+                        } elseif (stripos($raw, '<li') !== false) {
+                            $vlistHtml = $raw;
+                        } else {
+                            $dec = json_decode($raw, true);
+                            if (is_array($dec)) {
+                                $vlist = $dec;
+                            } else {
+                                $tmp = preg_split('/[\r\n;]+/', $raw);
+                                foreach ($tmp as $t) { $t = trim($t); if ($t !== '') $vlist[] = $t; }
+                            }
+                        }
+                    }
+                    $result['vlist'] = $vlist;
+                    $result['vlistHtml'] = $vlistHtml;
+                    $result['getup'] = (!empty($ret['getup']) && $ret['getup'] == 1) ? 1 : 0;
+                }
+            }
+        } catch (\Exception $e) {
+            $result['updateInfo'] = '升级信息获取失败：' . $e->getMessage();
+        }
+
+        $result['canUpgrade'] = ($result['getup'] == 1) ? 1 : 0;
+        if ($result['canUpgrade'] && !empty($result['serverVersion']) && $result['serverVersion'] == $localVersion) {
+            $result['isPatch'] = 1;
+        }
+        if ($result['canUpgrade'] && !empty($result['patchMd5']) && in_array($result['patchMd5'], $appliedPatches, true)) {
+            $result['canUpgrade'] = 0;
+        }
+
+        header('Content-Type: application/json; charset=utf-8');
+        header('X-Content-Type-Options: nosniff');
+        header('Cache-Control: no-store, no-cache, must-revalidate');
+        echo json_encode(array(
+            'status' => 'y',
+            'info'   => '检查完成',
+            'data'   => $result,
+        ), JSON_UNESCAPED_UNICODE);
+        exit;
     }
 
     /**
