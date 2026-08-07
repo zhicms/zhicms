@@ -62,6 +62,13 @@ class Route {
 					$name = $m[1];
 					// 用 \w 避免被下方 str_ireplace 把 '-' 转义而破坏字母/数字范围
 					$pat  = '[\w%-]+';
+					// platform 占位符内容只能是平台标识（tb/jd/pdd/vip）。
+					// 注意：本条 str_ireplace 会把 '-' 全部转义成 '\-'，因此【不能用字符范围 a-z】，
+					// 否则 [a-z] 会变成 [a\-z]（连字符不再表示范围，只匹配 a/-/z），导致所有 buy 链接匹配失败。
+					// 这里用 \w（不含 '-'，不被转义破坏），platform 合法性由 RedirectController::jump 的白名单二次校验。
+					if ($name === 'platform') {
+						$pat = '\w+';
+					}
 					return '(?<' . $name . '>' . $pat . ')';
 				}, $rule);
 				$rule = '/'.str_ireplace(array('\\\\', 'http://', '-', '/', '.'), array('', '', '\-', '\/', '\.'), $rule).'/i';

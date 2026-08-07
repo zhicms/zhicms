@@ -78,7 +78,7 @@
                 if (empty($pfName)) {
                     $pfName = $pfNames[$goodsCard['platform']] ?? $goodsCard['platform'];
                 }
-                $buyUrl = url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform' => $goodsCard['platform'], 'id' => $goodsCard['goodsId']));
+                $buyUrl = url('index/redirect/jump', array('platform' => $goodsCard['platform'], 'id' => $goodsCard['goodsId']));
                 ?>
                 <a href="<?php echo $buyUrl; ?>" target="_blank" class="fc-goods-card">
                     <?php if (!empty($goodsCard['pic'])): ?>

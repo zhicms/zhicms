@@ -437,22 +437,50 @@ class IndexController extends \ZhiCms\base\Controller {
         }
 
         $sql = str_replace("\r\n", "\n", $sql);
-        $lines = explode("\n", $sql);
-        $buffer = '';
+        // 稳健拆分：逐字符扫描，跳过单引号/双引号/反引号字符串内的分号与行内 -- 注释
+        // 解决多行 CREATE TABLE 在「分号未单独成行」时被错误合并到下一条 ALTER 的问题
         $statements = array();
-        foreach ($lines as $line) {
-            $line = trim($line);
-            if ($line === '' || strpos($line, '--') === 0 || strpos($line, '#') === 0) {
+        $len = strlen($sql);
+        $buf = '';
+        $q = null;            // 当前引号 ' " `
+        $inLineComment = false;
+        for ($i = 0; $i < $len; $i++) {
+            $c = $sql[$i];
+            if ($inLineComment) {
+                if ($c === "\n") $inLineComment = false;
                 continue;
             }
-            $buffer .= $line . "\n";
-            if (substr(rtrim($line), -1) === ';') {
-                $stmt = trim($buffer);
-                $buffer = '';
-                if ($stmt !== '') $statements[] = $stmt;
+            if ($q !== null) {
+                $buf .= $c;
+                if ($c === $q) {
+                    if (!($q === '`' && $i > 0 && $sql[$i-1] === '\\')) $q = null;
+                }
+                continue;
             }
+            // 行内注释：-- 后到换行
+            if ($c === '-' && $i + 1 < $len && $sql[$i+1] === '-') {
+                $inLineComment = true;
+                continue;
+            }
+            if ($c === '#') { // # 也作为行注释
+                $inLineComment = true;
+                continue;
+            }
+            if ($c === "'" || $c === '"' || $c === '`') {
+                $q = $c;
+                $buf .= $c;
+                continue;
+            }
+            if ($c === ';') {
+                $s = trim($buf);
+                if ($s !== '' && $s !== ';') $statements[] = $s;
+                $buf = '';
+                continue;
+            }
+            $buf .= $c;
         }
-        if (trim($buffer) !== '') $statements[] = trim($buffer);
+        $s = trim($buf);
+        if ($s !== '' && $s !== ';') $statements[] = $s;
 
         foreach ($statements as $stmt) {
             try {
@@ -491,6 +519,7 @@ class IndexController extends \ZhiCms\base\Controller {
             "Can't DROP",
             'check that column/key exists',
             'Multiple primary key defined',
+            'Base table or view not found',     // 跨表依赖顺序时偶发（已被 IF NOT EXISTS 兜底）
         );
         foreach ($ignorable as $kw) {
             if (stripos($msg, $kw) !== false) return true;

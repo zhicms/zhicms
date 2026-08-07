@@ -143,7 +143,7 @@ class BaseController extends \ZhiCms\base\Controller {
     protected function checkCsrfToken() {
         $token = $this->arg('_token') ?? '';
         $sessionToken = $_SESSION['csrf_token'] ?? '';
-        
+
         if (empty($token) || $token !== $sessionToken) {
             exit(json_encode(array("info" => "CSRF验证失败", "status" => "n")));
         }

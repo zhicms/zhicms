@@ -90,8 +90,8 @@
                         </td>
                         <td>
                             <div class="d-flex align-items-center">
-                                <?php if(!empty($item['avatar'])): ?>
-                                <img src="<?php echo $item['avatar']; ?>" alt="头像" class="rounded-circle mr-3 w-50 h-50" style="object-fit: cover">
+                                <?php if(!empty($item['pic'])): ?>
+                                <img src="<?php echo $item['pic']; ?>" alt="头像" class="rounded-circle mr-3 w-50 h-50" style="object-fit: cover">
                                 <?php else: ?>
                                 <div class="mr-3 bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white font-weight-bold w-50 h-50">
                                     <?php echo strtoupper(mb_substr($item['username'], 0, 1, 'UTF-8')); ?>
@@ -101,8 +101,8 @@
                                     <div class="font-weight-bold h6 mb-0">
                                         <?php echo $item['username']; ?>
                                     </div>
-                                    <?php if(!empty($item['realname'])): ?>
-                                    <small class="text-muted">真实姓名: <?php echo $item['realname']; ?></small>
+                                    <?php if(!empty($item['nickname'])): ?>
+                                    <small class="text-muted">昵称: <?php echo $item['nickname']; ?></small>
                                     <?php endif; ?>
                                     <?php if(!empty($item['email'])): ?>
                                     <div class="small text-muted">

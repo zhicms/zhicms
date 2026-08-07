@@ -39,7 +39,7 @@
                         <div class="form-group">
                             <label for="body">页面内容</label>
                             <!-- TinyMCE 编辑器容器 -->
-                            <textarea id="page-editor" name="body" data-editor data-upload-type="page" data-height="550">{$ret['body']}</textarea>
+                            <textarea id="page-editor" name="body" data-editor data-upload-type="page" data-height="550">{$ret['body']|raw}</textarea>
                             <small class="form-text text-muted">支持富文本编辑，可使用[插入商品链接]功能添加电商产品链接</small>
                         </div>
 

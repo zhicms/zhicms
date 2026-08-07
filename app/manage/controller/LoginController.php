@@ -24,6 +24,7 @@ class LoginController extends \app\base\controller\BaseController {
                 $_SESSION['manage_system'] = $userName;
                 $_SESSION['manage_uid'] = is_object($user) ? $user->id : $user['id'];
                 $_SESSION['manage_pic'] = is_object($user) ? $user->pic : $user['pic'];
+                $_SESSION['manage_nickname'] = is_object($user) ? (isset($user->nickname) ? $user->nickname : '') : (isset($user['nickname']) ? $user['nickname'] : '');
                 \ZhiCms\ext\AdminLog::write('login', '管理员「' . $userName . '」登录后台');
                 echo json_encode(array("info" => "登录成功", "status" => "y"));
                 exit;
@@ -43,6 +44,7 @@ class LoginController extends \app\base\controller\BaseController {
         obj("api/Api")->unsetSession("manage_system");
         obj("api/Api")->unsetSession("manage_uid");
         obj("api/Api")->unsetSession("manage_pic");
+        obj("api/Api")->unsetSession("manage_nickname");
         // 退出前一键清理全站缓存
         if (class_exists('\\app\\manage\\controller\\CacheController')) {
             \app\manage\controller\CacheController::clearAllCache();

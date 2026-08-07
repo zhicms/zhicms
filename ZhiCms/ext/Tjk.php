@@ -3,12 +3,15 @@ namespace ZhiCms\ext;
 
 use ZhiCms\ext\Tjk\Dtk;
 use ZhiCms\ext\Tjk\Hdk;
+use ZhiCms\ext\Tjk\Pdd;
 
 class Tjk {
     
     protected $dtk;
     protected $hdk;
+    protected $pdd;
     protected $pid = '';        // 淘宝联盟推广位 pid（转链/生成淘口令时用于佣金归属）
+    protected $pddPid = '';     // 拼多多推广位 pid
     protected $customConfig = [];
     
     public function __construct($config = null) {
@@ -25,14 +28,24 @@ class Tjk {
         $dtkAppKey = $config['DtkappKey'] ?? '';
         $dtkAppSecret = $config['DtkappSecret'] ?? '';
         $hdkApiKey = $config['HdkApiKey'] ?? '';
-        $this->pid = $config['pid'] ?? ($config['dtk_pid'] ?? '');
+        $hdkUnionId = $config['HdkUnionId'] ?? '';
+        $hdkVipPid = $config['HdkVipPid'] ?? '';
+        $hdkPddPid = $config['HdkPddPid'] ?? '';
+        $pddClientId = $config['PddClientId'] ?? '';
+        $pddClientSecret = $config['PddClientSecret'] ?? '';
+        $this->pddPid = $config['PddPid'] ?? $hdkPddPid;
+        $this->pid = $config['pid'] ?? ($config['dtk_pid'] ?? ($config['tb_pid'] ?? ''));
         
         if (!empty($dtkAppKey) && !empty($dtkAppSecret)) {
             $this->dtk = new Dtk($dtkAppKey, $dtkAppSecret);
         }
         
         if (!empty($hdkApiKey)) {
-            $this->hdk = new Hdk($hdkApiKey);
+            $this->hdk = new Hdk($hdkApiKey, $hdkUnionId, $hdkVipPid, $hdkPddPid);
+        }
+        
+        if (!empty($pddClientId) && !empty($pddClientSecret)) {
+            $this->pdd = new Pdd($pddClientId, $pddClientSecret, $this->pddPid);
         }
         
         if (empty($this->dtk) && empty($this->hdk)) {
@@ -52,14 +65,24 @@ class Tjk {
         $dtkAppKey = $api['dtk_appkey'] ?? '';
         $dtkAppSecret = $api['dtk_appsecret'] ?? '';
         $hdkApiKey = $api['hdk_appkey'] ?? '';
-        $this->pid = $api['dtk_pid'] ?? '';
+        $hdkUnionId = $api['hdk_union_id'] ?? '';
+        $hdkVipPid = $api['hdk_vip_pid'] ?? '';
+        $hdkPddPid = $api['hdk_pdd_pid'] ?? '';
+        $pddClientId = $api['pdd_client_id'] ?? '';
+        $pddClientSecret = $api['pdd_client_secret'] ?? '';
+        $this->pddPid = $api['pdd_pid'] ?? $hdkPddPid;
+        $this->pid = $api['dtk_pid'] ?? ($api['tb_pid'] ?? '');
         
         if (!empty($dtkAppKey) && !empty($dtkAppSecret)) {
             $this->dtk = new Dtk($dtkAppKey, $dtkAppSecret);
         }
         
         if (!empty($hdkApiKey)) {
-            $this->hdk = new Hdk($hdkApiKey);
+            $this->hdk = new Hdk($hdkApiKey, $hdkUnionId, $hdkVipPid, $hdkPddPid);
+        }
+        
+        if (!empty($pddClientId) && !empty($pddClientSecret)) {
+            $this->pdd = new Pdd($pddClientId, $pddClientSecret, $this->pddPid);
         }
     }
     
@@ -68,39 +91,51 @@ class Tjk {
         $this->initWithCustomConfig($config);
     }
     
-    public function searchGoods($keyword, $platform = 'taobao', $pageNum = 1, $pageSize = 20, $minId = 1, $sort = '', $hasCoupon = '') {
+    public function searchGoods($keyword, $platform = 'taobao', $pageNum = 1, $pageSize = 20, $minId = 1, $sort = '', $hasCoupon = '', $brand = '', $pmin = '', $pmax = '') {
         $platform = strtolower($platform);
 
-        // 淘宝/天猫：大淘客 + 好单库(淘宝) 合并，最大化商品覆盖
-        if ($platform === 'taobao' || $platform === 'dtk' || $platform === 'hdk') {
-            $merged = ['code' => 1, 'message' => 'success', 'items' => [], 'total' => 0];
+        // 品牌作为关键词追加（API 搜索按关键词匹配）
+        if (!empty($brand)) {
+            $keyword = trim($keyword . ' ' . $brand);
+        }
 
-            if ($this->dtk && ($platform === 'taobao' || $platform === 'dtk')) {
-                $dtkRes = $this->dtk->SearchGoods($keyword, $pageNum, $pageSize);
-                if ($dtkRes['code'] == 1 && !empty($dtkRes['items'])) {
-                    foreach ($dtkRes['items'] as $it) {
-                        $it['item_from'] = 'tb';
-                        $merged['items'][] = $it;
-                    }
-                    $merged['total'] += intval($dtkRes['total'] ?? 0);
+        // 淘宝/天猫：仅走大淘客（Dtk），按约定淘宝转链/搜索统一用大淘客
+        if ($platform === 'taobao' || $platform === 'dtk') {
+            if (!$this->dtk) {
+                return ['code' => 0, 'message' => '大淘客API未配置', 'items' => [], 'total' => 0];
+            }
+            // 排序映射：站内排序值 -> 大淘客 sort 编码
+            // 0综合 1价格低到高 2价格高到低 3销量低到高 4销量高到低 5佣金比例低到高 6佣金比例高到低
+            $dtkSortMap = array(
+                'score'     => '0',
+                'default'   => '0',
+                'sales'     => '4',
+                'sales_asc' => '3',
+                'price'     => '1',
+                'price_asc' => '1',
+                'price_desc'=> '2',
+                'commission'=> '6',
+                'new'       => '0',
+            );
+            $dtkSort = '';
+            if ($sort !== '' && $sort !== null) {
+                $dtkSort = isset($dtkSortMap[$sort]) ? $dtkSortMap[$sort] : (is_numeric($sort) ? strval($sort) : '');
+            }
+            $dtkRes = $this->dtk->SearchGoods($keyword, $pageNum, $pageSize, $pmin, $pmax, $dtkSort);
+            if ($dtkRes['code'] == 1 && !empty($dtkRes['items'])) {
+                foreach ($dtkRes['items'] as &$it) {
+                    $it['item_from'] = 'tb';
                 }
+                unset($it);
+                return $dtkRes;
             }
+            return ['code' => 0, 'message' => $dtkRes['message'] ?? '未找到商品，请检查大淘客配置或关键词', 'items' => [], 'total' => 0];
+        }
 
-            if ($this->hdk && ($platform === 'taobao' || $platform === 'hdk')) {
-                $hdkRes = $this->hdk->SearchGoods($keyword, $pageSize, $minId);
-                if ($hdkRes['code'] == 1 && !empty($hdkRes['items'])) {
-                    foreach ($hdkRes['items'] as $it) {
-                        $it['item_from'] = 'tb';
-                        $merged['items'][] = $it;
-                    }
-                    $merged['total'] += intval($hdkRes['total'] ?? 0);
-                }
-            }
-
-            if (empty($merged['items'])) {
-                return ['code' => 0, 'message' => '未找到商品，请检查API配置或关键词', 'items' => [], 'total' => 0];
-            }
-            return $merged;
+        // 好单库淘宝（hdk 单独别名，仍走大淘客保持一致）
+        if ($platform === 'hdk') {
+            // 注意：$keyword 已在上方拼入品牌，这里 brand 传空避免重复追加
+            return $this->searchGoods($keyword, 'taobao', $pageNum, $pageSize, $minId, $sort, $hasCoupon, '', $pmin, $pmax);
         }
 
         // 好单库多平台：拼多多 / 京东 / 唯品会
@@ -115,6 +150,14 @@ class Tjk {
 
         switch ($platform) {
             case 'pdd':
+                // 优先走拼多多官方多多进宝 SDK，好单库作为备用
+                if ($this->pdd) {
+                    $pddRes = $this->pdd->searchGoods($keyword, $pageSize, $pageNum, $sort, $hasCoupon, $pmin, $pmax);
+                    if ($pddRes['code'] == 1 && !empty($pddRes['items'])) {
+                        $pddRes['item_from'] = 'pdd';
+                        return $pddRes;
+                    }
+                }
                 $result = $this->hdk->SearchPddGoods($keyword, $pageSize, $minId, $sort, $hasCoupon);
                 break;
             case 'jd':
@@ -162,15 +205,37 @@ class Tjk {
     public function getPrivilegeLink($goodsId = '', $itemUrl = '', $platform = 'dtk', $goodsSign = '', $pid = '') {
         $platform = strtolower($platform);
 
+        // 淘宝 -> 大淘客；京东/拼多多/唯品会 -> 好单库（拼多多优先官方SDK，失败回退好单库）
+        if ($platform == 'tb') {
+            if (!$this->dtk) {
+                return ['code' => 0, 'message' => '大淘客API未配置', 'data' => null];
+            }
+            $pid = $pid ?: $this->pid;
+            $dtkRet = $this->dtk->GetPrivilegeLink($goodsId, $pid, $goodsSign, $itemUrl);
+            if (!empty($dtkRet) && isset($dtkRet['code']) && $dtkRet['code'] == 1) {
+                return $dtkRet;
+            }
+            // 大淘客失败，回退好单库（大概率不支持，但兜底）
+            if ($this->hdk) {
+                return $this->hdk->RatesUrl($goodsId, 'tb');
+            }
+            return $dtkRet;
+        }
+
         if ($platform == 'jd' || $platform == 'hdk' || $platform == 'pdd' || $platform == 'vip') {
             if (!$this->hdk) {
-                return [
-                    'code' => 0,
-                    'message' => '好单库API未配置',
-                    'data' => null,
-                ];
+                return ['code' => 0, 'message' => '好单库API未配置', 'data' => null];
             }
-            return $this->hdk->RatesUrl($goodsId);
+            // 拼多多优先走官方多多进宝 SDK（好单库作为备用），其余平台走好单库 RatesUrl
+            if ($platform == 'pdd' && $this->pdd) {
+                $pddRet = $this->pdd->getPrivilegeLink($goodsId, $pid ?: $this->pddPid);
+                if (isset($pddRet['code']) && $pddRet['code'] == 1) {
+                    return $pddRet;
+                }
+                // 官方失败，回退好单库
+                return $this->hdk->RatesUrl($goodsId, 'pdd');
+            }
+            return $this->hdk->RatesUrl($goodsId, $platform);
         }
 
         if (!$this->dtk) {

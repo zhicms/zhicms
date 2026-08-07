@@ -1,0 +1,613 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<h1 class="page-title">
+    <i class="fas fa-plug"></i>
+    API 设置
+</h1>
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header">
+                <span class="text-muted"><i class="fas fa-info-circle"></i> 联盟凭证与平台授权统一管理</span>
+            </div>
+            <div class="card-body">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                    <button type="button" class="btn btn-success btn-sm" onclick="openAuthModal(0)">
+                        <i class="fas fa-plus"></i> 新增授权
+                    </button>
+                    <span class="text-muted small mx-1">|</span>
+                    <span class="text-muted small fw-bold">联盟设置：</span>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openUnionModal('hdk')">
+                        <i class="fas fa-cube text-success"></i> 好单库
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openUnionModal('dtk')">
+                        <i class="fas fa-cube text-primary"></i> 大淘客
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openUnionModal('pdd')">
+                        <i class="fas fa-cube text-warning"></i> 拼多多SDK
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openUnionModal('site')">
+                        <i class="fas fa-globe"></i> 官网/转链
+                    </button>
+                </div>
+                <div class="alert alert-light border mb-3">
+                    <i class="fas fa-info-circle text-primary"></i>
+                    按平台备案推广位 PID。选择平台后，联盟下拉会按规则自动过滤：淘宝→大淘客；京东/唯品会→好单库；拼多多→自写SDK / 好单库。
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th style="width:60px">ID</th>
+                                <th>平台</th>
+                                <th>联盟</th>
+                                <th>PID（备案）</th>
+                                <th>状态</th>
+                                <th style="width:150px">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php if(!empty($unionAuthList)): foreach($unionAuthList as $row): ?>
+                            <tr>
+                                <td><?php echo intval($row['id']); ?></td>
+                                <td>
+                                    <?php
+                                        $pname = isset($unionPlatforms[$row['platform']]) ? $unionPlatforms[$row['platform']]['name'] : $row['platform'];
+                                        echo htmlspecialchars($pname, ENT_QUOTES, 'UTF-8');
+                                    ?>
+                                </td>
+                                <td>
+                                    <?php echo htmlspecialchars(isset($unionTypeList[$row['union_type']]) ? $unionTypeList[$row['union_type']] : ($row['union_type'] ?: '—'), ENT_QUOTES, 'UTF-8'); ?>
+                                </td>
+                                <td>
+                                    <?php if(!empty($row['pid'])): ?>
+                                        <code style="font-size:12px"><?php echo htmlspecialchars($row['pid'], ENT_QUOTES, 'UTF-8'); ?></code>
+                                    <?php else: ?>
+                                        <span class="text-muted">未设置</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <?php if(!empty($row['pid'])): ?>
+                                        <?php if(isset($row['beian']) && $row['beian'] == 1): ?>
+                                            <span class="badge badge-success">PID已备案</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-info">已配置</span>
+                                        <?php endif; ?>
+                                    <?php else: ?>
+                                        <span class="badge badge-secondary">未授权</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td>
+                                    <a href="javascript:;" class="btn btn-sm btn-outline-primary" onclick="openAuthModal(<?php echo intval($row['id']); ?>)">修改</a>
+                                    <a href="javascript:;" class="btn btn-sm btn-outline-danger" onclick="delAuth(<?php echo intval($row['id']); ?>)">删除</a>
+                                </td>
+                            </tr>
+                            <?php endforeach; else: ?>
+                            <tr><td colspan="7" class="text-center text-muted">暂无授权记录</td></tr>
+                            <?php endif; ?>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<input type="hidden" name="__hash__" id="hash_field" value="<?php echo isset($hash) ? $hash : ''; ?>">
+
+<!-- 平台授权 新增/编辑 弹窗 -->
+<div id="authModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); z-index:1080;" onclick="if(event.target===this)closeAuthModal()">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:480px; max-width:92%; background:#fff; border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,.25);">
+    <div style="padding:16px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+      <h5 id="authModalTitle" style="margin:0; font-size:16px;">新增授权</h5>
+      <button type="button" class="btn-close" onclick="closeAuthModal()"></button>
+    </div>
+    <div style="padding:20px;">
+      <input type="hidden" id="auth_id" value="">
+      <div class="mb-3">
+        <label class="form-label">平台 <span class="text-danger">*</span></label>
+        <select id="auth_platform" class="form-control" onchange="onPlatformChange()">
+          <option value="tb">淘宝联盟</option>
+          <option value="jd">京东推广位</option>
+          <option value="pdd">拼多多</option>
+          <option value="vip">唯品会</option>
+        </select>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">联盟 <span class="text-danger">*</span></label>
+        <select id="auth_union" class="form-control"></select>
+        <small class="form-text text-muted" id="auth_union_tip"></small>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">名称 <span class="text-danger">*</span></label>
+        <input type="text" id="auth_name" class="form-control" placeholder="如：淘宝联盟授权">
+      </div>
+      <div class="mb-3">
+        <label class="form-label">PID（备案） <span class="text-danger">*</span></label>
+        <input type="text" id="auth_pid" class="form-control" placeholder="推广位 PID，如 mm_123_456_789">
+      </div>
+    </div>
+    <div style="padding:14px 20px; border-top:1px solid #eee; text-align:right;">
+      <button type="button" class="btn btn-light me-2" onclick="closeAuthModal()">取消</button>
+      <button type="button" class="btn btn-success" onclick="submitAuth()">提交</button>
+    </div>
+  </div>
+</div>
+
+<!-- 联盟设置 弹窗 -->
+<div id="unionModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,.45); z-index:1080;" onclick="if(event.target===this)closeUnionModal()">
+  <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:520px; max-width:94%; background:#fff; border-radius:10px; box-shadow:0 10px 40px rgba(0,0,0,.25);">
+    <div style="padding:16px 20px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;">
+      <h5 id="unionModalTitle" style="margin:0; font-size:16px;">联盟设置</h5>
+      <button type="button" class="btn-close" onclick="closeUnionModal()"></button>
+    </div>
+    <div style="padding:20px; max-height:70vh; overflow:auto;">
+
+      <!-- 好单库 Hdk -->
+      <div class="union-fields" data-union="hdk">
+        <div class="mb-3">
+          <label class="form-label">好单库 AppKey</label>
+          <input type="text" id="hdk_appkey" class="form-control" placeholder="好单库 appKey" value="<?php echo isset($ret['hdk_appkey']) ? $ret['hdk_appkey'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">好单库 union_id</label>
+          <input type="text" id="hdk_union_id" class="form-control" placeholder="好单库 union_id" value="<?php echo isset($ret['hdk_union_id']) ? $ret['hdk_union_id'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">好单库 唯品会PID</label>
+          <input type="text" id="hdk_vip_pid" class="form-control" placeholder="好单库维品会 PID" value="<?php echo isset($ret['hdk_vip_pid']) ? $ret['hdk_vip_pid'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">好单库 拼多多PID</label>
+          <input type="text" id="hdk_pdd_pid" class="form-control" placeholder="好单库拼多多 PID" value="<?php echo isset($ret['hdk_pdd_pid']) ? $ret['hdk_pdd_pid'] : ''; ?>">
+        </div>
+      </div>
+
+      <!-- 大淘客 Dtk -->
+      <div class="union-fields" data-union="dtk">
+        <div class="mb-3">
+          <label class="form-label">大淘客 appKey</label>
+          <input type="text" id="dtk_appkey" class="form-control" placeholder="大淘客 appKey" value="<?php echo isset($ret['dtk_appkey']) ? $ret['dtk_appkey'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">大淘客 appSecret</label>
+          <input type="text" id="dtk_appsecret" class="form-control" placeholder="大淘客 appSecret" value="<?php echo isset($ret['dtk_appsecret']) ? $ret['dtk_appsecret'] : ''; ?>">
+        </div>
+      </div>
+
+      <!-- 拼多多自写SDK Pdd -->
+      <div class="union-fields" data-union="pdd">
+        <div class="mb-3">
+          <label class="form-label">client_id</label>
+          <input type="text" id="pdd_client_id" class="form-control" placeholder="拼多多 client_id" value="<?php echo isset($ret['pdd_client_id']) ? $ret['pdd_client_id'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">client_secret</label>
+          <input type="text" id="pdd_client_secret" class="form-control" placeholder="拼多多 client_secret" value="<?php echo isset($ret['pdd_client_secret']) ? $ret['pdd_client_secret'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">拼多多PID</label>
+          <div class="input-group">
+            <input type="text" id="pdd_pid" class="form-control" placeholder="拼多多 PID（可自动生成）" value="<?php echo isset($ret['pdd_pid']) ? $ret['pdd_pid'] : ''; ?>">
+            <button type="button" class="btn btn-outline-primary" onclick="generatePddPid()">生成 PID</button>
+          </div>
+          <small class="text-muted">填写 client_id / client_secret 后点击「生成 PID」，自动调用拼多多接口创建推广位</small>
+        </div>
+        <div class="mb-3">
+          <button type="button" class="btn btn-warning btn-sm" onclick="openPddAuth()">
+            <i class="fab fa-pinterest"></i> 拼多多授权备案
+          </button>
+          <span class="text-muted small ml-2">生成授权链接并在拼多多开放平台完成推广位备案</span>
+        </div>
+      </div>
+
+      <!-- 官网 / 转链 -->
+      <div class="union-fields" data-union="site">
+        <div class="mb-3">
+          <label class="form-label">转链模式</label>
+          <select id="zhuan" class="form-control">
+            <option value="dtk" <?php echo isset($ret['zhuan']) && $ret['zhuan'] == 'dtk' ? 'selected' : ''; ?>>大淘客</option>
+            <option value="hdk" <?php echo isset($ret['zhuan']) && $ret['zhuan'] == 'hdk' ? 'selected' : ''; ?>>好单库</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">官网API地址</label>
+          <select id="apiurl" class="form-control">
+            <option value="https://open.zhicms.cc/" <?php echo isset($ret['apiurl']) && $ret['apiurl'] == 'https://open.zhicms.cc/' ? 'selected' : ''; ?>>https://open.zhicms.cc/</option>
+            <option value="https://open.zhicms.vip/" <?php echo isset($ret['apiurl']) && $ret['apiurl'] == 'https://open.zhicms.vip/' ? 'selected' : ''; ?>>https://open.zhicms.vip/</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">官网appid</label>
+          <input type="text" id="appid" class="form-control" placeholder="appid" value="<?php echo isset($ret['appid']) ? $ret['appid'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">官网secretkey</label>
+          <input type="text" id="secretkey" class="form-control" placeholder="secretkey" value="<?php echo isset($ret['secretkey']) ? $ret['secretkey'] : ''; ?>">
+        </div>
+      </div>
+
+    </div>
+    <div style="padding:14px 20px; border-top:1px solid #eee; text-align:right;">
+      <button type="button" class="btn btn-light me-2" onclick="closeUnionModal()">取消</button>
+      <button type="button" class="btn btn-primary" onclick="submitUnion()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// 平台 -> 联盟可选项（与后端 unionAuthPlatforms 保持一致）
+var platformUnions = {
+    tb:  [['dtk','大淘客']],
+    jd:  [['hdk','好单库']],
+    pdd: [['pdd','拼多多自写SDK'],['hdk','好单库']],
+    vip: [['hdk','好单库']]
+};
+
+var unionTitles = {
+    hdk:  '好单库设置（Hdk）',
+    dtk:  '大淘客设置（Dtk）',
+    pdd:  '拼多多SDK设置（Pdd）',
+    site: '官网 / 转链设置'
+};
+
+function onPlatformChange() {
+    var pf = document.getElementById('auth_platform').value;
+    var unions = platformUnions[pf] || [];
+    var sel = document.getElementById('auth_union');
+    sel.innerHTML = '';
+    unions.forEach(function(u){
+        var opt = document.createElement('option');
+        opt.value = u[0];
+        opt.text = u[1];
+        sel.appendChild(opt);
+    });
+    var tip = document.getElementById('auth_union_tip');
+    if (unions.length === 1) {
+        tip.textContent = '该平台固定使用：' + unions[0][1];
+    } else {
+        tip.textContent = '可选联盟：' + unions.map(function(u){return u[1];}).join(' / ');
+    }
+}
+
+function openAuthModal(id) {
+    document.getElementById('authModalTitle').textContent = id > 0 ? '修改授权' : '新增授权';
+    document.getElementById('auth_id').value = id > 0 ? id : '';
+    document.getElementById('auth_name').value = '';
+    document.getElementById('auth_pid').value = '';
+    var pf = document.getElementById('auth_platform');
+    pf.value = id > 0 ? '' : 'tb';
+    onPlatformChange();
+
+    if (id > 0) {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'index.php?r=manage/set/unionAuthInfo&id=' + id, true);
+        xhr.onreadystatechange = function() {
+            if (xhr.readyState == 4 && xhr.status == 200) {
+                try {
+                    var r = JSON.parse(xhr.responseText);
+                    if (r.status === 'y' && r.data) {
+                        var d = r.data;
+                        document.getElementById('auth_name').value = d.name || '';
+                        document.getElementById('auth_pid').value = d.pid || '';
+                        if (d.platform) document.getElementById('auth_platform').value = d.platform;
+                        onPlatformChange();
+                        if (d.union_type && document.getElementById('auth_union').value !== d.union_type) {
+                            document.getElementById('auth_union').value = d.union_type;
+                        }
+                    }
+                } catch(e) {}
+            }
+        };
+        xhr.send();
+    }
+    document.getElementById('authModal').style.display = 'block';
+}
+function closeAuthModal() {
+    document.getElementById('authModal').style.display = 'none';
+}
+function submitAuth() {
+    var id = document.getElementById('auth_id').value;
+    var platform = document.getElementById('auth_platform').value;
+    var unionType = document.getElementById('auth_union').value;
+    var name = document.getElementById('auth_name').value.trim();
+    var pid = document.getElementById('auth_pid').value.trim();
+    if (!platform) { showToast('请选择平台', 'danger'); return; }
+    if (!unionType) { showToast('请选择联盟', 'danger'); return; }
+    if (!name) { showToast('请填写名称', 'danger'); return; }
+    if (!pid) { showToast('请填写 PID', 'danger'); return; }
+
+    var params = 'id=' + encodeURIComponent(id)
+        + '&platform=' + encodeURIComponent(platform)
+        + '&union_type=' + encodeURIComponent(unionType)
+        + '&name=' + encodeURIComponent(name)
+        + '&pid=' + encodeURIComponent(pid);
+    if (document.getElementById('hash_field')) params += '&hash=' + encodeURIComponent(document.getElementById('hash_field').value);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/set/unionAuthAdd', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    showToast(r.info, 'success');
+                    closeAuthModal();
+                    setTimeout(function(){ location.reload(); }, 800);
+                } else {
+                    showToast(r.info || '保存失败', 'danger');
+                }
+            } catch(e) {
+                showToast('提交失败，请检查网络', 'danger');
+            }
+        }
+    };
+    xhr.send(params);
+}
+function delAuth(id) {
+    if (!confirm('确定删除该授权记录吗？')) return;
+    var params = 'id=' + id;
+    if (document.getElementById('hash_field')) params += '&hash=' + encodeURIComponent(document.getElementById('hash_field').value);
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/set/unionAuthDelete', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                showToast(r.info, r.status === 'y' ? 'success' : 'danger');
+                if (r.status === 'y') setTimeout(function(){ location.reload(); }, 800);
+            } catch(e) {
+                showToast('删除失败', 'danger');
+            }
+        }
+    };
+    xhr.send(params);
+}
+
+/* ============ 联盟设置弹窗 ============ */
+function openUnionModal(type) {
+    document.getElementById('unionModalTitle').textContent = unionTitles[type] || '联盟设置';
+    var blocks = document.querySelectorAll('#unionModal .union-fields');
+    blocks.forEach(function(b){
+        b.style.display = (b.getAttribute('data-union') === type) ? 'block' : 'none';
+    });
+    document.getElementById('unionModal').style.display = 'block';
+}
+function closeUnionModal() {
+    document.getElementById('unionModal').style.display = 'none';
+}
+function submitUnion() {
+    var params = '';
+    params += '&hdk_appkey=' + encodeURIComponent(document.getElementById('hdk_appkey').value.trim());
+    params += '&hdk_union_id=' + encodeURIComponent(document.getElementById('hdk_union_id').value.trim());
+    params += '&hdk_vip_pid=' + encodeURIComponent(document.getElementById('hdk_vip_pid').value.trim());
+    params += '&hdk_pdd_pid=' + encodeURIComponent(document.getElementById('hdk_pdd_pid').value.trim());
+    params += '&dtk_appkey=' + encodeURIComponent(document.getElementById('dtk_appkey').value.trim());
+    params += '&dtk_appsecret=' + encodeURIComponent(document.getElementById('dtk_appsecret').value.trim());
+    params += '&pdd_client_id=' + encodeURIComponent(document.getElementById('pdd_client_id').value.trim());
+    params += '&pdd_client_secret=' + encodeURIComponent(document.getElementById('pdd_client_secret').value.trim());
+    params += '&pdd_pid=' + encodeURIComponent(document.getElementById('pdd_pid').value.trim());
+    params += '&zhuan=' + encodeURIComponent(document.getElementById('zhuan').value);
+    params += '&apiurl=' + encodeURIComponent(document.getElementById('apiurl').value);
+    params += '&appid=' + encodeURIComponent(document.getElementById('appid').value.trim());
+    params += '&secretkey=' + encodeURIComponent(document.getElementById('secretkey').value.trim());
+    if (document.getElementById('hash_field')) params += '&hash=' + encodeURIComponent(document.getElementById('hash_field').value);
+    params = params.substring(1);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/set/api', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    showToast(r.info, 'success');
+                    closeUnionModal();
+                } else {
+                    showToast(r.info || '保存失败', 'danger');
+                }
+            } catch(e) {
+                showToast('提交失败，请检查网络', 'danger');
+            }
+        }
+    };
+    xhr.send(params);
+}
+
+/* ============ 拼多多授权备案（移植自 union/index） ============ */
+function openPddAuth() {
+    var m = document.getElementById('pddAuthModal');
+    m.classList.remove('d-none');
+    m.style.display = 'flex';
+    checkPddAuth(); // 打开即查询一次状态
+}
+function closePddAuth() {
+    var m = document.getElementById('pddAuthModal');
+    m.style.display = 'none';
+    m.classList.add('d-none');
+}
+function setPddAuthStatus(bind, pid, msg) {
+    if (pid) document.getElementById('pddPid').textContent = pid;
+    var dotClass = bind === 1 ? 'pdd-status-1' : (bind === 0 ? 'pdd-status-0' : 'pdd-status--1');
+    var text = bind === 1 ? '已绑定备案' : (bind === 0 ? '未绑定备案' : '未知');
+    var html = '<span class="pdd-status-dot ' + dotClass + '"></span>' + text;
+    if (bind === 1) {
+        html += ' <button type="button" class="btn btn-success btn-sm ml-2" onclick="addPddToList()">加入授权列表</button>';
+    }
+    document.getElementById('pddAuthStatus').innerHTML = html;
+    if (msg) {
+        var el = document.getElementById('pddAuthMsg');
+        el.style.display = 'block';
+        el.textContent = msg;
+    }
+}
+function checkPddAuth() {
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/union/pddAuthStatus&_token=' + token, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    setPddAuthStatus(r.bind, r.pid, r.info);
+                } else {
+                    setPddAuthStatus(-1, r.pid || '', r.info || '查询失败');
+                }
+            } catch(e) {
+                setPddAuthStatus(-1, '', '响应解析失败');
+            }
+        }
+    };
+    xhr.send();
+}
+function getPddAuthUrl() {
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/union/pddAuthUrl&_token=' + token, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y' && r.url) {
+                    showToast('已生成授权链接，正在打开新窗口', 'success');
+                    window.open(r.url, '_blank');
+                } else {
+                    showToast(r.info || '生成失败', 'danger');
+                }
+            } catch(e) {
+                showToast('响应解析失败', 'danger');
+            }
+        }
+    };
+    xhr.send();
+}
+/* ============ 拼多多一条龙：自动生成 PID ============ */
+function generatePddPid() {
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/union/pddGeneratePid&_token=' + token, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    document.getElementById('pdd_pid').value = r.pid;
+                    showToast(r.info || 'PID 生成成功', 'success');
+                } else {
+                    showToast(r.info || '生成失败', 'danger');
+                }
+            } catch(e) {
+                showToast('响应解析失败', 'danger');
+            }
+        }
+    };
+    xhr.send();
+}
+/* ============ 拼多多一条龙：备案成功后加入授权列表 ============ */
+function addPddToList() {
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/union/pddAuthAddToList&_token=' + token, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    showToast(r.info || '已添加至授权列表', 'success');
+                    setTimeout(function(){ location.reload(); }, 1200);
+                } else {
+                    showToast(r.info || '加入失败', 'danger');
+                }
+            } catch(e) {
+                showToast('响应解析失败', 'danger');
+            }
+        }
+    };
+    xhr.send();
+}
+// 点击拼多多授权弹窗背景关闭
+document.getElementById('pddAuthModal').addEventListener('click', function(e) {
+    if (e.target === this) { closePddAuth(); }
+});
+</script>
+
+<!-- 拼多多授权备案所需 CSRF token（与 hash_field 同源） -->
+<input type="hidden" id="csrfToken" value="<?php echo isset($hash) ? $hash : ''; ?>">
+
+<!-- 拼多多授权备案弹窗 -->
+<div class="pdd-auth-modal d-none" id="pddAuthModal">
+    <div class="pdd-auth-box">
+        <div class="pdd-auth-header">
+            <i class="fab fa-pinterest mr-2"></i> 拼多多推广位授权备案
+        </div>
+        <div class="pdd-auth-body">
+            <div class="mb-3">
+                <span class="text-muted small">当前推广位 PID：</span>
+                <code id="pddPid">—</code>
+            </div>
+            <div class="mb-3">
+                <span class="text-muted small">备案状态：</span>
+                <span id="pddAuthStatus"><span class="pdd-status-dot pdd-status--1"></span>未知</span>
+            </div>
+            <div id="pddAuthMsg" class="alert alert-light small mb-0" style="display:none;"></div>
+        </div>
+        <div class="pdd-auth-foot">
+            <button class="btn btn-sm btn-secondary" onclick="closePddAuth()">关闭</button>
+            <button class="btn btn-sm btn-info" onclick="checkPddAuth()">查询备案状态</button>
+            <button class="btn btn-sm btn-warning" onclick="getPddAuthUrl()">生成授权链接</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* 拼多多授权备案弹窗 */
+.pdd-auth-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.pdd-auth-box {
+    background: #fff;
+    width: 460px;
+    max-width: 92%;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.pdd-auth-header {
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fff7e6;
+    color: #ad6800;
+}
+.pdd-auth-body { padding: 18px; }
+.pdd-auth-foot {
+    padding: 12px 18px;
+    border-top: 1px solid #f0f0f0;
+    text-align: right;
+}
+.pdd-auth-foot .btn { margin-left: 8px; }
+.pdd-status-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+.pdd-status-0 { background: #faad14; }
+.pdd-status-1 { background: #52c41a; }
+.pdd-status--1 { background: #d9d9d9; }
+</style>

@@ -333,27 +333,41 @@ class SetController extends \app\base\controller\BaseController
 
 
    $this->checkManageSession();
-
+   $this->pageText=array("基础设置","联盟授权");
 
       if(!\IS_POST){
         $this->pagetext=array("基础设置","生成高佣API");
         $this->ret=ConfigStore::load('api');
+        $this->ensureUnionAuthTable();
+        // 联盟授权：预置淘宝/京东/拼多多/唯品会四个占位，表格内直接管理
+        $this->unionPlatforms = $this->unionAuthPlatforms();
+        $this->unionTypeList = $this->unionTypeList();
+        $this->unionAuthList = $this->getUnionAuthList(true);
         $this->display();
         exit;
       }else{
        $api = array(
-              'tb_appkey' => $_POST['tb_appkey'] ?? '',
-              'tb_secretKey' => $_POST['tb_secretKey'] ?? '',
-              'tb_pid' => $_POST['tb_pid'] ?? '',
-              'ali_appid' => $_POST['ali_appid'] ?? '',
-              'ali_appsecretKey' => $_POST['ali_appsecretKey'] ?? '',
-              'apiurl' => $_POST['apiurl'] ?? 'https://open.zhicms.vip/',
-              'appid' => $_POST['appid'] ?? '',
-              'secretkey' => $_POST['secretkey'] ?? '',
-              'zhuan' => $_POST['zhuan'] ?? 'dtk',
-              'dtk_appkey' => $_POST['dtk_appkey'] ?? '',
-              'dtk_appsecret' => $_POST['dtk_appsecret'] ?? '',
-              'hdk_appkey' => $_POST['hdk_appkey'] ?? '',
+              // 兼容保留旧字段（新 UI 已迁移到联盟设置，但若配置中已有值不丢失）
+              'tb_appkey' => $_POST['tb_appkey'] ?? ($this->ret['tb_appkey'] ?? ''),
+              'tb_secretKey' => $_POST['tb_secretKey'] ?? ($this->ret['tb_secretKey'] ?? ''),
+              'tb_pid' => $_POST['tb_pid'] ?? ($this->ret['tb_pid'] ?? ''),
+              'ali_appid' => $_POST['ali_appid'] ?? ($this->ret['ali_appid'] ?? ''),
+              'ali_appsecretKey' => $_POST['ali_appsecretKey'] ?? ($this->ret['ali_appsecretKey'] ?? ''),
+              'apiurl' => $_POST['apiurl'] ?? ($this->ret['apiurl'] ?? 'https://open.zhicms.vip/'),
+              'appid' => $_POST['appid'] ?? ($this->ret['appid'] ?? ''),
+              'secretkey' => $_POST['secretkey'] ?? ($this->ret['secretkey'] ?? ''),
+              'zhuan' => $_POST['zhuan'] ?? ($this->ret['zhuan'] ?? 'dtk'),
+              'dtk_appkey' => $_POST['dtk_appkey'] ?? ($this->ret['dtk_appkey'] ?? ''),
+              'dtk_appsecret' => $_POST['dtk_appsecret'] ?? ($this->ret['dtk_appsecret'] ?? ''),
+              'hdk_appkey' => $_POST['hdk_appkey'] ?? ($this->ret['hdk_appkey'] ?? ''),
+              // 保留手动维护的字段（不随后台保存丢失）
+              'hdk_union_id' => $_POST['hdk_union_id'] ?? ($this->ret['hdk_union_id'] ?? ''),
+              'hdk_vip_pid' => $_POST['hdk_vip_pid'] ?? ($this->ret['hdk_vip_pid'] ?? ''),
+              'hdk_pdd_pid' => $_POST['hdk_pdd_pid'] ?? ($this->ret['hdk_pdd_pid'] ?? ''),
+              // 拼多多官方多多进宝 SDK 配置
+              'pdd_client_id' => $_POST['pdd_client_id'] ?? ($this->ret['pdd_client_id'] ?? ''),
+              'pdd_client_secret' => $_POST['pdd_client_secret'] ?? ($this->ret['pdd_client_secret'] ?? ''),
+              'pdd_pid' => $_POST['pdd_pid'] ?? ($this->ret['pdd_pid'] ?? ''),
         );
         ConfigStore::save('api', $api);
         ConfigStore::clearCache('api');
@@ -404,6 +418,350 @@ class SetController extends \app\base\controller\BaseController
         ConfigStore::save('aichat', $cfg);
         ConfigStore::clearCache('aichat');
         echo json_encode(array("info" => "AI 设置保存成功", "status" => "y"));
+    }
+
+    // ======================= 联盟授权（集中 API / 联盟账号授权） =======================
+    /**
+     * 确保联盟授权表存在（兼容旧库：字段缺失则 ALTER）
+     */
+    private function ensureUnionAuthTable() {
+        try {
+            obj("api/ApiData")->executeQuery(
+                "CREATE TABLE IF NOT EXISTS `{pre}union_auth` (
+                  `id` int(11) NOT NULL AUTO_INCREMENT,
+                  `platform` varchar(20) NOT NULL DEFAULT '' COMMENT '平台标识 tb/jd/pdd/vip',
+                  `name` varchar(100) NOT NULL DEFAULT '' COMMENT '授权名称/备注',
+                  `pid` varchar(100) NOT NULL DEFAULT '' COMMENT '推广位 PID',
+                  `free_pid` varchar(100) NOT NULL DEFAULT '' COMMENT '免单专用 PID',
+                  `app_key` varchar(255) NOT NULL DEFAULT '' COMMENT '平台 AppKey',
+                  `app_secret` varchar(255) NOT NULL DEFAULT '' COMMENT '平台 AppSecret',
+                  `auth_type` varchar(30) NOT NULL DEFAULT '' COMMENT '授权类型',
+                  `union_type` varchar(20) NOT NULL DEFAULT '' COMMENT '联盟类型 dtk/hdk/pdd',
+                  `bind_tuanzhang` tinyint(1) NOT NULL DEFAULT 0 COMMENT '绑定团长 0/1',
+                  `order_sync` tinyint(1) NOT NULL DEFAULT 0 COMMENT '订单同步 0/1',
+                  `is_default` tinyint(1) NOT NULL DEFAULT 0 COMMENT '是否默认 0/1',
+                  `invite_code` varchar(100) NOT NULL DEFAULT '' COMMENT '渠道邀请码',
+                  `expire_time` varchar(30) NOT NULL DEFAULT '' COMMENT '到期时间',
+                  `add_time` int(11) NOT NULL DEFAULT 0,
+                  PRIMARY KEY (`id`),
+                  KEY `platform` (`platform`)
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4"
+            );
+            // 兼容旧库：检测并补字段
+            $cols = array();
+            try {
+                $rows = obj("api/ApiData")->thisQuery("SHOW COLUMNS FROM `{pre}union_auth`");
+                foreach ($rows as $r) { $cols[$r['Field']] = true; }
+            } catch (\Exception $e2) { /* ignore */ }
+            $adds = array(
+                'free_pid'   => "ALTER TABLE `{pre}union_auth` ADD COLUMN `free_pid` varchar(100) NOT NULL DEFAULT '' AFTER `pid`",
+                'app_key'    => "ALTER TABLE `{pre}union_auth` ADD COLUMN `app_key` varchar(255) NOT NULL DEFAULT '' AFTER `free_pid`",
+                'app_secret' => "ALTER TABLE `{pre}union_auth` ADD COLUMN `app_secret` varchar(255) NOT NULL DEFAULT '' AFTER `app_key`",
+                'union_type' => "ALTER TABLE `{pre}union_auth` ADD COLUMN `union_type` varchar(20) NOT NULL DEFAULT '' AFTER `auth_type`",
+                'beian'      => "ALTER TABLE `{pre}union_auth` ADD COLUMN `beian` tinyint(1) NOT NULL DEFAULT 0 AFTER `union_type`",
+            );
+            foreach ($adds as $col => $sql) {
+                if (!isset($cols[$col])) {
+                    try { obj("api/ApiData")->executeQuery($sql); } catch (\Exception $e3) { /* ignore */ }
+                }
+            }
+        } catch (\Exception $e) {
+            // 建表失败静默
+        }
+    }
+
+    /**
+     * 联盟类型枚举（联盟设置里的凭证，按联盟区分）
+     */
+    private function unionTypeList() {
+        return array(
+            'dtk' => '大淘客',
+            'hdk' => '好单库',
+            'pdd' => '拼多多自写SDK',
+        );
+    }
+
+    /**
+     * 联盟授权平台枚举（含每个平台「可选联盟」与默认联盟）
+     *  淘宝 → 仅大淘客；京东 → 仅好单库；唯品会 → 仅好单库；拼多多 → 自写SDK / 好单库
+     */
+    private function unionAuthPlatforms() {
+        return array(
+            'tb'  => array('name' => '淘宝联盟', 'unions' => array('dtk' => '大淘客'), 'default_union' => 'dtk'),
+            'jd'  => array('name' => '京东推广位', 'unions' => array('hdk' => '好单库'), 'default_union' => 'hdk'),
+            'pdd' => array('name' => '拼多多', 'unions' => array('pdd' => '拼多多自写SDK', 'hdk' => '好单库'), 'default_union' => 'pdd'),
+            'vip' => array('name' => '唯品会', 'unions' => array('hdk' => '好单库'), 'default_union' => 'hdk'),
+        );
+    }
+
+    /**
+     * 获取联盟授权列表；若为空且 $withPlaceholder 为真，预置 tb/jd/pdd/vip 四个占位
+     */
+    private function getUnionAuthList($withPlaceholder = true) {
+        $rows = obj("api/ApiData")->thisQuery(
+            "SELECT * FROM `{pre}union_auth` ORDER BY FIELD(`platform`,'tb','jd','pdd','vip'), `id` ASC"
+        );
+        $list = is_array($rows) ? $rows : array();
+        if ($withPlaceholder && empty($list)) {
+            $platforms = $this->unionAuthPlatforms();
+            $inserted = array();
+            foreach ($platforms as $pf => $cfg) {
+                $data = array(
+                    'platform'   => $pf,
+                    'name'       => $cfg['name'],
+                    'pid'        => '',
+                    'free_pid'   => '',
+                    'app_key'    => '',
+                    'app_secret' => '',
+                    'auth_type'  => '',
+                    'union_type' => $cfg['default_union'],
+                    'add_time'   => time(),
+                );
+                $id = obj("api/ApiData")->insertData("{pre}union_auth", $data);
+                $data['id'] = $id;
+                $inserted[] = $data;
+            }
+            $list = $inserted;
+        }
+        return $list;
+    }
+
+    /**
+     * AI 授权平台清单（卡片展示用，与 AiController 保持一致）
+     */
+    private function aiPlatformList() {
+        return array(
+            'deepseek'   => array('name' => 'DeepSeek', 'protocol' => 'openai', 'url' => 'https://api.deepseek.com/v1/chat/completions', 'models' => array('deepseek-chat', 'deepseek-reasoner', 'deepseek-coder')),
+            'zhipu'      => array('name' => '智谱 AI (GLM)', 'protocol' => 'openai', 'url' => 'https://open.bigmodel.cn/api/paas/v4/chat/completions', 'models' => array('glm-4.7-flash', 'glm-4-air', 'glm-4-airx', 'glm-4-plus', 'glm-4-long', 'glm-4v')),
+            'qwen'       => array('name' => '通义千问 (阿里百炼)', 'protocol' => 'openai', 'url' => 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', 'models' => array('qwen-plus', 'qwen-turbo', 'qwen-max', 'qwen-max-longcontext', 'qwen2.5-7b-instruct', 'qwen2.5-72b-instruct', 'qwen3-235b-a22b')),
+            'siliconflow'=> array('name' => '硅基流动 (SiliconFlow)', 'protocol' => 'openai', 'url' => 'https://api.siliconflow.cn/v1/chat/completions', 'models' => array('Qwen/Qwen2.5-7B-Instruct', 'Qwen/Qwen2.5-14B-Instruct', 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B', 'THUDM/glm-4-9b-chat', 'Qwen/Qwen2.5-72B-Instruct', 'deepseek-ai/DeepSeek-V3', 'deepseek-ai/DeepSeek-R1', 'meta-llama/Llama-3.3-70B-Instruct')),
+            'doubao'     => array('name' => '豆包 (火山方舟)', 'protocol' => 'openai', 'url' => 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', 'models' => array('doubao-seed-1.6-250615', 'doubao-lite-32k', 'doubao-pro-32k', 'doubao-vision-lite-32k')),
+            'kimi'       => array('name' => 'Kimi (Moonshot)', 'protocol' => 'openai', 'url' => 'https://api.moonshot.cn/v1/chat/completions', 'models' => array('moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k', 'moonshot-v1-mini')),
+            'minimax'    => array('name' => 'MiniMax', 'protocol' => 'openai', 'url' => 'https://api.minimaxi.com/v1/text/chatcompletion_v2', 'models' => array('MiniMax-Text-01', 'abab6.5s-chat', 'abab6.5t-chat')),
+            'stepfun'    => array('name' => '阶跃星辰 (StepFun)', 'protocol' => 'openai', 'url' => 'https://api.stepfun.com/v1/chat/completions', 'models' => array('step-1-flash', 'step-1v-8k', 'step-2-16k')),
+            'baichuan'   => array('name' => '百川智能 (Baichuan)', 'protocol' => 'openai', 'url' => 'https://api.baichuan-ai.com/v1/chat/completions', 'models' => array('Baichuan4', 'Baichuan3-Turbo', 'Baichuan2-13B-Chat')),
+            'openai'     => array('name' => 'OpenAI', 'protocol' => 'openai', 'url' => 'https://api.openai.com/v1/chat/completions', 'models' => array('gpt-4o', 'gpt-4o-mini', 'gpt-4.1-mini', 'o1', 'o3-mini')),
+            'azure'      => array('name' => 'Azure OpenAI', 'protocol' => 'azure', 'url' => 'https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions', 'models' => array('gpt-4o', 'gpt-35-turbo', 'gpt-4.1')),
+            'gemini'     => array('name' => 'Google Gemini', 'protocol' => 'gemini', 'url' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', 'models' => array('gemini-1.5-pro', 'gemini-2.0-flash', 'gemini-2.0-flash-lite', 'gemini-2.5-pro')),
+            'anthropic'  => array('name' => 'Anthropic Claude', 'protocol' => 'anthropic', 'url' => 'https://api.anthropic.com/v1/messages', 'models' => array('claude-3-5-sonnet-20241022', 'claude-3-opus-20240229', 'claude-3-haiku-20240307', 'claude-3-5-haiku')),
+            'ernie'      => array('name' => '百度文心 ERNIE (千帆V2)', 'protocol' => 'openai', 'url' => 'https://qianfan.baidubce.com/v2/chat/completions', 'models' => array('ernie-4.5-turbo-128k', 'ernie-4.0-8k', 'ernie-3.5-8k', 'ernie-speed-128k', 'ernie-speed-8k')),
+            'xinghuo'    => array('name' => '科大讯飞星火', 'protocol' => 'openai', 'url' => 'https://spark-api-open.xf-yun.com/v1/chat/completions', 'models' => array('lite', 'generalv3', 'pro-128k', 'generalv3.5', 'max-32k', '4.0Ultra')),
+        );
+    }
+
+    /**
+     * 联盟授权 / AI 授权 集中授权中心
+     */
+    public function unionAuth() {
+        $this->checkManageSession();
+        $this->ensureUnionAuthTable();
+
+        if (!\IS_POST) {
+            $this->pagetext = array("电商宝库", "授权中心");
+            $this->platforms = $this->unionAuthPlatforms();
+            // 当前联盟授权列表（空则预置淘宝/京东/拼多多/唯品会四个占位）
+            $this->list = $this->getUnionAuthList(true);
+            // 同步各联盟平台授权状态（是否有已启用授权）
+            $status = array();
+            foreach (array_keys($this->platforms) as $pf) {
+                $status[$pf] = 0;
+            }
+            foreach ($this->list as $row) {
+                if (!empty($row['pid']) || !empty($row['app_key'])) {
+                    $status[$row['platform']] = 1;
+                }
+            }
+            $this->status = $status;
+
+            $this->display();
+            exit;
+        }
+
+        // POST：保存（新增或更新）
+        $id = intval($this->arg("id", 0));
+        $platform = strtolower(trim($this->arg("platform", '')));
+        $platforms = $this->unionAuthPlatforms();
+        if (!isset($platforms[$platform])) {
+            echo json_encode(array("info" => "请选择正确的授权类型（平台）", "status" => "n"));
+            return;
+        }
+        $data = array(
+            'platform'        => $platform,
+            'name'            => trim($this->arg("name", '')),
+            'pid'             => trim($this->arg("pid", '')),
+            'free_pid'        => trim($this->arg("free_pid", '')),
+            'app_key'         => trim($this->arg("app_key", '')),
+            'app_secret'      => trim($this->arg("app_secret", '')),
+            'auth_type'       => trim($this->arg("auth_type", '')),
+            'bind_tuanzhang'  => $this->arg("bind_tuanzhang", 0) ? 1 : 0,
+            'order_sync'      => $this->arg("order_sync", 0) ? 1 : 0,
+            'is_default'      => $this->arg("is_default", 0) ? 1 : 0,
+            'invite_code'     => trim($this->arg("invite_code", '')),
+            'expire_time'     => trim($this->arg("expire_time", '')),
+        );
+        // 设为默认时，同平台其它授权取消默认
+        if ($data['is_default']) {
+            obj("api/ApiData")->executeQuery(
+                "UPDATE `{pre}union_auth` SET `is_default`=0 WHERE `platform`=?",
+                array($platform)
+            );
+        }
+        if ($id > 0) {
+            obj("api/ApiData")->dataUpdate("{pre}union_auth", $data, "`id`=?", array($id));
+        } else {
+            $data['add_time'] = time();
+            obj("api/ApiData")->insertData("{pre}union_auth", $data);
+        }
+        \ZhiCms\ext\AdminLog::write('union_auth', '保存了联盟授权（' . $platforms[$platform] . '）');
+        echo json_encode(array("info" => "授权保存成功", "status" => "y"));
+    }
+
+    /**
+     * 联盟授权新增 / 编辑页（独立页面，url: manage/set/unionAuthAdd，编辑传 id）
+     */
+    public function unionAuthAdd() {
+        $this->checkManageSession();
+        $this->ensureUnionAuthTable();
+        $this->platforms = $this->unionAuthPlatforms();
+
+        $id = isset($_GET['id']) ? intval($_GET['id']) : (isset($_POST['id']) ? intval($_POST['id']) : 0);
+        $this->row = array(
+            'id' => 0, 'platform' => 'tb', 'name' => '', 'pid' => '', 'free_pid' => '',
+            'app_key' => '', 'app_secret' => '', 'auth_type' => '', 'invite_code' => '', 'expire_time' => '',
+        );
+        $this->isEdit = false;
+        if ($id > 0) {
+            $rows = obj("api/ApiData")->thisQuery("SELECT * FROM `{pre}union_auth` WHERE `id`=?", array($id));
+            if (!empty($rows)) {
+                $this->row = array_merge($this->row, $rows[0]);
+                $this->isEdit = true;
+            }
+        }
+
+        if (\IS_POST) {
+            $platform = strtolower(trim($this->arg("platform", '')));
+            if (!isset($this->platforms[$platform])) {
+                echo json_encode(array("info" => "请选择正确的平台", "status" => "n"));
+                return;
+            }
+            // 校验所选联盟是否属于该平台可选范围
+            $unionType = strtolower(trim($this->arg("union_type", '')));
+            $allowUnions = $this->platforms[$platform]['unions'];
+            if (!isset($allowUnions[$unionType])) {
+                echo json_encode(array("info" => "该平台仅支持联盟：" . implode('/', $allowUnions), "status" => "n"));
+                return;
+            }
+            $data = array(
+                'platform'    => $platform,
+                'union_type'  => $unionType,
+                'name'        => trim($this->arg("name", '')),
+                'pid'         => trim($this->arg("pid", '')),
+                'free_pid'    => trim($this->arg("free_pid", '')),
+                'app_key'     => trim($this->arg("app_key", '')),
+                'app_secret'  => trim($this->arg("app_secret", '')),
+                'auth_type'   => $unionType,
+                'invite_code' => trim($this->arg("invite_code", '')),
+                'expire_time' => trim($this->arg("expire_time", '')),
+            );
+            if ($data['name'] === '' || $data['pid'] === '') {
+                echo json_encode(array("info" => "名称、PID 必填", "status" => "n"));
+                return;
+            }
+            try {
+                if ($id > 0) {
+                    obj("api/ApiData")->dataUpdate("{pre}union_auth", $data, "`id`=?", array($id));
+                } else {
+                    $data['add_time'] = time();
+                    obj("api/ApiData")->insertData("{pre}union_auth", $data);
+                }
+                echo json_encode(array("info" => "保存成功", "status" => "y"));
+            } catch (\Exception $ex) {
+                echo json_encode(array("info" => "保存失败：" . $ex->getMessage(), "status" => "n"));
+            }
+            return;
+        }
+
+        $this->pagetext = array("电商宝库", $id > 0 ? "修改授权" : "新增授权");
+        $this->display();
+    }
+
+    /**
+     * 联盟授权详情（弹窗编辑时拉取，返回 JSON）
+     */
+    public function unionAuthInfo() {
+        $this->checkManageSession();
+        $id = intval($this->arg("id", 0));
+        if ($id <= 0) {
+            echo json_encode(array("info" => "参数错误", "status" => "n"));
+            return;
+        }
+        $rows = obj("api/ApiData")->thisQuery("SELECT * FROM `{pre}union_auth` WHERE `id`=?", array($id));
+        if (empty($rows)) {
+            echo json_encode(array("info" => "记录不存在", "status" => "n"));
+            return;
+        }
+        echo json_encode(array("status" => "y", "data" => $rows[0]));
+    }
+
+    /**
+     * 删除联盟授权
+     */
+    public function unionAuthDelete() {
+        $this->checkManageSession();
+        $id = intval($this->arg("id", 0));
+        if ($id <= 0) {
+            echo json_encode(array("info" => "参数错误", "status" => "n"));
+            return;
+        }
+        obj("api/ApiData")->deleteThis("yun_union_auth", "`id`=?", array($id));
+        echo json_encode(array("info" => "已删除", "status" => "y"));
+    }
+
+    /**
+     * 批量删除联盟授权
+     */
+    public function unionAuthBatchDelete() {
+        $this->checkManageSession();
+        $idsRaw = $this->arg("ids", "");
+        $ids = array();
+        foreach (explode(',', $idsRaw) as $v) {
+            $v = intval($v);
+            if ($v > 0) $ids[] = $v;
+        }
+        if (!$ids) {
+            echo json_encode(array("info" => "请选择要删除的记录", "status" => "n"));
+            return;
+        }
+        $place = implode(',', array_fill(0, count($ids), '?'));
+        obj("api/ApiData")->executeQuery("DELETE FROM `{pre}union_auth` WHERE `id` IN ($place)", $ids);
+        echo json_encode(array("info" => "已批量删除 " . count($ids) . " 条", "status" => "y"));
+    }
+
+    /**
+     * 设为默认授权
+     */
+    public function unionAuthDefault() {
+        $this->checkManageSession();
+        $id = intval($this->arg("id", 0));
+        if ($id <= 0) {
+            echo json_encode(array("info" => "参数错误", "status" => "n"));
+            return;
+        }
+        $row = obj("api/ApiData")->thisQuery(
+            "SELECT `platform` FROM `{pre}union_auth` WHERE `id`=?", array($id)
+        );
+        if (empty($row)) {
+            echo json_encode(array("info" => "记录不存在", "status" => "n"));
+            return;
+        }
+        $platform = $row[0]['platform'];
+        obj("api/ApiData")->executeQuery(
+            "UPDATE `{pre}union_auth` SET `is_default`=0 WHERE `platform`=?", array($platform)
+        );
+        obj("api/ApiData")->executeQuery(
+            "UPDATE `{pre}union_auth` SET `is_default`=1 WHERE `id`=?", array($id)
+        );
+        echo json_encode(array("info" => "已设为默认", "status" => "y"));
     }
 
     /**

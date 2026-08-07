@@ -126,6 +126,53 @@ CREATE TABLE IF NOT EXISTS `__PREFIX__navmenu` (
 
 
 -- ------------------------------------------------------------
+-- 管理员对外昵称 + 文章作者头像
+-- ------------------------------------------------------------
+
+-- 管理员表：对外昵称（前台发布文章默认调用的作者名）
+ALTER TABLE `__PREFIX__manage` ADD COLUMN `nickname` varchar(50) NOT NULL DEFAULT '' COMMENT '对外昵称（前台文章作者展示）' AFTER `password`;
+
+-- 文章表：作者头像（默认调用管理员头像）
+ALTER TABLE `__PREFIX__article` ADD COLUMN `author_pic` varchar(255) NOT NULL DEFAULT '' COMMENT '作者头像（默认调用管理员头像）' AFTER `author`;
+
+-- 联盟授权表（拼多多自写SDK一条龙所需）
+-- 注意：auth_type / union_type 为字符串标识（tb/jd/pdd/vip、dtk/hdk/pdd_sdk 等），必须与代码写入保持一致用 varchar
+CREATE TABLE IF NOT EXISTS `__PREFIX__union_auth` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `platform` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '平台标识 tb/jd/pdd/vip',
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '展示名称',
+  `pid` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '推广位PID',
+  `free_pid` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '备用PID',
+  `app_key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'AppKey/ClientId',
+  `app_secret` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'AppSecret/ClientSecret',
+  `auth_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '授权类型 tb/jd/pdd/vip 等',
+  `union_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '联盟类型 dtk/hdk/pdd_sdk 等',
+  `beian` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已备案 1已备案 0未备案',
+  `bind_tuanzhang` tinyint(1) NOT NULL DEFAULT '0' COMMENT '绑定团长 0否 1是',
+  `order_sync` tinyint(1) NOT NULL DEFAULT '0' COMMENT '订单同步 0关 1开',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否默认联盟',
+  `invite_code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '邀请码',
+  `expire_time` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '授权过期时间（字符串日期）',
+  `add_time` int NOT NULL DEFAULT '0' COMMENT '添加时间',
+  PRIMARY KEY (`id`),
+  KEY `platform` (`platform`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='联盟授权配置';
+
+-- 兼容旧库：若 auth_type / union_type 曾被错误建成 tinyint，改回 varchar（与代码写入一致，避免 1366 错误）
+ALTER TABLE `__PREFIX__union_auth` MODIFY COLUMN `auth_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '授权类型 tb/jd/pdd/vip 等';
+ALTER TABLE `__PREFIX__union_auth` MODIFY COLUMN `union_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '联盟类型 dtk/hdk/pdd_sdk 等';
+
+-- 联盟授权表：拼多多自写SDK一条龙「是否已备案」标记（0未备案 1已备案）
+ALTER TABLE `__PREFIX__union_auth` ADD COLUMN `beian` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已备案 1已备案 0未备案' AFTER `union_type`;
+
+-- 兼容更早版本旧库：补齐其余可能缺失的列（与 SetController::ensureUnionAuthTable 一致）
+ALTER TABLE `__PREFIX__union_auth` ADD COLUMN `free_pid` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '备用PID' AFTER `pid`;
+ALTER TABLE `__PREFIX__union_auth` ADD COLUMN `app_key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'AppKey/ClientId' AFTER `free_pid`;
+ALTER TABLE `__PREFIX__union_auth` ADD COLUMN `app_secret` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'AppSecret/ClientSecret' AFTER `app_key`;
+ALTER TABLE `__PREFIX__union_auth` ADD COLUMN `union_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '联盟类型 dtk/hdk/pdd_sdk 等' AFTER `auth_type`;
+
+
+-- ------------------------------------------------------------
 -- 版本号对齐（务必放在最后执行）
 -- ------------------------------------------------------------
 INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')

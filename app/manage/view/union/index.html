@@ -15,6 +15,9 @@
             <a href="index.php?r=manage/items/index" class="btn btn-outline-primary">
                 <i class="fas fa-database"></i> 本地库(选品库)
             </a>
+            <button class="btn btn-warning ml-2" onclick="openPddAuth()">
+                <i class="fab fa-pinterest"></i> 拼多多授权备案
+            </button>
         </div>
 
     <!--div class="action-buttons">
@@ -393,6 +396,31 @@
     </div>
 </div>
 
+<!-- 拼多多授权备案弹窗 -->
+<div class="pdd-auth-modal d-none" id="pddAuthModal">
+    <div class="pdd-auth-box">
+        <div class="pdd-auth-header">
+            <i class="fab fa-pinterest mr-2"></i> 拼多多推广位授权备案
+        </div>
+        <div class="pdd-auth-body">
+            <div class="mb-3">
+                <span class="text-muted small">当前推广位 PID：</span>
+                <code id="pddPid">—</code>
+            </div>
+            <div class="mb-3">
+                <span class="text-muted small">备案状态：</span>
+                <span id="pddAuthStatus"><span class="pdd-status-dot pdd-status--1"></span>未知</span>
+            </div>
+            <div id="pddAuthMsg" class="alert alert-light small mb-0" style="display:none;"></div>
+        </div>
+        <div class="pdd-auth-foot">
+            <button class="btn btn-sm btn-secondary" onclick="closePddAuth()">关闭</button>
+            <button class="btn btn-sm btn-info" onclick="checkPddAuth()">查询备案状态</button>
+            <button class="btn btn-sm btn-warning" onclick="getPddAuthUrl()">生成授权链接</button>
+        </div>
+    </div>
+</div>
+
 
 <style>
 .image-modal {
@@ -494,6 +522,50 @@
     font-weight: 600;
 }
 
+/* 拼多多授权备案弹窗 */
+.pdd-auth-modal {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.pdd-auth-box {
+    background: #fff;
+    width: 460px;
+    max-width: 92%;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+}
+.pdd-auth-header {
+    padding: 14px 18px;
+    font-weight: 600;
+    font-size: 16px;
+    border-bottom: 1px solid #f0f0f0;
+    background: #fff7e6;
+    color: #ad6800;
+}
+.pdd-auth-body { padding: 18px; }
+.pdd-auth-foot {
+    padding: 12px 18px;
+    border-top: 1px solid #f0f0f0;
+    text-align: right;
+}
+.pdd-auth-foot .btn { margin-left: 8px; }
+.pdd-status-dot {
+    display: inline-block;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+.pdd-status-0 { background: #faad14; }
+.pdd-status-1 { background: #52c41a; }
+.pdd-status--1 { background: #d9d9d9; }
+
 /* 响应式表格 */
 @media (max-width: 767.98px) {
     .table-responsive {
@@ -575,6 +647,72 @@ function closeCatModal() {
     var m = document.getElementById('catModal');
     m.style.display = 'none';
     m.classList.add('d-none');
+}
+
+// ===== 拼多多授权备案 =====
+function openPddAuth() {
+    var m = document.getElementById('pddAuthModal');
+    m.classList.remove('d-none');
+    m.style.display = 'flex';
+    checkPddAuth(); // 打开即查询一次状态
+}
+function closePddAuth() {
+    var m = document.getElementById('pddAuthModal');
+    m.style.display = 'none';
+    m.classList.add('d-none');
+}
+function setPddAuthStatus(bind, pid, msg) {
+    if (pid) document.getElementById('pddPid').textContent = pid;
+    var dotClass = bind === 1 ? 'pdd-status-1' : (bind === 0 ? 'pdd-status-0' : 'pdd-status--1');
+    var text = bind === 1 ? '已绑定' : (bind === 0 ? '未绑定' : '未知');
+    document.getElementById('pddAuthStatus').innerHTML =
+        '<span class="pdd-status-dot ' + dotClass + '"></span>' + text;
+    if (msg) {
+        var el = document.getElementById('pddAuthMsg');
+        el.style.display = 'block';
+        el.textContent = msg;
+    }
+}
+function checkPddAuth() {
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/union/pddAuthStatus&_token=' + token, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') {
+                    setPddAuthStatus(r.bind, r.pid, r.info);
+                } else {
+                    setPddAuthStatus(-1, r.pid || '', r.info || '查询失败');
+                }
+            } catch(e) {
+                setPddAuthStatus(-1, '', '响应解析失败');
+            }
+        }
+    };
+    xhr.send();
+}
+function getPddAuthUrl() {
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/union/pddAuthUrl&_token=' + token, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y' && r.url) {
+                    showToast('已生成授权链接，正在打开新窗口', 'success');
+                    window.open(r.url, '_blank');
+                } else {
+                    showToast(r.info || '生成失败', 'danger');
+                }
+            } catch(e) {
+                showToast('响应解析失败', 'danger');
+            }
+        }
+    };
+    xhr.send();
 }
 
 // 执行采集（cid>0 表示使用手动选择的本地分类）
@@ -666,19 +804,26 @@ document.getElementById('keyword').addEventListener('keypress', function(e) {
     }
 });
 
-// 键盘Esc关闭图片 / 分类弹窗
+// 键盘Esc关闭图片 / 分类弹窗 / 拼多多授权弹窗
 document.addEventListener('keydown', function(event) {
     if(event.key === 'Escape') {
         var modal = document.querySelector('.image-modal');
         if (modal) { modal.style.display = 'none'; modal.classList.add('d-none'); }
         var catModal = document.getElementById('catModal');
         if (catModal && catModal.style.display !== 'none') { catModal.style.display = 'none'; catModal.classList.add('d-none'); }
+        var pddModal = document.getElementById('pddAuthModal');
+        if (pddModal && pddModal.style.display !== 'none') { pddModal.style.display = 'none'; pddModal.classList.add('d-none'); }
     }
 });
 
 // 点击分类弹窗背景关闭
 document.getElementById('catModal').addEventListener('click', function(e) {
     if (e.target === this) { this.style.display = 'none'; this.classList.add('d-none'); }
+});
+
+// 点击拼多多授权弹窗背景关闭
+document.getElementById('pddAuthModal').addEventListener('click', function(e) {
+    if (e.target === this) { closePddAuth(); }
 });
 
 // 淘宝关键词联想（复用淘宝官方 suggest 接口，JSONP，无需后端）

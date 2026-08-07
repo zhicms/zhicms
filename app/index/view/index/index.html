@@ -208,7 +208,7 @@
           <div class="post-actions d-flex" style="gap:8px">
             <a class="btn btn-detail" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" style="padding:8px 16px;background:var(--surfaceHover,#f7f8fa);color:var(--aColor,#555);border:none;border-radius:8px;font-size:13px;font-weight:500;transition:all 0.2s;">查看详情</a>
             {if $vo['goodsId']}
-            <a class="btn btn-buy" href="{url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform'=>$vo['platform'] ?: 'tb', 'id'=>$vo['goodsId']))}" target="_blank" rel="nofollow" style="padding:8px 16px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;transition:all 0.2s;">去购买</a>
+            <a class="btn btn-buy" href="{url('index/redirect/jump', array('platform'=>($vo['item_from'] ?: 'tb'), 'id'=>$vo['goodsId']))}" target="_blank" rel="nofollow" style="padding:8px 16px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;transition:all 0.2s;">去购买</a>
             {/if}
           </div>
         </div>

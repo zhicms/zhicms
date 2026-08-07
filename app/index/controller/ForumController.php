@@ -668,7 +668,7 @@ class ForumController extends \app\base\controller\BaseController {
             } else {
                 $hdk = $tjk->getHdk();
                 if ($hdk) {
-                    $r = $hdk->GetGoodsDetails($goodsId);
+                    $r = $hdk->GetGoodsDetails($goodsId, $platform);
                     if (!empty($r['data'])) $detail = $r['data'];
                 }
             }

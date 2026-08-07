@@ -63,6 +63,17 @@ class IndexController extends \app\base\controller\BaseController
                 // 文章卡片分类标签使用「文章资讯分类」(navid / 发现分类)，而非商品分类(cid)
                 $item['cateName'] = \app\base\controller\BaseController::getNavName($item['navid'] ?? 0);
                 $item['cateId']   = (int)($item['navid'] ?? 0);
+                // 文章表无 platform 列：按 goodsId 从 yun_items 反查 item_from 映射成跳转平台
+                $item['platform'] = '';
+                if (!empty($item['goodsId'])) {
+                    $g = obj('api/ApiData')->dataSelect('yun_items', ['goodsId' => $item['goodsId']]);
+                    $from = is_array($g) ? ($g['item_from'] ?? '') : '';
+                    if ($from === 'taobao') {
+                        $item['platform'] = 'tb';
+                    } elseif (in_array($from, ['jd', 'pdd', 'vip'], true)) {
+                        $item['platform'] = $from;
+                    }
+                }
             }
             unset($item);
         }
@@ -184,6 +195,8 @@ class IndexController extends \app\base\controller\BaseController
       if ($authorName === '') { $authorName = '值得买小编'; }
       $view['authorName'] = $authorName;
       $view['authorInitial'] = mb_substr($authorName, 0, 1, 'UTF-8');
+      // 作者头像：发布文章时默认调用管理员头像（author_pic），无则空（模板回退首字母）
+      $view['author_pic'] = isset($view['author_pic']) ? $view['author_pic'] : '';
       $this->view = $view;
 
       // ===== SEO 优化：文章详情页面标题/关键词/描述 =====

@@ -64,6 +64,54 @@ function convertHtmlToZhiCmsUrlTags(editor) {
 }
 
 /**
+ * 上传接口返回的 url 可能已是带域名的绝对地址（cdn_url 返回绝对地址），
+ * 也可能是相对地址。统一规整为可被浏览器直接使用的完整地址。
+ */
+function normalizeUploadUrl(url) {
+    if (!url) return url;
+    // 已是绝对地址（http:// https:// //）或 data: 则原样返回
+    if (/^(https?:)?\/\//i.test(url) || url.indexOf('data:') === 0) {
+        return url;
+    }
+    return window.location.origin + '/' + url.replace(/^\/+/, '');
+}
+
+/**
+ * 统一上传图片（供 TinyMCE 的 images_upload_handler 与 file_picker_callback 复用）
+ * 使用 XMLHttpRequest（与封面图 zhicmsUpload 一致的可靠路径）
+ * 成功回调 onSuccess(绝对URL)，失败回调 onError(错误信息)
+ */
+function uploadZhiCmsImage(uploadType, file, onSuccess, onError) {
+    var formData = new FormData();
+    formData.append('file', file, (file.name || 'image.png'));
+
+    var uploadUrl = window.location.origin + '/index.php?r=manage/File/upload&type=' + uploadType;
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', uploadUrl, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var result = JSON.parse(xhr.responseText);
+                if (result.error === 0 && result.url) {
+                    onSuccess(normalizeUploadUrl(result.url));
+                } else {
+                    onError(result.message || '上传失败');
+                }
+            } catch (e) {
+                onError('返回数据格式错误');
+            }
+        } else if (xhr.readyState === 4) {
+            onError('上传失败（HTTP ' + xhr.status + '）');
+        }
+    };
+    xhr.onerror = function() {
+        onError('网络错误，上传失败');
+    };
+    xhr.send(formData);
+}
+
+/**
  * 初始化 ZhiCms TinyMCE 编辑器
  * 
  * @param {string} selector - 选择器，如 '#editor'
@@ -104,43 +152,57 @@ function initZhiCmsEditor(selector, options) {
         toolbar_mode: 'sliding',
         font_size_formats: '8pt 10pt 12pt 14pt 16pt 18pt 24pt 36pt 48pt',
         
-        // 图片上传配置（统一上传接口：index.php?r=manage/File/upload&type=xxx）
+        // 允许粘贴图片自动上传
+        paste_data_images: true,
+        automatic_uploads: true,
+        
+        // 关键：禁用 TinyMCE 对图片 URL 的改写，避免绝对路径被转成相对导致图片 404 不显示
+        convert_urls: false,
+        relative_urls: false,
+        remove_script_host: false,
+        
         images_upload_handler: function(blobInfo, progress) {
             return new Promise(function(resolve, reject) {
-                var formData = new FormData();
-                formData.append('file', blobInfo.blob(), blobInfo.filename());
-                
-                // 统一上传接口：主站域名 + index.php?r=manage/File/upload&type=xxx
-                var uploadUrl = window.location.origin + '/index.php?r=manage/File/upload&type=' + uploadType;
-                
-                fetch(uploadUrl, {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(function(response) {
-                    return response.text();
-                })
-                .then(function(text) {
-                    try {
-                        var result = JSON.parse(text);
-                        if (result.error === 0 && result.url) {
-                            // 规范化 URL，确保不出现双斜杠
-                            var cleanUrl = result.url.replace(/^\/+/, '');
-                            resolve(window.location.origin + '/' + cleanUrl);
-                        } else {
-                            reject(new Error(result.message || '上传失败'));
-                        }
-                    } catch (e) {
-                        reject(new Error('返回数据格式错误'));
+                uploadZhiCmsImage(uploadType, blobInfo.blob(), resolve, function(msg) {
+                    if (typeof showToast === 'function') {
+                        showToast(msg, 'danger');
                     }
-                })
-                .catch(function(error) {
-                    reject(new Error('上传失败: ' + error.message));
+                    reject(new Error(msg));
                 });
             });
         },
         
-        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.6; padding: 10px; } img { max-width: 100%; height: auto; }',
+        // 文件选择器：让"图片/媒体"对话框出现"上传"入口，支持本地文件选择上传
+        file_picker_types: 'image',
+        file_picker_callback: function(callback, value, meta) {
+            if (meta.filetype !== 'image') {
+                return;
+            }
+            var input = document.createElement('input');
+            input.setAttribute('type', 'file');
+            input.setAttribute('accept', 'image/*');
+            input.onchange = function() {
+                var file = input.files[0];
+                if (!file) {
+                    return;
+                }
+                var loading = (typeof layer !== 'undefined') ? layer.load(2) : null;
+                uploadZhiCmsImage(uploadType, file, function(url) {
+                    if (loading !== null) layer.close(loading);
+                    callback(url, { title: file.name });
+                }, function(msg) {
+                    if (loading !== null) layer.close(loading);
+                    if (typeof showToast === 'function') {
+                        showToast(msg, 'danger');
+                    } else {
+                        alert(msg);
+                    }
+                });
+            };
+            input.click();
+        },
+        
+        content_style: 'body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 14px; line-height: 1.6; padding: 10px; } img { max-width: 100%; height: auto; display: block; margin: 8px 0; }',
         
         setup: function(editor) {
             // 注册购物车图标

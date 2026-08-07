@@ -1,0 +1,144 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<style>
+.auth-form-card {
+    max-width: 720px;
+    margin: 24px auto 0;
+    background: #fff;
+    border-radius: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+    padding: 28px 36px 24px;
+}
+.auth-form-title {
+    font-size: 18px;
+    color: #1f2329;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 14px;
+    margin-bottom: 22px;
+}
+.auth-form-row {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 16px;
+}
+.auth-form-label {
+    flex: 0 0 130px;
+    text-align: right;
+    padding-right: 12px;
+    color: #334155;
+    font-size: 14px;
+    line-height: 38px;
+}
+.auth-form-label .req { color: #ef4444; margin-right: 4px; }
+.auth-form-ctrl { flex: 1; }
+.auth-form-ctrl .form-control {
+    height: 38px;
+    border-color: #e5e7eb;
+    box-shadow: none;
+}
+.auth-form-ctrl .form-control:focus {
+    border-color: #94a3b8;
+    box-shadow: none;
+}
+.auth-form-tip {
+    color: #94a3b8;
+    font-size: 12px;
+    margin-top: 6px;
+}
+.auth-form-actions {
+    margin-left: 142px;
+    margin-top: 24px;
+}
+.btn-submit {
+    background: #22c55e; border-color: #22c55e; color: #fff;
+    padding: 6px 22px;
+}
+.btn-submit:hover { background: #16a34a; border-color: #16a34a; color: #fff; }
+.btn-cancel {
+    background: #fff; border-color: #e5e7eb; color: #64748b;
+    padding: 6px 22px; margin-left: 10px;
+}
+.btn-cancel:hover { background: #fafbfc; color: #334155; }
+</style>
+
+<div class="auth-form-card">
+    <div class="auth-form-title">
+        <?php echo $isEdit ? '修改授权' : '新增授权'; ?>
+    </div>
+    <form id="addForm">
+        <input type="hidden" name="id" value="<?php echo $row['id']; ?>">
+
+        <div class="auth-form-row">
+            <label class="auth-form-label"><span class="req">*</span>请输入名称：</label>
+            <div class="auth-form-ctrl">
+                <input type="text" class="form-control" name="name" placeholder="请输入名称" value="<?php echo htmlspecialchars($row['name']); ?>">
+            </div>
+        </div>
+
+        <div class="auth-form-row">
+            <label class="auth-form-label"><span class="req">*</span>请输入PID：</label>
+            <div class="auth-form-ctrl">
+                <input type="text" class="form-control" name="pid" placeholder="请输入PID" value="<?php echo htmlspecialchars($row['pid']); ?>">
+            </div>
+        </div>
+
+        <div class="auth-form-row">
+            <label class="auth-form-label"><span class="req">*</span>选择授权类型：</label>
+            <div class="auth-form-ctrl">
+                <select class="form-control" name="platform">
+                    <?php foreach ($platforms as $k=>$n): ?>
+                    <option value="<?php echo $k; ?>" <?php if ($row['platform']===$k) echo 'selected'; ?>><?php echo $n; ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </div>
+
+        <div class="auth-form-row">
+            <label class="auth-form-label">免单PID：</label>
+            <div class="auth-form-ctrl">
+                <input type="text" class="form-control" name="free_pid" placeholder="请输入免单PID" value="<?php echo htmlspecialchars($row['free_pid']); ?>">
+                <div class="auth-form-tip">邵海金免单请填写免单专用PID，其他的不可填写</div>
+            </div>
+        </div>
+
+        <div class="auth-form-row">
+            <label class="auth-form-label">app_key：</label>
+            <div class="auth-form-ctrl">
+                <input type="text" class="form-control" name="app_key" placeholder="请输入app_key" value="<?php echo htmlspecialchars($row['app_key']); ?>">
+            </div>
+        </div>
+
+        <div class="auth-form-row">
+            <label class="auth-form-label">app_secret：</label>
+            <div class="auth-form-ctrl">
+                <input type="text" class="form-control" name="app_secret" placeholder="请输入app_secret" value="<?php echo htmlspecialchars($row['app_secret']); ?>">
+            </div>
+        </div>
+
+        <div class="auth-form-actions">
+            <button type="button" class="btn btn-submit" id="btnSubmit"><i class="fas fa-check"></i> 提交</button>
+            <button type="button" class="btn btn-cancel" onclick="location.href='index.php?r=manage/set/unionAuth'">取消</button>
+        </div>
+    </form>
+</div>
+
+<script>
+$(function(){
+    $('#btnSubmit').on('click', function(){
+        var data = {};
+        $('#addForm').serializeArray().forEach(function(f){ data[f.name] = f.value; });
+        if (!data.name || !data.pid) { showToast('名称和 PID 必填'); return; }
+        $(this).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> 保存中');
+        $.post('index.php?r=manage/set/unionAuthAdd', data, function(res){
+            showToast(res.info || '已保存');
+            if (res.status === 'y') {
+                setTimeout(function(){ location.href = 'index.php?r=manage/set/unionAuth'; }, 600);
+            } else {
+                $('#btnSubmit').prop('disabled', false).html('<i class="fas fa-check"></i> 提交');
+            }
+        }, 'json').fail(function(){ showToast('请求异常'); $('#btnSubmit').prop('disabled', false).html('<i class="fas fa-check"></i> 提交'); });
+    });
+});
+</script>
+
+{include file="app/manage/view/index/emlog_footer"}

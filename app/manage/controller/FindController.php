@@ -119,6 +119,14 @@ class FindController extends \app\base\controller\BaseController
                 $commentHtml = $item['comment']['copy_content'] ?? '';
                 $descText = $item['items']['itemdesc'] ?? '';
 
+                // 处理朋友圈文案中的 emoji/淘口令占位符，避免 [emoji:xxx] 污染正文
+                if ($commentHtml !== '') {
+                    $commentHtml = $hdk->ProcessEmoji($commentHtml);
+                }
+                if ($descText !== '') {
+                    $descText = $hdk->ProcessEmoji($descText);
+                }
+
                 $contentText = '';
                 if ($commentHtml !== '') {
                     $contentText .= '<p>' . $commentHtml . '</p>';
@@ -229,6 +237,8 @@ class FindController extends \app\base\controller\BaseController
 				$mainPic = $item['items']['itempic'] ?? '';
 				$commentHtml = $item['comment']['copy_content'] ?? '';
 				$descText = $item['items']['itemdesc'] ?? '';
+				if ($commentHtml !== '') $commentHtml = $hdk->ProcessEmoji($commentHtml);
+				if ($descText !== '')    $descText = $hdk->ProcessEmoji($descText);
 				$contentText = '';
 				if ($commentHtml !== '') $contentText .= '<p>' . $commentHtml . '</p>';
 				if ($descText !== '')    $contentText .= '<p>' . $descText . '</p>';
@@ -492,23 +502,14 @@ class FindController extends \app\base\controller\BaseController
 	 * 兜底：Dtk 未配置或短链为空时，用商品详情页链接；解析失败时渲染去购买按钮
 	 */
 	private function buildGoodsMarker($dtk, $item) {
-        // 新API：itemid 在 items 子对象里
+        // 好单库朋友圈素材均为淘宝联盟商品，平台固定 tb
         $itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? '');
         if (empty($itemid)) {
             return '';
         }
 
-        $goodsUrl = '';
-        if ($dtk) {
-            $rate = $dtk->GetPrivilegeLink($itemid);
-            if ($rate['code'] == 1 && !empty($rate['data']['shortUrl'])) {
-                $goodsUrl = $rate['data']['shortUrl'];
-            }
-        }
-        // 兜底：用优惠券链接或直接跳转
-        if (empty($goodsUrl)) {
-            $goodsUrl = $item['items']['couponurl'] ?? ('https://item.taobao.com/item.htm?id=' . $itemid);
-        }
+        // 统一走站内转链（buy-tb.html?id= 伪静态），便于统计与佣金追踪
+        $goodsUrl = url('index/redirect/jump', array('platform' => 'tb', 'id' => $itemid));
 
         return "\n[ZhiCmsUrl]" . $goodsUrl . "[/ZhiCmsUrl]\n";
 	}
@@ -531,6 +532,10 @@ class FindController extends \app\base\controller\BaseController
 			$this->pageText=array("发现管理","发布文章");
            $this->categories = $this->getGoodsCategories();
            $this->navs = $this->getFindNavs();
+           // 当前管理员信息（发布文章默认调用的作者昵称与头像）
+           $this->adminNick = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== '' ? $_SESSION['manage_nickname'] : (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
+           $this->adminPic = isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
+           $this->ret = array();
            $lock=$this->arg("lock");
            $goodsId=$this->arg("goodsid");
            if($goodsId!=''){
@@ -657,7 +662,12 @@ class FindController extends \app\base\controller\BaseController
     		 $data['title']=$title;
     		 $data['lock']=0;
     		 $data['status']=$status ? 1 : 0;
+    		 // 作者默认调用当前管理员昵称（前台文章展示用）
+    		 if(trim($author) === ''){
+    		     $author = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== '' ? $_SESSION['manage_nickname'] : (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
+    		 }
     		 $data['author']=$author;
+    		 $data['author_pic']=isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
     		 $data['laiyuan']=$laiyuan;
     		 $data['surl']=$surl;
     		 $data['sort']=$sort;
@@ -700,6 +710,8 @@ class FindController extends \app\base\controller\BaseController
             $this->ret=$ret;
             $this->categories = $this->getGoodsCategories();
             $this->navs = $this->getFindNavs();
+            $this->adminNick = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== '' ? $_SESSION['manage_nickname'] : (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
+            $this->adminPic = isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
             $this->html='<input type="hidden" name="id" value="'.$ret['id'].'" /><input type="hidden" name="goodsid" value="'.$ret['goodsId'].'" />';
 			$this->display('app/manage/view/find/addarticle');
 			exit;
@@ -753,7 +765,12 @@ class FindController extends \app\base\controller\BaseController
 
       		$data['title']=$title;
     		 $data['status']=$status ? 1 : 0;
+    		 // 作者默认调用当前管理员昵称（前台文章展示用）
+    		 if(trim($author) === ''){
+    		     $author = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== '' ? $_SESSION['manage_nickname'] : (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
+    		 }
     		 $data['author']=$author;
+    		 $data['author_pic']=isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
     		 $data['laiyuan']=$laiyuan;
     		 $data['surl']=$surl;
     		 $data['sort']=$sort;

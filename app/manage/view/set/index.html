@@ -32,11 +32,6 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="api-tab" data-toggle="tab" href="#api" role="tab" aria-controls="api" aria-selected="false">
-                            <i class="fas fa-plug"></i> API设置
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" id="seopush-tab" data-toggle="tab" href="#seopush" role="tab" aria-controls="seopush" aria-selected="false">
                             <i class="fas fa-rocket"></i> SEO推送
                         </a>
@@ -395,115 +390,6 @@
 
                             <div class="form-group border-top pt-3 mt-5">
                                 <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('seo')">
-                                    <i class="fas fa-save"></i> 保存设置
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- API设置 -->
-                    <div class="tab-pane fade" id="api" role="tabpanel" aria-labelledby="api-tab">
-                        <form id="api-form" class="mt-4">
-                            <h5 class="sub-title mb-4">官网API配置</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">官网API地址</label>
-                                        <select class="custom-select" name="apiurl">
-                                            <option value="https://open.zhicms.cc/" <?php echo isset($ret['apiurl']) && $ret['apiurl'] == 'https://open.zhicms.cc/' ? 'selected' : ''; ?>>https://open.zhicms.cc/</option>
-                                            <option value="https://open.zhicms.vip/" <?php echo isset($ret['apiurl']) && $ret['apiurl'] == 'https://open.zhicms.vip/' ? 'selected' : ''; ?>>https://open.zhicms.vip/</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label for="appid" class="font-weight-bold">官网appid</label>
-                                        <input type="text" class="form-control" id="appid" name="appid" placeholder="官网授权appid" value="<?php echo isset($ret['appid']) ? $ret['appid'] : ''; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="form-group">
-                                        <label for="secretkey" class="font-weight-bold">官网secretkey</label>
-                                        <input type="text" class="form-control" id="secretkey" name="secretkey" placeholder="官网授权secretkey" value="<?php echo isset($ret['secretkey']) ? $ret['secretkey'] : ''; ?>">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h5 class="sub-title mb-4 mt-5">淘宝联盟API</h5>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="tb_appkey" class="font-weight-bold">淘宝联盟appkey</label>
-                                        <input type="text" class="form-control" id="tb_appkey" name="tb_appkey" placeholder="淘宝联盟appkey" value="<?php echo isset($ret['tb_appkey']) ? $ret['tb_appkey'] : ''; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="tb_secretKey" class="font-weight-bold">淘宝联盟secretKey</label>
-                                        <input type="text" class="form-control" id="tb_secretKey" name="tb_secretKey" placeholder="淘宝联盟secretKey" value="<?php echo isset($ret['tb_secretKey']) ? $ret['tb_secretKey'] : ''; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label for="tb_pid" class="font-weight-bold">阿里妈妈PID</label>
-                                        <input type="text" class="form-control" id="tb_pid" name="tb_pid" placeholder="阿里妈妈PID" value="<?php echo isset($ret['tb_pid']) ? $ret['tb_pid'] : ''; ?>">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h5 class="sub-title mb-4 mt-5">阿里巴巴API</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="ali_appid" class="font-weight-bold">阿里巴巴appid</label>
-                                        <input type="text" class="form-control" id="ali_appid" name="ali_appid" placeholder="阿里巴巴appid" value="<?php echo isset($ret['ali_appid']) ? $ret['ali_appid'] : ''; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="ali_appsecretKey" class="font-weight-bold">阿里巴巴appsecretKey</label>
-                                        <input type="text" class="form-control" id="ali_appsecretKey" name="ali_appsecretKey" placeholder="阿里巴巴appsecretKey" value="<?php echo isset($ret['ali_appsecretKey']) ? $ret['ali_appsecretKey'] : ''; ?>">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h5 class="sub-title mb-4 mt-5">转链模式配置</h5>
-                            <div class="row">
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label class="font-weight-bold">转链模式</label>
-                                        <select class="custom-select" name="zhuan">
-                                            <option value="dtk" <?php echo isset($ret['zhuan']) && $ret['zhuan'] == 'dtk' ? 'selected' : ''; ?>>大淘客</option>
-                                            <option value="hdk" <?php echo isset($ret['zhuan']) && $ret['zhuan'] == 'hdk' ? 'selected' : ''; ?>>好单库</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h5 class="sub-title mb-4 mt-5">大淘客API</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="dtk_appkey" class="font-weight-bold">大淘客appKey</label>
-                                        <input type="text" class="form-control" id="dtk_appkey" name="dtk_appkey" placeholder="大淘客appKey" value="<?php echo isset($ret['dtk_appkey']) ? $ret['dtk_appkey'] : ''; ?>">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="dtk_appsecret" class="font-weight-bold">大淘客appSecret</label>
-                                        <input type="text" class="form-control" id="dtk_appsecret" name="dtk_appsecret" placeholder="大淘客appSecret" value="<?php echo isset($ret['dtk_appsecret']) ? $ret['dtk_appsecret'] : ''; ?>">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h5 class="sub-title mb-4 mt-5">好单库API</h5>
-                            <div class="form-group">
-                                <label for="hdk_appkey" class="font-weight-bold">好单库appKey</label>
-                                <input type="text" class="form-control" id="hdk_appkey" name="hdk_appkey" placeholder="好单库appKey" value="<?php echo isset($ret['hdk_appkey']) ? $ret['hdk_appkey'] : ''; ?>">
-                            </div>
-
-                            <div class="form-group border-top pt-3 mt-5">
-                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('api')">
                                     <i class="fas fa-save"></i> 保存设置
                                 </button>
                             </div>

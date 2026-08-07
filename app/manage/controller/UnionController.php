@@ -829,8 +829,7 @@ class UnionController extends \app\base\controller\BaseController
             $skipCount = 0;
             $errors = array();
 
-            // 常用大淘客分类 cid（每页随机取一个分类，避免采到的都是同类商品）
-            // 若后台「商品采集」任务配置了可选分类，则只采集所选分类
+            // 采集平台：淘宝(大淘客) + 京东/拼多多/唯品会(好单库)
             $apiCfg = \app\common\ConfigStore::load('api');
             $cfgCids = !empty($apiCfg['goods_collect_cids']) ? $apiCfg['goods_collect_cids'] : array();
             $cids = array();
@@ -840,33 +839,50 @@ class UnionController extends \app\base\controller\BaseController
             if (empty($cids)) {
                 $cids = array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15);
             }
-            $usedCids = array();
 
+            // 1) 淘宝（大淘客）
+            $tbCids = $cids;
+            $usedCids = array();
             for ($page = 1; $page <= $maxPages; $page++) {
-                // 本页随机一个尚未用过的分类 cid
-                $avail = array_diff($cids, $usedCids);
-                if (empty($avail)) $avail = $cids;
+                $avail = array_diff($tbCids, $usedCids);
+                if (empty($avail)) $avail = $tbCids;
                 $cid = $avail[array_rand($avail)];
                 $usedCids[] = $cid;
-                $extra = array('cid' => $cid);
-
-                $response = $client->getGoodsList($pageSize, (string)$page, $extra);
+                $response = $client->getGoodsList($pageSize, (string)$page, array('cid' => $cid));
                 if ($response['code'] != 1 || empty($response['items'])) {
-                    // 该分类无商品则换下一个分类再试一次
-                    $cid2 = $cids[array_rand($cids)];
+                    $cid2 = $tbCids[array_rand($tbCids)];
                     $response = $client->getGoodsList($pageSize, (string)$page, array('cid' => $cid2));
-                    if ($response['code'] != 1 || empty($response['items'])) {
-                        break;
-                    }
+                    if ($response['code'] != 1 || empty($response['items'])) break;
                 }
                 foreach ($response['items'] as $item) {
                     $goodsId = $item['goodsId'] ?? $item['goodsSign'] ?? '';
                     if (empty($goodsId)) continue;
                     $totalCount++;
-                    // 已存在则跳过（采集=新增）
                     if ($this->checkGoodsExists($item)) { $skipCount++; continue; }
                     $res = $this->saveGoodsBatch(array($item), 'collect', 1);
                     $insertCount += $res['count'];
+                }
+            }
+
+            // 2) 京东/拼多多/唯品会（好单库，apiPf 与平台一致）
+            $hdkPlatforms = array(
+                'pdd' => array('apiPf' => 'pdd', 'keyword' => '女装'),
+                'jd'  => array('apiPf' => 'jd',  'keyword' => '手机'),
+                'vip' => array('apiPf' => 'vip', 'keyword' => '女装'),
+            );
+            foreach ($hdkPlatforms as $pf => $cfg) {
+                $laiyuan = $this->platformToLaiyuan($pf);
+                for ($page = 1; $page <= $maxPages; $page++) {
+                    $resp = $client->searchGoods($cfg['keyword'], $cfg['apiPf'], $page, $pageSize);
+                    if (!isset($resp['code']) || $resp['code'] != 1 || empty($resp['items'])) break;
+                    foreach ($resp['items'] as $item) {
+                        $goodsId = $item['goodsId'] ?? $item['goodsSign'] ?? '';
+                        if (empty($goodsId)) continue;
+                        $totalCount++;
+                        if ($this->checkGoodsExists($item)) { $skipCount++; continue; }
+                        $res = $this->saveGoodsBatch(array($item), 'collect', $laiyuan);
+                        $insertCount += $res['count'];
+                    }
                 }
             }
 
@@ -1365,5 +1381,214 @@ class UnionController extends \app\base\controller\BaseController
         }
 
         return false;
+    }
+
+    /**
+     * 拼多多请求共用方法（多多进宝官方接口）
+     * @param string $type   接口名 如 pdd.ddk.rp.prom.url.generate
+     * @param array  $params 业务参数（不含公共参数）
+     * @return array [code, data, pid]
+     */
+    /**
+     * 读取拼多多凭证配置（合并 DB 与 apiset.php 文件，DB 优先）
+     * @return array ['pdd_client_id'=>..., 'pdd_client_secret'=>..., 'pdd_pid'=>...]
+     */
+    private function pddConfig()
+    {
+        $api = array();
+        $file = \CONFIG_PATH . 'apiset.php';
+        if (is_file($file)) {
+            include $file;                 // 文件内定义 $api
+            if (isset($api) && is_array($api)) {
+                $api = $api;
+            }
+        }
+        $dbApi = \app\common\ConfigStore::load('api');
+        if (is_array($dbApi) && !empty($dbApi)) {
+            $api = array_merge($api, $dbApi); // DB 覆盖文件
+        }
+        return $api;
+    }
+
+    private function pddRequest($type, $params = [])
+    {
+        $api = $this->pddConfig();
+        $clientId = $api['pdd_client_id'] ?? '';
+        $clientSecret = $api['pdd_client_secret'] ?? '';
+        $pid = $api['pdd_pid'] ?? '';
+        if (!$clientId || !$clientSecret) {
+            return ['fail', '未配置拼多多 client_id / client_secret，请在系统设置-接口配置中填写', $pid];
+        }
+        $params['type'] = $type;
+        $params['client_id'] = $clientId;
+        $params['timestamp'] = strval(time() * 1000);
+        $params['data_type'] = 'JSON';
+        ksort($params);
+        $signStr = $clientSecret;
+        foreach ($params as $k => $v) {
+            if (is_array($v)) {
+                $v = json_encode($v, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            }
+            $signStr .= $k . $v;
+        }
+        $signStr .= $clientSecret;
+        $params['sign'] = strtoupper(md5($signStr));
+        $ch = curl_init('https://gw-api.pinduoduo.com/api/router');
+        curl_setopt_array($ch, [
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 25,
+            CURLOPT_SSL_VERIFYPEER => false,
+            CURLOPT_SSL_VERIFYHOST => false,
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => http_build_query($params),
+        ]);
+        $out = curl_exec($ch);
+        $err = curl_error($ch);
+        curl_close($ch);
+        if ($out === false) {
+            return ['fail', 'curl 请求失败：' . $err, $pid];
+        }
+        $json = json_decode($out, true);
+        if (!is_array($json)) {
+            return ['fail', '接口返回非 JSON：' . mb_substr($out, 0, 200), $pid];
+        }
+        return ['success', $json, $pid];
+    }
+
+    /**
+     * 生成拼多多推广位备案授权链接（pdd.ddk.rp.prom.url.generate）
+     * 前端弹窗展示链接，用户打开后在拼多多完成授权备案
+     */
+    public function pddAuthUrl()
+    {
+        $this->checkCsrfToken();
+        $api = $this->pddConfig();
+        $pid = $api['pdd_pid'] ?? '';
+        list($code, $data) = $this->pddRequest('pdd.ddk.rp.prom.url.generate', [
+            'p_id_list'    => json_encode([$pid]),
+            'channel_type' => 10,
+        ]);
+        if ($code === 'fail') {
+            exit(json_encode(['status' => 'n', 'info' => $data]));
+        }
+        $url = '';
+        $urlList = $data['rp_promotion_url_generate_response']['url_list'] ?? [];
+        if (!empty($urlList) && is_array($urlList)) {
+            $first = $urlList[0];
+            $url = is_array($first) ? ($first['url'] ?? '') : $first;
+        }
+        if (!$url && isset($data['url_list'])) {
+            $ul = $data['url_list'];
+            $url = is_array($ul) ? ($ul[0]['url'] ?? ($ul[0] ?? '')) : $ul;
+        }
+        if (!$url) {
+            exit(json_encode(['status' => 'n', 'info' => '未获取到授权链接：' . json_encode($data, JSON_UNESCAPED_UNICODE)]));
+        }
+        exit(json_encode(['status' => 'y', 'info' => '获取成功，请在打开的页面完成拼多多授权备案', 'url' => $url, 'pid' => $pid]));
+    }
+
+    /**
+     * 查询当前拼多多推广位是否已绑定备案（pdd.ddk.member.authority.query）
+     * bind=1 已绑定，bind=0 未绑定
+     */
+    public function pddAuthStatus()
+    {
+        $this->checkCsrfToken();
+        $api = $this->pddConfig();
+        $pid = $api['pdd_pid'] ?? '';
+        list($code, $data) = $this->pddRequest('pdd.ddk.member.authority.query', [
+            'pid' => $pid,
+        ]);
+        if ($code === 'fail') {
+            exit(json_encode(['status' => 'n', 'info' => $data]));
+        }
+        $resp = $data['authority_query_response'] ?? [];
+        $bind = isset($resp['bind']) ? intval($resp['bind']) : -1;
+        $msg = $bind === 1 ? '已绑定备案（可正常调用商品搜索接口）'
+            : ($bind === 0 ? '未绑定备案（调用商品搜索会报 60001 错误）' : '查询状态未知');
+        exit(json_encode([
+            'status'   => 'y',
+            'info'     => $msg,
+            'bind'     => $bind,
+            'pid'      => $pid,
+            'response' => $resp,
+        ]));
+    }
+
+    /**
+     * 用 client_id / client_secret 自动生成拼多多推广位 PID（pdd.goods.pid.generate）
+     * 生成成功后写回 yun_apis 的 pdd_pid
+     */
+    public function pddGeneratePid()
+    {
+        $this->checkCsrfToken();
+        $api = $this->pddConfig();
+        $clientId = $api['pdd_client_id'] ?? '';
+        $clientSecret = $api['pdd_client_secret'] ?? '';
+        if (!$clientId || !$clientSecret) {
+            exit(json_encode(['status' => 'n', 'info' => '请先在联盟设置中填写拼多多 client_id / client_secret 并保存']));
+        }
+        list($code, $data) = $this->pddRequest('pdd.goods.pid.generate', [
+            'number'         => 1,
+            'p_id_name_list' => json_encode(['zhicms']),
+        ]);
+        if ($code === 'fail') {
+            exit(json_encode(['status' => 'n', 'info' => $data]));
+        }
+        $resp = $data['p_id_generate_response'] ?? [];
+        $pidList = $resp['p_id_list'] ?? [];
+        $pid = '';
+        if (!empty($pidList) && is_array($pidList)) {
+            $first = $pidList[0];
+            $pid = is_array($first) ? ($first['p_id'] ?? '') : $first;
+        }
+        if (!$pid) {
+            exit(json_encode(['status' => 'n', 'info' => '生成失败：' . json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)]));
+        }
+        $api['pdd_pid'] = $pid;
+        \app\common\ConfigStore::save('api', $api);
+        \app\common\ConfigStore::clearCache('api');
+        exit(json_encode(['status' => 'y', 'info' => 'PID 生成成功', 'pid' => $pid]));
+    }
+
+    /**
+     * 拼多多备案成功后，自动把自写 SDK 授权加入联盟授权列表（yun_union_auth）
+     * 前置：pdd.ddk.member.authority.query 查询 bind=1 才允许加入
+     */
+    public function pddAuthAddToList()
+    {
+        $this->checkCsrfToken();
+        $api = $this->pddConfig();
+        $pid = $api['pdd_pid'] ?? '';
+        if (!$pid) {
+            exit(json_encode(['status' => 'n', 'info' => '尚未生成 PID，请先点击「生成 PID」']));
+        }
+        // 确认已备案
+        list($code, $data) = $this->pddRequest('pdd.ddk.member.authority.query', ['pid' => $pid]);
+        if ($code === 'fail') {
+            exit(json_encode(['status' => 'n', 'info' => $data]));
+        }
+        $resp = $data['authority_query_response'] ?? [];
+        $bind = isset($resp['bind']) ? intval($resp['bind']) : 0;
+        if ($bind !== 1) {
+            exit(json_encode(['status' => 'n', 'info' => '该 PID 尚未在拼多多完成备案，无法加入列表']));
+        }
+        $exists = obj("api/ApiData")->thisQuery("SELECT * FROM `{pre}union_auth` WHERE `platform`='pdd' AND `union_type`='pdd' LIMIT 1");
+        $row = is_array($exists) && !empty($exists) ? $exists[0] : null;
+        $rec = array(
+            'platform'   => 'pdd',
+            'name'       => '拼多多自写SDK',
+            'pid'        => $pid,
+            'union_type' => 'pdd',
+            'auth_type'  => 'pdd_sdk',
+            'beian'      => 1,
+            'add_time'   => time(),
+        );
+        if ($row) {
+            obj("api/ApiData")->dataUpdate("{pre}union_auth", $rec, "`id`=?", array($row['id']));
+        } else {
+            obj("api/ApiData")->insertData("{pre}union_auth", $rec);
+        }
+        exit(json_encode(['status' => 'y', 'info' => '已添加至授权列表，PID 备案成功']));
     }
 }

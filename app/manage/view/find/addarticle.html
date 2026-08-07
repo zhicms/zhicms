@@ -58,7 +58,19 @@
                         <div class="col-md-6">
                             <div class="form-group">
                                 <label for="author">作者</label>
-                                <input type="text" class="form-control" name="author" id="author" placeholder="文章作者" value="{$ret['author']}">
+                                <div class="input-group">
+                                    <input type="text" class="form-control" name="author" id="author" placeholder="文章作者" value="{if $ret['author']}{$ret['author']}{else}{$adminNick}{/if}">
+                                    <div class="input-group-append">
+                                        <span class="input-group-text p-0 border-0">
+                                            {if $adminPic}
+                                            <img src="{$adminPic}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;" alt="作者头像">
+                                            {else}
+                                            <span class="d-inline-block rounded-circle bg-light text-center" style="width:38px;height:38px;line-height:38px;">{(mb_substr($adminNick,0,1,'UTF-8'))}</span>
+                                            {/if}
+                                        </span>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">默认调用当前管理员昵称与头像，可手动修改</small>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -72,7 +84,7 @@
                         <div class="form-group">
                             <label for="body">文章内容</label>
                             <!-- TinyMCE 编辑器容器 -->
-                            <textarea id="article-editor" name="body" data-editor data-upload-type="article" data-height="550">{$ret['content']}</textarea>
+                            <textarea id="article-editor" name="body" data-editor data-upload-type="article" data-height="550">{if isset($ret['content'])}{$ret['content']|raw}{/if}</textarea>
                             <small class="form-text text-muted">发布文章支持天猫淘宝/京东/拼多多/唯品会产品链接，点击工具栏[商品链接]按钮可插入</small>
                         </div>
                     

@@ -87,7 +87,8 @@ CREATE TABLE `__PREFIX__article` (
   `status` int(11) DEFAULT '0',
   `allow_comment` tinyint(1) NOT NULL DEFAULT '1' COMMENT '允许评论 1允许 0禁止',
   `featured` tinyint(1) NOT NULL DEFAULT '0' COMMENT '推荐文章 1推荐 0否',
-  `author` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+  `author` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '作者昵称（默认调用管理员昵称）',
+  `author_pic` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '作者头像（默认调用管理员头像）',
   `laiyuan` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
   `surl` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
   `sort` int(11) DEFAULT '0',
@@ -491,6 +492,7 @@ CREATE TABLE `__PREFIX__manage` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
   `password` varchar(35) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `nickname` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '对外昵称（前台文章作者展示）',
   `pic` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -717,11 +719,48 @@ INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
 INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
 ('user_reg_captcha', '1', '注册开启图形验证码 1开/0关'),
 ('user_email_verify', '0', '注册需要邮箱验证 1是/0否（当前仅预留）'),
-('user_show_login', '1', '前台显示用户登录/注册入口 1显示/0隐藏');
+('user_show_login', '1', '前台显示用户登录/注册入口 1显示/0隐藏'),
+('forum_on', '1', '社区功能总开关 1开/0关'),
+('comment_on', '1', '评论功能总开关 1开/0关'),
+('comment_anonymous', '1', '允许未登录评论 1允许/0禁止'),
+('comment_check', '0', '评论需要审核 1是/0否'),
+('comment_interval', '60', '评论间隔秒数（防刷）'),
+('FILE_UPLOAD_TYPE', 'webp', '文件上传类型（webp/原格式）'),
+('APP_DEBUG', '0', '调试模式 1开/0关'),
+('SITE_NAME', '', '站点名称');
 
 --
 -- Dumping data for table `__PREFIX__manage`
 --
 INSERT INTO `__PREFIX__manage` (`id`, `username`, `password`, `pic`) VALUES (1,'admin','61e2f0d3f61fc7f06741d6230632dd25','upload/manageuser/20180507103202_760.jpg');
+
+--
+-- Table structure for table `__PREFIX__union_auth`
+--
+
+DROP TABLE IF EXISTS `__PREFIX__union_auth`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `__PREFIX__union_auth` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `platform` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '平台标识 tb/jd/pdd/vip',
+  `name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '展示名称',
+  `pid` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '推广位PID',
+  `free_pid` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '备用PID',
+  `app_key` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'AppKey/ClientId',
+  `app_secret` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT 'AppSecret/ClientSecret',
+  `auth_type` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '授权类型 tb/jd/pdd/vip 等',
+  `union_type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '联盟类型 dtk/hdk/pdd_sdk 等',
+  `beian` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已备案（拼多多自写SDK需PID备案）',
+  `bind_tuanzhang` tinyint(1) NOT NULL DEFAULT '0' COMMENT '绑定团长 0否 1是',
+  `order_sync` tinyint(1) NOT NULL DEFAULT '0' COMMENT '订单同步 0关 1开',
+  `is_default` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否默认联盟',
+  `invite_code` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '邀请码',
+  `expire_time` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '授权过期时间（字符串日期）',
+  `add_time` int(11) NOT NULL DEFAULT '0' COMMENT '添加时间',
+  PRIMARY KEY (`id`),
+  KEY `platform` (`platform`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='联盟授权配置';
+/*!40101 SET character_set_client = @saved_cs_client */;
 
 SET FOREIGN_KEY_CHECKS = 1;

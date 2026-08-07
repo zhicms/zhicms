@@ -1,189 +1,338 @@
 ﻿{include file="app/index/view/public/header"}
 
-<div class="blog-hotbar">
-  <span class="blog-hotbar-label">搜索中心</span>
-  <div class="blog-hotbar-list">
-    <span class="blog-hotbar-item"><b>🔍</b>智能搜索</span>
-    <span class="blog-hotbar-item"><b>⚖️</b>多平台比价</span>
-    <span class="blog-hotbar-item"><b>💾</b>本地优先</span>
+<div class="container search-page">
+
+  <!-- 顶部搜索条（保留 ZhiCms 现有） -->
+  <div class="smzdm-topbar">
+    <form action="so.html" method="get" class="smzdm-search">
+      <span class="smzdm-search-input">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="smzdm-search-ico"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" name="content" value="{$keyword}" placeholder="搜索 商品 / 资讯 / 品牌…" aria-label="搜索" autocomplete="off">
+      </span>
+      <button type="submit" class="smzdm-search-btn">搜索</button>
+    </form>
+
+    <!-- 频道 Tab（仅综合） -->
+    <nav class="smzdm-tabs">
+      <a href="so.html?content={$q}&platform=local" class="smzdm-tab active">
+        <span>综合</span>
+      </a>
+    </nav>
   </div>
-</div>
 
-<div class="row">
-  <div class="column-big">
-    <div class="search-hero" style="background:linear-gradient(135deg,#ff6b6b 0%,#ff8e53 50%,#ffa500 100%);border-radius:24px;padding:40px;margin-bottom:24px;box-shadow:0 16px 48px rgba(255,107,107,0.35);">
-      <div class="text-center" style="margin-bottom:28px">
-        <h2 style="font-size:28px;color:#fff;font-weight:800;margin:0;letter-spacing:2px;">🔍 商品搜索</h2>
-        <p style="color:rgba(255,255,255,0.9);font-size:15px;margin:10px 0 0;">支持淘宝、京东、拼多多、唯品会多平台搜索</p>
-      </div>
-      
-      <form action="so.html" method="get" class="d-flex" style="gap:14px ; flex-wrap:wrap">
-        <div class="minw-220 pos-rel" style="flex:1">
-          <input type="text" name="content" value="{$keyword}" placeholder="输入商品名称搜索..." 
-                 class="w-full" style="padding:18px 52px 18px 22px ; font-size:16px ; border:none ; border-radius:18px ; background:#fff ; color:#333 ; outline:none ; box-shadow:0 6px 20px rgba(0,0,0,0.15) ; transition:all 0.3s">
-          {if !empty($keyword)}
-          <button type="button" onclick="document.querySelector('input[name=content]').value='';this.form.submit();" 
-                  class="pos-abs cur-pointer" style="right:52px ; top:50% ; transform:translateY(-50%) ; background:none ; border:none ; color:#999 ; font-size:20px">✕</button>
-          {/if}
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="pos-abs w-22 h-22" style="right:18px ; top:50% ; transform:translateY(-50%) ; color:#bbb"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-        </div>
-        <button type="submit" class="cur-pointer" style="padding:18px 40px ; background:rgba(255,255,255,0.28) ; backdrop-filter:blur(14px) ; color:#fff ; border:1px solid rgba(255,255,255,0.45) ; border-radius:18px ; font-size:16px ; font-weight:700 ; transition:all 0.3s">搜索</button>
-      </form>
-      
-      <div class="search-platform-tags d-flex" style="gap:12px ; flex-wrap:wrap ; margin-top:24px ; justify-content:center">
-        {foreach $platforms as $key => $pf}
-        <a href="so.html?content={$q}&platform={$key}" 
-           class="btn {if $platform == $key}btn-primary{else}btn-default{/if} d-flex"
-           style="padding:10px 24px ; font-size:14px ; border-radius:28px ; font-weight:600 ; align-items:center ; gap:8px ; background:{if $platform == $key}rgba(255,255,255,0.35){else}rgba(255,255,255,0.15){/if} ; color:#fff ; border:1px solid rgba(255,255,255,0.3)">
-          <?php echo $pf['icon']; ?> <?php echo $pf['name']; ?>
-        </a>
-        {/foreach}
+  <!-- 主内容区（仿 smzdm：行式筛选 + 列表 + 右侧原侧栏） -->
+  <div class="row search-row">
+
+    <!-- ===== 左：行式筛选 + 列表 ===== -->
+    <div class="column-big smzdm-main" style="padding-right:16px;">
+
+      <!-- 排序行 -->
+      <div class="smzdm-sortbar">
+        <span class="smzdm-sort-title">排序：</span>
+        <a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort=score" class="smzdm-sort {if $sort=='score'}active{/if}">综合排序</a>
+        <a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort=time" class="smzdm-sort {if $sort=='time'}active{/if}">最新排序</a>
+        <span class="smzdm-sort-count">共 {$page['count']} 条结果</span>
+        <a href="javascript:;" class="smzdm-toggle-filter">收起筛选 ▲</a>
       </div>
 
-      {if !empty($keyword)}
-      <div class="d-flex" style="margin-top:20px ; color:rgba(255,255,255,0.98) ; font-size:15px ; align-items:center ; gap:16px ; justify-content:center">
-        <span>关键词：<span style="font-weight:bold;font-size:16px;">{$keyword}</span></span>
-        {if isset($platforms[$platform])}
-        <span class="d-flex" style="background:rgba(255,255,255,0.3) ; padding:4px 16px ; border-radius:20px ; font-weight:600 ; align-items:center ; gap:8px"><?php echo $platforms[$platform]['icon']; ?> <?php echo $platforms[$platform]['name']; ?></span>
-        {/if}
-        {if !empty($page['count'])}
-        <span>共 <span style="font-weight:bold;font-size:16px;">{$page['count']}</span> 件商品</span>
-        {/if}
-      </div>
-      {/if}
-    </div>
-
-    {if !empty($emptyTip)}
-    <div class="text-center" style="padding:80px 20px ; background:var(--conBgcolor) ; border-radius:20px ; box-shadow:var(--shadow) ; border:1px solid var(--borderColor)">
-      <div style="font-size:80px;margin-bottom:24px;">🔍</div>
-      <h3 style="font-size:24px;margin-bottom:14px;color:var(--aColor);font-weight:700;">{$emptyTip}</h3>
-      <p style="color:var(--lightColor);margin-bottom:28px;font-size:15px;">试试其他平台或换个关键词</p>
-      <div class="d-flex" style="gap:12px ; justify-content:center ; flex-wrap:wrap">
-        {foreach $platforms as $key => $pf}
-        {if $key != $platform}
-        <a href="so.html?content={$q}&platform={$key}" class="btn btn-buy d-flex" style="padding:12px 28px ; background:linear-gradient(135deg,#ff6b6b,#ff8e53) ; color:#fff ; border:none ; border-radius:12px ; font-size:14px ; font-weight:600 ; align-items:center ; gap:8px"><?php echo $pf['icon']; ?> <?php echo $pf['name']; ?></a>
-        {/if}
-        {/foreach}
-      </div>
-    </div>
-    {else}
-      {if $platform == 'compare'}
-        {foreach $page['list'] as $group}
-        <div style="background:var(--conBgcolor);border-radius:20px;padding:28px;margin-bottom:24px;box-shadow:var(--shadow);border:1px solid var(--borderColor);">
-          <div class="d-flex" style="align-items:flex-start ; gap:24px ; margin-bottom:24px">
-            {if !empty($group['repPic'])}
-            <img src="{$group['repPic']}" alt="{$group['repTitle']}" class="w-140 h-140" style="object-fit:cover ; border-radius:16px ; border:1px solid var(--borderColor)">
-            {else}
-            <div class="w-140 h-140 d-flex" style="background:var(--surfaceHover) ; border-radius:16px ; align-items:center ; justify-content:center ; font-size:60px ; border:1px solid var(--borderColor)">📦</div>
-            {/if}
-            <div style="flex:1;">
-              <h3 style="font-size:18px;margin-bottom:14px;color:var(--aColor);font-weight:700;line-height:1.5;">{$group['repTitle']}</h3>
-              <div class="d-flex" style="align-items:center ; gap:18px">
-                <span style="font-size:32px;font-weight:800;color:#ff4757;">¥{$group['minPrice']}</span>
-                <span style="font-size:15px;color:var(--lightColor);background:var(--surfaceHover);padding:5px 14px;border-radius:20px;">{$group['platformCount']}个平台比价</span>
-              </div>
-            </div>
-          </div>
-          
-          <div class="d-flex" style="gap:14px ; flex-wrap:wrap">
-            {foreach $group['priceByPlatform'] as $pfKey => $pfData}
-            <?php
-            $pfNames = ['taobao'=>'淘宝','jd'=>'京东','pdd'=>'拼多多','vip'=>'唯品会'];
-            $pfIcons = [
-                'taobao' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="#ff5000"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">淘</text></svg>',
-                'jd'     => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="#e4393c"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">京</text></svg>',
-                'pdd'    => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="#e02e24"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">拼</text></svg>',
-                'vip'    => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#e60012"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">V</text></svg>',
-            ];
-            $pfColors = ['taobao'=>'#ff5000','jd'=>'#e4393c','pdd'=>'#e02e24','vip'=>'#e60012'];
-            ?>
-            <div class="minw-200" style="flex:1 ; background:var(--surfaceHover) ; border-radius:16px ; padding:20px ; border:2px solid var(--borderColor) ; transition:all 0.3s">
-              <div class="d-flex" style="align-items:center ; justify-content:space-between ; margin-bottom:14px">
-                <span class="d-flex" style="font-weight:700 ; font-size:15px ; align-items:center ; gap:8px"><?php echo $pfIcons[$pfKey]; ?> {$pfNames[$pfKey]}</span>
-                <span style="font-size:26px;font-weight:800;color:{$pfColors[$pfKey]};">¥{$pfData['price']}</span>
-              </div>
-              <a href="{$pfData['item']['buyUrl']}" target="_blank" rel="nofollow" 
-                 class="btn btn-buy" style="width:100%;text-align:center;font-size:14px;font-weight:600;padding:10px 0;background:{$pfColors[$pfKey]};border:none;border-radius:10px;">去购买</a>
-            </div>
+      <!-- 行式筛选条（仿 smzdm：每行 标题 + 选项） -->
+      <div class="smzdm-filterbar">
+        <!-- 资讯分类：只筛选本地文章，不影响商品 -->
+        <div class="smzdm-filter-row">
+          <span class="smzdm-filter-label">分类</span>
+          <ul class="smzdm-filter-options smzdm-more" data-min="6">
+            <li><a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($currentNav)}active{/if}">全部</a></li>
+            {foreach $navs as $navKey => $navName}
+            <li><a href="so.html?content={$q}&platform=local&type=article&nav={$navKey}" class="{if !empty($currentNav) && $currentNav == $navKey}active{/if}">{$navName}</a></li>
             {/foreach}
-          </div>
+          </ul>
+          <span class="smzdm-filter-note">仅筛选站内资讯</span>
         </div>
-        {/foreach}
-      {else}
-        {foreach $page['list'] as $item}
-        <article class="shadow-theme post of-hidden" style="border-radius:16px ; border:1px solid rgba(0,0,0,0.06) ; transition:all 0.3s ease">
-          {if !empty($item['mainPic'])}
-          <a class="post-cover pos-rel of-hidden" href="{$item['buyUrl']}" target="_blank">
-            <img src="{$item['mainPic']}" alt="{$item['title']}" loading="lazy" style="transition:transform 0.4s ease;">
-            <?php
-            $pfIcons = [
-                'taobao' => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="#ff5000"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">淘</text></svg>',
-                'jd'     => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" fill="#e4393c"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="10" font-weight="bold">京</text></svg>',
-                'pdd'    => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><circle cx="12" cy="12" r="10" fill="#e02e24"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">拼</text></svg>',
-                'vip'    => '<svg viewBox="0 0 24 24" width="18" height="18" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#e60012"/><text x="12" y="16" text-anchor="middle" fill="#fff" font-size="9" font-weight="bold">V</text></svg>',
-            ];
-            $pf = $item['item_from'] ?? ($item['laiyuan'] == 2 ? 'pdd' : ($item['laiyuan'] == 4 ? 'jd' : ($item['laiyuan'] == 3 ? 'vip' : 'taobao')));
-            ?>
-            <div class="pos-abs" style="top:12px ; left:12px ; background:rgba(0,0,0,0.7) ; padding:6px 14px ; border-radius:8px ; font-size:12px ; font-weight:500">
-              <?php echo $pfIcons[$pf]; ?>
-            </div>
-            {if !empty($item['couponPrice'])}
-            <div class="pos-abs" style="top:12px ; right:12px ; background:linear-gradient(135deg,#ff4757,#ff6b35) ; color:#fff ; padding:5px 14px ; border-radius:20px ; font-size:13px ; font-weight:700 ; box-shadow:0 4px 16px rgba(255,71,87,0.4)">
-              ¥{$item['couponPrice']}券
-            </div>
-            {/if}
-            <div class="pos-abs" style="bottom:0 ; left:0 ; right:0 ; height:35% ; background:linear-gradient(transparent, rgba(0,0,0,0.2))"></div>
+
+        <!-- 平台：本地走数据库，其余走 API -->
+        <div class="smzdm-filter-row">
+          <span class="smzdm-filter-label">平台</span>
+          <ul class="smzdm-filter-options">
+            <li><a href="so.html?content={$q}&platform=local&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='local'}active{/if}">本地</a></li>
+            <li><a href="so.html?content={$q}&platform=taobao&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='taobao'}active{/if}">淘宝</a></li>
+            <li><a href="so.html?content={$q}&platform=jd&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='jd'}active{/if}">京东</a></li>
+            <li><a href="so.html?content={$q}&platform=pdd&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='pdd'}active{/if}">拼多多</a></li>
+            <li><a href="so.html?content={$q}&platform=vip&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='vip'}active{/if}">唯品会</a></li>
+          </ul>
+        </div>
+
+        <!-- 主流商品分类（与品牌联动） -->
+        <div class="smzdm-filter-row">
+          <span class="smzdm-filter-label">品类</span>
+          <ul class="smzdm-filter-options smzdm-more" data-min="6">
+            <li><a href="so.html?content={$q}&platform={$platform}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($cat)}active{/if}">全部</a></li>
+            {foreach $mainCats as $catId => $catName}
+            <li><a href="so.html?content={$q}&platform={$platform}&cat={$catId}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if !empty($cat) && $cat == $catId}active{/if}">{$catName}</a></li>
+            {/foreach}
+          </ul>
+          <a href="javascript:;" class="smzdm-more-btn">更多 ▼</a>
+        </div>
+
+        <!-- 品牌（随品类联动，作为关键词参与搜索） -->
+        <div class="smzdm-filter-row">
+          <span class="smzdm-filter-label">品牌</span>
+          <ul class="smzdm-filter-options smzdm-more" data-min="6">
+            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($brand)}active{/if}">全部</a></li>
+            {foreach $brandList as $bKey => $bName}
+            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$bKey}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $brand == $bKey}active{/if}">{$bName}</a></li>
+            {/foreach}
+          </ul>
+          <a href="javascript:;" class="smzdm-more-btn">更多 ▼</a>
+        </div>
+
+        <!-- 店铺评分（本地库按 dsrScore 过滤，API 结果按返回评分过滤） -->
+        <div class="smzdm-filter-row">
+          <span class="smzdm-filter-label">评分</span>
+          <ul class="smzdm-filter-options">
+            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($rate)}active{/if}">全部</a></li>
+            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4.8&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4.8'}active{/if}">4.8分以上</a></li>
+            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4.5&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4.5'}active{/if}">4.5分以上</a></li>
+            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4'}active{/if}">4.0分以上</a></li>
+          </ul>
+        </div>
+
+        <!-- 价格（入参搜索：本地走 SQL，API 走接口参数） -->
+        <div class="smzdm-filter-row">
+          <span class="smzdm-filter-label">价格</span>
+          <form class="smzdm-price" action="so.html" method="get">
+            <input type="hidden" name="content" value="{$keyword}">
+            <input type="hidden" name="platform" value="{$platform}">
+            <input type="hidden" name="type" value="{$type}">
+            <input type="hidden" name="cat" value="{$cat}">
+            <input type="hidden" name="sort" value="{$sort}">
+            <input type="hidden" name="brand" value="{$brand}">
+            <input type="hidden" name="rate" value="{$rate}">
+            <input type="number" name="pmin" value="{$pmin}" placeholder="¥" class="smzdm-price-in">
+            <span class="smzdm-price-sep">—</span>
+            <input type="number" name="pmax" value="{$pmax}" placeholder="¥" class="smzdm-price-in">
+            <button type="submit" class="smzdm-price-btn">确定</button>
+            <a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&sort={$sort}&brand={$brand}&rate={$rate}" class="smzdm-price-clear">清除</a>
+            <span class="smzdm-price-tip">（不区分币种）</span>
+          </form>
+        </div>
+      </div>
+
+      <!-- 商品列表 -->
+      <div class="smzdm-list">
+        {if empty($page['list'])}
+          <div class="smzdm-empty">{if !empty($emptyTip)}{$emptyTip}{else}没有找到 “{$keyword}” 相关结果，换个关键词试试～{/if}</div>
+        {/if}
+        {foreach $page['list'] as $k => $row}
+        {if $row['docType'] == 'article'}
+        <!-- 文章：使用与首页一致的参数（mainPic / title / dec / url） -->
+        <article class="smzdm-item smzdm-item-article" data-score="">
+          <a href="{$row['url']}" class="smzdm-item-pic" target="_blank">
+            <span class="smzdm-item-tag smzdm-item-tag-article">资讯</span>
+            <img src="{$row['mainPic']}" alt="{$row['title']}" loading="lazy">
           </a>
-          {/if}
-          <div class="card-padding" style="padding:20px;">
-            <div class="card-tags mb-12">
-              {if !empty($item['couponPrice'])}
-              <span class="card-tag" style="background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">领券减¥{$item['couponPrice']}</span>
-              {/if}
-              {if !empty($item['shopName'])}
-              <span class="card-tag" style="background:#f7f8fa;color:#555;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:500;">{$item['shopName']}</span>
-              {/if}
+          <div class="smzdm-item-body">
+            <h2 class="smzdm-item-title"><a href="{$row['url']}" target="_blank">{$row['title']}</a></h2>
+            {if !empty($row['dec'])}
+            <p class="smzdm-item-desc">{$row['dec']}</p>
+            {/if}
+            <div class="smzdm-item-meta">
+              <span class="smzdm-item-stat"><i class="ico-eye"></i> {$row['hits']}</span>
+              <span class="smzdm-item-stat"><i class="ico-msg"></i> {$row['comments']}</span>
+              <span class="smzdm-item-stat"><i class="ico-star"></i> {$row['likes']}</span>
+              <span class="smzdm-item-time">{$row['time']}</span>
+              <span class="smzdm-item-platform">{$row['mall_name']}</span>
             </div>
-            <h3 class="card-title mb-12">
-              <a class="post-title" href="{$item['buyUrl']}" target="_blank" title="{$item['title']}" style="font-size:17px;font-weight:700;line-height:1.5;">
-                {$item['title']}
-              </a>
-            </h3>
-            <div class="d-flex" style="align-items:center ; gap:14px ; margin-bottom:14px">
-              {if !empty($item['actualPrice'])}
-              <span style="font-size:28px;font-weight:800;color:#ff4757;">¥{$item['actualPrice']}</span>
-              {/if}
-              {if !empty($item['originalPrice'])}
-              <span style="font-size:15px;color:#999;text-decoration:line-through;">¥{$item['originalPrice']}</span>
-              {/if}
-            </div>
-            <div class="info-row d-flex" style="align-items:center ; justify-content:space-between">
-              <div class="log-info d-flex" style="align-items:center ; gap:12px">
-                {if !empty($item['monthSales'])}
-                <span style="color:#555;font-size:13px;">月销 {$item['monthSales']}</span>
-                <span class="dot" style="color:#ddd;">·</span>
-                {/if}
-                {if !empty($item['commissionRate'])}
-                <span style="color:#27ae60;font-size:13px;font-weight:500;">佣金 {$item['commissionRate']}%</span>
-                {/if}
-              </div>
-              <div class="post-actions">
-                <a class="btn btn-buy" href="{$item['buyUrl']}" target="_blank" rel="nofollow" style="padding:10px 24px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;">去购买</a>
-              </div>
-            </div>
+          </div>
+          <div class="smzdm-item-action">
+            <a href="{$row['url']}" target="_blank" class="smzdm-buy smzdm-buy-article">阅读全文</a>
           </div>
         </article>
+        {else}
+        <!-- 商品 -->
+        <article class="smzdm-item" data-score="{$row['scoreTxt']}">
+          <a href="{$row['url']}" class="smzdm-item-pic" target="_blank">
+            <span class="smzdm-item-tag">好价</span>
+            <img src="{$row['mainPic']}" alt="{$row['title']}" loading="lazy">
+          </a>
+          <div class="smzdm-item-body">
+            <h2 class="smzdm-item-title"><a href="{$row['url']}" target="_blank">{$row['title']}</a></h2>
+            <div class="smzdm-item-price">
+              <span class="smzdm-cur">{$row['price_sign']}</span>{$row['actualPrice']}
+              {if !empty($row['originalprice'])}<span class="smzdm-orig">¥{$row['originalprice']}</span>{/if}
+              {if !empty($row['couponPrice'])}<span class="smzdm-coupon">券¥{$row['couponPrice']}</span>{/if}
+            </div>
+            <div class="smzdm-item-tags">
+              {if !empty($row['brandName'])}<span class="smzdm-tag-brand">{$row['brandName']}</span>{/if}
+              {if !empty($row['scoreTxt'])}<span class="smzdm-tag-score">评分 {$row['scoreTxt']}</span>{/if}
+              {if !empty($row['shopName'])}<span class="smzdm-tag-shop">{$row['shopName']}</span>{/if}
+              {if !empty($row['tags']) && is_array($row['tags'])}{foreach $row['tags'] as $tag}<span>{$tag}</span>{/foreach}{/if}
+            </div>
+            {if !empty($row['description'])}
+            <p class="smzdm-item-desc">{$row['description']}</p>
+            {/if}
+            <div class="smzdm-item-meta">
+              <span class="smzdm-item-stat"><i class="ico-eye"></i> {$row['hits']}</span>
+              <span class="smzdm-item-stat"><i class="ico-msg"></i> {$row['comments']}</span>
+              <span class="smzdm-item-stat"><i class="ico-star"></i> {$row['likes']}</span>
+              <span class="smzdm-item-time">{$row['time']}</span>
+              <span class="smzdm-item-platform">{$row['mall_name']}</span>
+            </div>
+          </div>
+          <div class="smzdm-item-action">
+            {if !empty($row['coupon_link'])}
+            <a href="{$row['coupon_link']}" target="_blank" class="smzdm-buy">去购买</a>
+            {elseif !empty($row['buyUrl'])}
+            <a href="{$row['buyUrl']}" target="_blank" class="smzdm-buy">去购买</a>
+            {else}
+            <a href="{$row['url']}" target="_blank" class="smzdm-buy">查看详情</a>
+            {/if}
+          </div>
+        </article>
+        {/if}
         {/foreach}
-      {/if}
+      </div>
 
       {if !empty($page['pages'])}
-      <div class="pagination" style="margin-top:28px;">
-        <ul>{$page['pages']}</ul>
-      </div>
+      <div class="pagination"><ul class="pagination-list">{$page['pages']}</ul></div>
       {/if}
-    {/if}
+    </div>
+
+    <!-- ===== 右：保持原侧栏（sidebar.html 自身已是 column-small 容器） ===== -->
+    {include file="app/index/view/public/sidebar"}
+
   </div>
-  {include file="app/index/view/public/sidebar"}
 </div>
 
 {include file="app/index/view/public/footer"}
+
+<script>
+$(function(){
+  // "更多" 展开收起（品类 / 品牌 / 分类共用）
+  $('.smzdm-more-btn').on('click', function(){
+    var ul = $(this).siblings('.smzdm-more').first();
+    var open = ul.hasClass('open');
+    ul.toggleClass('open');
+    $(this).text(open ? '更多 ▼' : '收起 ▲');
+  });
+  // 若选中项在折叠区内，默认展开该行
+  $('.smzdm-filter-options.smzdm-more').each(function(){
+    var ul = $(this);
+    var act = ul.find('a.active');
+    if (act.length && act.position() && act.position().top > 6) {
+      ul.addClass('open');
+      ul.siblings('.smzdm-more-btn').text('收起 ▲');
+    }
+  });
+  // 收起筛选
+  $('.smzdm-toggle-filter').on('click', function(){
+    var bar = $('.smzdm-filterbar');
+    bar.toggle();
+    $(this).text(bar.is(':visible') ? '收起筛选 ▲' : '展开筛选 ▼');
+  });
+});
+</script>
+
+<style>
+.search-page{padding:20px 0 40px;}
+.search-row{margin:0;}
+/* 顶部搜索条 */
+.smzdm-topbar{margin-bottom:16px;}
+.smzdm-search{display:flex;gap:10px;max-width:560px;}
+.smzdm-search-input{flex:1;display:block;position:relative;}
+.smzdm-search-input input{width:100%;height:42px;padding:0 14px 0 38px;border:2px solid #e1251b;border-radius:4px;font-size:15px;background:var(--conBgcolor);color:var(--fontColor);box-sizing:border-box;}
+.smzdm-search-input input:focus{outline:none;border-color:#c81623;}
+.smzdm-search-ico{position:absolute;left:12px;top:11px;width:18px;height:18px;pointer-events:none;z-index:2;}
+.smzdm-search-btn{width:90px;height:42px;border:0;border-radius:4px;background:#e1251b;color:#fff;font-size:15px;cursor:pointer;flex:0 0 auto;}
+.smzdm-search-btn:hover{background:#c81623;}
+/* 频道 Tab */
+.smzdm-tabs{display:flex;flex-wrap:wrap;gap:0;margin-top:14px;border-bottom:1px solid var(--borderColor,#eee);}
+.smzdm-tab{display:inline-flex;align-items:center;gap:5px;padding:10px 24px;color:#555;font-size:15px;text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s;}
+.smzdm-tab:hover{color:#e1251b;}
+.smzdm-tab.active{color:#e1251b;border-bottom-color:#e1251b;font-weight:600;background:rgba(225,37,27,.04);}
+.smzdm-tab svg{width:16px;height:16px;}
+/* 排序条 */
+.smzdm-sortbar{display:flex;align-items:center;gap:18px;padding:12px 16px;background:var(--conBgcolor);border:1px solid var(--borderColor,#eee);border-radius:8px;margin-bottom:12px;font-size:14px;}
+.smzdm-sort-title{color:var(--lightColor,#999);}
+.smzdm-sort{color:var(--fontColor);text-decoration:none;padding:3px 4px;border-bottom:2px solid transparent;}
+.smzdm-sort:hover{color:#e1251b;}
+.smzdm-sort.active{color:#e1251b;font-weight:700;}
+.smzdm-sort-count{margin-left:auto;color:var(--lightColor,#999);}
+.smzdm-toggle-filter{color:#e1251b;text-decoration:none;font-size:13px;}
+.smzdm-toggle-filter:hover{text-decoration:underline;}
+/* 行式筛选条 */
+.smzdm-filterbar{background:var(--conBgcolor);border:1px solid var(--borderColor,#eee);border-radius:8px;padding:6px 0;margin-bottom:14px;}
+.smzdm-filter-row{display:flex;align-items:flex-start;padding:10px 16px;border-bottom:1px dashed #f0f0f0;}
+.smzdm-filter-row:last-child{border-bottom:0;}
+.smzdm-filter-label{flex:0 0 56px;font-size:14px;color:#999;padding-top:6px;}
+.smzdm-filter-options{flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;align-items:flex-start;gap:4px;list-style:none;margin:0;padding:0;}
+.smzdm-filter-options.smzdm-more{max-height:34px;overflow:hidden;}
+.smzdm-filter-options.smzdm-more.open{max-height:none;}
+.smzdm-filter-options li{margin:0;}
+.smzdm-filter-options a{display:block;padding:5px 10px;font-size:13px;color:var(--fontColor);text-decoration:none;border-radius:3px;transition:.15s;white-space:nowrap;}
+.smzdm-filter-options a:hover{background:#fff0ef;color:#e1251b;}
+.smzdm-filter-options a.active{background:#e1251b;color:#fff;font-weight:600;}
+.smzdm-more-btn{flex:0 0 auto;font-size:13px;color:#e1251b;text-align:right;cursor:pointer;padding-top:6px;margin-left:8px;user-select:none;white-space:nowrap;}
+.smzdm-more-btn:hover{text-decoration:underline;}
+.smzdm-filter-note{flex:0 0 auto;font-size:12px;color:#bbb;padding-top:8px;margin-left:8px;white-space:nowrap;}
+/* 价格 */
+.smzdm-price{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.smzdm-price-in{width:64px;height:28px;padding:0 8px;border:1px solid #ddd;border-radius:4px;background:var(--conBgcolor);color:var(--fontColor);font-size:13px;}
+.smzdm-price-sep{color:#999;}
+.smzdm-price-btn{height:28px;padding:0 14px;border:0;border-radius:4px;background:#e1251b;color:#fff;cursor:pointer;font-size:13px;}
+.smzdm-price-clear{font-size:13px;color:#999;text-decoration:none;margin-left:4px;}
+.smzdm-price-clear:hover{color:#e1251b;}
+.smzdm-price-tip{font-size:12px;color:#bbb;}
+/* 商品列表 */
+.smzdm-list{display:flex;flex-direction:column;gap:14px;}
+.smzdm-item{display:flex;gap:16px;background:var(--conBgcolor);border:1px solid var(--borderColor,#eee);border-radius:8px;padding:18px;transition:.15s;}
+.smzdm-item:hover{box-shadow:0 4px 16px rgba(0,0,0,.08);}
+.smzdm-item-pic{flex:0 0 160px;display:block;position:relative;}
+.smzdm-item-tag{position:absolute;left:0;top:0;background:#e1251b;color:#fff;font-size:11px;padding:2px 6px;border-radius:0 0 4px 0;z-index:1;}
+.smzdm-item-pic img{width:160px;height:160px;object-fit:cover;border-radius:6px;background:#f5f5f5;}
+.smzdm-item-body{flex:1;min-width:0;}
+.smzdm-item-title{font-size:17px;font-weight:500;margin:0 0 10px;line-height:1.4;}
+.smzdm-item-title a{color:var(--aColor,#333);text-decoration:none;}
+.smzdm-item-title a:hover{color:#e1251b;}
+.smzdm-item-price{font-size:24px;font-weight:700;color:#e1251b;margin-bottom:8px;}
+.smzdm-cur{font-size:14px;margin-right:2px;}
+.smzdm-orig{font-size:13px;color:#999;text-decoration:line-through;margin-left:10px;font-weight:400;}
+.smzdm-coupon{font-size:13px;color:#ff6a00;margin-left:10px;font-weight:400;}
+.smzdm-item-tags{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+.smzdm-item-tags span{font-size:12px;padding:2px 8px;border-radius:3px;background:#f5f5f5;color:#666;}
+.smzdm-tag-brand{background:#fff0ef !important;color:#e1251b !important;font-weight:600;}
+.smzdm-tag-score{background:#e8f5e9 !important;color:#2e7d32 !important;}
+.smzdm-tag-shop{background:#e3f2fd !important;color:#1565c0 !important;}
+.smzdm-rate-filter.active{background:#e1251b;color:#fff;font-weight:600;}
+.smzdm-item-desc{font-size:13px;color:var(--lightColor,#888);margin:0 0 12px;line-height:1.6;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
+.smzdm-item-meta{font-size:12px;color:#aaa;display:flex;gap:14px;align-items:center;}
+.smzdm-item-stat{display:inline-flex;align-items:center;gap:3px;}
+.smzdm-item-time{margin-left:auto;color:#bbb;}
+.smzdm-item-platform{font-size:12px;padding:2px 8px;background:#f5f5f5;border-radius:3px;color:#666;}
+.smzdm-item-action{flex:0 0 110px;display:flex;align-items:flex-end;justify-content:flex-end;}
+.smzdm-buy{display:inline-block;padding:10px 22px;background:#e1251b;color:#fff;border-radius:4px;text-decoration:none;font-size:14px;font-weight:600;}
+.smzdm-buy:hover{background:#c81623;}
+.smzdm-empty{padding:60px 0;text-align:center;color:#999;background:var(--conBgcolor);border-radius:8px;}
+/* 暗黑适配 */
+[data-theme="dark"] .smzdm-item-pic img{background:#1a1d24;}
+[data-theme="dark"] .smzdm-filter-row{border-color:#2a2e36;}
+/* 移动端 */
+@media (max-width: 991px){
+  .smzdm-item-pic{flex:0 0 120px;}
+  .smzdm-item-pic img{width:120px;height:120px;}
+  .smzdm-item-action{flex:0 0 auto;}
+  .smzdm-filter-label{flex:0 0 50px;}
+}
+@media (max-width: 767px){
+  .smzdm-item{flex-wrap:wrap;padding:14px;}
+  .smzdm-item-action{width:100%;justify-content:flex-end;padding-top:8px;border-top:1px dashed #eee;margin-top:10px;}
+  .smzdm-filter-row{flex-wrap:wrap;}
+  .smzdm-filter-label{flex:0 0 100%;padding-bottom:4px;}
+}
+/* 翻页 */
+.pagination{margin:24px 0 8px;text-align:center;}
+.pagination-list{display:inline-flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0;}
+.pagination-list li{display:inline-block;}
+.pagination-list li a,.pagination-list li.active a{display:block;min-width:34px;padding:7px 12px;border:1px solid var(--borderColor,#eee);border-radius:4px;color:var(--fontColor);text-decoration:none;font-size:14px;background:var(--conBgcolor);}
+.pagination-list li a:hover{border-color:#e1251b;color:#e1251b;}
+.pagination-list li.active a{background:#e1251b;border-color:#e1251b;color:#fff;font-weight:600;}
+.pagination-list li.previous a,.pagination-list li.nextPage a,.pagination-list li.lastPage a{}

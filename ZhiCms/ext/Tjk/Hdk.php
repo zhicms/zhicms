@@ -4,9 +4,15 @@ namespace ZhiCms\ext\Tjk;
 class Hdk {
     
     protected $apiKey;
-    
-    public function __construct($apiKey) {
+    protected $unionId = '';
+    protected $vipPid = '';
+    protected $pddPid = '';
+
+    public function __construct($apiKey, $unionId = '', $vipPid = '', $pddPid = '') {
         $this->apiKey = $apiKey;
+        $this->unionId = $unionId;
+        $this->vipPid = $vipPid;
+        $this->pddPid = $pddPid;
     }
 
     /**
@@ -29,10 +35,17 @@ class Hdk {
         return $ts !== false ? date('Y-m-d H:i:s', $ts) : '';
     }
     
-    protected function request($host, $params) {
+    protected function request($host, $params, $method = 'GET') {
         try {
             $ch = curl_init();
-            curl_setopt($ch, CURLOPT_URL, $host . '?' . http_build_query($params));
+            $method = strtoupper($method);
+            if ($method === 'POST') {
+                curl_setopt($ch, CURLOPT_URL, $host);
+                curl_setopt($ch, CURLOPT_POST, true);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($params));
+            } else {
+                curl_setopt($ch, CURLOPT_URL, $host . '?' . http_build_query($params));
+            }
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
             curl_setopt($ch, CURLOPT_TIMEOUT, 30);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -169,7 +182,7 @@ class Hdk {
         $items = [];
         foreach (($result['data'] ?? []) as $item) {
             $items[] = [
-                'goodsId' => $item['goods_id'] ?? '',
+                'goodsId' => $item['goods_sign'] ?? $item['goods_id'] ?? '',   // 拼多多产品ID=goods_sign（与大淘客 goodsSign 对齐，转链用 goods_sign 参数）
                 'goodsSign' => $item['goods_sign'] ?? '',
                 'title' => $item['goodsname'] ?? '',
                 'originalPrice' => $item['itemprice'] ?? 0,
@@ -398,32 +411,124 @@ class Hdk {
         return $text;
     }
 
-    public function RatesUrl($goodsId) {
+    /**
+     * 好单库转链（ratesurl），支持淘宝/京东/拼多多/唯品会。
+     * @param string $goodsId 商品ID
+     * @param string $platform 平台标识：tb / jd / pdd / vip
+     */
+    public function RatesUrl($goodsId, $platform = 'tb') {
         $host = 'http://v3.api.haodanku.com/ratesurl';
+        $method = 'GET';
         $params = [
             'apikey' => $this->apiKey,
             'itemid' => $goodsId,
         ];
-        
-        $result = $this->request($host, $params);
-        
+
+        // 各平台转链接口与调用方式不同，需分别处理：
+        //  - 淘宝：ratesurl（GET，itemid=num_iid）
+        //  - 京东：get_jditems_link（POST，goodsid=纯数字商品id，union_id=京东联盟ID）
+        //  - 拼多多/唯品会：后续按用户提供的接口参数补充
+        if ($platform === 'jd') {
+            $host = 'http://v2.api.haodanku.com/get_jditems_link';
+            $method = 'POST';
+            $params = [
+                'apikey'     => $this->apiKey,
+                'material_id' => $goodsId,   // 京东产品ID（好单库 itemid 编码）
+                'union_id'   => $this->unionId,
+            ];
+        } elseif ($platform === 'vip') {
+            $host = 'http://v2.api.haodanku.com/vip_ratesurl';
+            $method = 'POST';
+            $params = [
+                'apikey' => $this->apiKey,
+                'goodsid' => $goodsId,
+                'pid'    => $this->vipPid ?: '7c1a186177a9ac60b448f9bbc6669ca6',
+            ];
+        } elseif ($platform === 'pdd') {
+            $host = 'http://v2.api.haodanku.com/get_pdditems_link';
+            $method = 'POST';
+            $params = [
+                'apikey'    => $this->apiKey,
+                'goods_sign' => $goodsId,
+                'pid'       => $this->pddPid ?: '39030134_316592663',
+            ];
+        }
+
+        $result = $this->request($host, $params, $method);
+
+        // 好单库接口成功码为 200（淘宝 supersearch 为 1），两者都兼容
         if (!isset($result['code']) || ($result['code'] != 1 && $result['code'] != 200)) {
             return ['code' => 0, 'message' => $result['msg'] ?? '转链失败'];
         }
-        
+
+        $data = $result['data'] ?? $result;
+
+        // 唯品会转链接口（api_detail?id=69）返回平铺字段，
+        // 成功短链在 url（https://t.vip.com/...），并附 longUrl/noEvokeUrl/onlyCommand 等。
+        // 兼容字段位于 data 下或根级两种返回结构。
+        if ($platform === 'vip') {
+            $url = $data['url'] ?? $result['url'] ?? '';
+            $ulUrl = $data['ulUrl'] ?? $result['ulUrl'] ?? '';
+            $longUrl = $data['longUrl'] ?? $result['longUrl'] ?? '';
+            $noEvoke = $data['noEvokeUrl'] ?? $result['noEvokeUrl'] ?? '';
+            $command = $data['onlyCommand'] ?? $result['onlyCommand'] ?? '';
+            // 跳转短链优先 url（t.vip.com 短链），其次 ulUrl（联盟 deeplink 短链），再次不唤起短链，最后长链
+            $jumpUrl = $url ?: ($ulUrl ?: ($noEvoke ?: $longUrl));
+            return [
+                'code' => 1,
+                'message' => 'success',
+                'data' => [
+                    // 优先用 t.vip.com 短链作为跳转链接
+                    'couponLink' => $jumpUrl,
+                    'shortLink'  => $jumpUrl,
+                    'longUrl'    => $longUrl,
+                    'noEvokeUrl' => $noEvoke,
+                    'tkl'        => $command,
+                    'taokeLink'  => $command,
+                    'url'        => $jumpUrl,
+                ],
+            ];
+        }
+
+        // 各平台返回字段不同，统一映射到通用结构：
+        //  - 淘宝：data.couponurl / data.tkl
+        //  - 京东：data.short_url（https://u.jd.com/...）
+        //  - 拼多多：data.short_url / data.mobile_short_url / data.url
+        // 兼容字段位于 data 下或根级两种返回结构。
+        $pick = function ($keys) use ($data, $result) {
+            foreach ((array)$keys as $k) {
+                if (($data[$k] ?? '') !== '') return $data[$k];
+                if (($result[$k] ?? '') !== '') return $result[$k];
+            }
+            return '';
+        };
+
+        if ($platform === 'jd') {
+            $jumpUrl = $pick(['short_url', 'url', 'couponurl']);
+            $tkl     = $pick(['tkl', 'coupon_click_url']);
+        } elseif ($platform === 'pdd') {
+            $jumpUrl = $pick(['short_url', 'mobile_short_url', 'url', 'couponurl']);
+            $tkl     = $pick(['tkl', 'goods_sign', 'mobile_short_url']);
+        } else {
+            // 淘宝
+            $jumpUrl = $pick(['couponurl', 'short_url', 'url']);
+            $tkl     = $pick(['tkl', 'tpwd']);
+        }
+
         return [
             'code' => 1,
             'message' => 'success',
             'data' => [
-                'couponLink' => $result['data']['couponurl'] ?? '',
-                'taokeLink' => $result['data']['tkl'] ?? '',
-                'tkl' => $result['data']['tkl'] ?? '',
-                'shortLink' => '',
+                'couponLink' => $jumpUrl,
+                'shortLink'  => $jumpUrl,
+                'url'        => $jumpUrl,
+                'tkl'        => $tkl,
+                'taokeLink'  => $tkl,
             ],
         ];
     }
 
-    public function GetGoodsDetails($goodsId) {
+    public function GetGoodsDetails($goodsId, $platform = 'taobao') {
         $host = 'http://v3.api.haodanku.com/item_detail';
         $params = [
             'apikey' => $this->apiKey,
@@ -437,7 +542,7 @@ class Hdk {
             return ['code' => 0, 'message' => $result['msg'] ?? '请求失败'];
         }
 
-        $data = \ZhiCms\ext\Tjk::standardizeItem($result['data'] ?? [], 'taobao');
+        $data = \ZhiCms\ext\Tjk::standardizeItem($result['data'] ?? [], $platform);
         return [
             'code' => 1,
             'message' => 'success',

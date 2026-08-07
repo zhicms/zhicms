@@ -62,20 +62,55 @@ class Dtk {
         return $this->GetGoodsDetails($goodsId);
     }
 
-    public function SearchGoods($keyword, $pageNum = 1, $pageSize = 100) {
+    /**
+     * 大淘客关键词搜索
+     * 注意：官方 pageSize 仅支持 10/50/100。若调用方传入其它值（如 20），
+     * 这里会向上取到最近的合法档位请求，再按调用方的 pageSize 做本地切片，
+     * 保证「每页条数」与分页器一致，避免翻页错乱/重复。
+     *
+     * @param string $keyword  关键词
+     * @param int    $pageNum  页码（调用方口径）
+     * @param int    $pageSize 每页条数（调用方口径）
+     * @param string $pmin     价格下限
+     * @param string $pmax     价格上限
+     * @param string $sort     排序：0综合 1价格低到高 2价格高到低 3销量低到高 4销量高到低 ...
+     */
+    public function SearchGoods($keyword, $pageNum = 1, $pageSize = 100, $pmin = '', $pmax = '', $sort = '') {
         $host = 'https://openapi.dataoke.com/api/goods/get-dtk-search-goods';
-        
-        if (!in_array($pageSize, [10, 50, 100])) {
-            $pageSize = 100;
+
+        $wantSize = max(1, intval($pageSize));
+        $wantPage = max(1, intval($pageNum));
+
+        // 选择合法的 API 档位（10/50/100），并换算成 API 页码 + 本地偏移
+        $apiSize = 100;
+        foreach ([10, 50, 100] as $allow) {
+            if ($wantSize <= $allow) { $apiSize = $allow; break; }
         }
-        
+        $needSlice = ($apiSize != $wantSize);
+        $offset = 0;
+        $apiPage = $wantPage;
+        if ($needSlice) {
+            $startIdx = ($wantPage - 1) * $wantSize;      // 全局起始下标
+            $apiPage  = intval(floor($startIdx / $apiSize)) + 1;
+            $offset   = $startIdx % $apiSize;
+        }
+
         $params = [
-            'pageId' => $pageNum,
-            'pageSize' => $pageSize,
+            'pageId' => $apiPage,
+            'pageSize' => $apiSize,
         ];
         
         if (!empty($keyword)) {
             $params['keyWords'] = $keyword;
+        }
+        if ($pmin !== '' && is_numeric($pmin)) {
+            $params['priceLowerLimit'] = intval($pmin);
+        }
+        if ($pmax !== '' && is_numeric($pmax)) {
+            $params['priceUpperLimit'] = intval($pmax);
+        }
+        if ($sort !== '' && $sort !== null) {
+            $params['sort'] = $sort;
         }
         
         $result = $this->request($host, $params);
@@ -86,10 +121,10 @@ class Dtk {
         
         $items = [];
         
-        if (!isset($result['data']['list']) || !is_array($result['data']['list'])) {
+        if (!isset($result['data']['list']) || !is_array($result['data']['list']) || count($result['data']['list']) == 0) {
             return [
                 'code' => 0,
-                'message' => '数据格式错误',
+                'message' => '未找到相关商品',
                 'total' => 0,
                 'pageId' => '',
                 'items' => [],
@@ -168,6 +203,12 @@ foreach ($result['data']['list'] as $item) {
         }
         
         $items = array_map(function($it){ return \ZhiCms\ext\Tjk::standardizeItem($it, 'taobao'); }, $items);
+
+        // pageSize 非法档位时，按调用方口径做本地切片，保证每页条数与分页器一致
+        if ($needSlice) {
+            $items = array_slice($items, $offset, $wantSize);
+        }
+
         return [
             'code' => 1,
             'message' => 'success',
@@ -267,7 +308,7 @@ foreach ($result['data']['list'] as $item) {
         ];
     }
     
-    public function GetPrivilegeLink($goodsId, $pid = '', $goodsSign = '', $itemUrl = '') {
+    public function GetPrivilegeLink($goodsId, $pid = '', $goodsSign = '', $itemUrl = '', $version = 'v1.3.1') {
         $host = 'https://openapi.dataoke.com/api/tb-service/get-privilege-link';
         // 高效转链（get-privilege-link）只需「产品 id」：优先 goodsId，为空时回退用 goodsSign 作主 id，
         // 该接口不接收 goodsSign 作为独立参数，故只传 goodsId，避免多余参数导致大淘客报错走兜底
@@ -279,8 +320,8 @@ foreach ($result['data']['list'] as $item) {
         if (!empty($pid)) {
             $params['pid'] = $pid;
         }
-        // get-privilege-link（高效转链）version 必须 v1.3.1，否则大淘客返回错误导致拿不到淘口令
-        $result = $this->request($host, $params, 'GET', 'v1.3.1');
+        // get-privilege-link（高效转链）version 默认 v1.3.1，允许外部覆盖用于探测
+        $result = $this->request($host, $params, 'GET', $version);
 
         if (!isset($result['code']) || $result['code'] != 0) {
             return ['code' => 0, 'message' => $result['msg'] ?? '转链失败'];
@@ -308,30 +349,39 @@ foreach ($result['data']['list'] as $item) {
             }
         }
 
-        $couponLink = $data['couponClickUrl'] ?: ($data['couponLink'] ?? '');
         $itemLink   = $data['itemUrl'] ?: $itemUrl;
+
+        // 主推广链接：优先 couponClickUrl（领券二合一），不存在则回退 shortUrl（淘客短链）
+        $couponUrl  = $data['couponClickUrl'] ?: ($data['couponLink'] ?? '');
+        $shortUrl   = $data['shortUrl'] ?? '';
+        $mainUrl    = $couponUrl ?: $shortUrl;
 
         return [
             'code' => 1,
             'message' => 'success',
             'data' => [
-                'couponClickUrl' => $couponLink,
+                // —— 四种按需调用参数 ——
+                // 1) 主链接：领券二合一优先，否则淘客短链
+                'couponClickUrl' => $couponUrl,   // 优先
+                'shortUrl' => $shortUrl,          // 不存在 couponClickUrl 时回退
+                'url' => $mainUrl,
+                // 2) 移动端（App/小程序）淘口令
+                'tpwd' => $tpwd,
+                'tkl' => $tpwd,
+                // 3) 苹果手机专用长口令（iOS 需 longTpwd）
+                'longTpwd' => $longTpwd,
+                // 4) 商品原链接（兜底）
+                'itemUrl' => $itemLink,
+                'taokeLink' => $itemLink,
+                // —— 其余兼容字段 ——
                 'couponEndTime' => $data['couponEndTime'] ?? '',
                 'couponInfo' => $data['couponInfo'] ?? '',
                 'couponStartTime' => $data['couponStartTime'] ?? '',
                 'itemId' => $data['itemId'] ?? '',
                 'couponTotalCount' => $data['couponTotalCount'] ?? '',
                 'couponRemainCount' => $data['couponRemainCount'] ?? '',
-                'itemUrl' => $itemLink,
-                'tpwd' => $tpwd,
-                'longTpwd' => $longTpwd,
                 'maxCommissionRate' => $data['maxCommissionRate'] ?? '',
-                'shortUrl' => $data['shortUrl'] ?? '',
                 'minCommissionRate' => $data['minCommissionRate'] ?? '',
-                'couponLink' => $couponLink,
-                'taokeLink' => $itemLink,
-                'tkl' => $tpwd,
-                'shortLink' => $data['shortUrl'] ?? '',
             ],
         ];
     }

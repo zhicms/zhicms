@@ -36,6 +36,7 @@ class ManageController extends \app\base\controller\BaseController
              $data['username']=$this->arg("username");
              $data['password']= md5($this->arg('password') . 'yun_manage');
              $data['pic']=$this->arg("pic");
+             $data['nickname']=$this->arg("nickname");
 
             obj("api/ApiData")->insertData("yun_manage",$data);
             exit(json_encode(array("info" => "保存成功", "status" => "y")));
@@ -68,6 +69,7 @@ class ManageController extends \app\base\controller\BaseController
 
             $data['username']=$this->arg("username");
             $data['pic']=$this->arg("pic");
+            $data['nickname']=$this->arg("nickname");
             $id=intval($this->arg("id"));
             $where['id'] = $id;
             $ret=obj("api/ApiData")->dataSelect("yun_manage",$where);
@@ -115,5 +117,68 @@ class ManageController extends \app\base\controller\BaseController
     */
    public function del(){
        return $this->deleteManage();
+   }
+
+   /**
+    * 修改当前登录管理员资料（右上角头像 -> 修改资料）
+    * 可修改：昵称、头像，以及（可选）账号密码
+    */
+   public function profile(){
+       $this->checkManageSession();
+       $uid = intval($_SESSION['manage_uid'] ?? 0);
+       if(!\IS_POST){
+           $where['id'] = $uid;
+           $ret = obj("api/ApiData")->dataSelect("yun_manage", $where);
+           if(empty($ret)){
+               exit("Error:002");
+           }
+           $this->ret = $ret;
+           $this->pageText = array("个人中心","修改资料");
+           $this->display('app/manage/view/manage/profile');
+           exit;
+       }
+
+       // 保存
+       try {
+           $data = array();
+           $nickname = trim($this->arg("nickname"));
+           $username = trim($this->arg("username"));
+           if($username === ''){
+               exit(json_encode(array("info" => "请填写登录账号", "status" => "n")));
+           }
+           $data['username'] = $username;
+           $data['nickname'] = $nickname;
+           $data['pic'] = $this->arg("pic");
+
+           $oldpass = $this->arg("oldpass");
+           $newpass = $this->arg("newpass");
+           $confirmpass = $this->arg("confirmpass");
+           if($newpass !== ''){
+               if($oldpass === ''){
+                   exit(json_encode(array("info" => "请输入当前密码", "status" => "n")));
+               }
+               $where['id'] = $uid;
+               $row = obj("api/ApiData")->dataSelect("yun_manage", $where);
+               if(empty($row) || $row['password'] !== md5($oldpass . 'yun_manage')){
+                   exit(json_encode(array("info" => "当前密码不正确", "status" => "n")));
+               }
+               if($newpass !== $confirmpass){
+                   exit(json_encode(array("info" => "两次输入的新密码不一致", "status" => "n")));
+               }
+               $data['password'] = md5($newpass . 'yun_manage');
+           }
+
+           $where['id'] = $uid;
+           obj("api/ApiData")->dataUpdate("yun_manage", $data, $where);
+
+           // 同步更新 session 中的昵称与头像
+           $_SESSION['manage_system'] = $username;
+           $_SESSION['manage_nickname'] = $nickname;
+           $_SESSION['manage_pic'] = $data['pic'];
+
+           exit(json_encode(array("info" => "资料修改成功", "status" => "y")));
+       } catch (\Throwable $e) {
+           exit(json_encode(array("info" => "保存失败：" . $e->getMessage(), "status" => "n")));
+       }
    }
 }

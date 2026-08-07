@@ -1,0 +1,325 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<style>
+/* ============ 联盟授权：参考截图美化 ============ */
+.auth-toolbar { gap: .5rem; }
+.auth-filter { min-width: 150px; border-color: #e5e7eb; }
+.auth-filter:focus { border-color: #94a3b8; box-shadow: none; }
+.btn-add { background: #22c55e; border-color: #22c55e; color:#fff; font-weight:500; }
+.btn-add:hover { background:#16a34a; border-color:#16a34a; color:#fff; }
+
+/* 紧凑表格（无外框、仅行分隔） */
+.auth-table-wrap { background: #fff; border-radius: 6px; overflow: hidden; }
+table.auth-table {
+    width: 100%; border-collapse: collapse; font-size: 13.5px;
+    color: #334155;
+}
+table.auth-table thead th {
+    text-align: left; font-weight: 500; color: #94a3b8;
+    padding: 14px 10px; border-bottom: 1px solid #e5e7eb;
+    background: #fff; white-space: nowrap;
+}
+table.auth-table tbody td {
+    padding: 14px 10px; border-bottom: 1px solid #f1f5f9;
+    vertical-align: middle; white-space: nowrap;
+}
+table.auth-table tbody tr:hover td { background: #fafbfc; }
+table.auth-table .th-cb { width: 36px; padding-left: 14px; }
+.td-name i.fa-check-circle { font-size: 13px; margin-right: 4px; }
+.td-pid a { color: #64748b; text-decoration: none; }
+.td-pid a:hover { color: #2563eb; }
+
+/* 滑动开关 */
+.zc-switch { position: relative; display: inline-block; width: 36px; height: 18px; cursor: pointer; }
+.zc-switch input { opacity: 0; width: 0; height: 0; }
+.zc-switch-slider {
+    position: absolute; inset: 0; background: #cbd5e1; border-radius: 18px;
+    transition: background .18s;
+}
+.zc-switch-slider::before {
+    content: ""; position: absolute; left: 2px; top: 2px;
+    width: 14px; height: 14px; background: #fff; border-radius: 50%;
+    transition: transform .18s;
+}
+.zc-switch input:checked + .zc-switch-slider { background: #22c55e; }
+.zc-switch input:checked + .zc-switch-slider::before { transform: translateX(18px); }
+
+/* 配置状态 */
+.status-success { color: #16a34a; font-weight: 500; }
+.status-unauth  { color: #ef4444; font-weight: 500; }
+
+/* 操作列 */
+.td-op { white-space: nowrap; }
+.op-link {
+    color: #2563eb; text-decoration: none; margin-right: 10px;
+    font-size: 13.5px;
+}
+.op-link:hover { color: #1d4ed8; text-decoration: underline; }
+.op-link.op-del { color: #ef4444; }
+.op-link.op-del:hover { color: #b91c1c; }
+.op-link-soft {
+    color: #94a3b8; text-decoration: none; margin-right: 10px; font-size: 13.5px;
+}
+.op-link-soft:hover { color: #2563eb; }
+
+/* 批量栏 */
+.batch-bar { padding-top: 6px; }
+.batch-bar .btn-outline-danger { border-color: #fca5a5; color: #ef4444; }
+.batch-bar .btn-outline-danger:hover { background: #fee2e2; border-color: #fca5a5; }
+
+/* AI 卡片（保留） */
+.ai-card { transition: transform .15s, box-shadow .15s; cursor: pointer; }
+.ai-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+</style>
+
+<h1 class="page-title">
+    <i class="fas fa-handshake"></i>
+    联盟授权
+</h1>
+<p class="text-muted mb-3">集中管理各电商联盟平台的授权账号、推广位（PID）、授权类型、订单同步与渠道邀请码。支持同一平台多个授权并存，可指定一个默认授权。</p>
+
+<!-- ============ 联盟授权 ============ -->
+<div class="tab-pane fade show active" id="pane-union" role="tabpanel">
+    <!-- 顶部筛选 + 新增授权 -->
+    <div class="d-flex flex-wrap justify-content-end align-items-center mb-3 auth-toolbar">
+        <div class="d-flex align-items-center mr-3">
+            <label class="mb-0 mr-2 text-muted small">授权类型</label>
+            <select id="filterPlatform" class="form-control form-control-sm auth-filter">
+                <option value="">选择授权类型</option>
+                <?php foreach ($platforms as $k=>$n): ?>
+                <option value="<?php echo $k; ?>"><?php echo htmlspecialchars($n['name'], ENT_QUOTES, 'UTF-8'); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="d-flex align-items-center mr-3">
+            <label class="mb-0 mr-2 text-muted small">授权角色</label>
+            <select id="filterRole" class="form-control form-control-sm auth-filter">
+                <option value="">选择授权角色</option>
+                <option value="主账号">主账号</option>
+                <option value="渠道A">渠道A</option>
+                <option value="渠道B">渠道B</option>
+                <option value="自有推广">自有推广</option>
+            </select>
+        </div>
+        <button class="btn btn-success btn-add" id="btnAdd" onclick="location.href='index.php?r=manage/set/unionAuthAdd'"><i class="fas fa-plus"></i> 新增授权</button>
+    </div>
+
+    <div class="auth-table-wrap">
+        <table class="auth-table" id="authTable">
+            <thead>
+                <tr>
+                    <th class="th-cb"><input type="checkbox" id="cbAll"></th>
+                    <th>ID</th>
+                    <th>名称</th>
+                    <th>PID</th>
+                    <th>授权类型</th>
+                    <th>绑定团长 <i class="far fa-question-circle" title="绑定团长后，该渠道下的所有订单归当前账号"></i></th>
+                    <th>订单同步</th>
+                    <th>默认</th>
+                    <th>渠道邀请码</th>
+                    <th>到期时间</th>
+                    <th>配置状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="authList">
+                <?php if (empty($list)): ?>
+                <tr><td colspan="12" class="text-center text-muted">暂无授权记录，点击右上角"新增授权"添加</td></tr>
+                <?php endif; ?>
+                <?php foreach ($list as $row):
+                    $pfName = isset($platforms[$row['platform']]) ? $platforms[$row['platform']]['name'] : $row['platform'];
+                    $configured = !empty($row['pid']) || !empty($row['auth_type']);
+                ?>
+                <tr data-platform="<?php echo $row['platform']; ?>" data-role="<?php echo htmlspecialchars($row['name']); ?>" data-id="<?php echo $row['id']; ?>">
+                    <td class="th-cb"><input type="checkbox" class="cb-row"></td>
+                    <td><?php echo $row['id']; ?></td>
+                    <td class="td-name">
+                        <i class="fas <?php echo $configured ? 'fa-check-circle text-success' : 'fa-times-circle text-muted'; ?>"></i>
+                        <?php echo htmlspecialchars($row['name']); ?>
+                    </td>
+                    <td class="td-pid">
+                        <a href="index.php?r=manage/set/unionAuthAdd&id=<?php echo $row['id']; ?>#pid" class="td-pid" data-id="<?php echo $row['id']; ?>" data-platform="<?php echo $row['platform']; ?>" title="点击修改">
+                            <?php if (!empty($row['pid'])): ?>
+                                <?php echo htmlspecialchars($row['pid']); ?>
+                                <i class="far fa-edit text-muted ml-1"></i>
+                            <?php else: ?>
+                                <i class="far fa-edit text-muted"></i>
+                            <?php endif; ?>
+                        </a>
+                    </td>
+                    <td><?php echo htmlspecialchars($row['auth_type']); ?></td>
+                    <td>
+                        <label class="zc-switch">
+                            <input type="checkbox" class="sw-bind" data-id="<?php echo $row['id']; ?>" <?php echo !empty($row['bind_tuanzhang']) ? 'checked' : ''; ?>>
+                            <span class="zc-switch-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <label class="zc-switch">
+                            <input type="checkbox" class="sw-sync" data-id="<?php echo $row['id']; ?>" <?php echo !empty($row['order_sync']) ? 'checked' : ''; ?>>
+                            <span class="zc-switch-slider"></span>
+                        </label>
+                    </td>
+                    <td>
+                        <label class="zc-switch">
+                            <input type="checkbox" class="sw-default" data-id="<?php echo $row['id']; ?>" <?php echo !empty($row['is_default']) ? 'checked' : ''; ?>>
+                            <span class="zc-switch-slider"></span>
+                        </label>
+                    </td>
+                    <td><?php echo htmlspecialchars($row['invite_code']); ?></td>
+                    <td><?php echo htmlspecialchars($row['expire_time']); ?></td>
+                    <td class="td-status">
+                        <?php if ($configured): ?>
+                            <span class="status-success">已配置</span>
+                        <?php else: ?>
+                            <span class="status-unauth">未授权</span>
+                            <i class="far fa-question-circle text-muted"></i>
+                        <?php endif; ?>
+                    </td>
+                    <td class="td-op">
+                        <a href="index.php?r=manage/set/unionAuthAdd&id=<?php echo $row['id']; ?>" class="op-link">修改</a>
+                        <a href="javascript:;" class="op-link op-del btn-del" data-id="<?php echo $row['id']; ?>">删除</a>
+                        <?php
+                            // 按平台显示快捷入口
+                            $quickLinks = '';
+                            if ($row['platform'] === 'tb') {
+                                $quickLinks = '<a href="javascript:;" class="op-link-soft">PID管理</a><a href="javascript:;" class="op-link-soft">跟单管理</a>';
+                            } elseif ($row['platform'] === 'pdd') {
+                                $quickLinks = '<a href="javascript:;" class="op-link-soft">备案</a>';
+                            } elseif ($row['platform'] === 'jd') {
+                                $quickLinks = '<a href="javascript:;" class="op-link-soft">PID管理</a><a href="javascript:;" class="op-link-soft">跟单管理</a>';
+                            } elseif ($row['platform'] === 'vip') {
+                                $quickLinks = '<a href="javascript:;" class="op-link-soft">PID管理</a><a href="javascript:;" class="op-link-soft">跟单管理</a>';
+                            }
+                            echo $quickLinks;
+                        ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
+    <!-- 批量操作栏 -->
+    <div class="d-flex align-items-center mt-2 batch-bar">
+        <button class="btn btn-sm btn-outline-danger" id="btnBatchDel"><i class="fas fa-trash"></i> 批量删除</button>
+        <span class="text-muted small ml-2" id="batchInfo">已选 0 条</span>
+    </div>
+</div>
+
+<script>
+$(function(){
+    // ===================== 联盟授权 =====================
+    // 新增/修改已改为页面跳转，无需 modal
+
+    // 用 data-* 收集一行
+    function rowData($tr){
+        return {
+            id: $tr.data('id'),
+            platform: $tr.data('platform'),
+            name: $tr.data('role') || '',
+            pid: $tr.find('.td-pid').clone().children().remove().end().text().trim(),
+            auth_type: $tr.find('td').eq(4).text().trim(),
+            bind_tuanzhang: $tr.find('.sw-bind').is(':checked') ? 1 : 0,
+            order_sync: $tr.find('.sw-sync').is(':checked') ? 1 : 0,
+            is_default: $tr.find('.sw-default').is(':checked') ? 1 : 0,
+            invite_code: $tr.find('td').eq(8).text().trim(),
+            expire_time: $tr.find('td').eq(9).text().trim()
+        };
+    }
+
+    // 筛选（前端隐藏）
+    function applyFilter(){
+        var pf = $('#filterPlatform').val();
+        var role = $('#filterRole').val();
+        $('#authList tr[data-id]').each(function(){
+            var $tr = $(this);
+            var ok = (!pf || $tr.data('platform') === pf) &&
+                     (!role || ($tr.data('role') || '') === role);
+            $tr.toggle(ok);
+        });
+    }
+    $('#filterPlatform, #filterRole').on('change', applyFilter);
+
+    // 全选
+    $('#cbAll').on('change', function(){
+        var ck = this.checked;
+        $('#authList tr:visible .cb-row').prop('checked', ck);
+        updateBatchInfo();
+    });
+    $('#authList').on('change', '.cb-row', updateBatchInfo);
+    function updateBatchInfo(){
+        var n = $('#authList .cb-row:checked').length;
+        $('#batchInfo').text('已选 ' + n + ' 条');
+    }
+
+    // 开关切换即时保存（带当前行全部值，避免空字段覆盖）
+    function saveSwitch($chk, field){
+        var $tr = $chk.closest('tr');
+        var row = rowData($tr);
+        row[field] = $chk.is(':checked') ? 1 : 0;
+        $.post('index.php?r=manage/set/unionAuth', row, function(res){
+            showToast(res.info || '已保存');
+            if (res.status !== 'y') $chk.prop('checked', !$chk.is(':checked'));
+        }, 'json').fail(function(){ showToast('请求异常'); $chk.prop('checked', !$chk.is(':checked')); });
+    }
+    $('#authList').on('change', '.sw-bind',   function(){ saveSwitch($(this), 'bind_tuanzhang'); });
+    $('#authList').on('change', '.sw-sync',   function(){ saveSwitch($(this), 'order_sync'); });
+    $('#authList').on('change', '.sw-default',function(){
+        if (!this.checked) return; // 取消默认不允许
+        var $tr = $(this).closest('tr');
+        var row = rowData($tr);
+        row.is_default = 1;
+        row.platform = $tr.data('platform');
+        $.post('index.php?r=manage/set/unionAuth', row, function(res){
+            showToast(res.info || '已设为默认');
+            if (res.status !== 'y') $(this).prop('checked', false);
+        }, 'json').fail(function(){ showToast('请求异常'); });
+    });
+
+    // PID 点击 → 直接打开修改弹窗
+    $('#authList').on('click', '.pid-edit', function(){
+        var id = $(this).data('id');
+        var $tr = $(this).closest('tr');
+        var row = rowData($tr);
+        $('#authModalTitle').text('修改授权 #' + id);
+        $('#auth_id').val(id);
+        $('#auth_platform').val(row.platform);
+        $('#auth_name').val(row.name);
+        $('#auth_pid').val(row.pid);
+        $('#auth_auth_type').val(row.auth_type);
+        $('#auth_bind').val(row.bind_tuanzhang ? '1' : '0');
+        $('#auth_sync').val(row.order_sync ? '1' : '0');
+        $('#auth_default').val(row.is_default ? '1' : '0');
+        $('#auth_invite').val(row.invite_code);
+        $('#auth_expire').val(row.expire_time);
+        $modal.modal('show');
+    });
+
+    // 新增/修改已改为页面跳转（onclick="location.href"）；PID 点击也跳转到独立编辑页
+    // 单删
+    $('#authList').on('click', '.btn-del', function(){
+        var id = $(this).data('id');
+        if (!confirm('确认删除该授权？')) return;
+        $.post('index.php?r=manage/set/unionAuthDelete', {id: id}, function(res){
+            showToast(res.info || '操作完成');
+            if (res.status === 'y') setTimeout(function(){ location.reload(); }, 800);
+        }, 'json').fail(function(){ showToast('请求异常'); });
+    });
+    // 批量删除
+    $('#btnBatchDel').on('click', function(){
+        var ids = [];
+        $('#authList .cb-row:checked').each(function(){
+            ids.push($(this).closest('tr').data('id'));
+        });
+        if (!ids.length) { showToast('请先勾选要删除的记录'); return; }
+        if (!confirm('确认批量删除 ' + ids.length + ' 条？')) return;
+        $.post('index.php?r=manage/set/unionAuthBatchDelete', {ids: ids.join(',')}, function(res){
+            showToast(res.info || '操作完成');
+            if (res.status === 'y') setTimeout(function(){ location.reload(); }, 800);
+        }, 'json').fail(function(){ showToast('请求异常'); });
+    });
+    }
+});
+</script>
+
+{include file="app/manage/view/index/emlog_footer"}
