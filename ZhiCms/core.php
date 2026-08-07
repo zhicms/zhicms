@@ -67,6 +67,20 @@ function url($route = null, $params = array()){
 }
 
 /**
+ * 搜索地址生成（兼容伪静态与动态两种模式）
+ * 伪静态开启：so.html
+ * 伪静态关闭：index.php?r=index/search/index
+ * 调用方可直接在返回值后拼接 ?content=关键词 等查询参数
+ * @return string
+ */
+function search_url(){
+	if (config('REWRITE_ON')) {
+		return 'so.html';
+	}
+	return 'index.php?r=index/search/index';
+}
+
+/**
  * 导航高亮判断（前台导航用）：根据导航 URL 与当前路由判断是否 active
  * @param array $nav yun_navmenu 的一行（含 url / type）
  * @return string 'active' 或 ''
@@ -97,6 +111,72 @@ function is_active_nav($nav = array()){
 		}
 	}
 	return $active;
+}
+
+/**
+ * 导航链接自适应（兼容伪静态/动态两种模式）
+ * - 若 REWRITE_ON 开启：将存储的动态地址 index.php?r=模块/控制器/动作&... 转换为伪静态地址；
+ *   若存储的已是 .html / 完整 http(s) 链接则原样返回（管理员显式指定）。
+ * - 若 REWRITE_ON 关闭：动态地址原样返回，保证全站为动态地址。
+ * 这样后台切换伪静态开关后，数据库导航无需逐个修改即可全站统一。
+ * @param string $url yun_navmenu 中存储的 url
+ * @return string
+ */
+function nav_url($url){
+	$url = (string)$url;
+	if ($url === '') return '';
+	// 外部链接（带协议）/锚点：直接返回
+	if (preg_match('/^(https?:\/\/|ftp:\/\/|#)/i', $url)) {
+		return $url;
+	}
+	// 解析 index.php?r=app/controller/action&k=v
+	if (preg_match('/[?&]r=([^&]+)/i', $url, $m)) {
+		$route = trim($m[1], '/');
+		parse_str(preg_replace('/^[^?]*\?/', '', $url), $query);
+		unset($query['r']);
+		return url($route, $query);
+	}
+	// 站内伪静态 .html：反向解析为动态路由，再按当前伪静态开关渲染。
+	// 兼容「数据库里存了写死伪静态」的旧数据——无论开关如何都能正确跳转。
+	if (stripos($url, '.html') !== false) {
+		$rule = \ZhiCms\base\Config::get('REWRITE_RULE');
+		if (!empty($rule) && is_array($rule)) {
+			$path = $url;
+			if (preg_match('/\/([^\/]+\.html(?:\?.*)?)$/i', $url, $mm)) {
+				$path = $mm[1];
+			}
+			$path = ltrim($path, '/');
+			foreach ($rule as $pattern => $mapper) {
+				$pattern = ltrim($pattern, './\\');
+				$regex = preg_replace_callback('/<([a-zA-Z0-9_]+)>/', function ($m2) {
+					$name = $m2[1];
+					$pat = ($name === 'platform') ? '\w+' : '[\w%-]+';
+					return '(?<' . $name . '>' . $pat . ')';
+				}, $pattern);
+				$regex = '/^' . str_ireplace(array('-', '/', '.'), array('\-', '\/', '\.'), $regex) . '$/i';
+				if (preg_match($regex, $path, $matches)) {
+					$realRoute = $mapper;
+					$query = array();
+					if (preg_match_all('/([a-zA-Z_][a-zA-Z0-9_]*)=<([a-zA-Z0-9_]+)>/', $mapper, $pm, PREG_SET_ORDER)) {
+						foreach ($pm as $p) {
+							$val = $matches[$p[2]] ?? '';
+							$realRoute = str_ireplace('<' . $p[2] . '>', $val, $realRoute);
+							// 仅当该参数【未】并入路由段时，才单独放入 query，避免重复（如 page-3.html => index/page/index/id=3）
+							if (stripos($realRoute, $p[1] . '=' . $val) === false) {
+								$query[$p[1]] = $val;
+							}
+						}
+					}
+					$realRoute = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=\<[a-zA-Z0-9_]+\>/i', '', $realRoute);
+					return url(trim($realRoute, '/'), $query);
+				}
+			}
+		}
+		// 匹配不到规则的站内 .html，原样返回（避免误伤）
+		return $url;
+	}
+	// 其他相对路径
+	return $url;
 }
 
 /**

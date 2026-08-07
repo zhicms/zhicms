@@ -39,7 +39,7 @@ try {
 <script type="application/ld+json"><?php
 $siteName = json_encode(obj('base/Base')->SiteConfig('sitename'), JSON_UNESCAPED_UNICODE);
 $hostUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
-echo '{"@context":"https://schema.org","@type":"WebSite","name":' . $siteName . ',"url":' . json_encode($hostUrl) . ',"potentialAction":{"@type":"SearchAction","target":"' . $hostUrl . '/so.html?content={search_term_string}","query-input":"required name=search_term_string"}}';
+echo '{"@context":"https://schema.org","@type":"WebSite","name":' . $siteName . ',"url":' . json_encode($hostUrl) . ',"potentialAction":{"@type":"SearchAction","target":"' . $hostUrl . '/' . search_url() . '?content={search_term_string}","query-input":"required name=search_term_string"}}';
 ?></script>
 <link rel="icon" href="<?php echo rtrim(obj('base/Base')->SiteConfig('hosturl'), '/') . '/favicon.ico'; ?>">
 <!-- 样式优先加载（SEO/渲染最佳实践：CSS 先于内容，避免 FOUC）；?v= 版本参数便于缓存刷新 -->
@@ -82,11 +82,11 @@ echo '{"@context":"https://schema.org","@type":"WebSite","name":' . $siteName . 
       <?php if (!empty($zcNavs)): ?>
         <?php foreach ($zcNavs as $__id => $__nav): ?>
         <li class="nav-item<?php echo !empty($zcNavChildren[$__id]) ? ' has-sub' : ''; ?>">
-          <a class="nav-link <?php echo is_active_nav($__nav); ?>" href="<?php echo htmlspecialchars($__nav['url']); ?>"<?php echo $__nav['target'] ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo htmlspecialchars($__nav['name']); ?></a>
+          <a class="nav-link <?php echo is_active_nav($__nav); ?>" href="<?php echo htmlspecialchars(nav_url($__nav['url'])); ?>"<?php echo $__nav['target'] ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo htmlspecialchars($__nav['name']); ?></a>
           <?php if (!empty($zcNavChildren[$__id])): ?>
           <ul class="sub-nav">
             <?php foreach ($zcNavChildren[$__id] as $__sub): ?>
-            <li><a href="<?php echo htmlspecialchars($__sub['url']); ?>"<?php echo $__sub['target'] ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo htmlspecialchars($__sub['name']); ?></a></li>
+            <li><a href="<?php echo htmlspecialchars(nav_url($__sub['url'])); ?>"<?php echo $__sub['target'] ? ' target="_blank" rel="noopener"' : ''; ?>><?php echo htmlspecialchars($__sub['name']); ?></a></li>
             <?php endforeach; ?>
           </ul>
           <?php endif; ?>

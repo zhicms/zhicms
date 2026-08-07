@@ -638,6 +638,10 @@ class FindController extends \app\base\controller\BaseController
     		$allow_comment=$this->arg("allow_comment", 1);
     		$featured=$this->arg("featured", 0);
 
+		// surl 为文章来源链接，可能含长追踪参数，超出字段长度会报 1406，
+		// 取表单值后截断到与数据库字段一致的最大长度（varchar(1000)）
+		$surl = mb_substr(trim($surl), 0, 1000, 'UTF-8');
+
 		// AI 自动生成关键词和描述（未填写时）
 		if (empty($keywords)) {
 			$keywords = \app\common\AiService::extractKeywords($title, $content);
@@ -794,7 +798,9 @@ class FindController extends \app\base\controller\BaseController
     		$sheng=$this->arg("sheng", '');
     		$allow_comment=$this->arg("allow_comment", 1);
     		$featured=$this->arg("featured", 0);
-            
+
+		// surl 为文章来源链接，含长追踪参数时可能超长，截断到与字段一致（varchar(1000)）
+		$surl = mb_substr(trim($surl), 0, 1000, 'UTF-8');
 
 
       		$data['title']=$title;

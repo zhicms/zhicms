@@ -460,7 +460,7 @@ class SearchController extends \app\base\controller\BaseController
         }
         unset($g);
 
-        $root = "so.html?content=" . urlencode($keyword) . "&platform=compare";
+        $root = search_url() . "?content=" . urlencode($keyword) . "&platform=compare";
         $listUrl = $root . "&page={page}";
 
         $pages = new \ZhiCms\ext\PageIndex;
@@ -555,7 +555,7 @@ class SearchController extends \app\base\controller\BaseController
             $where[] = "`navid` = {$nav}";
         }
 
-        $baseUrl = "so.html?content=" . urlencode($keyword) . "&platform=local&type=article";
+        $baseUrl = search_url() . "?content=" . urlencode($keyword) . "&platform=local&type=article";
         if ($nav > 0) { $baseUrl .= "&nav=" . $nav; }
 
         $page = obj('api/ApiData')->page($pageSize, "yun_article", $where, "`id` DESC", $baseUrl);
@@ -616,7 +616,7 @@ class SearchController extends \app\base\controller\BaseController
      * 生成带全部筛选条件的列表 URL（供分页器拼 &page=N）
      */
     private function buildFilterUrl($keyword, $platform, $filters = array(), $sort = ''){
-        $url = "so.html?content=" . urlencode($keyword) . "&platform=" . urlencode($platform);
+        $url = search_url() . "?content=" . urlencode($keyword) . "&platform=" . urlencode($platform);
         if ($sort !== '' && $sort !== null) { $url .= "&sort=" . urlencode($sort); }
         $map = array('nav', 'cat', 'brand', 'pmin', 'pmax', 'rate');
         foreach ($map as $k) {

@@ -189,13 +189,14 @@
 
   var sInp = document.querySelector('.widget-search-input');
   if (sInp) {
+    var sBase = (window.ZHI_CFG && window.ZHI_CFG.SEARCH_URL) ? window.ZHI_CFG.SEARCH_URL : '{search_url()}';
     window.initTbSuggest(sInp, function (word) {
-      if (word) window.location.href = 'so.html?content=' + encodeURIComponent(word);
+      if (word) window.location.href = sBase + '?content=' + encodeURIComponent(word);
     });
     var sBtn = document.querySelector('.widget-search-btn');
     if (sBtn) sBtn.addEventListener('click', function () {
       var v = sInp.value.trim();
-      if (v) window.location.href = 'so.html?content=' + encodeURIComponent(v);
+      if (v) window.location.href = sBase + '?content=' + encodeURIComponent(v);
     });
   }
 })();
@@ -228,6 +229,13 @@
         </a>
     </div>
 </nav>
+
+<!-- 全局配置：供前端脚本判断伪静态是否开启，用于动态拼接搜索地址 -->
+<script>
+    window.ZHI_CFG = window.ZHI_CFG || {};
+    window.ZHI_CFG.REWRITE_ON = {if config('REWRITE_ON')}true{else}false{/if};
+    window.ZHI_CFG.SEARCH_URL = '{search_url()}';
+</script>
 
 <!-- 公共业务脚本置底加载（SEO/渲染最佳实践：JS 在 </body> 前，非阻塞内容渲染）；?v= 版本参数便于缓存刷新 -->
 <script src="{__PUBLIC__}web/js/common.js?v=5.0.2"></script>

@@ -4,7 +4,7 @@
 
   <!-- 顶部搜索条（保留 ZhiCms 现有） -->
   <div class="smzdm-topbar">
-    <form action="so.html" method="get" class="smzdm-search">
+    <form action="{search_url()}" method="get" class="smzdm-search">
       <span class="smzdm-search-input">
         <svg viewBox="0 0 24 24" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="smzdm-search-ico"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
         <input type="text" name="content" value="{$keyword}" placeholder="搜索 商品 / 资讯 / 品牌…" aria-label="搜索" autocomplete="off">
@@ -14,7 +14,7 @@
 
     <!-- 频道 Tab（仅综合） -->
     <nav class="smzdm-tabs">
-      <a href="so.html?content={$q}&platform=local" class="smzdm-tab active">
+      <a href="{search_url()}?content={$q}&platform=local" class="smzdm-tab active">
         <span>综合</span>
       </a>
     </nav>
@@ -29,8 +29,8 @@
       <!-- 排序行 -->
       <div class="smzdm-sortbar">
         <span class="smzdm-sort-title">排序：</span>
-        <a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort=score" class="smzdm-sort {if $sort=='score'}active{/if}">综合排序</a>
-        <a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort=time" class="smzdm-sort {if $sort=='time'}active{/if}">最新排序</a>
+        <a href="{search_url()}?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort=score" class="smzdm-sort {if $sort=='score'}active{/if}">综合排序</a>
+        <a href="{search_url()}?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort=time" class="smzdm-sort {if $sort=='time'}active{/if}">最新排序</a>
         <span class="smzdm-sort-count">共 {$page['count']} 条结果</span>
         <a href="javascript:;" class="smzdm-toggle-filter">收起筛选 ▲</a>
       </div>
@@ -41,9 +41,9 @@
         <div class="smzdm-filter-row">
           <span class="smzdm-filter-label">分类</span>
           <ul class="smzdm-filter-options smzdm-more" data-min="6">
-            <li><a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($currentNav)}active{/if}">全部</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&type={$type}&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($currentNav)}active{/if}">全部</a></li>
             {foreach $navs as $navKey => $navName}
-            <li><a href="so.html?content={$q}&platform=local&type=article&nav={$navKey}" class="{if !empty($currentNav) && $currentNav == $navKey}active{/if}">{$navName}</a></li>
+            <li><a href="{search_url()}?content={$q}&platform=local&type=article&nav={$navKey}" class="{if !empty($currentNav) && $currentNav == $navKey}active{/if}">{$navName}</a></li>
             {/foreach}
           </ul>
           <span class="smzdm-filter-note">仅筛选站内资讯</span>
@@ -53,11 +53,11 @@
         <div class="smzdm-filter-row">
           <span class="smzdm-filter-label">平台</span>
           <ul class="smzdm-filter-options">
-            <li><a href="so.html?content={$q}&platform=local&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='local'}active{/if}">本地</a></li>
-            <li><a href="so.html?content={$q}&platform=taobao&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='taobao'}active{/if}">淘宝</a></li>
-            <li><a href="so.html?content={$q}&platform=jd&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='jd'}active{/if}">京东</a></li>
-            <li><a href="so.html?content={$q}&platform=pdd&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='pdd'}active{/if}">拼多多</a></li>
-            <li><a href="so.html?content={$q}&platform=vip&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='vip'}active{/if}">唯品会</a></li>
+            <li><a href="{search_url()}?content={$q}&platform=local&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='local'}active{/if}">本地</a></li>
+            <li><a href="{search_url()}?content={$q}&platform=taobao&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='taobao'}active{/if}">淘宝</a></li>
+            <li><a href="{search_url()}?content={$q}&platform=jd&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='jd'}active{/if}">京东</a></li>
+            <li><a href="{search_url()}?content={$q}&platform=pdd&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='pdd'}active{/if}">拼多多</a></li>
+            <li><a href="{search_url()}?content={$q}&platform=vip&cat={$cat}&brand={$brand}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $platform=='vip'}active{/if}">唯品会</a></li>
           </ul>
         </div>
 
@@ -65,9 +65,9 @@
         <div class="smzdm-filter-row">
           <span class="smzdm-filter-label">品类</span>
           <ul class="smzdm-filter-options smzdm-more" data-min="6">
-            <li><a href="so.html?content={$q}&platform={$platform}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($cat)}active{/if}">全部</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($cat)}active{/if}">全部</a></li>
             {foreach $mainCats as $catId => $catName}
-            <li><a href="so.html?content={$q}&platform={$platform}&cat={$catId}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if !empty($cat) && $cat == $catId}active{/if}">{$catName}</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&cat={$catId}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if !empty($cat) && $cat == $catId}active{/if}">{$catName}</a></li>
             {/foreach}
           </ul>
           <a href="javascript:;" class="smzdm-more-btn">更多 ▼</a>
@@ -77,9 +77,9 @@
         <div class="smzdm-filter-row">
           <span class="smzdm-filter-label">品牌</span>
           <ul class="smzdm-filter-options smzdm-more" data-min="6">
-            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($brand)}active{/if}">全部</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&cat={$cat}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($brand)}active{/if}">全部</a></li>
             {foreach $brandList as $bKey => $bName}
-            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$bKey}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $brand == $bKey}active{/if}">{$bName}</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&cat={$cat}&brand={$bKey}&rate={$rate}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $brand == $bKey}active{/if}">{$bName}</a></li>
             {/foreach}
           </ul>
           <a href="javascript:;" class="smzdm-more-btn">更多 ▼</a>
@@ -89,17 +89,17 @@
         <div class="smzdm-filter-row">
           <span class="smzdm-filter-label">评分</span>
           <ul class="smzdm-filter-options">
-            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($rate)}active{/if}">全部</a></li>
-            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4.8&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4.8'}active{/if}">4.8分以上</a></li>
-            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4.5&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4.5'}active{/if}">4.5分以上</a></li>
-            <li><a href="so.html?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4'}active{/if}">4.0分以上</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if empty($rate)}active{/if}">全部</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4.8&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4.8'}active{/if}">4.8分以上</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4.5&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4.5'}active{/if}">4.5分以上</a></li>
+            <li><a href="{search_url()}?content={$q}&platform={$platform}&cat={$cat}&brand={$brand}&rate=4&pmin={$pmin}&pmax={$pmax}&sort={$sort}" class="{if $rate=='4'}active{/if}">4.0分以上</a></li>
           </ul>
         </div>
 
         <!-- 价格（入参搜索：本地走 SQL，API 走接口参数） -->
         <div class="smzdm-filter-row">
           <span class="smzdm-filter-label">价格</span>
-          <form class="smzdm-price" action="so.html" method="get">
+          <form class="smzdm-price" action="{search_url()}" method="get">
             <input type="hidden" name="content" value="{$keyword}">
             <input type="hidden" name="platform" value="{$platform}">
             <input type="hidden" name="type" value="{$type}">
@@ -111,7 +111,7 @@
             <span class="smzdm-price-sep">—</span>
             <input type="number" name="pmax" value="{$pmax}" placeholder="¥" class="smzdm-price-in">
             <button type="submit" class="smzdm-price-btn">确定</button>
-            <a href="so.html?content={$q}&platform={$platform}&type={$type}&cat={$cat}&sort={$sort}&brand={$brand}&rate={$rate}" class="smzdm-price-clear">清除</a>
+            <a href="{search_url()}?content={$q}&platform={$platform}&type={$type}&cat={$cat}&sort={$sort}&brand={$brand}&rate={$rate}" class="smzdm-price-clear">清除</a>
             <span class="smzdm-price-tip">（不区分币种）</span>
           </form>
         </div>

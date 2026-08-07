@@ -129,7 +129,7 @@ class NavController extends \app\base\controller\BaseController
 		$name = trim(isset($_POST['name']) ? $_POST['name'] : '');
 		$url  = trim(isset($_POST['url']) ? $_POST['url'] : '');
 		if ($name !== '' && $url !== '') {
-			$this->insertNav($name, 'custom', $url);
+			$this->insertNav($name, 'custom', $this->normalizeNavUrl($url));
 		}
 
 		// 4) 已存在的导航项更新（编辑）
@@ -143,7 +143,7 @@ class NavController extends \app\base\controller\BaseController
 			if ($name === '' || $url === '') continue;
 			obj('api/ApiData')->dataUpdate('yun_navmenu', array(
 				'name'      => $name,
-				'url'       => $url,
+				'url'       => $this->normalizeNavUrl($url),
 				'parent_id' => $pid,
 				'target'    => $target,
 			), array("`id` = $id"));
@@ -170,6 +170,7 @@ class NavController extends \app\base\controller\BaseController
 		if ($name === '' || $url === '') {
 			exit(json_encode(array('info' => '名称和链接不能为空', 'status' => 'n')));
 		}
+		$url = $this->normalizeNavUrl($url);
 
 		if ($id > 0) {
 			obj('api/ApiData')->dataUpdate('yun_navmenu', array(
@@ -270,12 +271,77 @@ class NavController extends \app\base\controller\BaseController
 		));
 	}
 
-	/** 生成固定栏目链接（伪静态优先，动态兜底） */
+	/**
+	 * 生成固定栏目链接：始终存储【动态】地址（index.php?r=...）。
+	 * 数据库统一存动态，前端 nav_url() 再根据伪静态开关渲染，
+	 * 后台切换伪静态后无需逐个改导航。
+	 */
 	private function routeUrl($route){
-		if (function_exists('url')) {
-			return url($route, array());
-		}
 		return 'index.php?r=' . $route;
+	}
+
+	/**
+	 * 导航链接规范化：把站内伪静态（.html）反向解析为动态地址入库。
+	 * 这样无论后台是否开启伪静态、管理员手填的是 so.html 还是动态地址，
+	 * 数据库都统一存动态，前端 nav_url() 再按当前开关自动输出正确格式。
+	 * - 外链(http/https/ftp)、锚点(#)、相对路径 → 原样返回（外部链接不处理）
+	 * - 站内伪静态(.html) → 反向匹配 REWRITE_RULE 转成 index.php?r=...
+	 * - 已是 index.php?r= 动态 → 原样返回
+	 */
+	private function normalizeNavUrl($url){
+		$url = trim((string)$url);
+		if ($url === '') return $url;
+		// 外链 / 锚点 / 带协议的其它链接：原样返回
+		if (preg_match('/^(https?:\/\/|ftp:\/\/|#)/i', $url)) return $url;
+		// 已经是动态地址
+		if (stripos($url, 'index.php?r=') !== false) return $url;
+		// 相对路径（/开头，但非本站伪静态 html）→ 原样返回
+		if (strpos($url, '/') === 0 && stripos($url, '.html') === false) return $url;
+		// 仅处理本站伪静态 .html
+		if (stripos($url, '.html') === false) return $url;
+
+		$rule = \ZhiCms\base\Config::get('REWRITE_RULE');
+		if (empty($rule) || !is_array($rule)) return $url;
+
+		// 归一化：去掉可能的域名/脚本前缀，只保留 path
+		$path = $url;
+		if (preg_match('/\/([^\/]+\.html(?:\?.*)?)$/i', $url, $m)) {
+			$path = $m[1];
+		}
+		$path = ltrim($path, '/');
+
+		foreach ($rule as $pattern => $mapper) {
+			$pattern = ltrim($pattern, './\\');
+			// 把 <key> 换成捕获组（与 Route::parseUrl 一致，允许字母数字%-）
+			$regex = preg_replace_callback('/<([a-zA-Z0-9_]+)>/', function ($mm) {
+				$name = $mm[1];
+				$pat = ($name === 'platform') ? '\w+' : '[\w%-]+';
+				return '(?<' . $name . '>' . $pat . ')';
+			}, $pattern);
+			$regex = '/^' . str_ireplace(array('-', '/', '.'), array('\-', '\/', '\.'), $regex) . '$/i';
+			if (preg_match($regex, $path, $matches)) {
+				$realRoute = $mapper;
+				$query = array();
+				if (preg_match_all('/([a-zA-Z_][a-zA-Z0-9_]*)=<([a-zA-Z0-9_]+)>/', $mapper, $pm, PREG_SET_ORDER)) {
+					foreach ($pm as $p) {
+						$val = $matches[$p[2]] ?? '';
+						$realRoute = str_ireplace('<' . $p[2] . '>', $val, $realRoute);
+						// 仅当参数未并入路由段时才单独放入 query，避免 page-3.html => index/page/index/id=3&id=3 重复
+						if (stripos($realRoute, $p[1] . '=' . $val) === false) {
+							$query[$p[1]] = $val;
+						}
+					}
+				}
+				$realRoute = preg_replace('/\/[a-zA-Z_][a-zA-Z0-9_]*=\<[a-zA-Z0-9_]+\>/i', '', $realRoute);
+				$out = 'index.php?r=' . trim($realRoute, '/');
+				if ($query) {
+					$out .= '&' . http_build_query($query);
+				}
+				return $out;
+			}
+		}
+		// 匹配不到规则，原样返回（避免误伤）
+		return $url;
 	}
 
 	/** 下一个排序值（当前最大 sort + 1） */

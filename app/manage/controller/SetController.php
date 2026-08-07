@@ -267,7 +267,7 @@ class SetController extends \app\base\controller\BaseController
 					'go.html' => 'go/to/wjp',
 					// 商品购买转链（京东/拼多多/唯品会/淘宝统一入口，由 RedirectController 二次转链生成佣金链接）
 					// 使用 buy- 前缀，避免与 vip-<id>（商品详情页）等规则冲突
-					'buy-<platform>-<id>.html' => 'index/redirect/jump/platform=<platform>/id=<id>',
+					'buy-<platform>.html' => 'index/redirect/jump/platform=<platform>',
 				),
 			);
 

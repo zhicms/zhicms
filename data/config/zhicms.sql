@@ -90,7 +90,7 @@ CREATE TABLE `__PREFIX__article` (
   `author` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '作者昵称（默认调用管理员昵称）',
   `author_pic` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '作者头像（默认调用管理员头像）',
   `laiyuan` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
-  `surl` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '',
+  `surl` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '文章来源链接',
   `sort` int(11) DEFAULT '0',
   `hits` int(11) DEFAULT '0',
   `bili` int(11) DEFAULT '0',

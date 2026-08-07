@@ -29,7 +29,10 @@ class Route {
 			$pathInfoR = true;
 		}
 		
-		if( self::$rewriteOn && !empty(self::$rewriteRule ) ) {
+		// 无论后台是否开启伪静态，只要配置了伪静态规则就尝试匹配。
+		// 这样「伪静态地址」与「动态地址」都能被解析，后台开关只影响 url() 生成哪种格式，
+		// 不影响两种地址的访问——实现全站伪静态/动态同时可用。
+		if( !empty(self::$rewriteRule ) ) {
 			if( ($pos = strpos( $_SERVER['REQUEST_URI'], '?' )) !== false ){
 				parse_str( substr( $_SERVER['REQUEST_URI'], $pos + 1 ), $_GET );
 			}

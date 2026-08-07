@@ -173,6 +173,11 @@ ALTER TABLE `__PREFIX__union_auth` ADD COLUMN `union_type` varchar(20) COLLATE u
 
 
 -- ------------------------------------------------------------
+-- 5.0.2 补丁：文章来源链接 surl 字段扩容（避免长 URL 写入报 1406 Data too long）
+-- ------------------------------------------------------------
+ALTER TABLE `__PREFIX__article` MODIFY COLUMN `surl` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '文章来源链接';
+
+-- ------------------------------------------------------------
 -- 版本号对齐（务必放在最后执行）
 -- ------------------------------------------------------------
 INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')
