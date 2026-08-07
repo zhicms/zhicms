@@ -156,6 +156,11 @@ class FindController extends \app\base\controller\BaseController
                     'couponEndTime' => '',
                     'date' => date("Y-m-d H:i:s", time()),
                 ];
+                // 商品采集（朋友圈素材）入库：作者默认调用当前管理员昵称/头像（前台展示用）
+                $data['author'] = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== ''
+                    ? $_SESSION['manage_nickname']
+                    : (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
+                $data['author_pic'] = isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
                 obj("api/ApiData")->insertData("yun_article", $data);
                 $success++;
             }
@@ -193,6 +198,16 @@ class FindController extends \app\base\controller\BaseController
 		$navid = isset($api['moments_navid']) ? intval($api['moments_navid']) : 0;
 		$pages = isset($api['moments_pages']) ? max(1, intval($api['moments_pages'])) : 3;
 		$minId = 1;
+
+		// 计划任务无管理员 SESSION，取默认管理员（第一条）作为文章作者头像/昵称
+		$defaultAuthor = '管理员';
+		$defaultAuthorPic = '';
+		$admRows = obj("api/ApiData")->dataSelect("yun_manage", "1=1", "id ASC");
+		if (!empty($admRows) && is_array($admRows)) {
+			$adm = isset($admRows[0]) ? $admRows[0] : $admRows;
+			if (!empty($adm['nickname'])) $defaultAuthor = $adm['nickname'];
+			if (!empty($adm['pic'])) $defaultAuthorPic = $adm['pic'];
+		}
 
 		$hdkApiKey = $api['hdk_appkey'] ?? '';
 		if (empty($hdkApiKey)) {
@@ -260,6 +275,9 @@ class FindController extends \app\base\controller\BaseController
 					'couponEndTime' => '',
 					'date'     => date("Y-m-d H:i:s", time()),
 				);
+				// 计划任务商品采集入库：作者默认调用管理员昵称/头像（前台展示用）
+				$data['author'] = $defaultAuthor;
+				$data['author_pic'] = $defaultAuthorPic;
 				obj("api/ApiData")->insertData("yun_article", $data);
 				$success++;
 			}
@@ -476,6 +494,7 @@ class FindController extends \app\base\controller\BaseController
             'keywords'      => $news['title'],
             'dec'           => $dec,
             'author'        => $news['source'] ?? '',
+            'author_pic'    => $this->resolveDefaultAuthorPic(),
             'laiyuan'       => $source,
             'surl'          => $news['uniquekey'] ?? '',
             'sort'          => 0,
@@ -492,6 +511,21 @@ class FindController extends \app\base\controller\BaseController
             'date'          => $news['pubDate'] ?? date('Y-m-d H:i:s'),
         );
         obj("api/ApiData")->insertData("yun_article", $data);
+	}
+
+	/**
+	 * 解析文章作者头像：后台手动操作取当前管理员 SESSION；计划任务/定时无 SESSION 时取默认管理员（第一条）
+	 */
+	private function resolveDefaultAuthorPic(){
+		if (!empty($_SESSION['manage_pic'])) {
+			return $_SESSION['manage_pic'];
+		}
+		$admRows = obj("api/ApiData")->dataSelect("yun_manage", "1=1", "id ASC");
+		if (!empty($admRows) && is_array($admRows)) {
+			$adm = isset($admRows[0]) ? $admRows[0] : $admRows;
+			if (!empty($adm['pic'])) return $adm['pic'];
+		}
+		return '';
 	}
 
 	/**
