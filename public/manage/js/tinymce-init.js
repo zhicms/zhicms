@@ -50,6 +50,10 @@ function convertZhiCmsUrlTags(editor) {
  */
 function convertHtmlToZhiCmsUrlTags(editor) {
     var content = editor.getContent();
+    if (content.indexOf('zhicms-url-tag') === -1) {
+        // 没有商品链接时，直接保持原文，避免 setContent 重建导致正文/图片丢失
+        return;
+    }
     var tmp = document.createElement('div');
     tmp.innerHTML = content;
     var links = tmp.querySelectorAll('a.zhicms-url-tag');
@@ -89,6 +93,8 @@ function uploadZhiCmsImage(uploadType, file, onSuccess, onError) {
 
     var xhr = new XMLHttpRequest();
     xhr.open('POST', uploadUrl, true);
+    // 同源下也显式携带 cookie，避免后端 session 校验失败（"登录已过期"）
+    xhr.withCredentials = true;
     xhr.onreadystatechange = function() {
         if (xhr.readyState === 4 && xhr.status === 200) {
             try {
@@ -135,6 +141,7 @@ function initZhiCmsEditor(selector, options) {
         language_url: TINYMCE_BASE_URL + '/langs/zh_CN.js',
         base_url: TINYMCE_BASE_URL,
         suffix: '.min',
+        skin_url: TINYMCE_BASE_URL + '/skins/ui/oxide',
         license_key: 'gpl',
         
         height: height,

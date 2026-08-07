@@ -159,7 +159,10 @@ function zhicmsUpload(type, elementId, callback) {
     
     fetch(uploadUrl, {
         method: 'POST',
-        body: formData
+        body: formData,
+        // 同源下也显式携带 cookie，避免后端 session 校验失败（"登录已过期"）
+        credentials: 'include',
+        cache: 'no-store'
     })
     .then(function(response) {
         return response.text();

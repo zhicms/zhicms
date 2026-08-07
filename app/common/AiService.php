@@ -1011,6 +1011,10 @@ class AiService
         if (strpos($result, 'AI 模型未配置') === 0) return true;
         if (strpos($result, '大模型处理异常') === 0) return true;
         if (strpos($result, '大模型API错误') === 0) return true;
+        // 接口限流/网络异常（如 429 访问量过大）会被当成正常文本返回，
+        // 必须拦截，否则错误串会被存进文章的 keywords/dec 并直接显示在前台。
+        if (strpos($result, 'HTTP错误') === 0) return true;
+        if (strpos($result, 'CURL错误') === 0) return true;
         return false;
     }
 

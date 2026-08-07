@@ -622,13 +622,16 @@ class FindController extends \app\base\controller\BaseController
     		$pic=$this->arg("pic");
     		$keywords=$this->arg("keywords");
     		$dec=$this->arg("dec");
-    		// 富文本正文：arg() 会对 & 做 htmlspecialchars，导致编辑器产生的 &nbsp; 变成 &amp;nbsp;
-    		// 前台直接输出后浏览器会原样显示 "&nbsp;"。这里先 decode 还原合法 HTML 实体，
-    		// 再用白名单 strip_tags 过滤危险标签（在解码后的真实 HTML 上过滤才有效）。
-    		$allowedTags = '<p><br><a><img><strong><b><em><i><u><strike><sub><sup><ul><ol><li><blockquote><pre><code><h1><h2><h3><h4><h5><h6><hr><table><thead><tbody><tr><td><th><span><div><font><center><figure><figcaption>';
-    		$content = strip_tags(htmlspecialchars_decode($this->arg("body"), ENT_QUOTES), $allowedTags);
+    		// 富文本正文：注意 Controller::arg() 内部会用 preg_replace("@<(.*?)>@is","",$args)
+    		// 把所有 HTML 标签（含 <img>）整段删除，导致编辑器上传的图片无法入库。
+    		// 因此正文必须直接从 $_POST['body'] 取原始值，只剥离危险的 <script>/<iframe>/<style>，
+    		// 保留编辑器工具栏生成的 <img>/<a>/<p> 等标签，避免图片丢失。
+    		$rawBody = isset($_POST['body']) ? $_POST['body'] : '';
+    		$rawBody = preg_replace("@<script(.*?)</script>@is", "", $rawBody);
+    		$rawBody = preg_replace("@<iframe(.*?)</iframe>@is", "", $rawBody);
+    		$rawBody = preg_replace("@<style(.*?)</style>@is", "", $rawBody);
 		// 清除正文中残留的模板标签字面量（如 {$ret['content']|raw}），避免前台原样显示
-		$content = $this->cleanTemplateTags($content);
+		$content = $this->cleanTemplateTags($rawBody);
     		$status=$this->arg("status", 0);
     		$author=$this->arg("author", '');
     		$laiyuan=$this->arg("laiyuan", '');
@@ -787,11 +790,15 @@ class FindController extends \app\base\controller\BaseController
     		$navid=intval($this->arg("navid"));
     		$keywords=$this->arg("keywords");
     		$dec=$this->arg("dec");
-    		// 富文本正文：同 addArticle，先还原 htmlspecialchars 再白名单过滤，避免 &amp;nbsp; 字面显示
-    		$allowedTags = '<p><br><a><img><strong><b><em><i><u><strike><sub><sup><ul><ol><li><blockquote><pre><code><h1><h2><h3><h4><h5><h6><hr><table><thead><tbody><tr><td><th><span><div><font><center><figure><figcaption>';
-    		$content = strip_tags(htmlspecialchars_decode($this->arg("body"), ENT_QUOTES), $allowedTags);
+    		// 富文本正文：同 addArticle，直接从 $_POST['body'] 取原始值，
+    		// 绕过 arg() 的 preg_replace 标签删除（会删掉 <img> 导致图片丢失），
+    		// 仅剥离危险标签并清除模板字面量，保留编辑器工具栏生成的标签。
+    		$rawBody = isset($_POST['body']) ? $_POST['body'] : '';
+    		$rawBody = preg_replace("@<script(.*?)</script>@is", "", $rawBody);
+    		$rawBody = preg_replace("@<iframe(.*?)</iframe>@is", "", $rawBody);
+    		$rawBody = preg_replace("@<style(.*?)</style>@is", "", $rawBody);
 		// 清除正文中残留的模板标签字面量（如 {$ret['content']|raw}），避免前台原样显示
-		$content = $this->cleanTemplateTags($content);
+		$content = $this->cleanTemplateTags($rawBody);
     		$status=$this->arg("status", 0);
     		$author=$this->arg("author", '');
     		$laiyuan=$this->arg("laiyuan", '');

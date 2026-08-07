@@ -39,7 +39,7 @@
                         <div class="form-group">
                             <label for="body">页面内容</label>
                             <!-- TinyMCE 编辑器容器 -->
-                            <textarea id="page-editor" name="body" data-editor data-upload-type="page" data-height="550">{$ret['body']|raw}</textarea>
+                            <textarea id="page-editor" name="body" data-editor data-upload-type="page" data-height="550">{$ret['body']}</textarea>
                             <small class="form-text text-muted">支持富文本编辑，可使用[插入商品链接]功能添加电商产品链接</small>
                         </div>
 
@@ -88,7 +88,7 @@
 
 {include file="app/manage/view/index/emlog_footer"}
 
-<!-- TinyMCE 编辑器加载 -->
+<!-- TinyMCE 编辑器加载（本地化） -->
 <script src="https://tinymce.vt5.cn/tinymce.min.js"></script>
 <script src="/public/manage/js/tinymce-init.js"></script>
 

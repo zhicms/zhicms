@@ -84,7 +84,7 @@
                         <div class="form-group">
                             <label for="body">文章内容</label>
                             <!-- TinyMCE 编辑器容器 -->
-                            <textarea id="article-editor" name="body" data-editor data-upload-type="article" data-height="550">{if isset($ret['content'])}{$ret['content']|raw}{/if}</textarea>
+                            <textarea id="article-editor" name="body" data-editor data-upload-type="article" data-height="550">{if isset($ret['content'])}{$ret['content']}{/if}</textarea>
                             <small class="form-text text-muted">发布文章支持天猫淘宝/京东/拼多多/唯品会产品链接，点击工具栏[商品链接]按钮可插入</small>
                         </div>
                     
@@ -237,7 +237,7 @@
 
 {include file="app/manage/view/index/emlog_footer"}
 
-<!-- TinyMCE 编辑器加载 -->
+<!-- TinyMCE 编辑器加载（远程托管 tinymce.vt5.cn） -->
 <script src="https://tinymce.vt5.cn/tinymce.min.js"></script>
 <script src="/public/manage/js/tinymce-init.js"></script>
 

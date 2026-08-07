@@ -177,6 +177,13 @@ ALTER TABLE `__PREFIX__union_auth` ADD COLUMN `union_type` varchar(20) COLLATE u
 -- ------------------------------------------------------------
 ALTER TABLE `__PREFIX__article` MODIFY COLUMN `surl` varchar(1000) COLLATE utf8mb4_unicode_ci DEFAULT '' COMMENT '文章来源链接';
 
+-- 5.0.2 补丁：清洗已存库的 AI 错误串
+-- 发布文章时若 AI 接口限流（如 429），旧版会把 "HTTP错误: 429 ..." 当成
+-- 正常的描述/关键词写入 yun_article.dec / keywords，前台列表直接渲染导致显示错误。
+-- 此处将命中错误前缀的字段清空，下次保存时（已修复降级逻辑）会自动重新生成。
+UPDATE `__PREFIX__article` SET `dec` = '' WHERE `dec` LIKE 'HTTP错误%' OR `dec` LIKE 'CURL错误%';
+UPDATE `__PREFIX__article` SET `keywords` = '' WHERE `keywords` LIKE 'HTTP错误%' OR `keywords` LIKE 'CURL错误%';
+
 -- ------------------------------------------------------------
 -- 版本号对齐（务必放在最后执行）
 -- ------------------------------------------------------------
