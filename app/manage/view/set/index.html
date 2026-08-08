@@ -879,6 +879,8 @@ function submitForm(type) {
                 var result = JSON.parse(xhr.responseText);
                 if (result.status === 'y') {
                     showToast(result.info, 'success');
+                    // 保存成功后刷新页面，使后台开关状态与数据库完全一致
+                    setTimeout(function(){ location.reload(); }, 800);
                 } else {
                     showToast(result.info, 'danger');
                 }

@@ -63,7 +63,7 @@ class SetController extends \app\base\controller\BaseController
 			$interactDefaults = array(
 				'comment_on' => '1', 'forum_on' => '1',
 				'comment_anonymous' => '1', 'comment_check' => '0', 'comment_interval' => '60',
-				'user_reg_captcha' => '0', 'user_email_verify' => '0', 'user_show_login' => '1',
+				'user_reg_captcha' => '1', 'user_email_verify' => '0', 'user_show_login' => '1',
 			);
 			if (!empty($cfgRows)) {
 				foreach ($cfgRows as $r) {
