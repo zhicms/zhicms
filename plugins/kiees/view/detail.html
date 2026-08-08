@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$seo_title}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="kc-main">
+  <div class="kc-wrap">
+    <!-- 中间内容区 -->
+    <div class="kc-content">
+      <div class="kc-box">
+        <article class="kc-detail">
+          <h1 class="kc-detail-title">{$article.title}</h1>
+          {if !empty($article.mainPic)}<div class="kc-detail-cover" style="background-image:url({$article.mainPic})"></div>{/if}
+          {if !empty($article.dec)}<p class="kc-detail-price">{$article.dec}</p>{/if}
+          <div class="kc-detail-content">{$article.content}</div>
+        </article>
+
+        <div class="kc-sectitle"><h3>相关推荐</h3></div>
+        <div class="kc-list">
+          {foreach $related as $item}
+          <div class="kc-post">
+            <a class="kc-post-img" href="{$item.buy_url}" target="_blank">
+              {if !empty($item.mainPic)}<img src="{$item.mainPic}" alt="{$item.title}" />{else}<span class="kc-img-empty">值</span>{/if}
+            </a>
+            <div class="kc-post-body">
+              <h2 class="kc-post-title"><a href="{$item.buy_url}" target="_blank">{$item.title}</a></h2>
+              <div class="kc-post-detail">{$item.dec}</div>
+            </div>
+          </div>
+          {/foreach}
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧栏（与主站一致：热门榜） -->
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

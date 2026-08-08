@@ -58,6 +58,9 @@ class App{
 			
 			//default route
 			if( !defined('\APP_NAME') || !defined('\CONTROLLER_NAME') || !defined('\ACTION_NAME')){
+				// 主页模板插件拦截：仅当访问「首页/根路径」且后台配置了已启用的模板化主页插件时，
+				// 改写路由到该插件的展示控制器，使域名打开直接渲染插件模板（URL 不变，不影响其它路由）。
+				self::applyHomePlug();
 				Route::parseUrl( Config::get('REWRITE_RULE'), Config::get('REWRITE_ON') );
 			}
 			
@@ -92,5 +95,40 @@ class App{
 		}
 		
 		Hook::listen('appEnd');
+	}
+
+	/**
+	 * 主页模板插件拦截（方案 B：URL 不变，直接展示插件作为首页）。
+	 * 仅当访问「根路径/首页」且后台 site 配置中 home_plug 指向一个已启用的模板化插件时，
+	 * 把 $_REQUEST['r'] 改写为 index/plug/view/alias=<alias>，从而把主页渲染交给插件。
+	 * 若非根路径、或未配置插件主页、或插件未启用/非模板插件，一律不影响原路由。
+	 */
+	static protected function applyHomePlug(){
+		// 1) 已显式指定路由（r 参数非默认首页）则不干预，保证 plug-xxx.html、文章详情、后台等正常
+		$r = isset($_REQUEST['r']) ? trim((string)$_REQUEST['r']) : '';
+		if ($r !== '') {
+			$norm = strtolower(preg_replace('#/+#', '/', trim($r, '/ ')));
+			$isHome = ($norm === '' || $norm === 'index' || $norm === 'index/index' || $norm === 'index/index/index');
+			if (!$isHome) return; // 非首页路由，直接放行
+		}
+		// 2) 仅限首页访问（根路径 /、/index.php、首页伪静态 /index.html），不带其它具体路径
+		$path = strtok((string)($_SERVER['REQUEST_URI'] ?? '/'), '?');
+		$path = $path === false ? '/' : $path;
+		$path = rtrim($path, '/');
+		if ($path !== '' && $path !== '/index.php' && $path !== '/index.html') return;
+
+		// 3) 读取主页插件配置，需已启用且为模板化插件
+		$homePlug = \app\common\ConfigStore::load('site', 'home_plug');
+		if (empty($homePlug)) return;
+		$alias = trim((string)$homePlug);
+		if ($alias === '' || !preg_match('/^[a-zA-Z0-9_\-]+$/', $alias)) return;
+		try {
+			if (!\ZhiCms\base\PluginManager::isEnabled($alias)) return;
+			if (!\ZhiCms\base\PluginManager::isTemplate($alias)) return;
+		} catch (\Throwable $e) {
+			return;
+		}
+		// 4) 改写路由到插件展示控制器（PlugController::view 会校验插件存在与启用）
+		$_REQUEST['r'] = 'index/plug/view/alias=' . $alias;
 	}
 }

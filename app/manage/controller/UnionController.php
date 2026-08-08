@@ -1078,14 +1078,19 @@ class UnionController extends \app\base\controller\BaseController
         $errors = [];
 
         foreach ($items as $item) {
-            // 修复：正确的字段映射（API 返回字段 -> 数据库字段）
-            $goodsId = $item['goodsId'] ?? $item['goodsSign'] ?? '';
-            if ($goodsId != '' && strpos($goodsId, '-') > 0) {
-                $xinIidArr = explode('-', $goodsId);
-                $jieIid = $xinIidArr[1];
-                if ($jieIid != '') {
-                    $goodsId = $jieIid;
+            // 入库商品 ID 取值策略：
+            // 1) 大淘客（淘宝/天猫，laiyuan=1 或 item_from=tb）：goodsId 是带“-”的加密串，
+            //    直接用它当主键会导致转链/解析失败，故统一用 goodsSign 作为入库 ID（大淘客转链/详情的稳定标识）。
+            // 2) 拼多多/京东/唯品会（好单库）：goodsId 为数字，无 goodsSign 概念，保持原值。
+            $itemFrom = strtolower(trim($item['item_from'] ?? ''));
+            $isDtk = ($laiyuan == 1) || ($itemFrom === 'tb') || ($itemFrom === 'taobao') || ($itemFrom === 'dtk');
+            if ($isDtk) {
+                $goodsId = $item['goodsSign'] ?? '';
+                if ($goodsId == '') {
+                    $goodsId = $item['goodsId'] ?? ''; // goodsSign 缺失时回退完整 goodsId（不再截断“-”）
                 }
+            } else {
+                $goodsId = $item['goodsId'] ?? $item['goodsSign'] ?? '';
             }
 
             if (empty($goodsId)) {
@@ -1328,7 +1333,14 @@ class UnionController extends \app\base\controller\BaseController
     }
 
     private function checkGoodsExists($item) {
-        $goodsId = $item['goodsId'] ?? '';
+        // 与 saveGoodsBatch 一致：大淘客（淘宝）入库 ID 用 goodsSign，故判断存在性时也用 goodsSign
+        $itemFrom = strtolower(trim($item['item_from'] ?? ''));
+        $isDtk = ($itemFrom === 'tb') || ($itemFrom === 'taobao') || ($itemFrom === 'dtk');
+        if ($isDtk) {
+            $goodsId = $item['goodsSign'] ?? ($item['goodsId'] ?? '');
+        } else {
+            $goodsId = $item['goodsId'] ?? ($item['goodsSign'] ?? '');
+        }
         $shopName = $item['shopName'] ?? '';
         $shopId = $item['shopId'] ?? $item['sellerId'] ?? 0;
 
@@ -1336,39 +1348,20 @@ class UnionController extends \app\base\controller\BaseController
             return false;
         }
 
-        $conditions = [];
+        $whereParts = [];
         $params = [];
 
-        if (!empty($goodsId)) {
-            $conditions[] = "`goodsId` = ?";
-            $params[] = $goodsId;
-        }
-        if (!empty($shopName)) {
-            $conditions[] = "`shopName` = ?";
-            $params[] = $shopName;
-        }
-        if (!empty($shopId)) {
-            $conditions[] = "`shopId` = ?";
-            $params[] = $shopId;
-        }
-
-        $whereParts = [];
-        if (count($conditions) >= 2) {
-            $whereParts[] = '(' . implode(' AND ', $conditions) . ')';
-        }
         if (!empty($goodsId)) {
             $whereParts[] = "`goodsId` = ?";
             $params[] = $goodsId;
         }
-        if (!empty($shopName) && !empty($shopId)) {
-            $whereParts[] = "`shopName` = ? AND `shopId` = ?";
+        if (!empty($shopName)) {
+            $whereParts[] = "`shopName` = ?";
             $params[] = $shopName;
-            $params[] = $shopId;
         }
-        if (!empty($goodsId) && !empty($shopName)) {
-            $whereParts[] = "`goodsId` = ? AND `shopName` = ?";
-            $params[] = $goodsId;
-            $params[] = $shopName;
+        if (!empty($shopId)) {
+            $whereParts[] = "`shopId` = ?";
+            $params[] = $shopId;
         }
 
         if (!empty($whereParts)) {

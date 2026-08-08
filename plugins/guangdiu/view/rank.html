@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$seo_title}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="gd-main">
+  <div class="gd-wrap">
+    <div class="gd-content">
+      <div class="gd-box">
+        <div class="gd-sectitle"><h3>风云榜 · 热销排行</h3></div>
+        <div class="gd-rank-tabs">
+          {foreach $types as $tk=>$tn}
+          <a class="gd-tab {if $tk==$rankType}active{/if}" href="{$nav_rank}?type={$tk}">{$tn}</a>
+          {/foreach}
+        </div>
+        {if !empty($tips)}<div class="gd-empty">{$tips}</div>{/if}
+        {if !empty($list)}
+        <ul class="gd-rank-list">
+          {foreach $list as $k=>$item}
+          <?php
+            $gid = $item['goodsId'] ?? ($item['goods_id'] ?? ($item['id'] ?? 0));
+            $title = $item['title'] ?? ($item['goods_name'] ?? ($item['name'] ?? '好货'));
+            $img = $item['mainPic'] ?? ($item['main_pic'] ?? ($item['image'] ?? ''));
+            $price = $item['actualPrice'] ?? ($item['price'] ?? ($item['now_price'] ?? ''));
+            $origin = $item['originalPrice'] ?? ($item['original_price'] ?? '');
+            $coupon = $item['couponPrice'] ?? ($item['coupon_price'] ?? ($item['coupon'] ?? ''));
+            $sales = $item['monthSales'] ?? ($item['sales'] ?? 0);
+            $from = $item['item_from'] ?? ($item['laiyuan'] ?? 1);
+            $fromMap = array(1=>'tb',2=>'pdd',3=>'vip',4=>'jd','taobao'=>'tb','tmall'=>'tb','tb'=>'tb','jd'=>'jd','jd.com'=>'jd','pdd'=>'pdd','pinduoduo'=>'pdd','vip'=>'vip','vip.com'=>'vip');
+            $fromKey = is_numeric($from) ? intval($from) : strtolower(trim($from));
+            $from = $fromMap[$fromKey] ?? 'tb';
+            // 风云榜「查看」直接走站点转链，与优惠券页一致（点击跳转对应平台领券购买）
+            $durl = function_exists('url') ? url('index/redirect/jump', array('platform' => $from, 'id' => $gid)) : ('buy-' . $from . '.html?id=' . $gid);
+          ?>
+          <li class="gd-rank-item">
+            <span class="gd-rank-no {if $k<3}top{/if}">{$k+1}</span>
+            {if !empty($img)}<a class="gd-rank-cover" href="<?php echo $durl; ?>" target="_blank"><img src="<?php echo htmlspecialchars($img); ?>" alt="<?php echo htmlspecialchars($title); ?>" loading="lazy"></a>{/if}
+            <div class="gd-rank-body">
+              <h3 class="gd-card-title"><a href="<?php echo $durl; ?>" target="_blank"><?php echo htmlspecialchars(mb_substr($title,0,60,'UTF-8')); ?></a></h3>
+              <div class="gd-price">
+                {if !empty($price)}<span class="gd-now">¥{$price}</span>{/if}
+                {if !empty($origin)}<span class="gd-old">¥{$origin}</span>{/if}
+                {if !empty($coupon)}<span class="gd-coupon">券¥{$coupon}</span>{/if}
+              </div>
+              <div class="gd-rank-sales">月销 {$sales}</div>
+            </div>
+            <a class="gd-gobuy" href="<?php echo $durl; ?>" target="_blank" rel="nofollow">查看</a>
+          </li>
+          {/foreach}
+        </ul>
+        {elseif empty($tips)}
+        <div class="gd-empty">暂无榜单数据，请稍后再来查看！</div>
+        {/if}
+      </div>
+    </div>
+
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

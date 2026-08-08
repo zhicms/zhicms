@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$seo_title}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="kc-main">
+  <div class="kc-wrap">
+    <!-- 中间内容区：仿 kiees.com 搜索结果页主要内容（文章 + 优惠券混合展示） -->
+    <div class="kc-content">
+      <div class="kc-box">
+        <div class="kc-sectitle">
+          <h3>搜索 “{$keyword}” 的结果（共 {$total} 条 · 文章 {$total_article} · 优惠券 {$total_items}）</h3>
+        </div>
+
+        <!-- 筛选栏：类型（文章/优惠券）+ 平台（淘宝/京东/拼多多/唯品会） -->
+        <div class="kc-filter">
+          <span class="kc-filter-label">筛选：</span>
+          <a class="kc-filter-btn {if $filter_type == '' && $filter_from == ''}active{/if}" href="plug-kiees.html?kw={$keyword}">全部</a>
+          <a class="kc-filter-btn {if $filter_type == 'article'}active{/if}" href="plug-kiees.html?kw={$keyword}&type=article{if $filter_from != ''}&from={$filter_from}{/if}">文章</a>
+          <a class="kc-filter-btn {if $filter_type == 'items'}active{/if}" href="plug-kiees.html?kw={$keyword}&type=items{if $filter_from != ''}&from={$filter_from}{/if}">优惠券</a>
+          <span class="kc-filter-sep"></span>
+          <a class="kc-filter-btn kc-plat-tb {if $filter_from == 'tb'}active{/if}" href="plug-kiees.html?kw={$keyword}{if $filter_type != ''}&type={$filter_type}{/if}&from=tb">淘宝</a>
+          <a class="kc-filter-btn kc-plat-jd {if $filter_from == 'jd'}active{/if}" href="plug-kiees.html?kw={$keyword}{if $filter_type != ''}&type={$filter_type}{/if}&from=jd">京东</a>
+          <a class="kc-filter-btn kc-plat-pdd {if $filter_from == 'pdd'}active{/if}" href="plug-kiees.html?kw={$keyword}{if $filter_type != ''}&type={$filter_type}{/if}&from=pdd">拼多多</a>
+          <a class="kc-filter-btn kc-plat-vip {if $filter_from == 'vip'}active{/if}" href="plug-kiees.html?kw={$keyword}{if $filter_type != ''}&type={$filter_type}{/if}&from=vip">唯品会</a>
+        </div>
+
+        {if !empty($list)}
+        <div class="kc-list">
+          {foreach $list as $item}
+          <div class="kc-post {if $item.type == 'items'}kc-post-coupon{else}kc-post-article{/if}">
+            {if !empty($item.img)}
+            <a class="kc-post-img" href="{$item.buy_url}" target="_blank" rel="nofollow">
+              <img src="{$item.img}" alt="{$item.title}" loading="lazy" />
+            </a>
+            {else}
+            <a class="kc-post-img" href="{$item.buy_url}" target="_blank" rel="nofollow">
+              <span class="kc-img-empty">{if $item.type == 'items'}券{else}文{/if}</span>
+            </a>
+            {/if}
+            <div class="kc-post-body">
+              <div class="kc-post-tag">
+                {if $item.type == 'items'}
+                <span class="kc-tag kc-tag-coupon">优惠券</span>
+                {if !empty($item.from)}<span class="kc-tag kc-tag-plat">{$item.from|upper}</span>{/if}
+                {else}
+                <span class="kc-tag kc-tag-article">文章</span>
+                {/if}
+                <h2 class="kc-post-title"><a href="{$item.buy_url}" target="_blank" rel="nofollow">{$item.title}</a></h2>
+              </div>
+
+              {if !empty($item.summary)}
+              <div class="kc-post-detail">{$item.summary}</div>
+              {/if}
+
+              {if $item.type == 'items'}
+              <!-- 优惠券：展示券额、券后价、原价 -->
+              <div class="kc-post-price">
+                {if !empty($item.coupon)}<span class="kc-coupon">券 ¥{$item.coupon}</span>{/if}
+                {if !empty($item.price)}<span class="kc-now">¥{$item.price}</span>{/if}
+                {if !empty($item.origin) && $item.origin > $item.price}<span class="kc-old">¥{$item.origin}</span>{/if}
+              </div>
+              {else}
+              <!-- 文章：展示人气 -->
+              <div class="kc-post-meta">
+                <span class="kc-post-hot">人气：<em>{$item.hot}</em></span>
+              </div>
+              {/if}
+
+              <div class="kc-post-meta">
+                {if $item.type == 'items'}
+                <span class="kc-post-hot">月销：<em>{$item.hot}</em></span>
+                <a class="kc-gobuy" href="{$item.buy_url}" target="_blank" rel="nofollow">立即领券>></a>
+                {else}
+                <a class="kc-gobuy" href="{$item.buy_url}" rel="nofollow">查看详情>></a>
+                {/if}
+              </div>
+            </div>
+          </div>
+          {/foreach}
+        </div>
+        {$pager}
+        {else}
+        <div class="kc-empty">
+          没有找到与「{$keyword}」相关的文章或优惠券，换个关键词试试吧～
+        </div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- 右侧栏 -->
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

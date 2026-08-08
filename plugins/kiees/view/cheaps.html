@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$seo_title}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="kc-main">
+  <div class="kc-wrap">
+    <div class="kc-content">
+      <div class="kc-box">
+        <div class="kc-sectitle"><h3>优惠券中心 · 海量优惠券 超值折扣</h3></div>
+        {if !empty($list)}
+        <div class="kc-grid">
+          {foreach $list as $item}
+          <article class="kc-card">
+            {if !empty($item.img)}<a class="kc-card-cover" href="{$item.buy_url}" target="_blank"><img src="{$item.img}" alt="{$item.title}" loading="lazy"></a>{/if}
+            <div class="kc-card-body">
+              {if !empty($item.coupon)}<span class="kc-coupon">领券减¥{$item.coupon}</span>{/if}
+              <h3 class="kc-card-title"><a href="{$item.buy_url}" target="_blank">{$item.title}</a></h3>
+              <div class="kc-price">
+                {if !empty($item.price)}<span class="kc-now">¥{$item.price}</span>{/if}
+                {if !empty($item.origin)}<span class="kc-old">¥{$item.origin}</span>{/if}
+              </div>
+              <a class="kc-gobuy" href="{$item.buy_url}" target="_blank" rel="nofollow">立即领券</a>
+            </div>
+          </article>
+          {/foreach}
+        </div>
+        {$pager}
+        {else}
+        <div class="kc-empty">暂无优惠券，请稍后再来查看！</div>
+        {/if}
+      </div>
+    </div>
+
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

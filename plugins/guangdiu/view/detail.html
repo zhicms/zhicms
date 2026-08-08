@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$article.title} - {$site_name}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="gd-main">
+  <div class="gd-wrap">
+    <div class="gd-content">
+      <div class="gd-box gd-article">
+        <h1 class="gd-article-title">{$article.title}</h1>
+        <div class="gd-article-meta">
+          <span>人气：{$article.view}</span>
+          <span>{$article.date|default=''}</span>
+          <span>来源：{$article.laiyuan|default=$site_name}</span>
+        </div>
+        <div class="gd-article-content">{$article.content}</div>
+      </div>
+
+      {if !empty($related)}
+      <div class="gd-box">
+        <div class="gd-sectitle"><h3>相关推荐</h3></div>
+        <div class="gd-list">
+          {foreach $related as $item}
+          <div class="gd-post">
+            <a class="gd-post-img" href="{$item.buy_url}" target="_blank">
+              {if !empty($item.mainPic)}<img src="{$item.mainPic}" alt="{$item.title}" loading="lazy">{else}<span class="gd-img-empty">惠</span>{/if}
+            </a>
+            <div class="gd-post-body">
+              <h2 class="gd-post-title"><a href="{$item.buy_url}" target="_blank">{$item.title}</a></h2>
+              <div class="gd-post-detail">{if !empty($item.dec)}{$item.dec}{/if}</div>
+              <div class="gd-post-meta">
+                <span class="gd-post-hot">阅读：<em>{$item.view}</em></span>
+                <a class="gd-gobuy" href="{$item.buy_url}" target="_blank">查看详情</a>
+              </div>
+            </div>
+          </div>
+          {/foreach}
+        </div>
+      </div>
+      {/if}
+    </div>
+
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

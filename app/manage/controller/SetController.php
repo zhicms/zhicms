@@ -49,9 +49,12 @@ class SetController extends \app\base\controller\BaseController
 			// 当前模板引擎（legacy / think），供“模板引擎”切换页回显
 			$tplCfg = \ZhiCms\base\Config::get('TPL');
 			$this->tplEngine = isset($tplCfg['ENGINE']) ? $tplCfg['ENGINE'] : 'legacy';
+			// 主页展示插件候选列表（仅模板化插件），供「主页展示」下拉选择
+			$this->homePlugins = \ZhiCms\base\PluginManager::getTemplatePlugins();
+			$this->homePlug    = isset($siteConfig['home_plug']) ? trim((string)$siteConfig['home_plug']) : '';
 
 			// 加载互动开关（yun_config 表）合并到 $ret，供"互动设置"标签页使用
-			$interactKeys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval');
+			$interactKeys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval', 'user_reg_captcha', 'user_email_verify', 'user_show_login');
 			$in = implode(',', array_fill(0, count($interactKeys), '?'));
 			$cfgRows = obj("api/ApiData")->thisQuery(
 				"SELECT `key`, `value` FROM `{pre}config` WHERE `key` IN ({$in})",
@@ -60,6 +63,7 @@ class SetController extends \app\base\controller\BaseController
 			$interactDefaults = array(
 				'comment_on' => '1', 'forum_on' => '1',
 				'comment_anonymous' => '1', 'comment_check' => '0', 'comment_interval' => '60',
+				'user_reg_captcha' => '0', 'user_email_verify' => '0', 'user_show_login' => '1',
 			);
 			if (!empty($cfgRows)) {
 				foreach ($cfgRows as $r) {
@@ -93,6 +97,8 @@ class SetController extends \app\base\controller\BaseController
 				'beian'          => $_POST['beian']          ?? '',
 				'model'          => $_POST['model']          ?? '',
 				'key'            => $_POST['key']            ?? '',
+				// 主页展示插件：存插件 alias（空 = 不使用插件主页，走默认首页）；仅允许模板化插件，非法值置空
+				'home_plug'      => self::sanitizeHomePlug($_POST['home_plug'] ?? ''),
 				// 统一安全 Key：仅在显式提交时保存（重置由 resetSecurityKey 单独处理），避免误覆盖自动生成值
 				'security_key'   => isset($_POST['security_key']) ? trim($_POST['security_key']) : '',
 				// mobile_style 由「移动端」标签页单独保存，这里不处理，避免基础设置覆盖移动端风格
@@ -108,6 +114,25 @@ class SetController extends \app\base\controller\BaseController
 		echo json_encode(array("info" => "设置成功", "status" => "y"));
 	}
 
+	}
+
+	/**
+	 * 校验并规整「主页展示插件」配置值：
+	 * 仅接受已启用且为模板化插件的 alias，其它值一律置空（回退默认首页）。
+	 * @param string $alias 提交的插件 alias
+	 * @return string
+	 */
+	private function sanitizeHomePlug($alias){
+		$alias = trim((string)$alias);
+		if ($alias === '') return '';
+		if (!preg_match('/^[a-zA-Z0-9_\-]+$/', $alias)) return '';
+		try {
+			if (!\ZhiCms\base\PluginManager::isEnabled($alias)) return '';
+			if (!\ZhiCms\base\PluginManager::isTemplate($alias)) return '';
+		} catch (\Throwable $e) {
+			return '';
+		}
+		return $alias;
 	}
 
 	/**

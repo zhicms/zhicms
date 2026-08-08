@@ -230,7 +230,10 @@ foreach ($result['data']['list'] as $item) {
             return ['code' => 0, 'message' => $result['msg'] ?? '商品数据为空'];
         }
 
-        $d = \ZhiCms\ext\Tjk::standardizeItem($result['data'], 'taobao');
+        // 详情接口返回里没有 goodsSign 字段，需从 data 中取（dataoke 详情接口字段名为 goodsSign 或 id）
+        $detail = $result['data'];
+        $detail['goodsSign'] = $detail['goodsSign'] ?? ($detail['id'] ?? '');
+        $d = \ZhiCms\ext\Tjk::standardizeItem($detail, 'taobao');
         return [
             'code' => 1,
             'message' => 'success',
@@ -310,9 +313,10 @@ foreach ($result['data']['list'] as $item) {
     
     public function GetPrivilegeLink($goodsId, $pid = '', $goodsSign = '', $itemUrl = '', $version = 'v1.3.1') {
         $host = 'https://openapi.dataoke.com/api/tb-service/get-privilege-link';
-        // 高效转链（get-privilege-link）只需「产品 id」：优先 goodsId，为空时回退用 goodsSign 作主 id，
-        // 该接口不接收 goodsSign 作为独立参数，故只传 goodsId，避免多余参数导致大淘客报错走兜底
-        $realGoodsId = $goodsId ?: $goodsSign;
+        // 高效转链（get-privilege-link）支持 goodsId 或 goodsSign 二选一。
+        // 全链路以 goodsSign 作为淘宝(大淘客)产品 id 为准，故转链时优先使用 goodsSign，
+        // 仅当 goodsSign 缺失时回退用 goodsId（如历史数据或好单库商品）。
+        $realGoodsId = $goodsSign ?: $goodsId;
         if (empty($realGoodsId)) {
             return ['code' => 0, 'message' => '缺少商品ID'];
         }
@@ -504,6 +508,7 @@ foreach ($result['data']['list'] as $item) {
             $items[] = [
                 'id' => $item['id'] ?? '',
                 'goodsId' => $item['goodsId'] ?? '',
+                'goodsSign' => $item['goodsSign'] ?? '',
                 'title' => $item['title'] ?? '',
                 'dtitle' => $item['dtitle'] ?? '',
                 'originalPrice' => $item['originalPrice'] ?? 0,
@@ -707,6 +712,7 @@ foreach ($result['data']['list'] as $item) {
             $items[] = [
                 'id'               => $item['id'] ?? '',
                 'goodsId'          => $item['goodsId'] ?? '',
+                'goodsSign'        => $item['goodsSign'] ?? '',
                 'title'            => $item['title'] ?? '',
                 'dtitle'           => $item['dtitle'] ?? '',
                 'originalPrice'    => $item['originalPrice'] ?? 0,

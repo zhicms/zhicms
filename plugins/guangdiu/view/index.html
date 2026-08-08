@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$seo_title}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="gd-main">
+  <div class="gd-wrap">
+    <!-- 中间内容区 -->
+    <div class="gd-content">
+      <div class="gd-box">
+        <div class="gd-sectitle"><h3>今日精选 · 逛丢优惠好物</h3></div>
+        {if !empty($list)}
+        <div class="gd-list">
+          {foreach $list as $item}
+          <div class="gd-post">
+            <a class="gd-post-img" href="{$item.buy_url}" target="_blank">
+              {if !empty($item.mainPic)}<img src="{$item.mainPic}" alt="{$item.title}" loading="lazy">{/if}
+            </a>
+            <div class="gd-post-body">
+              <h2 class="gd-post-title"><a href="{$item.buy_url}" target="_blank">{$item.title}</a></h2>
+              <div class="gd-post-detail">{if !empty($item.dec)}{$item.dec}{/if}</div>
+              <div class="gd-post-meta">
+                <span class="gd-post-hot">人气：<em>{$item.hot}</em></span>
+                <a class="gd-gobuy" href="{$item.buy_url}" target="_blank">查看详情</a>
+              </div>
+            </div>
+          </div>
+          {/foreach}
+        </div>
+        {$pager}
+        {else}
+        <div class="gd-empty">暂无内容，请稍后再来查看！</div>
+        {/if}
+      </div>
+    </div>
+
+    <!-- 右侧栏（APP下载 + 热门榜，与 kiees 一致） -->
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

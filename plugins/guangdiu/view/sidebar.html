@@ -1,0 +1,39 @@
+<!-- 插件公共右侧栏：热门榜（可被所有页面复用） -->
+<aside class="gd-sidebar">
+  {if $showUserEntry}
+  <div class="gd-user-entry">
+    {if !empty($loginUser)}
+    <span class="gd-user-name">{$loginUser.mobile|default=$loginUser.username}</span>
+    <a class="gd-user-link" href="{$site_url}user/index.html">用户中心</a>
+    <a class="gd-user-link" href="{$site_url}user/logout.html">退出</a>
+    {else}
+    <a class="gd-user-link gd-user-login" href="{$site_url}login/index.html">登录</a>
+    <a class="gd-user-link gd-user-reg" href="{$site_url}login/register.html">注册</a>
+    {/if}
+  </div>
+  {/if}
+  {if !empty($app_iphone) || !empty($app_android)}
+  <div class="gd-app">
+    {if !empty($app_iphone)}<a class="gd-app-btn" href="{$app_iphone}" rel="nofollow" target="_blank">iPhone APP 下载</a>{/if}
+    {if !empty($app_android)}<a class="gd-app-btn" href="{$app_android}" target="_blank">Android APP 下载</a>{/if}
+  </div>
+  {/if}
+  <div class="gd-widget">
+    <h3 class="gd-widget-title">热度比较高的商品</h3>
+    <ul class="gd-top10">
+      {foreach $hot as $k=>$h}
+      <li class="gd-top10-item">
+        <a class="gd-top10-img" href="{if !empty($h.itemLink)}{$h.itemLink}{else}{$plug_base}-{$h.id}.html{/if}" target="_blank">
+          {if !empty($h.mainPic)}<img src="{$h.mainPic}" alt="{$h.title}" />{else}<span class="gd-img-empty">值</span>{/if}
+        </a>
+        <div class="gd-top10-body">
+          <h4 class="gd-top10-title"><a href="{if !empty($h.itemLink)}{$h.itemLink}{else}{$plug_base}-{$h.id}.html{/if}" target="_blank">{$h.title}</a></h4>
+          <span class="gd-top10-hot">{if !empty($h.hot)}{$h.hot}°C{else}热门{/if}</span>
+        </div>
+        <em class="gd-top10-no">{$k+1}</em>
+      </li>
+      {/foreach}
+    </ul>
+  </div>
+  <p class="gd-sidebar-tip">关注{$site_name}，发现值得买</p>
+</aside>

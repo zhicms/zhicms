@@ -45,6 +45,21 @@ class PluginManager {
 			}
 		}
 		if ($pluginRules) {
+			// 规则排序：占位符越少（即字面量越具体）越靠前，保证
+			// 「plug-<alias>-cheaps.html」优先于通配的「plug-<alias>-<id>.html」匹配。
+			// 否则多插件共存时，先合并的插件的 <id> 通配规则会把其它插件的具名子页
+			// （cheaps/brand/rank）吞成 id=cheaps，导致子页统一回退首页。
+			$ruleKeys = array_keys($pluginRules);
+			usort($ruleKeys, function ($a, $b) {
+				$ca = preg_match_all('/<[a-zA-Z0-9_]+>/', $a);
+				$cb = preg_match_all('/<[a-zA-Z0-9_]+>/', $b);
+				if ($ca !== $cb) return $ca - $cb;            // 占位符少的优先
+				return strlen($b) - strlen($a);               // 同数量时更长（更具体）的优先
+			});
+			$sorted = array();
+			foreach ($ruleKeys as $k) { $sorted[$k] = $pluginRules[$k]; }
+			$pluginRules = $sorted;
+
 			$cur = \ZhiCms\base\Config::get('REWRITE_RULE');
 			$cur = is_array($cur) ? $cur : array();
 			// 插件规则追加在框架规则之后，避免覆盖系统自带伪静态
@@ -297,6 +312,45 @@ class PluginManager {
 	}
 
 	/**
+	 * 是否为「模板化插件」（可在后台被设为主页展示）。
+	 * 判定依据：plugin.json 显式声明 type=template，且提供了展示页入口（displayPage）+ 首页伪静态规则（plug-<alias>.html）。
+	 * 仅模板类插件可作为主页，普通功能插件一律排除。
+	 */
+	public static function isTemplate($alias){
+		$meta = self::readMeta($alias);
+		if ($meta === null) return false;
+		if (($meta['type'] ?? '') !== 'template') return false;
+		// 兜底：插件入口类必须实现 displayPage，且 plugin.json 配置了 plug-<alias>.html 首页规则
+		if (empty($meta['rewrite']) || !isset($meta['rewrite']['plug-<alias>.html'])) return false;
+		$plugin = self::instance($alias, $meta);
+		return ($plugin !== null && method_exists($plugin, 'displayPage'));
+	}
+
+	/**
+	 * 获取所有可被设为主页的「模板化插件」列表（仅已启用）。
+	 * @return array [ ['alias'=>..., 'name'=>...], ... ]
+	 */
+	public static function getTemplatePlugins(){
+		$list = array();
+		if (!self::tableReady()) return $list;
+		try {
+			$rows = self::db()->query("SELECT `alias` FROM {pre}plug WHERE `status` = 1");
+		} catch (\Throwable $e) {
+			return $list;
+		}
+		foreach ($rows as $row) {
+			$alias = $row['alias'];
+			if (!self::isTemplate($alias)) continue;
+			$meta = self::readMeta($alias);
+			$list[] = array(
+				'alias' => $alias,
+				'name'  => ($meta['name'] ?? $alias),
+			);
+		}
+		return $list;
+	}
+
+	/**
 	 * 生成插件展示页链接：伪静态开启且有对应 rewrite 规则则返回伪静态 URL，
 	 * 否则回退到动态地址 index.php?r=index/plug/view/alias=<alias>/...
 	 * @param string $alias  插件别名
@@ -320,6 +374,22 @@ class PluginManager {
 			return $dyn;
 		}
 
+		// 仅传 alias（无额外参数）时，直接返回插件首页伪静态地址，
+		// 避免「优先占位符最多」的匹配逻辑在多条单占位符规则间产生歧义
+		//（例如 plug-<alias>-cheaps.html 排在前面时被误选为首页链接）。
+		if (empty($params)) {
+			$homeKey   = 'plug-<alias>.html';   // plugin.json 中的占位符形式
+			$homePlain = 'plug-' . $alias . '.html'; // 合并进 REWRITE_RULE 后的字面量形式
+			if (isset($rewrite[$homeKey]) || isset($rewrite[$homePlain])) {
+				return $homePlain;
+			}
+		}
+
+		// alias 是方法的独立参数，但 rewrite 规则中通常以 <alias> 占位符出现，
+		// 需把它纳入“可用参数集合”用于规则匹配与占位符替换。
+		$avail = $params;
+		$avail['alias'] = $alias;
+
 		// 选择一个能容纳所有 params 的规则：优先占位符最多的匹配
 		$best = null; $bestScore = -1;
 		foreach ($rewrite as $rule => $mapper) {
@@ -327,7 +397,7 @@ class PluginManager {
 			$holders = $m[1];
 			$ok = true;
 			foreach ($holders as $h) {
-				if (!array_key_exists($h, $params)) { $ok = false; break; }
+				if (!array_key_exists($h, $avail)) { $ok = false; break; }
 			}
 			if (!$ok) continue;
 			$score = count($holders);
@@ -342,6 +412,8 @@ class PluginManager {
 			$url = str_ireplace('<' . $k . '>', $v, $url, $count);
 			if (!$count) $left[$k] = $v;
 		}
+		// 替换规则中剩余的 <alias> 占位符（alias 来自方法参数，不进入 query string）
+		$url = str_ireplace('<alias>', $alias, $url);
 		$url = preg_replace('/<\w+>/', '', $url);
 		if ($left) $url .= (strpos($url, '?') !== false ? '&' : '?') . http_build_query($left);
 		// 去掉入口脚本前缀（rule.php 里的规则均不含 index.php，因此生成的静态 URL 也需一致）

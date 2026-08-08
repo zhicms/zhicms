@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$seo_title}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="gd-main">
+  <div class="gd-wrap">
+    <div class="gd-content">
+      <div class="gd-box">
+        <div class="gd-sectitle"><h3>搜索 “{$keyword}” 的结果</h3><span class="gd-count">共 {$total} 条（文章 {$total_article} · 优惠券 {$total_items}）</span></div>
+
+        <div class="gd-filter">
+          <span class="gd-filter-label">类型：</span>
+          <a class="gd-filter-btn {if $filter_type==''}active{/if}" href="{$plug_url}?kw={$keyword}">全部</a>
+          <a class="gd-filter-btn {if $filter_type=='article'}active{/if}" href="{$plug_url}?kw={$keyword}&type=article">文章</a>
+          <a class="gd-filter-btn {if $filter_type=='items'}active{/if}" href="{$plug_url}?kw={$keyword}&type=items">优惠券</a>
+          <span class="gd-filter-sep"></span>
+          <span class="gd-filter-label">来源：</span>
+          <a class="gd-filter-btn gd-plat-tb {if $filter_from==''}active{/if}" href="{$plug_url}?kw={$keyword}{if $filter_type}&type={$filter_type}{/if}">全部</a>
+          <a class="gd-filter-btn gd-plat-tb {if $filter_from=='tb'}active{/if}" href="{$plug_url}?kw={$keyword}{if $filter_type}&type={$filter_type}{/if}&from=tb">淘宝</a>
+          <a class="gd-filter-btn gd-plat-jd {if $filter_from=='jd'}active{/if}" href="{$plug_url}?kw={$keyword}{if $filter_type}&type={$filter_type}{/if}&from=jd">京东</a>
+          <a class="gd-filter-btn gd-plat-pdd {if $filter_from=='pdd'}active{/if}" href="{$plug_url}?kw={$keyword}{if $filter_type}&type={$filter_type}{/if}&from=pdd">拼多多</a>
+          <a class="gd-filter-btn gd-plat-vip {if $filter_from=='vip'}active{/if}" href="{$plug_url}?kw={$keyword}{if $filter_type}&type={$filter_type}{/if}&from=vip">唯品会</a>
+        </div>
+
+        {if !empty($list)}
+        <div class="gd-list gd-search-list">
+          {foreach $list as $item}
+          {if $item.type == 'article'}
+          <div class="gd-post">
+            <a class="gd-post-img" href="{$item.buy_url}" target="_blank">
+              {if !empty($item.img)}<img src="{$item.img}" alt="{$item.title}" loading="lazy">{/if}
+            </a>
+            <div class="gd-post-body">
+              <h2 class="gd-post-title"><a href="{$item.buy_url}">{$item.title}</a></h2>
+              <div class="gd-post-detail">{if !empty($item.summary)}{$item.summary}{/if}</div>
+              <div class="gd-post-meta"><span class="gd-post-hot">人气：<em>{$item.hot}</em></span></div>
+            </div>
+          </div>
+          {else}
+          <div class="gd-post gd-post-coupon">
+            <a class="gd-post-img" href="{$item.buy_url}" target="_blank">
+              {if !empty($item.img)}<img src="{$item.img}" alt="{$item.title}" loading="lazy">{/if}
+            </a>
+            <div class="gd-post-body">
+              <div class="gd-post-tag">
+                <span class="gd-tag gd-tag-coupon">券</span>
+                <span class="gd-tag gd-tag-plat">{if $item.from=='tb'}淘宝{elseif $item.from=='jd'}京东{elseif $item.from=='pdd'}拼多多{else}唯品会{/if}</span>
+              </div>
+              <h2 class="gd-post-title"><a href="{$item.buy_url}" target="_blank">{$item.title}</a></h2>
+              <div class="gd-post-price">
+                <span class="gd-now">¥{$item.price}</span>
+                {if !empty($item.origin)}<span class="gd-old">¥{$item.origin}</span>{/if}
+                {if !empty($item.coupon)}<span class="gd-coupon">券 ¥{$item.coupon}</span>{/if}
+              </div>
+              <div class="gd-post-meta">
+                <span class="gd-post-hot">月销：<em>{$item.hot}</em></span>
+                <a class="gd-gobuy" href="{$item.buy_url}" target="_blank" rel="nofollow">立即领券</a>
+              </div>
+            </div>
+          </div>
+          {/if}
+          {/foreach}
+        </div>
+        {$pager}
+        {else}
+        <div class="gd-empty">没有找到与 “{$keyword}” 相关的内容，换个关键词试试吧～</div>
+        {/if}
+      </div>
+    </div>
+
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

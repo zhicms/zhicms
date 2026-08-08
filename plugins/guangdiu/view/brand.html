@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$seo_title}</title>
+    {include file="inc/seo_head" /}
+    <link rel="stylesheet" href="{$public}web/css/blog.css?v=5.0.2">
+    <link rel="stylesheet" href="{$public}web/css/common.css?v=5.0.2">
+    <link rel="stylesheet" href="{$plug_static}/css/style.css">
+</head>
+<body>
+
+{include file="header"}
+
+<main class="gd-main">
+  <div class="gd-wrap">
+    <div class="gd-content">
+      <div class="gd-box">
+        <div class="gd-sectitle"><h3>大牌 · 品牌折扣</h3></div>
+        {if !empty($tips)}<div class="gd-empty">{$tips}</div>{/if}
+        {if !empty($list)}
+        <div class="gd-grid gd-grid-brand">
+          {foreach $list as $b}
+          <?php
+            $bId = $b['brandId'] ?? ($b['id'] ?? 0);
+            $bName = $b['brandName'] ?? ($b['name'] ?? '品牌');
+            $bLogo = $b['brandLogo'] ?? ($b['logo'] ?? ($b['pic'] ?? ''));
+            $bDesc = $b['brandDesc'] ?? ($b['desc'] ?? ($b['brandInfo'] ?? ''));
+            $bUrl = function_exists('url') ? url('index/brand/view', array('id' => $bId)) : ('brand-view-' . $bId . '.html');
+          ?>
+          <a class="gd-brand" href="<?php echo $bUrl; ?>" target="_blank">
+            {if !empty($bLogo)}<img class="gd-brand-logo" src="<?php echo htmlspecialchars($bLogo); ?>" alt="<?php echo htmlspecialchars($bName); ?>" loading="lazy">{else}<div class="gd-brand-logo gd-brand-default"><?php echo htmlspecialchars(mb_substr($bName,0,1,'UTF-8')); ?></div>{/if}
+            <div class="gd-brand-name"><?php echo htmlspecialchars($bName); ?></div>
+            {if !empty($bDesc)}<div class="gd-brand-desc"><?php echo htmlspecialchars(mb_substr(strip_tags($bDesc),0,40,'UTF-8')); ?></div>{/if}
+          </a>
+          {/foreach}
+        </div>
+        {$pager}
+        {elseif empty($tips)}
+        <div class="gd-empty">暂无品牌数据，请稍后再来查看！</div>
+        {/if}
+      </div>
+    </div>
+
+    {if $show_sidebar}{include file="sidebar"}{/if}
+  </div>
+</main>
+
+{include file="footer"}
+
+</body>
+</html>

@@ -7,6 +7,26 @@ class IndexController extends \app\base\controller\BaseController
             $this->redirect("index.php?r=install");
         }
 
+        // 主页展示插件（方案 B，URL 不变）：后台配置了已启用的模板化主页插件时，
+        // 首页直接渲染插件模板而非默认站点首页。与 App::applyHomePlug 配合双保险，
+        // 覆盖 /、/index.php、/index.html 及任何落到本站首页的入口。
+        $homePlug = trim((string)\app\common\ConfigStore::load('site', 'home_plug'));
+        if ($homePlug !== '' && preg_match('/^[a-zA-Z0-9_\-]+$/', $homePlug)) {
+            try {
+                $enabled = \ZhiCms\base\PluginManager::isEnabled($homePlug);
+                $isTpl   = \ZhiCms\base\PluginManager::isTemplate($homePlug);
+                if ($enabled && $isTpl) {
+                    $plugin = \ZhiCms\base\PluginManager::instance($homePlug);
+                    if ($plugin && method_exists($plugin, 'displayPage')) {
+                        $plugin->displayPage(array());
+                        exit;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // 插件异常不阻断，回落默认首页
+            }
+        }
+
         $Siteinfo = \app\common\ConfigStore::load('site');
 
         $where_30m[] = "`date` > DATE_SUB(NOW(), INTERVAL 30 MINUTE)";
@@ -181,6 +201,16 @@ class IndexController extends \app\base\controller\BaseController
 
        $where[] = "`id` = {$id}";
        $view = obj("api/ApiData")->dataSelect("yun_article", $where);
+       // 浏览量自增（访客去重防刷：同一浏览器 1 小时内只计 1 次）
+       $viewKey = 'zhicms_view_' . $id;
+       if (empty($_COOKIE[$viewKey])) {
+           obj("api/ApiData")->executeQuery(
+               "UPDATE `{pre}article` SET `view` = `view` + 1 WHERE `id` = ?",
+               array($id)
+           );
+           if (isset($view['view'])) { $view['view'] = (int)$view['view'] + 1; }
+           setcookie($viewKey, '1', time() + 3600, '/');
+       }
        // 触发文章内容钩子（插件可改写 $view 或过滤正文）
        \ZhiCms\base\Hook::listen('article_view', array(&$view));
        if (isset($view['content'])) {
@@ -376,6 +406,13 @@ class IndexController extends \app\base\controller\BaseController
         $itemsUrl= $itemsId['0']['0'];
         $itemsUrl=preg_replace('/\[\/ZhiCmsUrl]/','',$itemsUrl);
         $content=urldecode($itemsUrl);
+        // 本站转链入口：buy-tb/jd/pdd/vip.html?id=加密goodsId
+        // 这种链接的 id 本身就是大淘客商品 ID，可直接拿去解析商品详情
+        $buyId = $this->extractBuyLinkId($content);
+        if ($buyId !== '') {
+            $card = $this->resolveLinkCard($content, $buyId);
+            if ($card !== null) return $card;
+        }
         // 先用 URL 域名识别平台：非淘宝/天猫的直接走兜底卡片（已按真实平台生成链接），
         // 避免被误当成淘宝解析（否则卡片会显示 tb 且跳转平台错）
         $isTaobao = (strpos($content, 'taobao.com') !== false || strpos($content, 'tmall.com') !== false);
@@ -390,20 +427,29 @@ class IndexController extends \app\base\controller\BaseController
         }
     }
 
+    /** 从本站转链 buy-<platform>.html?id=xxx 中提取商品 ID */
+    private function extractBuyLinkId($url) {
+        if (!preg_match('/buy-(tb|jd|pdd|vip)\.html/i', $url)) return '';
+        $query = parse_url($url, PHP_URL_QUERY);
+        if (!$query) return '';
+        parse_str($query, $p);
+        return trim($p['id'] ?? '');
+    }
+
     /**
      * 使用 Tjk 本地接口解析 [ZhiCmsUrl] 短链接并生成 SMZDM 风格商品卡片
-     * 淘宝走 DTK ParseContent + GetGoodsDetails；
+     * 淘宝走 DTK ParseContent + GetGoodsDetails；若已传入 $goodsId（站点转链场景）则直接解析详情
      * 其他平台不做短链解析，统一走兜底卡片
      */
-    private function resolveLinkCard($url) {
+    private function resolveLinkCard($url, $goodsId = '') {
         $url = trim($url);
         if (empty($url)) return null;
 
         // 仅淘宝/天猫走 DTK 详情解析
-        if (strpos($url, 'taobao.com') === false && strpos($url, 'tmall.com') === false) return null;
+        if (strpos($url, 'taobao.com') === false && strpos($url, 'tmall.com') === false && empty($goodsId)) return null;
 
-        $cacheKey = 'pc_card_v2_' . md5($url);
-        return tcache($cacheKey, function() use ($url) {
+        $cacheKey = 'pc_card_v2_' . md5($url . '|' . $goodsId);
+        return tcache($cacheKey, function() use ($url, $goodsId) {
             try {
                 $api = \app\common\ConfigStore::load('api');
                 if (empty($api['dtk_appkey']) || empty($api['dtk_appsecret'])) return null;
@@ -412,22 +458,43 @@ class IndexController extends \app\base\controller\BaseController
                 $dtk = $tjk->getDtk();
                 if (!$dtk) return null;
 
-                // 解析短链接 → goodsId
-                $parsed = $dtk->ParseContent($url);
-                if ($parsed['code'] != 1 || empty($parsed['data']['goodsId'])) {
-                    $twd = $dtk->TwdToTwd($url);
-                    if ($twd['code'] == 1 && !empty($twd['data']['goodsId'])) {
-                        $goodsId = $twd['data']['goodsId'];
+                // 解析短链接 → goodsId（没有现成 goodsId 时）
+                $parsed = array('code' => 0, 'data' => array());
+                if (empty($goodsId)) {
+                    $parsed = $dtk->ParseContent($url);
+                    if ($parsed['code'] != 1 || empty($parsed['data']['goodsId'])) {
+                        $twd = $dtk->TwdToTwd($url);
+                        if ($twd['code'] == 1 && !empty($twd['data']['goodsId'])) {
+                            $goodsId = $twd['data']['goodsId'];
+                        } else {
+                            return null;
+                        }
                     } else {
-                        return null;
+                        $goodsId = $parsed['data']['goodsId'];
                     }
-                } else {
-                    $goodsId = $parsed['data']['goodsId'];
                 }
 
                 // 获取商品详情
                 $detail = $dtk->GetGoodsDetails($goodsId);
-                if ($detail['code'] != 1 || empty($detail['data'])) return null;
+                if ($detail['code'] != 1 || empty($detail['data'])) {
+                    // ParseContent 兜底（仅有基础字段时）
+                    if ($parsed['code'] == 1 && !empty($parsed['data'])) {
+                        $pd = $parsed['data'];
+                        return $this->renderProductCard(array(
+                            'title'      => $pd['title'] ?? '',
+                            'pic'        => $pd['image'] ?? '',
+                            'origPrice'  => 0,
+                            'actPrice'   => floatval($pd['price'] ?? 0),
+                            'coupon'     => 0,
+                            'sales'      => 0,
+                            'shopName'   => $pd['shopName'] ?? '',
+                            'platform'   => 'tb',
+                            'goodsId'    => $goodsId,
+                            'buyUrl'     => $url,
+                        ));
+                    }
+                    return null;
+                }
 
                 $item = $detail['data'];
                 $buyUrl = url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform'=>'tb', 'id'=>$goodsId));
@@ -440,6 +507,7 @@ class IndexController extends \app\base\controller\BaseController
                     'coupon'     => floatval($item['couponPrice'] ?? 0),
                     'sales'      => intval($item['monthSales'] ?? 0),
                     'shopName'   => $item['shopName'] ?? '',
+                    'couponLabel'=> $parsed['code'] == 1 ? ($parsed['data']['originType'] ?? '') : '',
                     'platform'   => 'tb',
                     'goodsId'    => $goodsId,
                     'buyUrl'     => $buyUrl,
@@ -465,6 +533,12 @@ class IndexController extends \app\base\controller\BaseController
             $platform = 'vip'; $name = '唯品会';
         } elseif (strpos($url, 'taobao.com') !== false || strpos($url, 'tmall.com') !== false) {
             $platform = 'tb'; $name = '淘宝 / 天猫';
+        } elseif (preg_match('/buy-(tb|jd|pdd|vip)\.html/i', $url)) {
+            // 本站转链入口兜底识别（正常情况下已在 findItems 走 DTK 解析）
+            $map = array('tb'=>'淘宝 / 天猫','jd'=>'京东','pdd'=>'拼多多','vip'=>'唯品会');
+            if (preg_match('/buy-(tb|jd|pdd|vip)\.html/i', $url, $mm)) {
+                $platform = $mm[1]; $name = $map[$platform];
+            } else { $platform = ''; $name = ''; }
         } else {
             $platform = ''; $name = '';
         }
@@ -530,6 +604,7 @@ class IndexController extends \app\base\controller\BaseController
         $shopName  = htmlspecialchars($args['shopName'] ?? '', ENT_QUOTES, 'UTF-8');
         $buyUrl    = htmlspecialchars($args['buyUrl'] ?? '', ENT_QUOTES, 'UTF-8');
         $platform  = $args['platform'] ?? '';
+        $couponLabel = htmlspecialchars($args['couponLabel'] ?? '', ENT_QUOTES, 'UTF-8');
         $hasPrice  = ($actPrice > 0);
 
         // 平台标签
@@ -557,6 +632,9 @@ class IndexController extends \app\base\controller\BaseController
             }
             if ($coupon > 0) {
                 $html .= '<span class="pc-coupon">券 ¥' . intval($coupon) . '</span>';
+            } elseif ($couponLabel) {
+                // 无具体券额但有券类型（如「二合一券」）时，展示券类型标签
+                $html .= '<span class="pc-coupon pc-coupon-label">' . $couponLabel . '</span>';
             }
             $html .= '</div>';
         }

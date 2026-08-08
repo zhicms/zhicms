@@ -1,0 +1,16 @@
+{
+    "name": "Guangdiu",
+    "type": "template",
+    "alias": "guangdiu",
+    "version": "1.0.0",
+    "author": "zhicms",
+    "description": "以插件模式开发的导购展示站模板，仿 Guangdiu（逛丢）导购风格，数据调用主站（yun_items / 大淘客接口 / yun_article）。启用后访问 plug-guangdiu.html。导航的优惠/好货/榜单均由插件自有模板渲染。",
+    "hasSetting": false,
+    "rewrite": {
+        "plug-<alias>-cheaps.html": "index/plug/view/alias=<alias>/mod=cheaps",
+        "plug-<alias>-brand.html": "index/plug/view/alias=<alias>/mod=brand",
+        "plug-<alias>-rank.html": "index/plug/view/alias=<alias>/mod=rank",
+        "plug-<alias>-<id>.html": "index/plug/view/alias=<alias>/id=<id>",
+        "plug-<alias>.html": "index/plug/view/alias=<alias>"
+    }
+}

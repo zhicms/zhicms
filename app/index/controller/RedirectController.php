@@ -52,6 +52,7 @@ class RedirectController extends \app\base\controller\BaseController
         // 避免文章/首页等场景下把京东/拼多多/唯品会商品误标成 tb 导致转链失败）。
         $dbPlatform = '';
         $dbGoodsId  = '';
+        $dbGoodsSign = '';
         if (!empty($id)) {
             try {
                 $item = obj('api/ApiData')->dataSelect('yun_items', array('goodsId' => $id));
@@ -59,6 +60,8 @@ class RedirectController extends \app\base\controller\BaseController
                     $dbPlatform = strtolower($item['item_from']);
                     if ($dbPlatform === 'taobao') $dbPlatform = 'tb';
                     $dbGoodsId  = $item['goodsId'];
+                    // 大淘客商品转链优先用 goodsSign（与采集入库一致），DTK 用 goodsSign 可正确生成券链接
+                    $dbGoodsSign = $item['goodsSign'] ?? '';
                     if (!in_array($dbPlatform, $allow)) $dbPlatform = '';
                 }
             } catch (\Exception $e) {
@@ -87,8 +90,8 @@ class RedirectController extends \app\base\controller\BaseController
         }
 
         $cacheKey = 'link_redirect_' . $platform . '_' . md5($id);
-        $redirectUrl = tcache($cacheKey, function () use ($platform, $id) {
-            return $this->resolveLink($platform, $id);
+        $redirectUrl = tcache($cacheKey, function () use ($platform, $id, $dbGoodsSign) {
+            return $this->resolveLink($platform, $id, $dbGoodsSign);
         }, 1800);
 
         if (empty($redirectUrl)) {
@@ -106,11 +109,11 @@ class RedirectController extends \app\base\controller\BaseController
      * 不再做「非数字就回退搜索」之类的特殊分支——只要 API 返回短链就跳转，
      * 转链失败再统一回退到对应平台的商品落地页。
      */
-    private function resolveLink($platform, $id)
+    private function resolveLink($platform, $id, $goodsSign = '')
     {
         try {
             $tjk = new \ZhiCms\ext\Tjk();
-            $result = $tjk->getPrivilegeLink($id, '', $platform);
+            $result = $tjk->getPrivilegeLink($id, '', $platform, $goodsSign);
             if (isset($result['code']) && $result['code'] == 1) {
                 $data = $result['data'] ?? array();
                 // 大淘客返回的字段与好单库 RatesUrl 返回的字段不同，统一兼容提取短链

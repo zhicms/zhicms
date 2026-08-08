@@ -87,6 +87,21 @@
                                 </div>
                             </div>
 
+                            <!-- 主页展示（模板化插件主页） -->
+                            <h5 class="section-title"><i class="fas fa-tv"></i> 主页展示</h5>
+                            <div class="form-group">
+                                <label for="home_plug" class="font-weight-bold">主页展示插件</label>
+                                <select class="form-control" id="home_plug" name="home_plug">
+                                    <option value="">不使用插件主页（默认站点首页）</option>
+                                    <?php if (!empty($homePlugins)): foreach ($homePlugins as $hp): ?>
+                                    <option value="<?php echo $hp['alias']; ?>" <?php echo (isset($homePlug) && $homePlug === $hp['alias']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($hp['name']); ?>（<?php echo $hp['alias']; ?>）
+                                    </option>
+                                    <?php endforeach; endif; ?>
+                                </select>
+                                <small class="form-text text-muted">选择后，访问网站根域名将直接展示该插件模板（仅模板化插件可选）。设为“不使用插件主页”即恢复默认站点首页。</small>
+                            </div>
+
                             <!-- 站点状态（关闭站点 + 关闭说明 放在一起） -->
                             <h5 class="section-title"><i class="fas fa-power-off"></i> 站点状态</h5>
                             <div class="form-group">

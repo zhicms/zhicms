@@ -1,0 +1,18 @@
+<!-- 插件公共头部：导航 + 搜索（仿 kiees.com 配色，可被所有页面复用） -->
+<nav class="kc-header">
+  <div class="kc-header-inner">
+    <a class="kc-logo" href="{$plug_url}" title="{$site_name}">
+      {if !empty($site_logo)}<img src="{$site_logo}" alt="{$site_name}">{else}<span>{$site_name}</span>{/if}
+    </a>
+    <ul class="kc-nav">
+      <li{if empty($is_search)} class="active"{/if}><a href="{$plug_url}">首页</a></li>
+      <li><a href="{$nav_cheaps}">优惠券</a></li>
+      <li><a href="{$nav_brand}">大牌</a></li>
+      <li><a href="{$nav_rank}">风云榜</a></li>
+    </ul>
+    <form class="kc-search" method="get" action="{$plug_url}">
+      <input type="text" name="kw" placeholder="搜索优惠好物" value="{if !empty($keyword)}{$keyword|htmlspecialchars}{/if}" />
+      <button type="submit">搜索</button>
+    </form>
+  </div>
+</nav>

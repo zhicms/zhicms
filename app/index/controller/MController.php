@@ -388,6 +388,13 @@ public function getDeviceType()
         $itemsUrl= $itemsId['0']['0'];
         $itemsUrl=preg_replace('/\[\/ZhiCmsUrl]/','',$itemsUrl);
         $content=urldecode($itemsUrl);
+        // 本站转链入口：buy-tb/jd/pdd/vip.html?id=加密goodsId
+        // 这种链接的 id 本身就是大淘客商品 ID，可直接拿去解析商品详情
+        $buyId = $this->extractBuyLinkId($content);
+        if ($buyId !== '') {
+            $card = $this->resolveLinkCard($content, $buyId);
+            if ($card !== null) return $card;
+        }
         // 用本地 Tjk 接口替代已废弃的 App.Search.zfy 远程 API
         $card = $this->resolveLinkCard($content);
         if ($card !== null) return $card;
@@ -396,20 +403,29 @@ public function getDeviceType()
         }
     }
 
+    /** 从本站转链 buy-<platform>.html?id=xxx 中提取商品 ID */
+    private function extractBuyLinkId($url) {
+        if (!preg_match('/buy-(tb|jd|pdd|vip)\.html/i', $url)) return '';
+        $query = parse_url($url, PHP_URL_QUERY);
+        if (!$query) return '';
+        parse_str($query, $p);
+        return trim($p['id'] ?? '');
+    }
+
     /**
      * 使用 Tjk 本地接口解析短链接并生成商品卡片（移动端）
-     * 淘宝走大淘客 ParseContent + GetGoodsDetails；
+     * 淘宝走大淘客 ParseContent + GetGoodsDetails；若已传入 $goodsId（站点转链场景）则直接解析详情
      * 拼多多/京东/唯品会目前无法通过 Tjk 解析短链，返回 null 走兜底按钮
      */
-    private function resolveLinkCard($url) {
+    private function resolveLinkCard($url, $goodsId = '') {
         $url = trim($url);
         if (empty($url)) return null;
 
         $isTaobao = (strpos($url, 'taobao.com') !== false || strpos($url, 'tmall.com') !== false);
-        if (!$isTaobao) return null;
+        if (!$isTaobao && empty($goodsId)) return null;
 
-        $cacheKey = 'm_card_taobao_' . md5($url);
-        return tcache($cacheKey, function() use ($url) {
+        $cacheKey = 'm_card_taobao_' . md5($url . '|' . $goodsId);
+        return tcache($cacheKey, function() use ($url, $goodsId) {
             try {
                 $api = \app\common\ConfigStore::load('api');
                 $dtkAppKey = $api['dtk_appkey'] ?? '';
@@ -420,17 +436,20 @@ public function getDeviceType()
                 $dtk = $tjk->getDtk();
                 if (!$dtk) return null;
 
-                // 1. 解析短链接获取 goodsId
-                $parsed = $dtk->ParseContent($url);
-                if ($parsed['code'] != 1 || empty($parsed['data']['goodsId'])) {
-                    $twd = $dtk->TwdToTwd($url);
-                    if ($twd['code'] == 1 && !empty($twd['data']['goodsId'])) {
-                        $goodsId = $twd['data']['goodsId'];
+                // 1. 解析短链接获取 goodsId（没有现成 goodsId 时）
+                $parsed = array('code' => 0, 'data' => array());
+                if (empty($goodsId)) {
+                    $parsed = $dtk->ParseContent($url);
+                    if ($parsed['code'] != 1 || empty($parsed['data']['goodsId'])) {
+                        $twd = $dtk->TwdToTwd($url);
+                        if ($twd['code'] == 1 && !empty($twd['data']['goodsId'])) {
+                            $goodsId = $twd['data']['goodsId'];
+                        } else {
+                            return null;
+                        }
                     } else {
-                        return null;
+                        $goodsId = $parsed['data']['goodsId'];
                     }
-                } else {
-                    $goodsId = $parsed['data']['goodsId'];
                 }
 
                 // 2. 获取商品详情

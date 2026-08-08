@@ -1,0 +1,16 @@
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<title>{$seo_title}</title>
+<meta name="keywords" content="{$page_keywords}">
+<meta name="description" content="{$page_description}">
+<link rel="canonical" href="{$canonical}">
+<meta property="og:type" content="{$og_type}">
+<meta property="og:site_name" content="{$site_name}">
+<meta property="og:title" content="{$seo_title}">
+<meta property="og:description" content="{$page_description}">
+<meta property="og:url" content="{$canonical}">
+{if !empty($og_image)}<meta property="og:image" content="{$og_image}">{/if}
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","name":"{$site_name}","url":"{$canonical}","potentialAction":{"@type":"SearchAction","target":"{$canonical}?mod=search&kw={search_term_string}","query-input":"required name=search_term_string"}}
+</script>
+<link rel="icon" href="{$public}favicon.ico">

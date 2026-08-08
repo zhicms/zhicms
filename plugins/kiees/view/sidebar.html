@@ -1,0 +1,27 @@
+<!-- 插件公共右侧栏：热门榜（可被所有页面复用） -->
+<aside class="kc-sidebar">
+  {if !empty($app_iphone) || !empty($app_android)}
+  <div class="kc-app">
+    {if !empty($app_iphone)}<a class="kc-app-btn" href="{$app_iphone}" rel="nofollow" target="_blank">iPhone APP 下载</a>{/if}
+    {if !empty($app_android)}<a class="kc-app-btn" href="{$app_android}" target="_blank">Android APP 下载</a>{/if}
+  </div>
+  {/if}
+  <div class="kc-widget">
+    <h3 class="kc-widget-title">热度比较高的商品</h3>
+    <ul class="kc-top10">
+      {foreach $hot as $k=>$h}
+      <li class="kc-top10-item">
+        <a class="kc-top10-img" href="{if !empty($h.itemLink)}{$h.itemLink}{else}{$plug_base}-{$h.id}.html{/if}" target="_blank">
+          {if !empty($h.mainPic)}<img src="{$h.mainPic}" alt="{$h.title}" />{else}<span class="kc-img-empty">值</span>{/if}
+        </a>
+        <div class="kc-top10-body">
+          <h4 class="kc-top10-title"><a href="{if !empty($h.itemLink)}{$h.itemLink}{else}{$plug_base}-{$h.id}.html{/if}" target="_blank">{$h.title}</a></h4>
+          <span class="kc-top10-hot">{if $h.view > 0}{$h.view}°C{else}热门{/if}</span>
+        </div>
+        <em class="kc-top10-no">{$k+1}</em>
+      </li>
+      {/foreach}
+    </ul>
+  </div>
+  <p class="kc-sidebar-tip">关注{$site_name}，发现值得买</p>
+</aside>
