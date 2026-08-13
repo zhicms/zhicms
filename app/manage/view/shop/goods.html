@@ -1,0 +1,191 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+
+<h1 class="page-title">
+    <i class="fas fa-box"></i>
+    自营商城 · 商品管理
+    <small class="text-muted ml-3">自营商城独立商品，与淘客选品库无关</small>
+</h1>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <a href="index.php?r=manage/shop/goodsEdit" class="btn btn-primary">
+            <i class="fas fa-plus"></i> 发布商品
+        </a>
+    </div>
+</div>
+
+<div class="filter-bar">
+    <div class="filter-title"><i class="fas fa-filter"></i> 筛选</div>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label font-weight-600 mb-2">商品分类</label>
+            <select class="form-control" id="cat_id">
+                <option value="">全部分类</option>
+                <?php foreach (($categories ?: array()) as $c): ?>
+                <option value="<?php echo $c['id']; ?>" <?php echo (isset($cat_id) && $cat_id == $c['id']) ? 'selected' : ''; ?>><?php echo htmlspecialchars($c['name']); ?></option>
+                <?php endforeach; ?>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label font-weight-600 mb-2">状态</label>
+            <select class="form-control" id="status">
+                <option value="">全部</option>
+                <option value="1" <?php echo (isset($status) && $status==='1') ? 'selected' : ''; ?>>上架</option>
+                <option value="0" <?php echo (isset($status) && $status==='0') ? 'selected' : ''; ?>>下架</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label font-weight-600 mb-2">关键词</label>
+            <input type="text" class="form-control" id="keyword" placeholder="商品标题" value="<?php echo isset($keyword) ? htmlspecialchars($keyword) : ''; ?>">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label mb-2">&nbsp;</label>
+            <button class="btn btn-primary w-100" onclick="search()"><i class="fas fa-search"></i> 搜索</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-table"></i> 商品列表</h5>
+        <div class="text-muted"><small>共 <?php echo $total; ?> 件商品</small></div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="w-90">封面</th>
+                        <th>商品信息</th>
+                        <th class="w-120">售价</th>
+                        <th class="w-90">库存</th>
+                        <th class="w-100">分类</th>
+                        <th class="w-90">状态</th>
+                        <th class="w-180">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($goodsList)): ?>
+                    <?php foreach ($goodsList as $g): ?>
+                    <tr class="align-middle">
+                        <td>
+                            <?php if ($g['cover']): ?>
+                            <img src="<?php echo htmlspecialchars($g['cover']); ?>" class="img-thumbnail" style="width:64px;height:64px;object-fit:cover;cursor:pointer;" onclick="showImage('<?php echo htmlspecialchars($g['cover']); ?>')">
+                            <?php else: ?><span class="text-muted">无图</span><?php endif; ?>
+                        </td>
+                        <td>
+                            <div class="font-weight-bold"><?php echo htmlspecialchars(mb_substr($g['title'], 0, 40, 'UTF-8')); ?></div>
+                            <?php if ($g['subtitle']): ?><div class="text-muted small"><?php echo htmlspecialchars(mb_substr($g['subtitle'], 0, 50, 'UTF-8')); ?></div><?php endif; ?>
+                            <div class="text-muted small mt-1">销量 <?php echo $g['sales']; ?></div>
+                        </td>
+                        <td class="text-danger font-weight-bold">¥<?php echo number_format($g['price'], 2); ?>
+                            <?php if ($g['original_price'] > $g['price']): ?><div class="text-muted small" style="text-decoration:line-through;">¥<?php echo number_format($g['original_price'], 2); ?></div><?php endif; ?>
+                        </td>
+                        <td><?php echo $g['stock']; ?></td>
+                        <td><?php echo htmlspecialchars($g['cat_name']); ?></td>
+                        <td>
+                            <?php if ($g['status'] == 1): ?><span class="badge badge-success">上架</span>
+                            <?php else: ?><span class="badge badge-secondary">下架</span><?php endif; ?>
+                        </td>
+                        <td>
+                            <a href="index.php?r=manage/shop/goodsEdit&id=<?php echo $g['id']; ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-edit"></i> 编辑</a>
+                            <button class="btn btn-sm btn-outline-<?php echo $g['status']==1 ? 'warning' : 'success'; ?>" onclick="toggle(<?php echo $g['id']; ?>, <?php echo $g['status']==1 ? 0 : 1; ?>)">
+                                <?php echo $g['status']==1 ? '<i class="fas fa-arrow-down"></i> 下架' : '<i class="fas fa-arrow-up"></i> 上架'; ?>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delGoods(<?php echo $g['id']; ?>)"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr><td colspan="7" class="text-center py-5 text-muted">暂无商品，点击「发布商品」添加</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <nav class="mt-4"><div class="text-center">
+            <?php if ($pages): ?><ul class="pagination d-inline-flex"><?php echo $pages; ?></ul><?php endif; ?>
+            <div class="text-muted mt-2"><small>共 <?php echo number_format($total); ?> 条数据</small></div>
+        </div></nav>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<div class="image-modal d-none" onclick="closeImageModal()">
+    <img id="modalImage" src="" alt="商品大图">
+</div>
+
+<style>
+.image-modal { position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.9);z-index:9999;display:flex;align-items:center;justify-content:center; }
+.image-modal img { max-width:90%;max-height:90%;border-radius:8px;box-shadow:0 10px 30px rgba(0,0,0,.5); }
+.pagination { display:inline-flex;align-items:center;gap:5px;list-style:none;padding:0;margin:0;flex-wrap:wrap;justify-content:center; }
+.pagination li { display:inline-flex;list-style:none; }
+.pagination a, .pagination span { display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:6px;font-size:14px;text-decoration:none;color:#495057;border:1px solid #dee2e6;background:#fff; }
+.pagination a:hover { background:#e9ecef;color:#007bff; }
+.pagination span.current { background:#007bff;color:#fff;border-color:#007bff;font-weight:600; }
+</style>
+
+<script>
+function search() {
+    var url = 'index.php?r=manage/shop/goods';
+    var cat = document.getElementById('cat_id').value;
+    var st = document.getElementById('status').value;
+    var kw = document.getElementById('keyword').value;
+    if (cat) url += '&cat_id=' + cat;
+    if (st !== '') url += '&status=' + st;
+    if (kw) url += '&keyword=' + encodeURIComponent(kw);
+    location.href = url;
+}
+function showImage(src) {
+    var m = document.querySelector('.image-modal');
+    document.getElementById('modalImage').src = src;
+    m.classList.remove('d-none'); m.style.display = 'flex';
+}
+function closeImageModal() {
+    var m = document.querySelector('.image-modal');
+    m.style.display = 'none'; m.classList.add('d-none');
+}
+function toggle(id, st) {
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/shop/goodsToggle&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try { var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') { showToast(r.info, 'success'); setTimeout(function(){ location.reload(); }, 700); }
+                else showToast(r.info, 'danger');
+            } catch(e) { showToast('响应异常', 'danger'); }
+        }
+    };
+    xhr.send('id=' + id + '&status=' + st);
+}
+function delGoods(id) {
+    if (!confirm('确定删除该商品？')) return;
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/shop/goodsDel&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try { var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') { showToast(r.info, 'success'); setTimeout(function(){ location.reload(); }, 700); }
+                else showToast(r.info, 'danger');
+            } catch(e) { showToast('响应异常', 'danger'); }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function showToast(message, type) {
+    type = type || 'success';
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top:20px;right:20px;z-index:9999;min-width:280px;opacity:1;transition:opacity .3s ease;';
+    toast.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="fas fa-' + (type==='success'?'check-circle':'exclamation-circle') + ' mr-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button></div>';
+    document.body.appendChild(toast);
+    setTimeout(function(){ toast.style.opacity='0'; setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350); }, 3000);
+}
+</script>

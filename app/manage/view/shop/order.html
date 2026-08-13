@@ -1,0 +1,204 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+
+<h1 class="page-title">
+    <i class="fas fa-receipt"></i>
+    自营商城 · 订单管理
+    <small class="text-muted ml-3">自营商城独立订单，与淘客无关</small>
+</h1>
+
+<div class="filter-bar">
+    <div class="filter-title"><i class="fas fa-filter"></i> 筛选</div>
+    <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label font-weight-600 mb-2">订单状态</label>
+            <select class="form-control" id="status">
+                <option value="">全部</option>
+                <option value="0" <?php echo (isset($status) && $status==='0') ? 'selected' : ''; ?>>待支付</option>
+                <option value="1" <?php echo (isset($status) && $status==='1') ? 'selected' : ''; ?>>已支付</option>
+                <option value="2" <?php echo (isset($status) && $status==='2') ? 'selected' : ''; ?>>已发货</option>
+                <option value="3" <?php echo (isset($status) && $status==='3') ? 'selected' : ''; ?>>已完成</option>
+                <option value="4" <?php echo (isset($status) && $status==='4') ? 'selected' : ''; ?>>已取消</option>
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label font-weight-600 mb-2">关键词（订单号/用户）</label>
+            <input type="text" class="form-control" id="keyword" value="<?php echo isset($keyword) ? htmlspecialchars($keyword) : ''; ?>">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label mb-2">&nbsp;</label>
+            <button class="btn btn-primary w-100" onclick="search()"><i class="fas fa-search"></i> 搜索</button>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-table"></i> 订单列表</h5>
+        <div class="text-muted"><small>共 <?php echo $total; ?> 条订单</small></div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="w-80">ID</th>
+                        <th>订单号</th>
+                        <th>用户</th>
+                        <th>收件人</th>
+                        <th class="w-110">金额</th>
+                        <th class="w-90">支付方式</th>
+                        <th class="w-100">状态</th>
+                        <th class="w-160">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($orderList)): ?>
+                    <?php foreach ($orderList as $o): ?>
+                    <tr class="align-middle">
+                        <td><?php echo $o['id']; ?></td>
+                        <td><?php echo htmlspecialchars($o['order_no']); ?></td>
+                        <td><?php echo htmlspecialchars($o['nickname']); ?></td>
+                        <td><?php echo htmlspecialchars($o['addressee']); ?><br><small class="text-muted"><?php echo htmlspecialchars($o['mobile']); ?></small></td>
+                        <td class="text-danger font-weight-bold">¥<?php echo number_format($o['total_fee'], 2); ?></td>
+                        <td><?php echo $o['pay_type']==2 ? '余额' : '微信'; ?></td>
+                        <td>
+                            <?php
+                            $cls = array('0'=>'badge-warning','1'=>'badge-info','2'=>'badge-primary','3'=>'badge-success','4'=>'badge-secondary')[$o['status']];
+                            ?>
+                            <span class="badge <?php echo $cls; ?>"><?php echo $o['status_text']; ?></span>
+                        </td>
+                        <td>
+                            <a href="index.php?r=manage/shop/orderDetail&id=<?php echo $o['id']; ?>" class="btn btn-sm btn-outline-primary"><i class="fas fa-eye"></i> 详情</a>
+                            <?php if ($o['status'] == 1): ?>
+                            <button class="btn btn-sm btn-outline-success" onclick="ship(<?php echo $o['id']; ?>)"><i class="fas fa-truck"></i> 发货</button>
+                            <?php endif; ?>
+                            <?php if ($o['status'] == 0 || $o['status'] == 1): ?>
+                            <button class="btn btn-sm btn-outline-danger" onclick="cancel(<?php echo $o['id']; ?>)"><i class="fas fa-times"></i> 取消</button>
+                            <?php endif; ?>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr><td colspan="8" class="text-center py-5 text-muted">暂无订单</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+        <nav class="mt-4"><div class="text-center">
+            <?php if ($pages): ?><ul class="pagination d-inline-flex"><?php echo $pages; ?></ul><?php endif; ?>
+            <div class="text-muted mt-2"><small>共 <?php echo number_format($total); ?> 条数据</small></div>
+        </div></nav>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<!-- 发货弹窗 -->
+<div class="shop-modal d-none" id="shipModal">
+    <div class="shop-modal-box">
+        <div class="shop-modal-header"><i class="fas fa-truck mr-2"></i> 订单发货</div>
+        <div class="shop-modal-body">
+            <input type="hidden" id="shipId" value="0">
+            <div class="form-group">
+                <label>快递公司</label>
+                <input type="text" class="form-control" id="expressType" placeholder="如：顺丰速运">
+            </div>
+            <div class="form-group">
+                <label>快递单号</label>
+                <input type="text" class="form-control" id="expressNo" placeholder="快递单号">
+            </div>
+        </div>
+        <div class="shop-modal-footer">
+            <button class="btn btn-sm btn-secondary" onclick="closeShip()">取消</button>
+            <button class="btn btn-sm btn-primary" id="shipBtn" onclick="doShip()">确认发货</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.shop-modal { position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:10000;display:flex;align-items:center;justify-content:center; }
+.shop-modal-box { background:#fff;width:420px;max-width:92%;border-radius:10px;overflow:hidden;box-shadow:0 12px 40px rgba(0,0,0,.25); }
+.shop-modal-header { padding:14px 18px;font-weight:600;font-size:16px;border-bottom:1px solid #f0f0f0;background:#f8fafc; }
+.shop-modal-body { padding:18px; }
+.shop-modal-body .form-group { margin-bottom:14px; }
+.shop-modal-footer { padding:12px 18px;border-top:1px solid #f0f0f0;text-align:right; }
+.shop-modal-footer .btn { margin-left:8px; }
+.pagination { display:inline-flex;align-items:center;gap:5px;list-style:none;padding:0;margin:0;flex-wrap:wrap;justify-content:center; }
+.pagination li { display:inline-flex;list-style:none; }
+.pagination a, .pagination span { display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 12px;border-radius:6px;font-size:14px;text-decoration:none;color:#495057;border:1px solid #dee2e6;background:#fff; }
+.pagination a:hover { background:#e9ecef;color:#007bff; }
+.pagination span.current { background:#007bff;color:#fff;border-color:#007bff;font-weight:600; }
+</style>
+
+<script>
+function search() {
+    var url = 'index.php?r=manage/shop/order';
+    var st = document.getElementById('status').value;
+    var kw = document.getElementById('keyword').value;
+    if (st !== '') url += '&status=' + st;
+    if (kw) url += '&keyword=' + encodeURIComponent(kw);
+    location.href = url;
+}
+function ship(id) {
+    document.getElementById('shipId').value = id;
+    document.getElementById('expressType').value = '';
+    document.getElementById('expressNo').value = '';
+    var m = document.getElementById('shipModal');
+    m.classList.remove('d-none'); m.style.display = 'flex';
+}
+function closeShip() {
+    var m = document.getElementById('shipModal');
+    m.style.display = 'none'; m.classList.add('d-none');
+}
+function doShip() {
+    var id = document.getElementById('shipId').value;
+    var type = document.getElementById('expressType').value.trim();
+    var no = document.getElementById('expressNo').value.trim();
+    if (!type || !no) { showToast('请填写快递公司与单号', 'danger'); return; }
+    var token = document.getElementById('csrfToken').value;
+    var btn = document.getElementById('shipBtn');
+    btn.disabled = true; btn.textContent = '发货中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/shop/orderShip&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            btn.disabled = false; btn.textContent = '确认发货';
+            try { var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') { showToast(r.info, 'success'); closeShip(); setTimeout(function(){ location.reload(); }, 800); }
+                else showToast(r.info, 'danger');
+            } catch(e) { showToast('响应异常', 'danger'); }
+        }
+    };
+    xhr.send('id=' + id + '&express_type=' + encodeURIComponent(type) + '&express_no=' + encodeURIComponent(no));
+}
+function cancel(id) {
+    if (!confirm('确定取消该订单？已支付将退回库存与余额')) return;
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/shop/orderCancel&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try { var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') { showToast(r.info, 'success'); setTimeout(function(){ location.reload(); }, 800); }
+                else showToast(r.info, 'danger');
+            } catch(e) { showToast('响应异常', 'danger'); }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function showToast(message, type) {
+    type = type || 'success';
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top:20px;right:20px;z-index:9999;min-width:280px;opacity:1;transition:opacity .3s ease;';
+    toast.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="fas fa-' + (type==='success'?'check-circle':'exclamation-circle') + ' mr-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button></div>';
+    document.body.appendChild(toast);
+    setTimeout(function(){ toast.style.opacity='0'; setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350); }, 3000);
+}
+document.getElementById('shipModal').addEventListener('click', function(e){ if(e.target===this) closeShip(); });
+</script>

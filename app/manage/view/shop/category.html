@@ -1,0 +1,179 @@
+{include file="app/manage/view/index/emlog_nav"}
+
+<input type="hidden" id="csrfToken" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+
+<h1 class="page-title">
+    <i class="fas fa-list"></i>
+    自营商城 · 商品分类
+    <small class="text-muted ml-3">自营商城独立分类，与淘客选品库分类无关</small>
+</h1>
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="action-buttons">
+        <button class="btn btn-primary" onclick="openForm(0)">
+            <i class="fas fa-plus"></i> 新增分类
+        </button>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0"><i class="fas fa-table"></i> 分类列表</h5>
+        <div class="text-muted"><small>共 <?php echo count($categories); ?> 个分类</small></div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th class="w-80">ID</th>
+                        <th>分类名称</th>
+                        <th class="w-100">排序</th>
+                        <th class="w-100">状态</th>
+                        <th class="w-160">操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($categories)): ?>
+                    <?php foreach ($categories as $c): ?>
+                    <tr class="align-middle">
+                        <td><?php echo $c['id']; ?></td>
+                        <td><?php echo htmlspecialchars($c['name']); ?></td>
+                        <td><?php echo $c['sort']; ?></td>
+                        <td>
+                            <?php if ($c['status'] == 1): ?>
+                            <span class="badge badge-success">启用</span>
+                            <?php else: ?>
+                            <span class="badge badge-secondary">禁用</span>
+                            <?php endif; ?>
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="openForm(<?php echo $c['id']; ?>, '<?php echo htmlspecialchars(addslashes($c['name']), ENT_QUOTES); ?>', <?php echo $c['sort']; ?>, <?php echo $c['status']; ?>)">
+                                <i class="fas fa-edit"></i> 编辑
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="delCat(<?php echo $c['id']; ?>)">
+                                <i class="fas fa-trash"></i> 删除
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                    <?php else: ?>
+                    <tr><td colspan="5" class="text-center py-5 text-muted">暂无分类，点击「新增分类」添加</td></tr>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{include file="app/manage/view/index/emlog_footer"}
+
+<!-- 分类表单弹窗 -->
+<div class="shop-modal d-none" id="formModal">
+    <div class="shop-modal-box">
+        <div class="shop-modal-header">
+            <i class="fas fa-folder mr-2"></i> <span id="formTitle">新增分类</span>
+        </div>
+        <div class="shop-modal-body">
+            <input type="hidden" id="catId" value="0">
+            <div class="form-group">
+                <label>分类名称</label>
+                <input type="text" class="form-control" id="catName" placeholder="如：数码配件">
+            </div>
+            <div class="form-group">
+                <label>排序</label>
+                <input type="number" class="form-control" id="catSort" value="0">
+            </div>
+            <div class="form-group">
+                <label>状态</label>
+                <select class="form-control" id="catStatus">
+                    <option value="1">启用</option>
+                    <option value="0">禁用</option>
+                </select>
+            </div>
+        </div>
+        <div class="shop-modal-footer">
+            <button class="btn btn-sm btn-secondary" onclick="closeForm()">取消</button>
+            <button class="btn btn-sm btn-primary" id="saveBtn" onclick="saveCat()">保存</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.shop-modal { position: fixed; top:0;left:0;right:0;bottom:0; background:rgba(0,0,0,.45); z-index:10000; display:flex; align-items:center; justify-content:center; }
+.shop-modal-box { background:#fff; width:420px; max-width:92%; border-radius:10px; overflow:hidden; box-shadow:0 12px 40px rgba(0,0,0,.25); }
+.shop-modal-header { padding:14px 18px; font-weight:600; font-size:16px; border-bottom:1px solid #f0f0f0; background:#f8fafc; }
+.shop-modal-body { padding:18px; }
+.shop-modal-body .form-group { margin-bottom:14px; }
+.shop-modal-footer { padding:12px 18px; border-top:1px solid #f0f0f0; text-align:right; }
+.shop-modal-footer .btn { margin-left:8px; }
+</style>
+
+<script>
+function openForm(id, name, sort, status) {
+    id = id || 0;
+    document.getElementById('catId').value = id;
+    document.getElementById('formTitle').textContent = id > 0 ? '编辑分类' : '新增分类';
+    document.getElementById('catName').value = name || '';
+    document.getElementById('catSort').value = (typeof sort !== 'undefined') ? sort : 0;
+    document.getElementById('catStatus').value = (typeof status !== 'undefined') ? status : 1;
+    var m = document.getElementById('formModal');
+    m.classList.remove('d-none'); m.style.display = 'flex';
+}
+function closeForm() {
+    var m = document.getElementById('formModal');
+    m.style.display = 'none'; m.classList.add('d-none');
+}
+function saveCat() {
+    var id = document.getElementById('catId').value;
+    var name = document.getElementById('catName').value.trim();
+    var sort = document.getElementById('catSort').value;
+    var status = document.getElementById('catStatus').value;
+    if (!name) { showToast('请填写分类名称', 'danger'); return; }
+    var token = document.getElementById('csrfToken').value;
+    var btn = document.getElementById('saveBtn');
+    btn.disabled = true; btn.textContent = '保存中...';
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/shop/categorySave&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            btn.disabled = false; btn.textContent = '保存';
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') { showToast(r.info, 'success'); closeForm(); setTimeout(function(){ location.reload(); }, 800); }
+                else { showToast(r.info || '保存失败', 'danger'); }
+            } catch(e) { showToast('响应异常', 'danger'); }
+        }
+    };
+    xhr.send('id=' + id + '&name=' + encodeURIComponent(name) + '&sort=' + sort + '&status=' + status);
+}
+function delCat(id) {
+    if (!confirm('确定删除该分类？')) return;
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/shop/categoryDel&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var r = JSON.parse(xhr.responseText);
+                if (r.status === 'y') { showToast(r.info, 'success'); setTimeout(function(){ location.reload(); }, 800); }
+                else { showToast(r.info || '删除失败', 'danger'); }
+            } catch(e) { showToast('响应异常', 'danger'); }
+        }
+    };
+    xhr.send('id=' + id);
+}
+function showToast(message, type) {
+    type = type || 'success';
+    var toast = document.createElement('div');
+    toast.className = 'toast align-items-center text-white bg-' + type + ' border-0 position-fixed show';
+    toast.setAttribute('role', 'alert');
+    toast.style.cssText = 'top:20px;right:20px;z-index:9999;min-width:280px;opacity:1;transition:opacity .3s ease;';
+    toast.innerHTML = '<div class="d-flex"><div class="toast-body"><i class="fas fa-' + (type==='success'?'check-circle':'exclamation-circle') + ' mr-2"></i>' + message + '</div><button type="button" class="btn-close btn-close-white me-2 m-auto" onclick="this.parentElement.parentElement.remove()"></button></div>';
+    document.body.appendChild(toast);
+    setTimeout(function(){ toast.style.opacity='0'; setTimeout(function(){ if(toast.parentNode) toast.parentNode.removeChild(toast); }, 350); }, 3000);
+}
+document.getElementById('formModal').addEventListener('click', function(e){ if(e.target===this) closeForm(); });
+</script>

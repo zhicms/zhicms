@@ -192,6 +192,29 @@
                 </a>
             </li>
 
+            <!-- 自营商城（独立体系，与淘客/选品库无关） -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseShop" aria-expanded="false" aria-controls="collapseShop">
+                    <i class="fas fa-fw fa-store"></i>
+                    <span>自营商城</span>
+                </a>
+                <div id="collapseShop" class="collapse {if strtolower(CONTROLLER_NAME)=='shop'}show{/if}" aria-labelledby="headingShop" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded">
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='shop' && ACTION_NAME=='category'}active{/if}" href="index.php?r=manage/shop/category">商品分类</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='shop' && (ACTION_NAME=='goods' || ACTION_NAME=='goodsEdit')}active{/if}" href="index.php?r=manage/shop/goods">商品管理</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='shop' && (ACTION_NAME=='order' || ACTION_NAME=='orderDetail')}active{/if}" href="index.php?r=manage/shop/order">订单管理</a>
+                    </div>
+                </div>
+            </li>
+
+            <!-- 移动端综合管理（聚合小程序打包 + 移动端设置 + 小程序导购，隶属 miniapp 插件） -->
+            <li class="nav-item">
+                <a class="nav-link" href="index.php?r=manage/plugin/setting&alias=miniapp">
+                    <i class="fas fa-fw fa-mobile-alt"></i>
+                    <span>移动端综合管理</span>
+                </a>
+            </li>
+
             <!-- Divider -->
             <hr class="sidebar-divider">
 

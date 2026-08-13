@@ -186,6 +186,14 @@ UPDATE `__PREFIX__article` SET `keywords` = '' WHERE `keywords` LIKE 'HTTP错误
 
 
 -- ------------------------------------------------------------
+-- 5.0.2 补丁：管理员密码列扩容为 varchar(100)
+-- 旧库 password 为 varchar(35)，仅够存 md5（32 字符）；登录成功后会自动把
+-- 旧 md5 升级为 bcrypt（60 字符），会触发 1406 Data too long for column 'password'
+-- 导致登录接口抛异常、前端报「网络请求失败」。扩容后即可正常写入。
+-- ------------------------------------------------------------
+ALTER TABLE `__PREFIX__manage` MODIFY COLUMN `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录密码（md5 或 bcrypt）';
+
+-- ------------------------------------------------------------
 -- 版本号对齐（务必放在最后执行）
 -- ------------------------------------------------------------
 INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')

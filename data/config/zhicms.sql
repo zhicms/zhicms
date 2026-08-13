@@ -491,7 +491,7 @@ DROP TABLE IF EXISTS `__PREFIX__manage`;
 CREATE TABLE `__PREFIX__manage` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password` varchar(35) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `nickname` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '' COMMENT '对外昵称（前台文章作者展示）',
   `pic` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT '',
   PRIMARY KEY (`id`)

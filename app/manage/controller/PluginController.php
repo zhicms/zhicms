@@ -235,8 +235,8 @@ class PluginController extends \app\base\controller\BaseController
 			try {
 				$cfg = $setting->save($_POST);
 
-				// 特殊处理：wxapp_packer插件的打包下载
-				if ($alias === 'wxapp_packer' && !empty($_POST['action']) && $_POST['action'] === 'build') {
+				// 特殊处理：wxapp_packer / miniapp 插件的打包下载
+				if (in_array($alias, array('wxapp_packer', 'miniapp'), true) && !empty($_POST['action']) && $_POST['action'] === 'build') {
 					// 如果指定了 return_json，说明前端希望 AJAX 返回 JSON，然后再 window.open 下载
 					if (!empty($_POST['return_json'])) {
 						// 不在此处 exit，继续走后续 JSON 处理逻辑
@@ -297,13 +297,19 @@ class PluginController extends \app\base\controller\BaseController
 					}
 				}
 
-				\ZhiCms\base\PluginManager::setConfig($alias, $cfg);
-				
+				// 打包操作：Setting::save() 内部已保存配置（pack 分支 setConfig），此处不再覆盖，
+				// 否则会把 save() 返回的临时字段剥离后的数组写回，可能清空其他配置。
+				$isBuild = in_array($alias, array('wxapp_packer', 'miniapp'), true)
+					&& !empty($_POST['action']) && $_POST['action'] === 'build';
+				if (!$isBuild) {
+					\ZhiCms\base\PluginManager::setConfig($alias, $cfg);
+				}
+			
 				// 返回JSON给前端AJAX
 				$response = array('info' => '保存成功', 'status' => 'y');
-				
-				// 如果是 wxapp_packer 打包操作，返回下载信息供前端触发下载
-				if ($alias === 'wxapp_packer' && !empty($_POST['action']) && $_POST['action'] === 'build') {
+			
+				// 如果是 wxapp_packer / miniapp 打包操作，返回下载信息供前端触发下载
+				if ($isBuild) {
 					if (!empty($tempKeys['_download_url'])) {
 						$response['download_url'] = $tempKeys['_download_url'];
 					}
@@ -340,7 +346,7 @@ class PluginController extends \app\base\controller\BaseController
 			exit;
 		}
 		// 只允许白名单中的插件使用该接口
-		$allowed = array('wxapp_packer');
+		$allowed = array('wxapp_packer', 'miniapp');
 		if (!in_array($alias, $allowed, true)) {
 			header('HTTP/1.1 403 Forbidden');
 			echo '该插件不允许下载文件';

@@ -8,7 +8,9 @@ class LoginController extends \app\base\controller\BaseController {
 	   	$this->display();
 	    exit;
 	   }else{
-	   	 $userName = $this->arg('username');
+	   	 // 整个登录流程用 try/catch 兜底：任何异常都返回 JSON，避免输出 HTML 导致前端「网络请求失败」
+	   	 try {
+	   	  $userName = $this->arg('username');
          $inputPwd = $this->arg('password');
         if (!$userName) {
             echo json_encode(array("info" => "请填写用户名", "status" => "n"));
@@ -27,6 +29,9 @@ class LoginController extends \app\base\controller\BaseController {
                     // 旧 md5 命中：透明升级为 bcrypt
                     if (strlen($stored) < 60 || !preg_match('/^\$2[aby]\$/', $stored)) {
                         $uid = is_object($user) ? $user->id : $user['id'];
+                        // 旧库 password 列为 varchar(35)，bcrypt(60字符) 写入会触发 1406 超长。
+                        // 写入前幂等扩容该列，避免升级抛异常导致登录接口输出 HTML、前端报「网络请求失败」。
+                        $this->ensurePasswordColumnWidth();
                         obj('api/ApiData')->dataUpdate('yun_manage', array('password' => $this->hashPassword($inputPwd)), array("`id`={$uid}"));
                     }
                     $_SESSION['manage_system'] = $userName;
@@ -43,6 +48,11 @@ class LoginController extends \app\base\controller\BaseController {
             echo json_encode(array("info" => "账号或密码错误", "status" => "n"));
             exit;
         }
+	   	 } catch (\Throwable $e) {
+	   	 	header('Content-Type: application/json; charset=utf-8');
+	   	 	echo json_encode(array("info" => "登录处理异常：" . $e->getMessage(), "status" => "n"), JSON_UNESCAPED_UNICODE);
+	   	 	exit;
+	   	 }
 
 	   }
 	}
@@ -72,11 +82,34 @@ class LoginController extends \app\base\controller\BaseController {
 		$_SESSION[$key] = $data;
 	}
 	private function clearLoginFails($user) {
-		unset($_SESSION[$this->throttleKey($user)]);
+	unset($_SESSION[$this->throttleKey($user)]);
+	}
+
+	/**
+	* 幂等扩容 yun_manage.password 列为 varchar(100)。
+	* 旧库该列为 varchar(35)，仅够存 md5（32字符）；登录成功后透明升级 bcrypt（60字符）
+	* 会触发 1406 Data too long for column 'password'，导致接口抛异常、前端报「网络请求失败」。
+	* 这里在升级前自动扩列，失败不影响登录主流程。
+	*/
+	private function ensurePasswordColumnWidth() {
+		try {
+			// 通过 realTable 动态解析真实表名，兼容自定义前缀（默认 yun_）
+			$real = str_replace('`', '', obj('api/ApiData')->realTable('yun_manage'));
+			$row = obj('api/ApiData')->thisQuery("SELECT `DATA_TYPE`, `CHARACTER_MAXIMUM_LENGTH` FROM `information_schema`.`COLUMNS` WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = '{$real}' AND `COLUMN_NAME` = 'password'");
+			$len = 0;
+			if (!empty($row[0])) {
+				$len = intval($row[0]['CHARACTER_MAXIMUM_LENGTH'] ?? 0);
+			}
+			if ($len > 0 && $len < 60) {
+				obj('api/ApiData')->executeQuery("ALTER TABLE `{$real}` MODIFY COLUMN `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录密码（md5 或 bcrypt）'");
+			}
+		} catch (\Throwable $e) {
+			// 扩列失败不阻断登录；若写入仍超长，主流程会走 catch 返回错误提示
+		}
 	}
 
 
-    public function logout(){
+	public function logout(){
         $user = isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '';
         \ZhiCms\ext\AdminLog::write('logout', '管理员「' . $user . '」退出登录');
         obj("api/Api")->unsetSession("manage_system");

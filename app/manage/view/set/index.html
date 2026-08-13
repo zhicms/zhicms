@@ -17,11 +17,6 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" id="mobile-tab" data-toggle="tab" href="#mobile" role="tab" aria-controls="mobile" aria-selected="false">
-                            <i class="fas fa-mobile-alt"></i> 移动端
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="nav-link" id="url-tab" data-toggle="tab" href="#url" role="tab" aria-controls="url" aria-selected="false">
                             <i class="fas fa-link"></i> URL设置
                         </a>
@@ -411,38 +406,6 @@
                         </form>
                     </div>
 
-                    <!-- 移动端 / 小程序&App -->
-                    <div class="tab-pane fade" id="mobile" role="tabpanel" aria-labelledby="mobile-tab">
-                        <form id="mobile-form" class="mt-4">
-                            <!-- 移动端风格 -->
-                            <h5 class="section-title"><i class="fas fa-mobile-alt"></i> 移动端风格</h5>
-                            <div class="form-group">
-                                <label for="mobile_style" class="font-weight-bold">移动端首页风格</label>
-                                <select class="form-control" id="mobile_style" name="mobile_style">
-                                    <option value="super_search" <?php echo empty($ret['mobile_style']) || $ret['mobile_style']=='super_search' ? 'selected' : ''; ?>>超级搜索（默认）</option>
-                                    <option value="tb_minishop" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='tb_minishop' ? 'selected' : ''; ?>>小样种草机</option>
-                                    <option value="rt_xb" <?php echo isset($ret['mobile_style']) && $ret['mobile_style']=='rt_xb' ? 'selected' : ''; ?>>好单线报</option>
-                                </select>
-                                <small class="form-text text-muted">m 端首页（/m.html）展示的页面风格，对应 page 目录下的页面文件</small>
-                            </div>
-
-                            <!-- M 端自动跳转开关 -->
-                            <div class="form-group">
-                                <label for="mobile_redirect" class="font-weight-bold">M 端自动跳转</label>
-                                <div class="custom-control custom-switch mt-2">
-                                    <input type="checkbox" class="custom-control-input" id="mobile_redirect" name="mobile_redirect" value="1" <?php echo !empty($ret['mobile_redirect']) ? 'checked' : ''; ?>>
-                                    <label class="custom-control-label" for="mobile_redirect">开启后，手机访问自动跳转到 M 端（/m.html），电脑访问保持电脑版；关闭则全端自适应（默认关闭）</label>
-                                </div>
-                            </div>
-
-                            <div class="form-group border-top pt-3 mt-4">
-                                <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('mobile')">
-                                    <i class="fas fa-save"></i> 保存设置
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
                     <!-- SEO推送 -->
                     <div class="tab-pane fade" id="seopush" role="tabpanel" aria-labelledby="seopush-tab">
                         <form id="seopush-form" class="mt-4">
@@ -751,41 +714,6 @@ https://www.example.com/brand.html"></textarea>
                                     <?php endif; ?>
                                 </select>
                                 <small class="form-text text-muted">该下拉来自「AI 开放平台」中类型为「文本对话」的模型；切换后前端机器人立即生效</small>
-                            </div>
-
-                            <h5 class="section-title mt-4"><i class="fas fa-mobile-alt"></i> 小程序导购（可选）</h5>
-                            <div class="form-group">
-                                <div class="custom-control custom-switch">
-                                    <input type="checkbox" class="custom-control-input" id="enabled" name="enabled" value="1" <?php echo isset($ret['enabled']) && $ret['enabled'] ? 'checked' : ''; ?>>
-                                    <label class="custom-control-label" for="enabled">开启小程序智能导购</label>
-                                </div>
-                                <small class="form-text text-muted">关闭后小程序将以演示模式运行（使用模拟回复，不消耗配额）</small>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="theme_color" class="font-weight-bold">小程序主题色</label>
-                                        <input type="text" class="form-control" id="theme_color" name="theme_color" placeholder="#6C63FF" value="<?php echo isset($ret['theme_color']) ? $ret['theme_color'] : '#6C63FF'; ?>">
-                                        <small class="form-text text-muted">16 进制颜色，如 #6C63FF</small>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="default_role" class="font-weight-bold">默认 AI 角色</label>
-                                        <select class="custom-select" id="default_role" name="default_role">
-                                            <option value="shopping" <?php echo isset($ret['default_role']) && $ret['default_role']=='shopping' ? 'selected' : ''; ?>>🛍️ 购物顾问</option>
-                                            <option value="fashion" <?php echo isset($ret['default_role']) && $ret['default_role']=='fashion' ? 'selected' : ''; ?>>👗 时尚达人</option>
-                                            <option value="tech" <?php echo isset($ret['default_role']) && $ret['default_role']=='tech' ? 'selected' : ''; ?>>💻 数码专家</option>
-                                            <option value="food" <?php echo isset($ret['default_role']) && $ret['default_role']=='food' ? 'selected' : ''; ?>>🍜 美食家</option>
-                                            <option value="assistant" <?php echo isset($ret['default_role']) && $ret['default_role']=='assistant' ? 'selected' : ''; ?>>🤖 智能助手</option>
-                                        </select>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="token" class="font-weight-bold">小程序访问令牌（可选）</label>
-                                <input type="text" class="form-control" id="token" name="token" placeholder="留空则不校验" value="<?php echo isset($ret['token']) ? $ret['token'] : ''; ?>">
-                                <small class="form-text text-muted">小程序请求 AI 时需携带，作为 Bearer 令牌</small>
                             </div>
 
                             <div class="form-group border-top pt-3 mt-4">
