@@ -27,35 +27,43 @@ class Setting
         };
         ob_start();
         ?>
-        <div class="card">
-            <div class="card-header">自营商城 · 微信支付 V3 配置</div>
-            <div class="card-body">
-                <div class="form-group">
-                    <label>微信 AppID</label>
-                    <input type="text" name="wx_appid" class="form-control" value="<?php echo $v('wx_appid'); ?>" placeholder="wxxxxxxxxxxxxxxx">
+        <form method="post" action="">
+            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+            <div class="card">
+                <div class="card-header">自营商城 · 微信支付 V3 配置</div>
+                <div class="card-body">
+                    <div class="form-group">
+                        <label>微信 AppID</label>
+                        <input type="text" name="wx_appid" class="form-control" value="<?php echo $v('wx_appid'); ?>" placeholder="wxxxxxxxxxxxxxxx">
+                    </div>
+                    <div class="form-group">
+                        <label>微信商户号 MCHID</label>
+                        <input type="text" name="wx_mchid" class="form-control" value="<?php echo $v('wx_mchid'); ?>" placeholder="1900000000">
+                    </div>
+                    <div class="form-group">
+                        <label>商户 APIv3 密钥</label>
+                        <input type="text" name="wx_api_v3_key" class="form-control" value="<?php echo $v('wx_api_v3_key'); ?>" placeholder="32位密钥">
+                    </div>
+                    <div class="form-group">
+                        <label>商户证书序列号</label>
+                        <input type="text" name="wx_serial_no" class="form-control" value="<?php echo $v('wx_serial_no'); ?>" placeholder="证书序列号">
+                    </div>
+                    <div class="form-group">
+                        <label>余额支付</label>
+                        <select name="balance_enable" class="form-control">
+                            <option value="1" <?php echo $v('balance_enable','1')=='1'?'selected':''; ?>>开启</option>
+                            <option value="0" <?php echo $v('balance_enable','1')=='0'?'selected':''; ?>>关闭</option>
+                        </select>
+                    </div>
+                    <p class="text-muted">证书文件请放置于站点根目录 cert/ 下：apiclient_cert.pem 与 apiclient_key.pem</p>
                 </div>
-                <div class="form-group">
-                    <label>微信商户号 MCHID</label>
-                    <input type="text" name="wx_mchid" class="form-control" value="<?php echo $v('wx_mchid'); ?>" placeholder="1900000000">
-                </div>
-                <div class="form-group">
-                    <label>商户 APIv3 密钥</label>
-                    <input type="text" name="wx_api_v3_key" class="form-control" value="<?php echo $v('wx_api_v3_key'); ?>" placeholder="32位密钥">
-                </div>
-                <div class="form-group">
-                    <label>商户证书序列号</label>
-                    <input type="text" name="wx_serial_no" class="form-control" value="<?php echo $v('wx_serial_no'); ?>" placeholder="证书序列号">
-                </div>
-                <div class="form-group">
-                    <label>余额支付</label>
-                    <select name="balance_enable" class="form-control">
-                        <option value="1" <?php echo $v('balance_enable','1')=='1'?'selected':''; ?>>开启</option>
-                        <option value="0" <?php echo $v('balance_enable','1')=='0'?'selected':''; ?>>关闭</option>
-                    </select>
-                </div>
-                <p class="text-muted">证书文件请放置于站点根目录 cert/ 下：apiclient_cert.pem 与 apiclient_key.pem</p>
             </div>
-        </div>
+            <div class="form-group border-top pt-3 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg px-5" id="save">
+                    <i class="fas fa-save"></i> 保存
+                </button>
+            </div>
+        </form>
         <?php
         return ob_get_clean();
     }
