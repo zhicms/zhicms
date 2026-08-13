@@ -99,9 +99,6 @@ class KieesController
             'view_path'   => $viewPath,   // ThinkTemplate 内部用 view_path 解析 {include}
             'TPL_SUFFIX' => '.html',
             'view_suffix' => 'html',
-            // 模板编译缓存固定写到站点根 data/cache/tpl_compile，
-            // 避免被 TPL_PATH（插件 view 目录）带偏到 plugins/kiees/data/cache 导致不可写报错
-            'cache_path'  => rtrim(BASE_PATH, '\\/') . '/data/cache/tpl_compile',
         ));
 
         $engine = new ThinkTemplate($tplConfig);

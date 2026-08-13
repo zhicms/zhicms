@@ -66,9 +66,6 @@ class GuangdiuController
             'view_path'    => $viewPath,
             'TPL_SUFFIX'  => '.html',
             'view_suffix' => 'html',
-            // 模板编译缓存固定写到站点根 data/cache/tpl_compile，
-            // 避免被上面的 TPL_PATH（插件 view 目录）带偏到 plugins/guangdiu/data/cache 导致不可写报错
-            'cache_path'   => rtrim(BASE_PATH, '\\/') . '/data/cache/tpl_compile',
         ));
 
         $engine = new ThinkTemplate($tplConfig);
