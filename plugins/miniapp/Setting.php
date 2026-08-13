@@ -28,7 +28,7 @@ class Setting
         ob_start();
         ?>
         <form method="post" action="">
-            <input type="hidden" name="csrf_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
+            <input type="hidden" name="_token" value="<?php echo $_SESSION['csrf_token'] ?? ''; ?>">
             <div class="card">
                 <div class="card-header">自营商城 · 微信支付 V3 配置</div>
                 <div class="card-body">
