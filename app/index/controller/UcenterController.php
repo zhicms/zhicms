@@ -107,7 +107,7 @@ class UcenterController extends \app\base\controller\BaseController {
     $this->guardLogin();
     $uInfo = $this->me();
     $where[] = "`yun_comment`.`uid` = {$uInfo['id']}";
-    $page = obj('api/ApiData')->pageIndex("20", "`yun_comment`, `yun_article`", $where, "`yun_comment`.`id` DESC", "ucenter.html?a=myComment");
+    $page = obj('api/ApiData')->pageIndex("20", "`yun_comment`, `yun_article`", $where, "`yun_comment`.`id` DESC", "index.php?r=index/ucenter/myComment");
     $this->page = $page;
     $this->uInfo = $uInfo;
     $this->menu  = 'myComment';
@@ -121,7 +121,7 @@ class UcenterController extends \app\base\controller\BaseController {
     $this->guardLogin();
     $uInfo = $this->me();
     $where[] = "`yun_forum`.`uid` = {$uInfo['id']}";
-    $page = obj('api/ApiData')->pageIndex("20", "yun_forum", $where, "`yun_forum`.`id` DESC", "ucenter.html?a=myForum");
+    $page = obj('api/ApiData')->pageIndex("20", "yun_forum", $where, "`yun_forum`.`id` DESC", "index.php?r=index/ucenter/myForum");
     $this->page = $page;
     $this->uInfo = $uInfo;
     $this->menu  = 'myForum';
@@ -135,12 +135,12 @@ class UcenterController extends \app\base\controller\BaseController {
     $type = $this->arg("type");
     if ($type == 'article'){
       $where[] = "`yun_like`.fid=`yun_article`.id and `yun_like`.uid={$uInfo['id']} and `yun_like`.`model` LIKE 'article'";
-      $baseUrl = "ucenter.html?type=article";
+      $baseUrl = "index.php?r=index/ucenter/index&type=article";
       $this->likeModel = 'article';
       $this->page = obj('api/ApiData')->pageIndex("20", "`yun_like`, `yun_article`", $where, "`yun_article`.`id` DESC", $baseUrl);
     } else {
       $where[] = "`yun_like`.fid=`yun_forum`.id and `yun_like`.uid={$uInfo['id']} and `yun_like`.`model` LIKE 'index'";
-      $baseUrl = "ucenter.html";
+      $baseUrl = "index.php?r=index/ucenter/index";
       $this->likeModel = 'index';
       $this->page = obj('api/ApiData')->pageIndex("20", "`yun_like`, `yun_forum`", $where, "`yun_forum`.`id` DESC", $baseUrl);
     }
@@ -148,6 +148,7 @@ class UcenterController extends \app\base\controller\BaseController {
 
   public function like(){
     $this->guardLogin();
+    $this->checkSameOrigin();
     $id=$this->arg("id");
     if(!is_numeric($id)){
       exit('error');
@@ -184,6 +185,7 @@ class UcenterController extends \app\base\controller\BaseController {
 
   public function comSend(){
     $this->guardLogin();
+    $this->checkSameOrigin();
     $body=$_POST['mybody'];
     $preg = "/<script[\s\S]*?<\/script>/i";
     $newBody= preg_replace($preg,"",$body,3);

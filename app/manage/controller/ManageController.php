@@ -13,6 +13,14 @@ class ManageController extends \app\base\controller\BaseController
         $baseUrl = "index.php?r=manage/manage/index";
         $page = obj('api/ApiData')->page("50", "yun_manage", $where, "`id` DESC", $baseUrl);
         $this->page = $page;
+        // 模板使用 $Page 引用分页数据，统一暴露
+        $this->Page = $page;
+        // 统计卡片：yun_manage 仅含 id/username/pic/nickname/date，无 role/online 列
+        $totalRows = obj('api/ApiData')->thisQuery("SELECT COUNT(*) AS c FROM `{pre}manage`");
+        $total = !empty($totalRows[0]['c']) ? intval($totalRows[0]['c']) : 0;
+        $this->total_admins = $total;
+        $this->active_admins = $total; // 无在线状态列，活跃数等同总数
+        $this->super_admins = 1;       // 创始人 id=1 为超级管理员
         $this->display();
     }
 
@@ -159,13 +167,13 @@ class ManageController extends \app\base\controller\BaseController
                }
                $where['id'] = $uid;
                $row = obj("api/ApiData")->dataSelect("yun_manage", $where);
-               if(empty($row) || $row['password'] !== md5($oldpass . 'yun_manage')){
+               if(empty($row) || !$this->verifyPassword($oldpass, $row['password'], 'yun_manage')){
                    exit(json_encode(array("info" => "当前密码不正确", "status" => "n")));
                }
                if($newpass !== $confirmpass){
                    exit(json_encode(array("info" => "两次输入的新密码不一致", "status" => "n")));
                }
-               $data['password'] = md5($newpass . 'yun_manage');
+               $data['password'] = $this->hashPassword($newpass);
            }
 
            $where['id'] = $uid;

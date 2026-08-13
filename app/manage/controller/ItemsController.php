@@ -104,18 +104,20 @@ class ItemsController extends \app\base\controller\BaseController
             $pic = $this->arg("mainPic");
 
             $itemsUrl = urldecode($url);
-            preg_match('/id=[1-9]\d*/', $itemsUrl, $itemIid);
-            preg_match('/[1-9]\d*/', $itemIid['0'], $urlId);
+            if (!preg_match('/id=([1-9]\d*)/', $itemsUrl, $itemIid) || !isset($itemIid[1])) {
+                exit(json_encode(['status' => 'n', 'info' => '链接中未识别到商品ID，请检查链接格式']));
+            }
+            $goodsNumericId = $itemIid[1];
 
             $newData = new \ZhiCms\ext\Weixin;
             $host = $Siteinfo['apiurl'] . "?s=App.taobao.info";
             $arr = array (
-                'goodsid' => $urlId['0'],
+                'goodsid' => $goodsNumericId,
             );
             $rootUrl = $host . '&' . http_build_query($arr);
             $datas = obj("api/Api")->objectArray(json_decode($newData->http($rootUrl)));
 
-            $data['goodsId'] = $urlId['0'];
+            $data['goodsId'] = $goodsNumericId;
             $data['itemLink'] = $url;
             $data['title'] = $title;
             $data['content'] = $content;

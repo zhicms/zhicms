@@ -94,7 +94,13 @@ class Template {
 		}
 		
 		extract($this->vars, EXTR_OVERWRITE);
-		eval('?>' . $this->compile( $tpl, $isTpl));
+		try {
+			eval('?>' . $this->compile( $tpl, $isTpl));
+		} catch (\Throwable $e) {
+			// eval 内的语法错误在 PHP8 下抛 ParseError(Error 子类)，普通 catch(Exception) 抓不到。
+			// 统一包装成 Exception 并保留原异常链，便于外层 try/catch 与日志定位模板问题。
+			throw new \Exception('模板渲染失败：' . $tpl . ' → ' . $e->getMessage(), 0, $e);
+		}
 		
 		if( $return ){
 			$content = ob_get_contents();

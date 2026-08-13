@@ -48,6 +48,8 @@ class ConfigController extends ApiBaseController {
                     'token'        => $ai['token'] ?? '',   // 站点访问令牌（非提供商密钥）
                 ),
                 'goods_api_url' => $this->siteUrl() . 'index.php?r=api/goods/search',
+                // 功能模块总开关：供小程序/App 动态控制 Tab 显隐与入口可用性
+                'modules' => \app\common\FeatureGate::modules(),
             ),
         );
 

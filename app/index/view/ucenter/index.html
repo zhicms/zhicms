@@ -42,7 +42,7 @@
             {foreach $page['list'] as $item}
               {if $likeModel=='article'}
                 <li class="uc-list-item">
-                  <a href="{url($route='index/article/index', $params=array('id'=>$item['fid']))}" class="uc-link">{$item['title']}</a>
+                  <a href="{url($route='index/index/view', $params=array('id'=>$item['fid']))}" class="uc-link">{$item['title']}</a>
                   <span class="uc-date">{$item['date']}</span>
                 </li>
               {else}
@@ -68,7 +68,7 @@
               <li class="uc-list-item uc-comment">
                 <div class="uc-comment-body">{$item['content']}</div>
                 <div class="uc-comment-meta">
-                  <a href="{url($route='index/article/index', $params=array('id'=>$item['mid']))}" class="uc-link">查看原文</a>
+                  <a href="{url($route='index/index/view', $params=array('id'=>$item['mid']))}" class="uc-link">查看原文</a>
                   <span class="uc-date">{$item['date']}</span>
                 </div>
               </li>

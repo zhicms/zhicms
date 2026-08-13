@@ -70,8 +70,12 @@ class ApiBaseController extends Controller {
         if (is_array($reply) && isset($reply['error'])) {
             $this->json(array('error' => array('message' => $reply['error'])), 502);
         }
-        if (empty($reply) || strpos((string)$reply, '大模型') === 0 || strpos((string)$reply, 'AI 模型') === 0
-            || strpos((string)$reply, 'CURL错误') === 0 || strpos((string)$reply, 'HTTP错误') === 0) {
+        if (empty($reply)
+            || strpos((string)$reply, '大模型') === 0
+            || strpos((string)$reply, 'AI 模型') === 0
+            || strpos((string)$reply, '大模型API错误') === 0
+            || strpos((string)$reply, 'CURL错误') === 0
+            || strpos((string)$reply, 'HTTP错误') === 0) {
             $this->json(array('error' => array('message' => 'AI 对话失败：' . $reply)), 502);
         }
         $this->json(array(

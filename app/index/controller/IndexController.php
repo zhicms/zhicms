@@ -497,7 +497,7 @@ class IndexController extends \app\base\controller\BaseController
                 }
 
                 $item = $detail['data'];
-                $buyUrl = url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform'=>'tb', 'id'=>$goodsId));
+                $buyUrl = url('index/redirect/jump', array('platform'=>'tb', 'id'=>$goodsId));
 
                 return $this->renderProductCard(array(
                     'title'      => $item['title'] ?? '',
@@ -546,7 +546,7 @@ class IndexController extends \app\base\controller\BaseController
         if ($platform && $name) {
             // 尝试提取商品 ID（各类链接的常见 param）
             $goodsId = $this->extractGoodsId($url, $platform);
-            $buyUrl = url($route='index/redirect/jump/platform=<platform>/id=<id>', $params=array('platform'=>$platform, 'id'=>$goodsId ?: urlencode($url)));
+            $buyUrl = url('index/redirect/jump', array('platform'=>$platform, 'id'=>$goodsId ?: urlencode($url)));
             $args = array(
                 'title'      => $name . '好物推荐',
                 'pic'        => '',

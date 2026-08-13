@@ -32,14 +32,15 @@ class AiController extends ApiBaseController {
             }
         }
 
-        // 统一先尝试用 AiService 处理（支持 openai / 文心 / 讯飞 / 智谱 / Gemini / Claude 等所有协议）
-        // AiService::chat 内部已按模型配置选择协议并做 SSL 校验与错误归一化。
+        // 统一经 AiHub（AI 中台增强层）处理：支持多协议、失败自动降级到备用模型、用量埋点。
+        // AiHub 内部复用 AiService 的协议适配 / SSL / 历史守卫能力。
         if (!empty($ai['enabled']) && !empty($ai['api_key'])) {
-            // 小程序单独配置：直接把 messages 透传给 AiService 转发（其配置即小程序侧模型）
-            $reply = \app\common\AiService::chat(
+            // 小程序单独配置：用其配置的模型 key 作为首选，其余模型作降级候选
+            $reply = \app\common\AiHub::chat(
                 $this->messagesToPrompt($reqMessages),
                 $ai['system_prompt'] ?? '你是一个有用的助手',
-                false
+                false,
+                array('model' => $ai['model'] ?? '')
             );
             $this->outputOpenAiCompat($reply);
         }
@@ -50,7 +51,7 @@ class AiController extends ApiBaseController {
             $this->json(array('error' => array('message' => 'AI 服务未配置或未开启，请在「AI 开放平台 → 模型管理」中添加并启用对话模型')), 503);
         }
 
-        $reply = \app\common\AiService::chat(
+        $reply = \app\common\AiHub::chat(
             $this->messagesToPrompt($reqMessages),
             '你是一个有用的助手',
             false

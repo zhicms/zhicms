@@ -40,7 +40,10 @@ class Dtk {
                 curl_setopt($ch, CURLOPT_URL, $host . '?' . http_build_query($data));
             }
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+            // 连接超时（DNS/握手阶段）必须单独限制，否则在部分网络环境下
+            // CURLOPT_TIMEOUT 对连接阶段不生效，会导致 PHP 进程被单个转链请求永久挂起
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 12);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
             curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
             $output = curl_exec($ch);

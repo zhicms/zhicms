@@ -47,7 +47,7 @@ class MController extends \app\base\controller\BaseController {
 		$pageN="30";
 
 		if($action=="search"){
-		 $key=urldecode($this->arg("key"));
+		 $key=addslashes(urldecode($this->arg("key")));
 		 $where[]="`title` LIKE  '%{$key}%'";
 
 
@@ -60,7 +60,7 @@ class MController extends \app\base\controller\BaseController {
 		$indexpage=round($count/$pageN);
 		$pageSize=($page-1)*$pageN;
 		if($action=="search"){
-		 $key=urldecode($this->arg("key"));
+		 $key=addslashes(urldecode($this->arg("key")));
 		 $sql[]="`title` LIKE  '%{$key}%'";
 
 		}else{
@@ -70,7 +70,7 @@ class MController extends \app\base\controller\BaseController {
 		foreach ($ret as $key => $value) {
 		$title=mb_substr(strip_tags($value['title']),0,73,'utf-8');
 
-		$viewLink=url($route='index/redirect/jump/platform/<platform>/id/<id>', $params=array('platform'=>'tb', 'id'=>$value['goodsId']));
+		$viewLink=url('index/redirect/jump', array('platform'=>'tb', 'id'=>$value['goodsId']));
 		
 		$date=obj("api/Api")->mdate($value['date']);
 
@@ -145,7 +145,7 @@ public function rank(){
   $ret=$data['data']['list'];
   foreach ($ret as $key => $value) {
   $key=$key+1;
-  $viewLink=url($route='index/redirect/jump/platform/<platform>/id/<id>', $params=array('platform'=>'tb', 'id'=>$value['goodsId']));
+  $viewLink=url('index/redirect/jump', array('platform'=>'tb', 'id'=>$value['goodsId']));
   $html.='<div class="rankitem">
 	<div class="rankleftcontent">
 		<div class="clear"></div>
@@ -192,7 +192,7 @@ public function cheaps(){
 		$ret=obj("api/ApiData")->dataSelect("yun_items",$sql,"`id` DESC LIMIT {$pageSize} , {$pageN}");
 		foreach ($ret as $key => $value) {
 
-		$quanLink=url($route='index/redirect/jump/platform/<platform>/id/<id>', $params=array('platform'=>$value['platform'], 'id'=>$value['goodsId']));
+		$quanLink=url('index/redirect/jump', array('platform'=>$value['platform'], 'id'=>$value['goodsId']));
 	$html='<div class="cheapitem">
 	<div class="cheapleftcontent">
 		<div class="clear"></div>
@@ -457,7 +457,7 @@ public function getDeviceType()
                 if ($detail['code'] != 1 || empty($detail['data'])) return null;
 
                 $item = $detail['data'];
-                $cardUrl = url($route='index/redirect/jump/platform/<platform>/id/<id>', $params=array('platform'=>'tb', 'id'=>$goodsId));
+                $cardUrl = url('index/redirect/jump', array('platform'=>'tb', 'id'=>$goodsId));
 
                 $title   = htmlspecialchars($item['title'] ?? '', ENT_QUOTES, 'UTF-8');
                 $mainPic = htmlspecialchars($item['mainPic'] ?? '', ENT_QUOTES, 'UTF-8');

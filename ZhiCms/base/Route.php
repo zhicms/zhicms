@@ -128,7 +128,7 @@ class Route {
 	    	$zhicms_404=Config::get('DEFAULT_CONTROLLER');
 	    }
 	
-		if(strstr($_SERVER['REQUEST_URI'],"?spm")){
+		if(isset($_GET['spm'])){
 			$zhicms_404=Config::get('DEFAULT_CONTROLLER');
 		}
 
@@ -162,6 +162,15 @@ class Route {
 		}
 		// 无下划线：addlink -> Addlink (首字母大写)
 		$action_name = ucfirst($action_name);
+		// 路由段安全校验：app/controller/action 仅允许字母数字下划线，拒绝 .. \ 空字节等，防止穿越/异常类加载
+		foreach (array($app_name, $controller_name, $action_name) as $seg) {
+			if (!preg_match('/^[a-zA-Z0-9_]+$/', (string)$seg)) {
+				$app_name = Config::get('DEFAULT_APP');
+				$controller_name = Config::get('DEFAULT_CONTROLLER');
+				$action_name = Config::get('DEFAULT_ACTION');
+				break;
+			}
+		}
 		if( !defined('APP_NAME') ) define('APP_NAME', strtolower($app_name));
 		// CONTROLLER_NAME / ACTION_NAME 统一为小写，便于模板中大小写无关地判断当前页（与 routeCache 缓存路径一致）
 		if( !defined('CONTROLLER_NAME') ) define('CONTROLLER_NAME', strtolower($controller_name));
@@ -225,7 +234,7 @@ class Route {
 				$cleanRoute = str_ireplace('<'.$k.'>', $v, $cleanRoute);
 			}
 		}
-		$url = $_SERVER["SCRIPT_NAME"] . '?r=' . $cleanRoute . $paramStr;
+		$url = ($_SERVER["SCRIPT_NAME"] ?? '/index.php') . '?r=' . $cleanRoute . $paramStr;
 			
 		if( $rewriteOn && !empty($rewriteRule ) ) {
 			static $urlArray = array();
@@ -258,7 +267,7 @@ class Route {
 
 						if(false === stripos($urlArray[$url], 'http://') && false === stripos($urlArray[$url], 'https://')){
 							$scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
-							$urlArray[$url] = $scheme.$_SERVER['HTTP_HOST'].rtrim(dirname($_SERVER["SCRIPT_NAME"]), "./\\") .'/'.ltrim($urlArray[$url], "./\\");
+							$urlArray[$url] = $scheme.($_SERVER['HTTP_HOST'] ?? '').rtrim(dirname($_SERVER["SCRIPT_NAME"] ?? '/index.php'), "./\\") .'/'.ltrim($urlArray[$url], "./\\");
 						}
 						
 						return $urlArray[$url];

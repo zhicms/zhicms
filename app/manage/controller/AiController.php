@@ -11,6 +11,7 @@
 namespace app\manage\controller;
 
 use app\common\AiService;
+use app\common\AiHub;
 use app\base\controller\ManageControllerTrait;
 
 class AiController extends \app\base\controller\BaseController
@@ -385,7 +386,22 @@ class AiController extends \app\base\controller\BaseController
         // 构建系统提示词
         $systemPrompt = self::buildSystemPrompt();
 
-        AiService::chatStream($message, $systemPrompt, true);
+        // 经 AiHub（中台增强层）输出 SSE，统一埋点；内部仍复用 AiService 协议适配
+        \app\common\AiHub::chatStream($message, $systemPrompt, true);
+        exit;
+    }
+
+    /**
+     * AI 调用用量统计（读 AiHub 埋点日志）
+     * GET: index.php?r=manage/ai/usage
+     * 返回 JSON：{ code:0, data:[ {ts,cap,model,ms,ok,err}, ... ] }
+     */
+    public function usage()
+    {
+        $this->checkManageSession();
+        header('Content-Type: application/json; charset=utf-8');
+        $rows = AiHub::usage(50);
+        echo json_encode(array('code' => 0, 'data' => $rows), JSON_UNESCAPED_UNICODE);
         exit;
     }
 

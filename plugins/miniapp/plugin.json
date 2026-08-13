@@ -1,0 +1,9 @@
+{
+    "alias": "miniapp",
+    "name": "小程序 & App 原生插件",
+    "version": "1.0.0",
+    "author": "ZhiCms",
+    "description": "ZhiCms 原生小程序/App 插件：整合资讯文章、淘客商品、社区论坛、自营商城四大板块，全部走 api 接口。配套 uni-app 工程位于 mini/。",
+    "type": "module",
+    "hasSetting": true
+}

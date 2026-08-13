@@ -215,7 +215,8 @@ class AiService
 
         $fullResponse = self::sendStreamRequest($messages);
 
-        if ($useHistory && !empty($fullResponse)) {
+        // 历史护栏：与 chat() 保持一致，错误结果（大模型异常/API 错误/网络异常）不写入历史
+        if ($useHistory && !empty($fullResponse) && !self::isErrorResult($fullResponse)) {
             self::saveHistory($prompt, $fullResponse);
         }
 
@@ -629,10 +630,11 @@ class AiService
                 // 这些协议暂以非流式结果回灌 SSE（统一降级为一次性输出），保证前端可用
                 $raw = self::requestByProtocol($protocol, $modelInfo, $messages, false);
                 $text = self::parseResponseByProtocol($protocol, $raw);
-                if ($text !== '' && strpos($text, '大模型') !== 0 && strpos($text, 'AI 模型') !== 0) {
+                if ($text !== '' && !self::isErrorResult($text)) {
                     echo "data: " . json_encode(array('choices' => array(array('delta' => array('content' => $text)))), JSON_UNESCAPED_UNICODE) . "\n\n";
                 } else {
-                    echo "data: " . json_encode(array('error' => $text), JSON_UNESCAPED_UNICODE) . "\n\n";
+                    // 错误结果以结构化 SSE 帧输出，前端可识别并提示
+                    echo "data: " . json_encode(array('choices' => array(array('delta' => array('content' => $text)))), JSON_UNESCAPED_UNICODE) . "\n\n";
                 }
                 echo "data: [DONE]\n\n";
                 return $text;
@@ -698,7 +700,8 @@ class AiService
 
         curl_exec($ch);
         if (curl_errno($ch)) {
-            echo "data: [ERROR] " . curl_error($ch) . "\n\n";
+            // 连接错误以结构化 SSE 帧输出，前端可识别并提示（与 streamByProtocol 错误帧一致）
+            echo "data: " . json_encode(array('choices' => array(array('delta' => array('content' => '连接错误：' . curl_error($ch))))), JSON_UNESCAPED_UNICODE) . "\n\n";
         }
         curl_close($ch);
 

@@ -155,9 +155,18 @@ class RedirectController extends \app\base\controller\BaseController
 
     private function getRedirectUrl($platform, $goodsId)
     {
+        // 从本地商品库取真实 goodsSign 透传给转链（大淘客必须传 goodsSign 才能正确生成券链接）
+        $goodsSign = '';
+        try {
+            $item = obj('api/ApiData')->dataSelect('yun_items', array('goodsId' => $goodsId));
+            if (!empty($item) && !empty($item['goodsSign'])) {
+                $goodsSign = $item['goodsSign'];
+            }
+        } catch (\Exception $e) {
+        }
         try {
             $tjk = new \ZhiCms\ext\Tjk();
-            $res = $tjk->getPrivilegeLink($goodsId, '', $platform);
+            $res = $tjk->getPrivilegeLink($goodsId, '', $platform, $goodsSign);
             
             if ($res['code'] == 1 && !empty($res['data'])) {
                 $data = $res['data'];

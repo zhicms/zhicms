@@ -184,6 +184,7 @@ ALTER TABLE `__PREFIX__article` MODIFY COLUMN `surl` varchar(1000) COLLATE utf8m
 UPDATE `__PREFIX__article` SET `dec` = '' WHERE `dec` LIKE 'HTTP错误%' OR `dec` LIKE 'CURL错误%';
 UPDATE `__PREFIX__article` SET `keywords` = '' WHERE `keywords` LIKE 'HTTP错误%' OR `keywords` LIKE 'CURL错误%';
 
+
 -- ------------------------------------------------------------
 -- 版本号对齐（务必放在最后执行）
 -- ------------------------------------------------------------

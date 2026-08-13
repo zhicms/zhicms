@@ -738,7 +738,7 @@ class SetController extends \app\base\controller\BaseController
             echo json_encode(array("info" => "参数错误", "status" => "n"));
             return;
         }
-        obj("api/ApiData")->deleteThis("yun_union_auth", "`id`=?", array($id));
+        obj("api/ApiData")->deleteThis("{pre}union_auth", "`id`=?", array($id));
         echo json_encode(array("info" => "已删除", "status" => "y"));
     }
 

@@ -212,10 +212,49 @@
             </div>
         </div>
 
+        <!-- RAG 能力（embedding / rerank）快捷接入，智谱 PaaS 一键预填 -->
+        <div class="alert alert-light border mb-0 small text-muted">
+            <i class="fas fa-brain text-success mr-1"></i>
+            <b>RAG 检索增强</b>：如需「站内智能问答 / 商品语义检索」，请添加 Embedding 与 Rerank 模型（推荐智谱 PaaS）。
+            添加后在业务侧调用 <code>AiHub::embed()</code> / <code>AiHub::rerank()</code> 即可，中台自动路由。
+            <div class="mt-2">
+                <button class="btn btn-sm btn-outline-success mr-2" onclick="aiQuickAdd('embed')">
+                    <i class="fas fa-vector-square"></i> 添加 Embedding 模型
+                </button>
+                <button class="btn btn-sm btn-outline-success" onclick="aiQuickAdd('rerank')">
+                    <i class="fas fa-sort-amount-down"></i> 添加 Rerank 模型
+                </button>
+            </div>
+        </div>
+
         <div class="alert alert-light border mt-2 mb-0 small text-muted">
             <i class="fas fa-info-circle text-primary mr-1"></i>
             说明：网站前端机器人、后台 AI 助手、AI 写作辅助均共用「AI 开放平台」的模型池。在「文本对话模型」中点击「设为前端对话」即可指定前端使用的模型，支持添加多个同平台模型并随时切换。
         </div>
+    </div>
+</div>
+
+<!-- ============ AI 调用用量（AiHub 埋点） ============ -->
+<div class="card shadow mb-4">
+    <div class="card-header d-flex align-items-center justify-content-between">
+        <h5 class="mb-0"><i class="fas fa-chart-line text-success mr-2"></i>AI 调用用量</h5>
+        <button class="btn btn-sm btn-outline-secondary" id="ai-usage-refresh"><i class="fas fa-sync-alt"></i> 刷新</button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>时间</th><th>能力</th><th>模型</th><th>耗时</th><th>状态</th><th>错误</th>
+                    </tr>
+                </thead>
+                <tbody id="ai-usage-body">
+                    <tr><td colspan="6" class="text-muted text-center">点击「刷新」加载最近 50 条调用记录</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
     </div>
 </div>
 
@@ -901,9 +940,65 @@ function initAiSetting() {
             }
         });
     });
-    });
-}
 
+    // ==================== RAG 能力快捷添加（embed / rerank） ====================
+    // 打开「添加模型」弹窗并预填智谱 PaaS 的 embeddings / rerank 地址与类型
+    window.aiQuickAdd = function(type) {
+        var isEmbed = type === 'embed';
+        var url = isEmbed
+            ? 'https://open.bigmodel.cn/api/paas/v4/embeddings'
+            : 'https://open.bigmodel.cn/api/paas/v4/rerank';
+        var model = isEmbed ? 'embedding-3' : 'rerank-2.0';
+        // 触发添加按钮（image 类型按钮有 data-model-type，这里直接复用其弹窗打开逻辑）
+        var $btn = $('[data-target="#addModelModal"]').first();
+        if ($btn.length) { $btn.trigger('click'); }
+        else { $('#addModelModal').modal('show'); }
+        // 预设类型与地址/模型
+        $('#add-model-type').val(type);
+        $('#add-api-url').val(url);
+        $('#add-model').val(model);
+        $('#add-platform').val('deepseek'); // 仅作占位，地址已被显式覆盖
+        var lbl = isEmbed ? '添加 Embedding 模型' : '添加 Rerank 模型';
+        $('#addModelModalLabel').text(lbl);
+        // 清空平台联动可能带出的地址（以我们预填的为准）
+        applyPlatform('add', 'deepseek', type);
+        $('#add-api-url').val(url);
+        $('#add-model').val(model);
+    };
+
+    // ==================== AI 调用用量（AiHub 埋点）刷新 ====================
+    function loadAiUsage() {
+        var $body = $('#ai-usage-body');
+        $body.html('<tr><td colspan="6" class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> 加载中...</td></tr>');
+        $.ajax({
+            url: 'index.php?r=manage/ai/usage',
+            type: 'GET',
+            dataType: 'json',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function(res) {
+                if (res.code === 0 && res.data && res.data.length) {
+                    var html = '';
+                    res.data.forEach(function(r) {
+                        var ok = r.ok == 1
+                            ? '<span class="badge badge-success">成功</span>'
+                            : '<span class="badge badge-danger">失败</span>';
+                        var err = r.err ? '<span class="text-danger small">' + $('<div>').text(r.err).html() + '</span>' : '';
+                        html += '<tr><td>' + r.ts + '</td><td>' + r.cap + '</td><td>' + r.model +
+                                '</td><td>' + r.ms + 'ms</td><td>' + ok + '</td><td>' + err + '</td></tr>';
+                    });
+                    $body.html(html);
+                } else {
+                    $body.html('<tr><td colspan="6" class="text-center text-muted">暂无调用记录</td></tr>');
+                }
+            },
+            error: function() {
+                $body.html('<tr><td colspan="6" class="text-center text-danger">加载失败，请重试</td></tr>');
+            }
+        });
+    }
+    $('#ai-usage-refresh').on('click', loadAiUsage);
+    }
+}
 // jQuery 由底部 footer 引入，晚于本脚本执行；等待 jQuery 就绪后再初始化，避免 "$ is not defined"
 (function () {
     if (window.jQuery) { initAiSetting(); return; }

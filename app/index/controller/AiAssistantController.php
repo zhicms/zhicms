@@ -51,7 +51,9 @@ class AiAssistantController extends \app\base\controller\BaseController
      */
     private function getHistoryFile()
     {
-        return $this->historyDir . md5($this->userId) . '.json';
+        // 用服务端密钥对 userId 做签名，避免客户端伪造他人 ai_uid 读取其对话历史
+        $salt = 'zhicms_ai_chat_salt_' . \ZhiCms\base\Config::get('SECRET_KEY', 'zhicms');
+        return $this->historyDir . md5($this->userId . '|' . $salt) . '.json';
     }
 
     /**
@@ -323,9 +325,17 @@ class AiAssistantController extends \app\base\controller\BaseController
         }
 
         try {
-            $response = \app\common\AiService::chat($userPrompt, $systemPrompt, false);
+            $response = \app\common\AiHub::chat($userPrompt, $systemPrompt, false);
         } catch (\Exception $e) {
             // AI 调用异常：同样用本地兜底，保证面板始终有内容
+            $fallback = self::getPickLocalFallback($category, $price, $brand, $scene, $feature);
+            echo json_encode($fallback, JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        // AI 返回的是错误串（如"AI 模型未配置"/"HTTP错误"），直接走本地兜底，
+        // 不进入 extractJson（避免内部错误文本里恰好含 {} 被误解析成筛选选项）
+        if (\app\common\AiHub::isErrorResult($response)) {
             $fallback = self::getPickLocalFallback($category, $price, $brand, $scene, $feature);
             echo json_encode($fallback, JSON_UNESCAPED_UNICODE);
             return;
@@ -1046,21 +1056,10 @@ PROMPT;
         if ($from === 'taobao' || $from === 'dtk') $from = 'tb';
         if (!in_array($from, ['tb', 'jd', 'pdd', 'vip'])) $from = 'tb';
 
-        // 淘宝/大淘客：优先使用商品自带的 couponLink（已带推广位佣金），无则回退统一跳转入口。
-        // 京东/拼多多/唯品会：搜索接口返回的 couponLink 多为无佣金落地页（如唯品会 itemurl），
-        // 必须统一走 index/redirect/jump 入口，由 RedirectController 调好单库 RatesUrl 二次转链，
-        // 生成带推广位的佣金链接，否则站长拿不到返利。
-        if ($from === 'tb') {
-            $couponLink = isset($item['couponLink']) ? trim($item['couponLink']) : '';
-            if (!empty($couponLink) && preg_match('#^https?://#i', $couponLink)) {
-                $link = $couponLink;
-            } else {
-                $link = url('index/redirect/jump', ['platform' => $from, 'id' => $goodsId]);
-            }
-        } else {
-            // jd / pdd / vip：统一走转链入口，保证带佣金
-            $link = url('index/redirect/jump', ['platform' => $from, 'id' => $goodsId]);
-        }
+        // 所有平台统一走 index/redirect/jump 转链入口（由 RedirectController 调好单库 RatesUrl
+        // 二次转链生成带推广位的佣金链接），避免直接使用搜索接口返回的 couponLink
+        // （多为无佣金的落地页），保证站长能拿到返利。
+        $link = url('index/redirect/jump', ['platform' => $from, 'id' => $goodsId]);
         $pic     = isset($item['mainPic']) ? htmlspecialchars($item['mainPic']) : '';
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;
@@ -1420,19 +1419,22 @@ PROMPT;
 - 不要提供投资、医疗、法律等专业建议
 PROMPT;
 
-        $response = \app\common\AiService::chat($message, $systemPrompt, false);
+        $response = \app\common\AiHub::chat($message, $systemPrompt, false);
 
         if (empty($response)) {
             return '哎呀，小淘好像走神了😅 您可以直接使用网站顶部的搜索功能查找商品，或者换个问题再来问我吧~';
         }
 
-        if (strpos($response, 'AI 模型未配置') === 0) {
-            // 标记 unconfigured，前端可明确提示"站长未配置模型"
-            $this->chatUnconfigured = true;
-            return 'unconfigured:AI 助手尚未配置，请站长在后台「AI 设置」中添加并启用对话模型';
-        }
-
-        if (strpos($response, '大模型处理异常') === 0) {
+        // 统一用 AiHub::isErrorResult 判定各种错误前缀（AI 模型未配置 / 大模型处理异常 /
+        // 大模型API错误 / HTTP错误 / CURL错误 等），避免把内部错误串当作正常回复回显给用户。
+        // 注：AiService::isErrorResult 是 private，故用公开的 AiHub::isErrorResult（前缀同构）。
+        if (\app\common\AiHub::isErrorResult($response)) {
+            // 未配置模型：标记给前端，给出友好文案（不含 "unconfigured:" 机器前缀，避免污染历史）
+            if (strpos($response, 'AI 模型未配置') === 0) {
+                $this->chatUnconfigured = true;
+                return '小淘暂时还没被唤醒呢🌟 站长正在后台「AI 设置」中配置对话模型，稍等片刻再来找我聊天吧~';
+            }
+            // 其余错误（网络/服务异常）一律兜底文案
             return '小淘刚才脑子卡壳了🤯 请您稍等片刻再试试，或者用搜索功能直接找商品吧~';
         }
 

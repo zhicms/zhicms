@@ -104,54 +104,29 @@
                                     <?php if(!empty($item['nickname'])): ?>
                                     <small class="text-muted">昵称: <?php echo $item['nickname']; ?></small>
                                     <?php endif; ?>
-                                    <?php if(!empty($item['email'])): ?>
-                                    <div class="small text-muted">
-                                        <i class="fas fa-envelope mr-1"></i><?php echo $item['email']; ?>
-                                    </div>
-                                    <?php endif; ?>
                                 </div>
                             </div>
                         </td>
                         <td>
-                            <?php if($item['role'] == 'super'): ?>
+                            <?php if($item['id'] == 1): ?>
                             <span class="badge badge-danger badge-pill px-3">
                                 <i class="fas fa-crown mr-1"></i>超级管理员
                             </span>
-                            <?php elseif($item['role'] == 'admin'): ?>
+                            <?php else: ?>
                             <span class="badge badge-primary badge-pill px-3">
                                 <i class="fas fa-user-shield mr-1"></i>管理员
                             </span>
-                            <?php elseif($item['role'] == 'editor'): ?>
-                            <span class="badge badge-info badge-pill px-3">
-                                <i class="fas fa-edit mr-1"></i>编辑员
-                            </span>
-                            <?php else: ?>
-                            <span class="badge badge-secondary badge-pill px-3">
-                                <i class="fas fa-user mr-1"></i>普通
-                            </span>
-                            <?php endif; ?>
-                            
-                            <?php if($item['is_online']): ?>
-                            <br><span class="badge badge-success mt-1 small">在线</span>
                             <?php endif; ?>
                         </td>
                         <td class="text-center">
                             <div class="small">
-                                <?php echo date('Y-m-d', strtotime($item['date'])); ?>
+                                <?php echo date('Y-m-d', strtotime($item['date'] ?? 'today')); ?>
                                 <br>
-                                <span class="text-muted"><?php echo date('H:i', strtotime($item['date'])); ?></span>
+                                <span class="text-muted"><?php echo date('H:i', strtotime($item['date'] ?? 'today')); ?></span>
                             </div>
                         </td>
                         <td class="text-center">
-                            <div class="small">
-                                <?php if(!empty($item['last_login'])): ?>
-                                    <?php echo date('Y-m-d', strtotime($item['last_login'])); ?>
-                                    <br>
-                                    <span class="text-muted"><?php echo date('H:i', strtotime($item['last_login'])); ?></span>
-                                <?php else: ?>
-                                    <span class="text-muted">从未登录</span>
-                                <?php endif; ?>
-                            </div>
+                            <span class="text-muted">—</span>
                         </td>
                         <td class="text-center">
                             <div class="btn-group btn-group-sm" role="group">
@@ -159,7 +134,7 @@
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 
-                                <?php if($item['id'] != $_SESSION['user_id']): ?>
+                                <?php if($item['id'] != ($_SESSION['manage_uid'] ?? 0)): ?>
                                 <a href="index.php?r=manage/manage/setpass&id=<?php echo $item['id']; ?>" class="btn btn-outline-warning" title="修改密码">
                                     <i class="fas fa-key"></i>
                                 </a>
@@ -171,12 +146,6 @@
                                 <span class="text-muted">当前登录</span>
                                 <?php endif; ?>
                             </div>
-                            
-                            <?php if(!empty($item['login_count'])): ?>
-                            <div class="small text-muted mt-1">
-                                登录: <?php echo $item['login_count']; ?> 次
-                            </div>
-                            <?php endif; ?>
                         </td>
                     </tr>
                     <?php endforeach; ?>

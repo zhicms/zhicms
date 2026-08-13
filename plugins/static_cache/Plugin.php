@@ -127,6 +127,19 @@ class Plugin extends BasePlugin
             return true;
         }
         
+        // 插件展示页(index/plug/* 或伪静态 plug-*.html)永远不缓存：插件页由插件控制器
+        // 动态渲染，且伪静态 URI（如 plug-kiees.html）与主站首页 URI 的缓存路径
+        // 哈希可能冲突，导致插件页被错误地返回主站首页缓存。内置排除可彻底规避，
+        // 同时兼容动态(?r=index/plug/...)与伪静态(plug-xxx.html)两种访问方式。
+        $currentRoute = isset($_GET['r']) ? $_GET['r'] : '';
+        if (strpos($currentRoute, 'index/plug') === 0) {
+            return true;
+        }
+        $reqUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
+        if (preg_match('#/plug-[\w-]*\.html#i', $reqUri)) {
+            return true;
+        }
+        
         $excludedPaths = array();
         if (!empty($config['exclude_paths'])) {
             $excludedPaths = array_filter(array_map('trim', explode("\n", $config['exclude_paths'])));

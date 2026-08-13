@@ -82,11 +82,23 @@ class Controller{
 		if( !isset($args[$name]) ) return $default;
 		$arg = $args[$name];
 		if( is_array($arg) ){
-			array_walk($arg, function(&$v, $k){$v = trim(htmlspecialchars($v, ENT_QUOTES, 'UTF-8'));} );
+			$arg = $this->escapeArray($arg);
 		}else{
 			$arg = trim(htmlspecialchars($arg, ENT_QUOTES, 'UTF-8'));
 		}
 		return $arg;
+	}
+
+	/**
+	 * 递归转义数组的值与键名，防止模板输出时键名造成 XSS
+	 */
+	protected function escapeArray($arr){
+		$out = array();
+		foreach ($arr as $k => $v) {
+			$key = is_string($k) ? htmlspecialchars($k, ENT_QUOTES, 'UTF-8') : $k;
+			$out[$key] = is_array($v) ? $this->escapeArray($v) : (is_string($v) ? trim(htmlspecialchars($v, ENT_QUOTES, 'UTF-8')) : $v);
+		}
+		return $out;
 	}
 
 	

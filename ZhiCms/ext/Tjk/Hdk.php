@@ -442,7 +442,7 @@ class Hdk {
             $params = [
                 'apikey' => $this->apiKey,
                 'goodsid' => $goodsId,
-                'pid'    => $this->vipPid ?: '7c1a186177a9ac60b448f9bbc6669ca6',
+                'pid'    => $this->vipPid ?: '',
             ];
         } elseif ($platform === 'pdd') {
             $host = 'http://v2.api.haodanku.com/get_pdditems_link';
@@ -450,8 +450,13 @@ class Hdk {
             $params = [
                 'apikey'    => $this->apiKey,
                 'goods_sign' => $goodsId,
-                'pid'       => $this->pddPid ?: '39030134_316592663',
+                'pid'       => $this->pddPid ?: '',
             ];
+        }
+
+        // 佣金安全：pid 未配置时禁止转链（避免佣金流向默认/他人账户）
+        if (empty($params['pid'])) {
+            return ['code' => 0, 'message' => '未配置 ' . $platform . ' 推广位 PID，请在后台联盟设置中填写'];
         }
 
         $result = $this->request($host, $params, $method);

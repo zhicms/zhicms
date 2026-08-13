@@ -282,17 +282,20 @@ function obj($class, $layer = 'model'){
 	
 	if (isset($objArr[$className])) {
 		// 若正处于"构造中"（占位标记），说明构造期重入 obj() 自身，
-		// 直接返回 false，避免 Container::make() 无限递归；由调用方兜底。
+		// 直接返回 false，避免无限递归；由调用方兜底。
 		if ($objArr[$className] === true) {
 			return false;
 		}
         return $objArr[$className];
 	}
-	
+
+	// 关键修复：无论走哪个分支，构造前都先写入占位标记。
+	// 原实现只在 think\Container 分支写占位，本项目未加载 ThinkPHP 时，
+	// 构造函数内若重入 obj() 同一类会无限递归（PHP8 报 Allowed memory size exhausted 白屏）。
+	$objArr[$className] = true;
+
 	if (class_exists('\\think\\Container')) {
 		try {
-			// 构造前先写入占位标记，防止构造期重入同一类导致无限递归
-			$objArr[$className] = true;
 			// 使用单例容器，避免每次 obj() 都重建容器（双框架互补点）
 			$container = method_exists('\\think\\Container', 'getInstance')
 				? \think\Container::getInstance()

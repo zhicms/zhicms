@@ -777,7 +777,13 @@ class UnionController extends \app\base\controller\BaseController
                 }
 
                 foreach ($response['items'] as $item) {
-                    $goodsId = $item['goodsId'] ?? '';
+                    // 大淘客（淘宝）入库 ID 用 goodsSign，GetNewestGoods 返回的 goodsId 是带“-”的加密串，
+                    // 不能用它去查库（库里 goodsId 列存的是 goodsSign），否则永远查不到、更新被全部跳过。
+                    // syncGoods 仅拉取大淘客 GetNewestGoods，入库 ID 固定用 goodsSign
+                    $goodsId = $item['goodsSign'] ?? '';
+                    if (empty($goodsId)) {
+                        $goodsId = $item['goodsId'] ?? '';
+                    }
                     if (empty($goodsId)) {
                         continue;
                     }
@@ -855,7 +861,8 @@ class UnionController extends \app\base\controller\BaseController
                     if ($response['code'] != 1 || empty($response['items'])) break;
                 }
                 foreach ($response['items'] as $item) {
-                    $goodsId = $item['goodsId'] ?? $item['goodsSign'] ?? '';
+                    // 大淘客（淘宝）入库 ID 用 goodsSign，优先取 goodsSign
+                    $goodsId = $item['goodsSign'] ?? $item['goodsId'] ?? '';
                     if (empty($goodsId)) continue;
                     $totalCount++;
                     if ($this->checkGoodsExists($item)) { $skipCount++; continue; }
@@ -1098,10 +1105,10 @@ class UnionController extends \app\base\controller\BaseController
                 continue;
             }
 
-            $exists = $this->checkGoodsExists($item);
-            if ($exists && $action !== 'newest') {
-                continue;
-            }
+            // 定位已存在商品：大淘客用 goodsSign 前缀匹配（后半段每次变化，前缀才是同一商品的稳定标识）；
+            // 好单库等用完整 goodsId 精确匹配。返回整行便于后续「刷新 goodsSign / 智能更新」。
+            $existsRow = $this->getSelectionRow($goodsId, $itemFrom);
+            $exists = !empty($existsRow);
 
             // 根据API实际返回的字段进行处理，只包含yun_items表实际存在的字段
             // 统一字段入库：键名与 Tjk::standardizeItem 输出、yun_items 表字段一一对应
@@ -1205,31 +1212,34 @@ class UnionController extends \app\base\controller\BaseController
             try {
                 $this->writeCollectLog("准备入库 goodsId={$goodsId} title=" . mb_substr($item['goodsName'] ?? $item['title'] ?? '', 0, 50));
 
-                if ($action === 'newest') {
-                    $where = [];
-                    $where['goodsId'] = $goodsId;
-                    $where['laiyuan'] = intval($laiyuan);
-                    $existsInDb = obj("api/ApiData")->dataSelect("yun_items", $where);
-
-                    if ($existsInDb) {
-                        // 智能更新：只更新API返回的有效字段，保留原有 title/mainPic 等数据
-                        // dataSelect 走 find() 返回单行（关联数组），也可能返回含首行的列表，兼容两种结构
-                        $existsRow = (isset($existsInDb[0]) && is_array($existsInDb[0])) ? $existsInDb[0] : $existsInDb;
-                        $updateData = $this->smartUpdateMerge($data, $existsRow);
-                        foreach ($updateData as $k => $v) {
-                            if (is_array($v) || is_object($v)) {
-                                $updateData[$k] = json_encode($v, JSON_UNESCAPED_UNICODE);
-                            }
+                if ($exists) {
+                    // 已存在：用主键 id 定位（大淘客 goodsSign 后半段会变，绝不能再用 goodsId 精确匹配）。
+                    // 智能合并：价格/券/销量等动态字段用 API 新值，title/mainPic 等保留旧值；
+                    // 同时把 goodsId/goodsSign 刷新为本次采集到的最新完整 goodsSign，保证后续转链始终用最新 ID。
+                    $pkId = $existsRow['id'] ?? 0;
+                    if (empty($pkId)) {
+                        $this->writeCollectLog("已存在但无主键 id，跳过 goodsId={$goodsId}");
+                        continue;
+                    }
+                    $updateData = $this->smartUpdateMerge($data, $existsRow);
+                    // 显式刷新 goodsSign 相关主键字段（确保用最新完整 goodsSign）
+                    $updateData['goodsId'] = $data['goodsId'];
+                    $updateData['goodsSign'] = $data['goodsSign'];
+                    foreach ($updateData as $k => $v) {
+                        if (is_array($v) || is_object($v)) {
+                            $updateData[$k] = json_encode($v, JSON_UNESCAPED_UNICODE);
                         }
-                        $this->writeCollectLog("智能更新商品 goodsId={$goodsId}");
-                        obj("api/ApiData")->dataUpdate("yun_items", $updateData, $where);
-                    } else {
-                        // 一键更新模式下不插入新商品（GetNewestGoods 不返回 title/mainPic）
+                    }
+                    $this->writeCollectLog("更新商品 id={$pkId} goodsId={$goodsId}");
+                    obj("api/ApiData")->dataUpdate("yun_items", $updateData, array('id' => intval($pkId)));
+                } else {
+                    // 不存在：插入新商品
+                    if ($action === 'newest') {
+                        // 一键更新模式（GetNewestGoods 不返回 title/mainPic）不新增，仅跳过
                         $this->writeCollectLog("跳过入库（选品库不存在，不新增） goodsId={$goodsId}");
                         continue;
                     }
-                } else {
-                    $this->writeCollectLog("插入新商品 goodsId={$goodsId} (非newest)");
+                    $this->writeCollectLog("插入新商品 goodsId={$goodsId}");
                     $insertId = obj("api/ApiData")->insertData("yun_items", $data);
                     $this->writeCollectLog("插入成功，ID={$insertId}");
                 }
@@ -1321,11 +1331,40 @@ class UnionController extends \app\base\controller\BaseController
     }
 
     /**
-     * 查询选品库中是否已存在该商品（返回整行，便于判断标题是否完整）
+     * 提取大淘客 goodsSign 的稳定前缀（同一淘宝客账号+同一商品的不变部分）。
+     * 大淘客 goodsSign 为「两段式」：以单个“-”分隔，前半段是账号+商品的稳定标识，
+     * 后半段每次采集/转链都会变化（仅后半段变、前半段不变）。
+     * 因此去重/定位同一商品必须以「前缀」为准，不能用完整 goodsSign 做唯一匹配，
+     * 否则后半段变化会导致查不到、重复入库或更新失效。无“-”时回退完整串。
      */
-    private function getSelectionRow($goodsId) {
+    private function goodsSignPrefix($goodsSign) {
+        if (empty($goodsSign) || !is_string($goodsSign)) {
+            return '';
+        }
+        $pos = strpos($goodsSign, '-');
+        return $pos === false ? $goodsSign : substr($goodsSign, 0, $pos);
+    }
+
+    /**
+     * 查询选品库中是否已存在该商品（返回整行，便于判断标题是否完整）。
+     * 大淘客（淘宝）入库 ID 实为 goodsSign，且 goodsSign 后半段每次变化，
+     * 故用 goodsSign 前缀匹配定位同一商品，而非完整 goodsSign。
+     */
+    private function getSelectionRow($goodsId, $itemFrom = '') {
         if (empty($goodsId)) {
             return null;
+        }
+        $itemFrom = strtolower(trim($itemFrom));
+        $isDtk = ($itemFrom === 'tb') || ($itemFrom === 'taobao') || ($itemFrom === 'dtk');
+        if ($isDtk) {
+            $prefix = $this->goodsSignPrefix($goodsId);
+            if ($prefix === '') {
+                return null;
+            }
+            // goodsId 列存的是完整 goodsSign，LIKE 'prefix-%' 即可命中同一商品
+            $sql = "SELECT * FROM `{pre}items` WHERE `goodsId` LIKE ?";
+            $rows = obj('api/ApiData')->thisQuery($sql, [$prefix . '-%']);
+            return (!empty($rows)) ? $rows[0] : null;
         }
         $where['goodsId'] = $goodsId;
         $rows = obj("api/ApiData")->dataSelect("yun_items", $where);
@@ -1333,7 +1372,8 @@ class UnionController extends \app\base\controller\BaseController
     }
 
     private function checkGoodsExists($item) {
-        // 与 saveGoodsBatch 一致：大淘客（淘宝）入库 ID 用 goodsSign，故判断存在性时也用 goodsSign
+        // 大淘客（淘宝）入库 ID 实为 goodsSign，且 goodsSign 后半段每次变化，
+        // 故判断存在性必须以 goodsSign 前缀为准（而非完整 goodsSign），否则后半段变化会判为不存在。
         $itemFrom = strtolower(trim($item['item_from'] ?? ''));
         $isDtk = ($itemFrom === 'tb') || ($itemFrom === 'taobao') || ($itemFrom === 'dtk');
         if ($isDtk) {
@@ -1351,7 +1391,14 @@ class UnionController extends \app\base\controller\BaseController
         $whereParts = [];
         $params = [];
 
-        if (!empty($goodsId)) {
+        if ($isDtk && !empty($goodsId)) {
+            // 前缀匹配：goodsId 列存完整 goodsSign，LIKE 'prefix-%' 命中同一商品
+            $prefix = $this->goodsSignPrefix($goodsId);
+            if ($prefix !== '') {
+                $whereParts[] = "`goodsId` LIKE ?";
+                $params[] = $prefix . '-%';
+            }
+        } elseif (!empty($goodsId)) {
             $whereParts[] = "`goodsId` = ?";
             $params[] = $goodsId;
         }

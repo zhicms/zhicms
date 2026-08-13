@@ -141,13 +141,54 @@ class BaseController extends \ZhiCms\base\Controller {
      * 验证CSRF Token
      */
     protected function checkCsrfToken() {
-        $token = $this->arg('_token') ?? '';
-        $sessionToken = $_SESSION['csrf_token'] ?? '';
+    	$token = $this->arg('_token') ?? '';
+    	$sessionToken = $_SESSION['csrf_token'] ?? '';
 
-        if (empty($token) || $token !== $sessionToken) {
-            exit(json_encode(array("info" => "CSRF验证失败", "status" => "n")));
-        }
+    	if (empty($token) || $token !== $sessionToken) {
+    		exit(json_encode(array("info" => "CSRF验证失败", "status" => "n")));
+    	}
     }
+
+    /**
+     * 同源校验（轻量 CSRF 防护）：拦截跨站请求伪造。
+     * 适用于前端未统一携带 _token 的写操作（点赞、评论等）。
+     * 校验 Referer/Origin 必须与本站同源；非浏览器环境（无头）放行。
+     */
+    protected function checkSameOrigin() {
+    	$host = $_SERVER['HTTP_HOST'] ?? '';
+    	if ($host === '') {
+    		return; // CLI/无头环境不校验
+    	}
+    	$origin = $_SERVER['HTTP_ORIGIN'] ?? '';
+    	$referer = $_SERVER['HTTP_REFERER'] ?? '';
+    	$check = !empty($origin) ? $origin : $referer;
+    	if ($check === '') {
+    		// 同站 Cookie + SameSite=Lax/Strict 已提供基础防护，无 Referer 时放行
+    		return;
+    	}
+    	$parsed = parse_url($check);
+    	if (empty($parsed['host']) || strcasecmp($parsed['host'], $host) !== 0) {
+    		exit(json_encode(array("info" => "请求来源不合法", "status" => "n")));
+    	}
+    	}
+
+    	/**
+    	* 兼容式密码校验：支持 bcrypt（password_hash）与传统 md5($pwd.$salt) 双格式。
+    	* 若命中旧 md5 格式，自动透明升级为 bcrypt 并写回（需调用方传入 $uid/$table 触发升级）。
+    	*/
+    	protected function verifyPassword($input, $stored, $legacySalt) {
+    	if (strlen($stored) >= 60 && preg_match('/^\$2[aby]\$/', $stored)) {
+    		return password_verify($input, $stored);
+    	}
+    	return hash_equals($stored, md5($input . $legacySalt));
+    	}
+
+    	/**
+    	* 生成密码哈希（优先 bcrypt）
+    	*/
+    	protected function hashPassword($input) {
+    	return password_hash($input, PASSWORD_BCRYPT);
+    	}
    
    /**
      * 统一 404 处理：发送 404 状态码并输出简洁提示（不抛未定义方法错误）

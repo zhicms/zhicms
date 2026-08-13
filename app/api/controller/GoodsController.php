@@ -171,6 +171,161 @@ class GoodsController extends ApiBaseController {
     }
 
     /**
+     * 小程序跳转参数（生成跨平台跳转所需 appid/path/淘口令）
+     * GET/POST index.php?r=api/goods/open&platform=tb&goodsId=xxx&goodsSign=xxx&itemLink=&couponLink=
+     *
+     * 返回 open 字段：
+     *   - 淘宝 tb  : { type:'tb', tpwd, longTpwd }      前端复制淘口令
+     *   - 京东 jd  : { type:'jd', appid, path }          前端 wx.navigateToMiniProgram
+     *   - 拼多多 pdd: { type:'pdd', appid, path }
+     *   - 唯品会 vip: { type:'vip', appid, path }
+     *
+     * 各平台小程序 appid 与 path 约定（详见 Tjk 跳转方案）：
+     *   京东   wx91d27dbf599dff74  -> /pages/proxy/union?spreadUrl=encodeURIComponent(转链短链)
+     *   拼多多 wx32540bd863b27570  -> /pages/proxy/union?spreadUrl=encodeURIComponent(转链短链)
+     *   唯品会 wxe9714e742209d35f  -> 直接取转链返回的 vipWxUrl 作为 path
+     */
+    public function open() {
+        $this->options();
+
+        $platform   = strtolower(trim($this->raw('platform', $this->raw('type', 'tb'))));
+        $goodsId    = trim($this->raw('goodsId', ''));
+        $goodsSign  = trim($this->raw('goodsSign', ''));
+        $itemLink   = trim($this->raw('itemLink', ''));
+        $couponLink = trim($this->raw('couponLink', ''));
+
+        // 平台映射
+        $platMap = array(
+            'tb' => 'taobao', 'taobao' => 'taobao',
+            'tmall' => 'taobao', 'tm' => 'taobao',
+            'jd' => 'jd', 'pdd' => 'pdd', 'vip' => 'vip', 'wph' => 'vip',
+        );
+        $apiPlatform = $platMap[$platform] ?? 'taobao';
+
+        // 淘宝转链：大淘客接口 goodsId 参数必须传 goodsSign（淘宝升级后数字 id 失效）。
+        // feed/搜索商品里 goodsId 与 goodsSign 实为同一编码，当前端未单独传 goodsSign 时，
+        // 直接用 goodsId 当作 goodsSign 传入，保证转链成功。
+        if ($apiPlatform === 'taobao') {
+            // 选品库(yun_items)等本地商品流：前端传来的 goodsId 是 yun_items.goodsId 列的值
+            // （大淘客商品入库时该列存的是 goodsSign 串，部分商品也可能存原始 num_iid），
+            // 并非自增主键 id。goodsSign 为空时需按 goodsId 列反查真实 goodsSign 才能正确转链。
+            if ($goodsSign === '' && $goodsId !== '') {
+                // 1) 优先按 goodsId 列匹配（选品库传入的就是该值）
+                $local = obj('api/ApiData')->dataSelect('yun_items', array('goodsId' => $goodsId), '', 1);
+                if (!empty($local)) {
+                    $rowSign  = $local['goodsSign'] ?? '';
+                    $itemLink = $itemLink ?: ($local['itemLink'] ?? '');
+                    if ($rowSign !== '') {
+                        $goodsSign = $rowSign;
+                    } elseif (!ctype_digit((string) $goodsId)) {
+                        // goodsId 列本身就是 goodsSign 串（带“-”的加密串），直接用它转链
+                        $goodsSign = $goodsId;
+                    }
+                } elseif (ctype_digit((string) $goodsId)) {
+                    // 2) 兼容早期按自增主键 id 传入的场景
+                    $local2 = obj('api/ApiData')->dataSelect('yun_items', array('id' => intval($goodsId)), '', 1);
+                    if (!empty($local2)) {
+                        $goodsSign = $local2['goodsSign'] ?? '';
+                        $itemLink  = $itemLink ?: ($local2['itemLink'] ?? '');
+                    }
+                }
+            }
+            if ($goodsSign === '') {
+                $goodsSign = $goodsId;
+            }
+            $realId = $goodsSign;
+        } else {
+            $realId = $goodsId;
+        }
+
+        $tjk = new \ZhiCms\ext\Tjk();
+        $res = $tjk->getPrivilegeLink($realId, $itemLink, $apiPlatform, $goodsSign);
+
+        if (empty($res) || $res['code'] != 1 || empty($res['data'])) {
+            // 转链失败兜底：优先用券链接/商品链接；若两者都为空，则退回用淘宝商品 ID 拼商品详情页链接，保证前端至少有链接可复制/打开
+            $fallback = $couponLink ?: $itemLink;
+            if (!$fallback && $realId !== '') {
+                if ($apiPlatform === 'taobao') {
+                    $fallback = 'https://item.taobao.com/item.htm?id=' . $realId;
+                } elseif ($apiPlatform === 'jd') {
+                    $fallback = 'https://item.jd.com/' . $realId . '.html';
+                } elseif ($apiPlatform === 'pdd') {
+                    $fallback = 'https://mobile.yangkeduo.com/goods.html?goods_id=' . $realId;
+                } elseif ($apiPlatform === 'vip') {
+                    $fallback = 'https://www.vip.com/item/' . $realId;
+                }
+            }
+            $this->json(array(
+                'code'    => 1,
+                'message' => 'success',
+                'open'    => array(
+                    'type' => $apiPlatform === 'taobao' ? 'tb' : $apiPlatform,
+                    'tpwd' => '',
+                    'url'  => $fallback,
+                ),
+            ));
+        }
+
+        $d = $res['data'];
+        // 统一推广短链
+        $jumpUrl = $d['shortUrl'] ?? ($d['shortLink'] ?? ($d['couponLink'] ?? ($d['url'] ?? '')));
+        $encoded = $jumpUrl !== '' ? rawurlencode($jumpUrl) : '';
+
+        if ($apiPlatform === 'taobao') {
+            $open = array(
+                'type'      => 'tb',
+                'tpwd'      => $d['tpwd'] ?? ($d['tkl'] ?? ''),
+                'longTpwd'  => $d['longTpwd'] ?? ($d['tpwd'] ?? ($d['tkl'] ?? '')),
+                'url'       => $jumpUrl,
+            );
+        } elseif ($apiPlatform === 'jd') {
+            $open = array(
+                'type'  => 'jd',
+                'appid' => 'wx91d27dbf599dff74',
+                'path'  => '/pages/proxy/union?spreadUrl=' . $encoded,
+                'url'   => $jumpUrl,
+            );
+        } elseif ($apiPlatform === 'pdd') {
+            $open = array(
+                'type'  => 'pdd',
+                'appid' => 'wx32540bd863b27570',
+                'path'  => '/pages/proxy/union?spreadUrl=' . $encoded,
+                'url'   => $jumpUrl,
+            );
+        } else { // vip 唯品会
+            // 唯品会转链（好单库 vip_ratesurl）返回字段：
+            //   url(短链 t.vip.com) / longUrl / noEvokeUrl / onlyCommand(唯口令)
+            // 用户自有联盟接口会额外返回 vipWxUrl（小程序跳转路径）。
+            $vipWxUrl = $d['vipWxUrl'] ?? '';
+            $onlyCommand = $d['onlyCommand'] ?? ($d['tkl'] ?? '');
+            if ($vipWxUrl !== '') {
+                // 有小程序路径：直接跳唯品会小程序
+                $open = array(
+                    'type'  => 'vip',
+                    'appid' => 'wxe9714e742209d35f',
+                    'path'  => $vipWxUrl,
+                    'url'   => $jumpUrl,
+                );
+            } else {
+                // 无小程序路径：降级复制唯口令（onlyCommand）+ 短链，引导打开唯品会App
+                $open = array(
+                    'type'  => 'vip',
+                    'appid' => 'wxe9714e742209d35f',
+                    'path'  => '',
+                    'tpwd'  => $onlyCommand,
+                    'url'   => $jumpUrl,
+                );
+            }
+        }
+
+        $this->json(array(
+            'code'    => 1,
+            'message' => 'success',
+            'open'    => $open,
+        ));
+    }
+
+    /**
      * 商品转链（供移动端 H5 调用，替代好单库 ratesurl/get_jditems_link）
      * POST index.php?r=api/goods/transfer
      * 参数：itemid=商品ID(淘宝) 或 material_id=商品ID(京东), platform=tb|jd|pdd|vip
@@ -286,7 +441,36 @@ class GoodsController extends ApiBaseController {
             ));
         }
 
-        // 京东/拼多多/唯品会：暂不支持转换，回显原链接（前端提示一键复制）
+        // 京东/拼多多/唯品会：尝试从链接中提取商品ID，匹配本地商品库后走好单库转链，
+        // 生成带返利的推广短链（唯品会还能返回 onlyCommand 口令）；匹配不到才回显原链接。
+        $goodsId = self::extractGoodsId($content, $platform);
+        if ($goodsId !== '') {
+            try {
+                $tjk  = new \ZhiCms\ext\Tjk();
+                $priv = $tjk->getPrivilegeLink($goodsId, '', $platform, '');
+                if ($priv['code'] == 1 && !empty($priv['data'])) {
+                    $d        = $priv['data'];
+                    $tpwd     = $d['onlyCommand'] ?? ($d['tpwd'] ?? ($d['tkl'] ?? ''));
+                    $shortUrl = $d['shortUrl'] ?? ($d['url'] ?? ($d['jumpUrl'] ?? ''));
+                    $converted = $tpwd ?: $shortUrl;
+                    if ($converted !== '') {
+                        $this->json(array(
+                            'code'     => 1,
+                            'message'  => 'success',
+                            'label'    => $label,
+                            'converted'=> $converted,
+                            'tpwd'     => $tpwd,
+                            'shortUrl' => $shortUrl,
+                            'title'    => $d['title'] ?? '',
+                        ));
+                        return;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // 转链异常：回退原链接，不阻断
+            }
+        }
+        // 无法转换：回显原链接（前端提示一键复制）
         $this->json(array(
             'code'     => 1,
             'message'  => 'success',
@@ -297,9 +481,38 @@ class GoodsController extends ApiBaseController {
     }
 
     /**
+     * 从剪贴板口令/链接中提取商品ID（用于非淘宝平台转链）
+     * 各平台链接形态不一，仅在能稳妥提取时才返回，提取不到返回 ''
+     */
+    private static function extractGoodsId($content, $platform)
+    {
+        $content = (string) $content;
+        if ($content === '') return '';
+
+        if ($platform === 'jd') {
+            // item.jd.com/100012043978 或 item.m.jd.com/.../100012043978 或 jd.com/100012043978
+            if (preg_match('#jd\.com/(\d{4,})#i', $content, $m)) return $m[1];
+            return '';
+        }
+        if ($platform === 'pdd') {
+            // mobile.yangkeduo.com/goods.html?goods_id=123456789 或 /goods/123456789
+            if (preg_match('#goods_id=(\d+)#i', $content, $m)) return $m[1];
+            if (preg_match('#/goods/(\d+)#i', $content, $m)) return $m[1];
+            return '';
+        }
+        if ($platform === 'vip') {
+            // detail.vip.com/detail-123456-987654.html 或 /detail-123456-987654
+            if (preg_match('#detail[_\-](?:vip\.com/)?.*?-(\d+)#i', $content, $m)) return $m[1];
+            if (preg_match('#/detail-(\d+)#i', $content, $m)) return $m[1];
+            return '';
+        }
+        return '';
+    }
+
+    /**
      * 将标准化商品字段映射为小程序插件所需格式
      */
-    protected function mapProduct($it) {
+    public static function mapProduct($it) {
         if (empty($it) || !is_array($it)) {
             return array();
         }
@@ -317,8 +530,17 @@ class GoodsController extends ApiBaseController {
         }
 
         $goodsId = $it['goodsId'] ?? '';
+        // 静态兼容：内联 siteUrl（原 ApiBaseController::siteUrl 仅依赖 $_SERVER）
+        $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
+        $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+        $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/index.php';
+        $scriptDir = rtrim(dirname($scriptName), '/\\');
+        if ($scriptDir === '' || $scriptDir === '.') {
+            $scriptDir = '';
+        }
+        $siteUrl = $scheme . $host . $scriptDir . '/';
         $detailUrl = $goodsId !== ''
-            ? $this->siteUrl() . 'index.php?r=index/view/detail/id=' . urlencode($goodsId) . '/type=' . urlencode($itemFrom ?: 'tb')
+            ? $siteUrl . 'index.php?r=index/view/detail/id=' . urlencode($goodsId) . '/type=' . urlencode($itemFrom ?: 'tb')
             : '';
 
         return array(

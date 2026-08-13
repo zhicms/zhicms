@@ -15,6 +15,7 @@ class CheapsController extends \app\base\controller\BaseController
         $searchKey = trim(htmlspecialchars($this->arg("key"), ENT_QUOTES, 'UTF-8'));
         // 再次过滤，避免空值或非法字符造成问题
         $searchKey = preg_replace('/[<>&"\']/', '', $searchKey);
+        $searchKey = addslashes($searchKey);
         
         // 构建查询条件
         $where = [];
