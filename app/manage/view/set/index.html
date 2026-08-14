@@ -97,6 +97,24 @@
                                 <small class="form-text text-muted">选择后，访问网站根域名将直接展示该插件模板（仅模板化插件可选）。设为“不使用插件主页”即恢复默认站点首页。</small>
                             </div>
 
+                            <!-- 后台访问锁（防爆破/隐藏真实后台入口） -->
+                            <h5 class="section-title"><i class="fas fa-lock"></i> 后台访问锁</h5>
+                            <div class="form-group">
+                                <label for="manage_gate_key" class="font-weight-bold">安全参数名</label>
+                                <input type="text" class="form-control" id="manage_gate_key" name="manage_gate_key" placeholder="例如: zhicms" value="<?php echo isset($ret['manage_gate_key']) ? htmlspecialchars($ret['manage_gate_key'], ENT_QUOTES) : ''; ?>">
+                                <small class="form-text text-muted">后台入口 GET 参数名。设置后，访问后台必须带此参数（如 <code>?zhicms=xxx</code>），否则跳转到首页。留空则关闭此锁（首次安装默认关闭）。</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="manage_gate_val" class="font-weight-bold">安全参数值</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="manage_gate_val" name="manage_gate_val" placeholder="例如: admin" value="<?php echo isset($ret['manage_gate_val']) ? htmlspecialchars($ret['manage_gate_val'], ENT_QUOTES) : ''; ?>">
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('manage_gate_val').value = Math.random().toString(36).slice(2,10) + Math.random().toString(36).slice(2,10);">随机生成</button>
+                                    </div>
+                                </div>
+                                <small class="form-text text-muted">后台入口 GET 参数值。建议设置足够长的随机串（如 16 位）。示例后台地址：<code>index.php?r=manage/login/index&amp;<?php echo isset($ret['manage_gate_key']) ? htmlspecialchars($ret['manage_gate_key'], ENT_QUOTES) : 'zhicms'; ?>=你的参数值</code>。请务必牢记，遗忘需手动改数据库恢复。</small>
+                            </div>
+
                             <!-- 站点状态（关闭站点 + 关闭说明 放在一起） -->
                             <h5 class="section-title"><i class="fas fa-power-off"></i> 站点状态</h5>
                             <div class="form-group">

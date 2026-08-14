@@ -27,11 +27,74 @@ class MController extends \app\base\controller\BaseController {
 		$viewFile = \ROOT_PATH . 'app/index/view/m/' . $style . '.html';
 		header('Content-Type: text/html; charset=utf-8');
 		if (file_exists($viewFile)) {
-			readfile($viewFile);
+			// m 单页是好单库 Web SDK 前端（Vue/JS），用 readfile 原样输出避免模板引擎解析 {{ }}。
+			// 好单库转链所需的 apikey/pid/union_id 等参数从后台 apiset 配置读取，
+			// 通过唯一占位标记替换注入到模板（模板里写的是 __HDK_XXX__ 标记）。
+			$api = \app\common\ConfigStore::load('api');
+			$hdk = array(
+				'appkey'  => $api['hdk_appkey'] ?? '',
+				'tb_pid'  => $api['hdk_tb_pid'] ?? '',
+				'tb_name' => $api['hdk_tb_name'] ?? '',
+				'jd_union'=> $api['hdk_union_id'] ?? '',
+				'jd_pid'  => $api['hdk_union_id'] ?? '', // 好单库京东 pid 与 union_id 同源
+				'pdd_pid' => $api['hdk_pdd_pid'] ?? '',
+				'vip_pid' => $api['hdk_vip_pid'] ?? '',
+				'channel' => '',
+			);
+			$map = array(
+				'__HDK_APIKEY__'  => $hdk['appkey'],
+				'__HDK_TB_PID__'  => $hdk['tb_pid'],
+				'__HDK_TB_NAME__' => $hdk['tb_name'],
+				'__HDK_JD_UNION__'=> $hdk['jd_union'],
+				'__HDK_JD_PID__'  => $hdk['jd_pid'],
+				'__HDK_PDD_PID__' => $hdk['pdd_pid'],
+				'__HDK_VIP_PID__' => $hdk['vip_pid'],
+				'__HDK_CHANNEL__' => $hdk['channel'],
+			);
+			$content = file_get_contents($viewFile);
+			$content = str_replace(array_keys($map), array_values($map), $content);
+			// m 单页的「数据查询接口」调用写成了框架模板函数 {url($route=..., $params=...)}，
+			// 但本方法用 file_get_contents 原样输出、不经过模板引擎，{url(...)} 不会被解析，
+			// 导致 JS 拿到的是字面字符串而非真实接口地址。此处预先用框架 url() 生成真实地址再替换。
+			$content = self::_resolveUrlTags($content);
+			echo $content;
 		} else {
 			$this->display();
 		}
 		exit;
+	}
+
+	/**
+	 * 解析 m 单页模板里写死的框架 {url($route=..., $params=array(...))} 调用。
+	 * 因为 _renderMobile 用 file_get_contents 原样输出、不经过模板引擎，
+	 * 这些标签不会被解析，必须在此用框架 url() 预先生成真实地址再替换回模板。
+	 * @param string $content
+	 * @return string
+	 */
+	private static function _resolveUrlTags($content){
+		// 模板中出现的全部 {url(...)} 唯一组合：标签原串 => url() 真实调用
+		$tags = array(
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"weal_category"))}' => \url('api/goods/hdkproxy', array('_target' => 'weal_category')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"wire_report_new"))}' => \url('api/goods/hdkproxy', array('_target' => 'wire_report_new')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"sourcecode_to_cid"))}' => \url('api/goods/hdkproxy', array('_target' => 'sourcecode_to_cid')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"activity_setting"))}' => \url('api/goods/hdkproxy', array('_target' => 'activity_setting')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"weal_list"))}' => \url('api/goods/hdkproxy', array('_target' => 'weal_list')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"search_activity_data"))}' => \url('api/goods/hdkproxy', array('_target' => 'search_activity_data')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"createConference_code"))}' => \url('api/goods/hdkproxy', array('_target' => 'createConference_code')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"pdd_activity_promotion"))}' => \url('api/goods/hdkproxy', array('_target' => 'pdd_activity_promotion')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"get_share_link"))}' => \url('api/goods/hdkproxy', array('_target' => 'get_share_link')),
+			'{url($route="api/goods/hdkproxy", $params=array("_target"=>"makeup_items"))}' => \url('api/goods/hdkproxy', array('_target' => 'makeup_items')),
+			'{url($route="api/goods/transfer", $params=array("platform"=>"tb"))}' => \url('api/goods/transfer', array('platform' => 'tb')),
+			'{url($route="api/goods/transfer", $params=array("platform"=>"jd"))}' => \url('api/goods/transfer', array('platform' => 'jd')),
+			'{url($route="api/goods/transfer", $params=array("platform"=>"pdd"))}' => \url('api/goods/transfer', array('platform' => 'pdd')),
+			'{url($route="api/goods/transfer", $params=array("platform"=>"vip"))}' => \url('api/goods/transfer', array('platform' => 'vip')),
+			'{url($route="api/goods/hdksuggest", $params=array())}' => \url('api/goods/hdksuggest', array()),
+			'{url($route="api/goods/hdksearch", $params=array("platform"=>"tb"))}' => \url('api/goods/hdksearch', array('platform' => 'tb')),
+			'{url($route="api/goods/hdksearch", $params=array("platform"=>"jd"))}' => \url('api/goods/hdksearch', array('platform' => 'jd')),
+			'{url($route="api/goods/hdksearch", $params=array("platform"=>"pdd"))}' => \url('api/goods/hdksearch', array('platform' => 'pdd')),
+			'{url($route="api/goods/hdksearch", $params=array("platform"=>"vip"))}' => \url('api/goods/hdksearch', array('platform' => 'vip')),
+		);
+		return str_replace(array_keys($tags), array_values($tags), $content);
 	}
 
 	public function getIndexData(){

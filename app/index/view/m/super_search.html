@@ -851,34 +851,34 @@
             ),
             // 公共参数
             commonParams: {
-              apikey: "", //必填
+              apikey: "__HDK_APIKEY__", //必填
             },
             // 淘宝、京东、拼多多转链需填写参数
             typesParams: createObj(
               [
                 Types.tb,
                 {
-                  pid: "", //必填
-                  tb_name: "", //必填
+                  pid: "__HDK_TB_PID__", //必填
+                  tb_name: "__HDK_TB_NAME__", //必填
                   relation_id: "", //选填
                 },
               ],
               [
                 Types.jd,
                 {
-                  union_id: "", //必填
+                  union_id: "__HDK_JD_UNION__", //必填
                 },
               ],
               [
                 Types.pdd,
                 {
-                  pid: "", //必填
+                  pid: "__HDK_PDD_PID__", //必填
                 },
               ],
               [
                 Types.wph,
                 {
-                  pid: "", //必填
+                  pid: "__HDK_VIP_PID__", //必填
                 },
               ]
             ),

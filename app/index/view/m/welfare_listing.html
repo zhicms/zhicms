@@ -1273,12 +1273,12 @@ function customOpenPage(link) {
     <script>
       function useCustomParams() {
         const customParams = {
-          apikey: "", //必填
-          pid: "",//必填-淘宝pid
-          tb_name: "",//必填-好单库后台授权的淘宝昵称
-      
-          union_id: "",//必填-好单库后台授权的京东联盟ID
-          jd_pid: ""//必填-京东联盟pid
+          apikey: "__HDK_APIKEY__", //必填
+          pid: "__HDK_TB_PID__",//必填-淘宝pid
+          tb_name: "__HDK_TB_NAME__",//必填-好单库后台授权的淘宝昵称
+
+          union_id: "__HDK_JD_UNION__",//必填-好单库后台授权的京东联盟ID
+          jd_pid: "__HDK_JD_PID__"//必填-京东联盟pid
         }
         return {
           customParams,

@@ -117,9 +117,19 @@ class IndexController extends \app\base\controller\BaseController
             // 文章资讯分类页 SEO
             $cateName = \app\base\controller\BaseController::getNavName($navId);
             $siteName = obj('base/Base')->SiteConfig('sitename');
+            // 读取分类(yun_nav)后台设置的 keywords/dec，作为前台 meta 兜底（addtype 可配置）
+            $cateKeywords = '';
+            $cateDec = '';
+            $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = {$navId}"));
+            if (!empty($navRow)) {
+                $cateKeywords = isset($navRow['keywords']) ? trim($navRow['keywords']) : '';
+                $cateDec      = isset($navRow['dec']) ? trim($navRow['dec']) : '';
+            }
             $this->pageTitle = ($cateName ?: '分类') . ' - 第' . $pageNum . '页 - ' . $siteName;
-            $this->pageKeywords = ($cateName ?: '') . ',资讯,文章';
-            $this->pageDescription = ($cateName ?: '') . '分类下的最新资讯文章第' . $pageNum . '页';
+            // 关键词优先级：分类 keywords > 分类名 > 文章页通用 SEO > 全局
+            $kwCandidates = array_filter(array($cateKeywords ?: $cateName, '资讯', '文章', obj('base/Base')->SEO('view_keywords'), obj('base/Base')->SiteConfig('sitekeywords')));
+            $this->pageKeywords = implode(',', $kwCandidates);
+            $this->pageDescription = $cateDec ?: (($cateName ?: '') . '分类下的最新资讯文章第' . $pageNum . '页');
             $this->canonicalUrl = url($route='index/index/index/nav=<nav>', $params=array('nav' => $navId));
         } elseif (!empty($listId)) {
             // 分类页 SEO
@@ -138,11 +148,15 @@ class IndexController extends \app\base\controller\BaseController
             $this->pageKeywords = $y . '年' . $m . '月,文章归档';
             $this->pageDescription = $siteName . ' ' . $y . '年' . $m . '月的文章归档，共' . ($page['count'] ?? 0) . '篇。';
             $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'index.html?ym=' . $ym;
+            // 归档页为低质重复页，noindex（canonical 已指向自身）
+            $this->setNoindex();
         } elseif ($pageNum > 1) {
             // 首页分页
             $siteName = obj('base/Base')->SiteConfig('sitename');
             $this->pageTitle = '首页 - 第' . $pageNum . '页 - ' . $siteName;
             $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . ($pageNum > 1 ? 'index.html?page=' . $pageNum : 'index.html');
+            // 分页页 noindex（canonical 已指向首页），避免分页重复收录
+            $this->setNoindex();
         }
 
         $this->display();
@@ -232,20 +246,53 @@ class IndexController extends \app\base\controller\BaseController
       // ===== SEO 优化：文章详情页面标题/关键词/描述 =====
       $siteName = obj('base/Base')->SiteConfig('sitename');
       $articleTitle = isset($view['title']) ? trim($view['title']) : '';
+      // 读取文章所属「文章资讯分类」(yun_nav) 设置的关键词/描述，作为前台 meta 兜底（后台 addtype 可配置）
+      $cateKeywords = '';
+      $cateDec = '';
+      $navid = (int)($view['navid'] ?? 0);
+      if ($navid > 0) {
+          $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = {$navid}"));
+          if (!empty($navRow)) {
+              $cateKeywords = isset($navRow['keywords']) ? trim($navRow['keywords']) : '';
+              $cateDec      = isset($navRow['dec']) ? trim($navRow['dec']) : '';
+          }
+      }
       if ($articleTitle) {
           $this->pageTitle = $articleTitle . ' - ' . $siteName;
       } else {
           $this->pageTitle = obj('base/Base')->SEO('view_title') ?: ('文章详情 - ' . $siteName);
       }
-      $this->pageKeywords = $articleTitle ? ($articleTitle . ',' . obj('base/Base')->SEO('view_keywords') ?: obj('base/Base')->SiteConfig('sitekeywords')) : obj('base/Base')->SEO('view_keywords');
+      // 关键词优先级：文章标题 > 分类关键词 > 文章页通用 SEO(view_keywords) > 站点全局(sitekeywords)
+      $kwCandidates = array_filter(array($articleTitle, $cateKeywords, obj('base/Base')->SEO('view_keywords'), obj('base/Base')->SiteConfig('sitekeywords')));
+      $this->pageKeywords = implode(',', $kwCandidates);
       $rawDesc = isset($view['content']) ? strip_tags($view['content']) : ($articleTitle ?: '');
-      $this->pageDescription = mb_substr($rawDesc, 0, 180, 'UTF-8') ?: (obj('base/Base')->SEO('view_dec') ?: obj('base/Base')->SiteConfig('sitedescription'));
+      // 描述优先级：正文摘要 > 分类描述(dec) > 文章页通用 SEO(view_dec) > 站点全局(sitedescription)
+      $this->pageDescription = mb_substr($rawDesc, 0, 180, 'UTF-8')
+          ?: ($cateDec ?: (obj('base/Base')->SEO('view_dec') ?: obj('base/Base')->SiteConfig('sitedescription')));
       // 规范链接
       $this->canonicalUrl = url($route='index/index/view/id=<id>', $params=array('id'=>$id));
       // Open Graph 图片：取文章第一张图
       if (!empty($view['pic'])) {
           $this->ogImage = $view['pic'];
       }
+
+      // 文章详情页结构化数据(Article)：提升搜索引擎富媒体展示与收录质量
+      $articleLd = array(
+          '@context'        => 'https://schema.org',
+          '@type'           => 'Article',
+          'headline'        => $articleTitle,
+          'description'     => mb_substr(strip_tags($view['content'] ?? ''), 0, 180, 'UTF-8'),
+          'datePublished'   => isset($view['date']) ? date('c', strtotime($view['date'])) : date('c'),
+          'dateModified'    => isset($view['date']) ? date('c', strtotime($view['date'])) : date('c'),
+          'author'          => array('@type' => 'Organization', 'name' => $siteName),
+          'publisher'       => array('@type' => 'Organization', 'name' => $siteName,
+              'logo' => array('@type' => 'ImageObject', 'url' => rtrim(obj('base/Base')->SiteConfig('hosturl'), '/') . (obj('base/Base')->SiteConfig('logo') ? '/' . ltrim(obj('base/Base')->SiteConfig('logo'), '/') : ''))),
+          'mainEntityOfPage' => array('@type' => 'WebPage', '@id' => $this->canonicalUrl),
+      );
+      if (!empty($view['pic'])) {
+          $articleLd['image'] = array('@type' => 'ImageObject', 'url' => $view['pic']);
+      }
+      $this->articleJsonLd = json_encode($articleLd, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
         // 加载公共侧边栏（含热门文章、分类目录、站内速览）
         $this->loadCommonSidebar();

@@ -250,7 +250,7 @@ class GoodsController extends ApiBaseController {
                 } elseif ($apiPlatform === 'jd') {
                     $fallback = 'https://item.jd.com/' . $realId . '.html';
                 } elseif ($apiPlatform === 'pdd') {
-                    $fallback = 'https://mobile.yangkeduo.com/goods.html?goods_id=' . $realId;
+                    $fallback = 'https://mobile.yangkeduo.com/goods.html?goods_sign=' . $realId;
                 } elseif ($apiPlatform === 'vip') {
                     $fallback = 'https://www.vip.com/item/' . $realId;
                 }

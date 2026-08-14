@@ -40,42 +40,64 @@ class AiController extends \app\base\controller\BaseController
         // price: '免费' 表示免费(或免费额度)，否则填写价格说明
         $aiPlatforms = array(
             'deepseek'   => array('name' => 'DeepSeek', 'protocol' => 'openai', 'url' => 'https://api.deepseek.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
-                array('id' => 'deepseek-chat', 'price' => '免费'),
+                array('id' => 'deepseek-chat', 'price' => '免费额度/¥1/百万tokens'),
                 array('id' => 'deepseek-reasoner', 'price' => '¥1/百万tokens'),
-                array('id' => 'deepseek-coder', 'price' => '免费'),
+                array('id' => 'deepseek-coder', 'price' => '免费额度'),
+            ), 'embed_url' => 'https://api.deepseek.com/v1/embeddings', 'embed_models' => array(
+                array('id' => 'deepseek-embedding', 'price' => '免费'),
             )),
             'zhipu'      => array('name' => '智谱 AI (GLM)', 'protocol' => 'openai', 'url' => 'https://open.bigmodel.cn/api/paas/v4/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
                 array('id' => 'glm-4.7-flash', 'price' => '免费'),
+                array('id' => 'glm-4.6', 'price' => '免费'),
                 array('id' => 'glm-4-air', 'price' => '免费'),
                 array('id' => 'glm-4-airx', 'price' => '免费'),
                 array('id' => 'glm-4-plus', 'price' => '¥0.5/百万tokens'),
                 array('id' => 'glm-4-long', 'price' => '¥1/百万tokens'),
                 array('id' => 'glm-4v', 'price' => '¥0.4/百万tokens'),
+            ), 'embed_url' => 'https://open.bigmodel.cn/api/paas/v4/embeddings', 'embed_models' => array(
+                array('id' => 'embedding-3', 'price' => '免费'),
+                array('id' => 'embedding-2', 'price' => '免费'),
+            ), 'rerank_url' => 'https://open.bigmodel.cn/api/paas/v4/rerank', 'rerank_models' => array(
+                array('id' => 'rerank-2.0', 'price' => '¥0.5/百万tokens'),
+                array('id' => 'rerank-1.5', 'price' => '¥0.2/百万tokens'),
+                array('id' => 'rerank-2.0-long', 'price' => '¥1/百万tokens'),
             )),
             'qwen'       => array('name' => '通义千问 (阿里百炼)', 'protocol' => 'openai', 'url' => 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
                 array('id' => 'qwen-plus', 'price' => '¥0.4/百万tokens'),
                 array('id' => 'qwen-turbo', 'price' => '免费'),
                 array('id' => 'qwen-max', 'price' => '¥2/百万tokens'),
                 array('id' => 'qwen-max-longcontext', 'price' => '¥3/百万tokens'),
-                array('id' => 'qwen2.5-7b-instruct', 'price' => '免费'),
-                array('id' => 'qwen2.5-72b-instruct', 'price' => '¥1/百万tokens'),
                 array('id' => 'qwen3-235b-a22b', 'price' => '¥2/百万tokens'),
+                array('id' => 'qwen2.5-72b-instruct', 'price' => '¥1/百万tokens'),
+                array('id' => 'qwen2.5-7b-instruct', 'price' => '免费'),
             )),
             'siliconflow'=> array('name' => '硅基流动 (SiliconFlow)', 'protocol' => 'openai', 'url' => 'https://api.siliconflow.cn/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'deepseek-ai/DeepSeek-V3', 'price' => '¥1.7/百万tokens'),
+                array('id' => 'deepseek-ai/DeepSeek-R1', 'price' => '¥4/百万tokens'),
+                array('id' => 'Qwen/Qwen2.5-72B-Instruct', 'price' => '¥1.3/百万tokens'),
+                array('id' => 'meta-llama/Llama-3.3-70B-Instruct', 'price' => '¥2.2/百万tokens'),
                 array('id' => 'Qwen/Qwen2.5-7B-Instruct', 'price' => '免费'),
                 array('id' => 'Qwen/Qwen2.5-14B-Instruct', 'price' => '免费'),
                 array('id' => 'deepseek-ai/DeepSeek-R1-Distill-Qwen-7B', 'price' => '免费'),
                 array('id' => 'THUDM/glm-4-9b-chat', 'price' => '免费'),
-                array('id' => 'Qwen/Qwen2.5-72B-Instruct', 'price' => '¥1.3/百万tokens'),
-                array('id' => 'deepseek-ai/DeepSeek-V3', 'price' => '¥1.7/百万tokens'),
-                array('id' => 'deepseek-ai/DeepSeek-R1', 'price' => '¥4/百万tokens'),
-                array('id' => 'meta-llama/Llama-3.3-70B-Instruct', 'price' => '¥2.2/百万tokens'),
+            ), 'image_url' => 'https://api.siliconflow.cn/v1/images/generations', 'image_models' => array(
+                array('id' => 'Kwai-Kolors/Kolors', 'price' => '免费'),
+                array('id' => 'black-forest-labs/FLUX.1-schnell', 'price' => '免费'),
+                array('id' => 'black-forest-labs/FLUX.1-dev', 'price' => '¥0.6/百万tokens'),
+            ), 'embed_url' => 'https://api.siliconflow.cn/v1/embeddings', 'embed_models' => array(
+                array('id' => 'BAAI/bge-m3', 'price' => '¥0.07/百万tokens'),
+                array('id' => 'BAAI/bge-large-zh-v1.5', 'price' => '免费'),
+            ), 'rerank_url' => 'https://api.siliconflow.cn/v1/rerank', 'rerank_models' => array(
+                array('id' => 'BAAI/bge-reranker-v2-m3', 'price' => '¥0.2/百万tokens'),
             )),
             'doubao'     => array('name' => '豆包 (火山方舟)', 'protocol' => 'openai', 'url' => 'https://ark.cn-beijing.volces.com/api/v3/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
                 array('id' => 'doubao-seed-1.6-250615', 'price' => '¥0.6/百万tokens'),
-                array('id' => 'doubao-lite-32k', 'price' => '免费'),
                 array('id' => 'doubao-pro-32k', 'price' => '¥1.2/百万tokens'),
+                array('id' => 'doubao-lite-32k', 'price' => '免费'),
                 array('id' => 'doubao-vision-lite-32k', 'price' => '免费'),
+            ), 'image_url' => 'https://ark.cn-beijing.volces.com/api/v3/images/generations', 'image_models' => array(
+                array('id' => 'doubao-seedream-3-0-t2i-250415', 'price' => '¥0.8/百万tokens'),
+                array('id' => 'doubao-seedream-2-0-t2i-241115', 'price' => '¥0.4/百万tokens'),
             )),
             'kimi'       => array('name' => 'Kimi (Moonshot)', 'protocol' => 'openai', 'url' => 'https://api.moonshot.cn/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
                 array('id' => 'moonshot-v1-8k', 'price' => '¥1/百万tokens'),
@@ -99,28 +121,28 @@ class AiController extends \app\base\controller\BaseController
                 array('id' => 'Baichuan2-13B-Chat', 'price' => '免费'),
             )),
             'openai'     => array('name' => 'OpenAI', 'protocol' => 'openai', 'url' => 'https://api.openai.com/v1/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'gpt-4.1', 'price' => '$8/百万tokens'),
+                array('id' => 'gpt-4.1-mini', 'price' => '$0.8/百万tokens'),
                 array('id' => 'gpt-4o', 'price' => '$5/百万tokens'),
                 array('id' => 'gpt-4o-mini', 'price' => '$0.6/百万tokens'),
-                array('id' => 'gpt-4.1-mini', 'price' => '$0.8/百万tokens'),
-                array('id' => 'o1', 'price' => '$60/百万tokens'),
                 array('id' => 'o3-mini', 'price' => '$1.1/百万tokens'),
             )),
             'azure'      => array('name' => 'Azure OpenAI', 'protocol' => 'azure', 'url' => 'https://<resource>.openai.azure.com/openai/deployments/<deployment>/chat/completions', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'gpt-4.1', 'price' => '$10/百万tokens'),
                 array('id' => 'gpt-4o', 'price' => '$5/百万tokens'),
                 array('id' => 'gpt-35-turbo', 'price' => '$0.5/百万tokens'),
-                array('id' => 'gpt-4.1', 'price' => '$10/百万tokens'),
             )),
-            'gemini'     => array('name' => 'Google Gemini', 'protocol' => 'gemini', 'url' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent', 'secret' => false, 'appid' => false, 'models' => array(
-                array('id' => 'gemini-1.5-pro', 'price' => '$1.25/百万tokens'),
+            'gemini'     => array('name' => 'Google Gemini', 'protocol' => 'gemini', 'url' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent', 'secret' => false, 'appid' => false, 'models' => array(
+                array('id' => 'gemini-2.5-pro', 'price' => '$1.25/百万tokens'),
+                array('id' => 'gemini-2.5-flash', 'price' => '$0.3/百万tokens'),
                 array('id' => 'gemini-2.0-flash', 'price' => '$0.1/百万tokens'),
                 array('id' => 'gemini-2.0-flash-lite', 'price' => '免费'),
-                array('id' => 'gemini-2.5-pro', 'price' => '$1.25/百万tokens'),
             )),
             'anthropic'  => array('name' => 'Anthropic Claude', 'protocol' => 'anthropic', 'url' => 'https://api.anthropic.com/v1/messages', 'secret' => false, 'appid' => false, 'models' => array(
                 array('id' => 'claude-3-5-sonnet-20241022', 'price' => '$3/百万tokens'),
+                array('id' => 'claude-3-5-haiku', 'price' => '$0.8/百万tokens'),
                 array('id' => 'claude-3-opus-20240229', 'price' => '$15/百万tokens'),
                 array('id' => 'claude-3-haiku-20240307', 'price' => '$0.25/百万tokens'),
-                array('id' => 'claude-3-5-haiku', 'price' => '$0.8/百万tokens'),
             )),
             // 百度千帆 V2 已提供 OpenAI 兼容接口，鉴权直接用千帆 API Key（Bearer），
             // 无需再用 AK/SK 换取 access_token。旧的 aip.baidubce.com 协议保留兼容（protocol=ernie）。
@@ -147,14 +169,23 @@ class AiController extends \app\base\controller\BaseController
         $defaultModels   = $aiPlatforms[$defaultPlatform]['models'];
         $defaultUrl      = $aiPlatforms[$defaultPlatform]['url'];
 
+        // 平台 key => 中文名（表格展示用）
+        $aiPlatformName = array();
+        foreach ($aiPlatforms as $pk => $pv) {
+            $aiPlatformName[$pk] = $pv['name'];
+        }
+
         $this->assign('aiModels', $aiModels);
-        $this->assign('currentChatKey', $currentChat);
-        $this->assign('currentImageKey', $currentImage);
+        $this->assign('aiPlatformName', $aiPlatformName);
+        $this->assign('aiChat', $currentChat);
+        $this->assign('aiImage', $currentImage);
         $this->assign('aiSystemPrompt', $aiSystemPrompt);
         $this->assign('aiPlatforms', $aiPlatforms);
         $this->assign('defaultPlatform', $defaultPlatform);
         $this->assign('defaultModels', $defaultModels);
         $this->assign('defaultUrl', $defaultUrl);
+        // 注入给前端 JS 的平台预设数据
+        $this->assign('aiPlatformsJson', json_encode($aiPlatforms, JSON_UNESCAPED_UNICODE));
 
         $this->display('app/manage/view/ai/setting');
     }
@@ -171,15 +202,42 @@ class AiController extends \app\base\controller\BaseController
             exit(json_encode(array('info' => '请求方式错误', 'status' => 'n')));
         }
 
+        $id       = isset($_POST['id']) ? trim($_POST['id']) : '';
         $apiUrl   = isset($_POST['ai_api_url']) ? trim($_POST['ai_api_url']) : '';
         $apiKey   = isset($_POST['ai_api_key']) ? trim($_POST['ai_api_key']) : '';
         $model    = isset($_POST['ai_model']) ? trim($_POST['ai_model']) : '';
+        $name     = isset($_POST['ai_name']) ? trim($_POST['ai_name']) : '';
         $modelType = isset($_POST['ai_model_type']) ? trim($_POST['ai_model_type']) : 'chat';
+        $platform = isset($_POST['ai_platform']) ? trim($_POST['ai_platform']) : '';
         $protocol = isset($_POST['ai_protocol']) ? trim($_POST['ai_protocol']) : 'openai';
         $apiSecret = isset($_POST['ai_api_secret']) ? trim($_POST['ai_api_secret']) : '';
         $appId    = isset($_POST['ai_app_id']) ? trim($_POST['ai_app_id']) : '';
 
-        if (empty($apiUrl) || empty($apiKey) || empty($model)) {
+        // 兼容「保存全局设置」入口：仅传入 ai_chat/ai_image/ai_system_prompt，无 ai_model
+        $gChat   = isset($_POST['ai_chat']) ? trim($_POST['ai_chat']) : '';
+        $gImage  = isset($_POST['ai_image']) ? trim($_POST['ai_image']) : '';
+        $gPrompt = isset($_POST['ai_system_prompt']) ? trim($_POST['ai_system_prompt']) : '';
+        if (empty($model)) {
+            // 全局设置分支：仅更新默认模型与系统提示词，不影响模型列表
+            $config = AiService::loadConfig();
+            // 校验所选默认模型确实存在，避免写入无效 key
+            $models = isset($config['ai_models']) ? $config['ai_models'] : array();
+            if ($gChat !== '' && !isset($models[$gChat])) {
+                echo json_encode(array('info' => '所选对话模型不存在', 'status' => 'n'));
+                return;
+            }
+            if ($gImage !== '' && !isset($models[$gImage])) {
+                echo json_encode(array('info' => '所选图像模型不存在', 'status' => 'n'));
+                return;
+            }
+            $config['ai_chat'] = $gChat;
+            $config['ai_image'] = $gImage;
+            $config['ai_system_prompt'] = $gPrompt;
+            AiService::saveConfig($config);
+            echo json_encode(array('info' => '全局设置已保存', 'status' => 'y'));
+            return;
+        }
+        if (empty($apiUrl) || empty($apiKey)) {
             echo json_encode(array('info' => '请填写完整的 API 信息', 'status' => 'n'));
             return;
         }
@@ -187,101 +245,117 @@ class AiController extends \app\base\controller\BaseController
         $config  = AiService::loadConfig();
         $models  = isset($config['ai_models']) ? $config['ai_models'] : array();
 
-        // 生成唯一 key
-        $key = substr(md5($apiUrl . $model . $protocol), 0, 10);
-        $models[$key] = array(
-            'api_url'    => $apiUrl,
-            'api_key'    => $apiKey,
-            'model'      => $model,
-            'type'       => $modelType,
-            'protocol'   => $protocol,
-            'api_secret' => $apiSecret,
-            'app_id'     => $appId,
-        );
-
-        $config['ai_models'] = $models;
-
-        // 如果该类型还没有启用的模型，自动启用
-        if ($modelType === 'chat' && empty($config['ai_chat'])) {
-            $config['ai_chat'] = $key;
-        } elseif ($modelType === 'image' && empty($config['ai_image'])) {
-            $config['ai_image'] = $key;
+        if ($id !== '' && isset($models[$id])) {
+            // 编辑：保留原 key；若 model 改变则更换 key
+            $old = $models[$id];
+            unset($models[$id]);
+            $newKey = ($model !== $id) ? $model : $id;
+            $models[$newKey] = array(
+                'name'       => $name !== '' ? $name : ($model !== $id ? $model : ($old['name'] ?? $model)),
+                'api_url'    => $apiUrl,
+                'api_key'    => $apiKey,
+                'model'      => $model,
+                'type'       => $modelType,
+                'platform'   => $platform,
+                'protocol'   => $protocol,
+                'api_secret' => $apiSecret,
+                'app_id'     => $appId,
+            );
+            // 若默认启用项引用了旧 key，同步更新
+            if (isset($config['ai_chat']) && $config['ai_chat'] === $id) $config['ai_chat'] = $newKey;
+            if (isset($config['ai_image']) && $config['ai_image'] === $id) $config['ai_image'] = $newKey;
+        } else {
+            // 新增：以 model 作为唯一 key
+            $newKey = $model;
+            $models[$newKey] = array(
+                'name'       => $name !== '' ? $name : $model,
+                'api_url'    => $apiUrl,
+                'api_key'    => $apiKey,
+                'model'      => $model,
+                'type'       => $modelType,
+                'platform'   => $platform,
+                'protocol'   => $protocol,
+                'api_secret' => $apiSecret,
+                'app_id'     => $appId,
+            );
+            // 该类型尚未启用则自动启用
+            if ($modelType === 'chat' && empty($config['ai_chat'])) {
+                $config['ai_chat'] = $newKey;
+            } elseif ($modelType === 'image' && empty($config['ai_image'])) {
+                $config['ai_image'] = $newKey;
+            }
         }
 
+        $config['ai_models'] = $models;
         AiService::saveConfig($config);
 
-        echo json_encode(array('info' => '模型添加成功', 'status' => 'y'));
+        echo json_encode(array('info' => '模型保存成功', 'status' => 'y'));
     }
 
     /**
-     * 更新模型
+     * 新增/编辑模型统一入口（前端统一调用）
+     * POST: index.php?r=manage/ai/saveModel
+     */
+    public function saveModel()
+    {
+        $this->save();
+    }
+
+    /**
+     * 获取单个模型信息（编辑回显）
+     * GET: index.php?r=manage/ai/modelInfo&id=xxx
+     */
+    public function modelInfo()
+    {
+        $this->checkManageSession();
+        $id = isset($_GET['id']) ? trim($_GET['id']) : '';
+        $config = AiService::loadConfig();
+        $models = isset($config['ai_models']) ? $config['ai_models'] : array();
+        if ($id !== '' && isset($models[$id])) {
+            $d = $models[$id];
+            $d['id'] = $id;
+            echo json_encode(array('status' => 'y', 'info' => 'ok', 'data' => $d));
+            return;
+        }
+        echo json_encode(array('status' => 'n', 'info' => '未找到模型'));
+    }
+
+    /**
+     * 删除模型
+     * POST: index.php?r=manage/ai/delModel
+     */
+    public function delModel()
+    {
+        $this->checkManageSession();
+        if (!\IS_POST) {
+            exit(json_encode(array('info' => '请求方式错误', 'status' => 'n')));
+        }
+        $id = isset($_POST['id']) ? trim($_POST['id']) : '';
+        if (empty($id)) {
+            echo json_encode(array('info' => '参数缺失', 'status' => 'n'));
+            return;
+        }
+        $config = AiService::loadConfig();
+        $models = isset($config['ai_models']) ? $config['ai_models'] : array();
+        if (!isset($models[$id])) {
+            echo json_encode(array('info' => '模型不存在', 'status' => 'n'));
+            return;
+        }
+        unset($models[$id]);
+        if (isset($config['ai_chat']) && $config['ai_chat'] === $id) $config['ai_chat'] = '';
+        if (isset($config['ai_image']) && $config['ai_image'] === $id) $config['ai_image'] = '';
+        $config['ai_models'] = $models;
+        AiService::saveConfig($config);
+        echo json_encode(array('info' => '已删除', 'status' => 'y'));
+    }
+
+    /**
+     * 更新模型（兼容旧路由别名，统一走 save）
      * POST: index.php?r=manage/ai/update
      */
     public function update()
     {
-        $this->checkManageSession();
-
-        // POST：接收弹窗表单提交，保存模型配置
-        if ($this->isPost()) {
-            $key       = isset($_POST['ai_model_key']) ? trim($_POST['ai_model_key']) : '';
-            // 兼容两种字段名前缀（edit_ 前缀为当前前端使用；旧缓存前端可能用无前缀同名），避免提交字段不匹配导致参数不更新
-            $apiUrl    = isset($_POST['edit_ai_api_url']) ? trim($_POST['edit_ai_api_url']) : (isset($_POST['ai_api_url']) ? trim($_POST['ai_api_url']) : '');
-            $apiKey    = isset($_POST['edit_ai_api_key']) ? trim($_POST['edit_ai_api_key']) : (isset($_POST['ai_api_key']) ? trim($_POST['ai_api_key']) : '');
-            $model     = isset($_POST['edit_ai_model']) ? trim($_POST['edit_ai_model']) : (isset($_POST['ai_model']) ? trim($_POST['ai_model']) : '');
-            $modelType = isset($_POST['ai_model_type']) ? trim($_POST['ai_model_type']) : 'chat';
-            $protocol  = isset($_POST['edit_ai_protocol']) ? trim($_POST['edit_ai_protocol']) : (isset($_POST['ai_protocol']) ? trim($_POST['ai_protocol']) : 'openai');
-            $apiSecret = isset($_POST['edit_ai_api_secret']) ? trim($_POST['edit_ai_api_secret']) : (isset($_POST['ai_api_secret']) ? trim($_POST['ai_api_secret']) : '');
-            $appId     = isset($_POST['edit_ai_app_id']) ? trim($_POST['edit_ai_app_id']) : (isset($_POST['ai_app_id']) ? trim($_POST['ai_app_id']) : '');
-
-            if (empty($key)) {
-                $this->updateAjaxOrRedirect(array('info' => '参数错误', 'status' => 'n'));
-                return;
-            }
-
-            $config = AiService::loadConfig();
-            $models = isset($config['ai_models']) ? $config['ai_models'] : array();
-
-            if (!isset($models[$key])) {
-                $this->updateAjaxOrRedirect(array('info' => '模型不存在', 'status' => 'n'));
-                return;
-            }
-
-            // 更新：如果 API Key 留空则保留原值
-            if (!empty($apiUrl)) {
-                $models[$key]['api_url'] = $apiUrl;
-            }
-            if (!empty($apiKey)) {
-                $models[$key]['api_key'] = $apiKey;
-            }
-            if (!empty($model)) {
-                $models[$key]['model'] = $model;
-            }
-            $models[$key]['type'] = $modelType;
-            // 这些字段即使为空也允许覆盖（如切换协议时清空 secret）
-            $models[$key]['protocol']   = $protocol;
-            $models[$key]['api_secret'] = $apiSecret;
-            $models[$key]['app_id']     = $appId;
-
-            $config['ai_models'] = $models;
-            AiService::saveConfig($config);
-
-            $this->updateAjaxOrRedirect(array('info' => '模型更新成功', 'status' => 'y'));
-            return;
-        }
-
-        // GET：直接访问该路由时，渲染设置页并自动弹出「编辑模型」弹窗（而非返回 JSON）
-        $key = isset($_GET['key']) ? trim($_GET['key']) : '';
-        $config = AiService::loadConfig();
-        $models = isset($config['ai_models']) ? $config['ai_models'] : array();
-        // 未指定 key 时默认取第一个模型
-        if ($key === '' && !empty($models)) {
-            foreach (array_keys($models) as $k) { $key = $k; break; }
-        }
-        $data = isset($models[$key]) ? $models[$key] : array();
-        $this->assign('autoOpenEdit', !empty($data));
-        $this->assign('autoOpenEditKey', $key);
-        $this->assign('autoOpenEditData', $data);
-        $this->setting();
+        $this->save();
     }
 
     /**
@@ -291,8 +365,9 @@ class AiController extends \app\base\controller\BaseController
     public function active()
     {
         $this->checkManageSession();
-        $key  = isset($_GET['key']) ? trim($_GET['key']) : '';
-        $type = isset($_GET['type']) ? trim($_GET['type']) : 'chat';
+        header('Content-Type: application/json; charset=utf-8');
+        $key  = isset($_POST['key']) ? trim($_POST['key']) : (isset($_GET['key']) ? trim($_GET['key']) : '');
+        $type = isset($_POST['type']) ? trim($_POST['type']) : (isset($_GET['type']) ? trim($_GET['type']) : 'chat');
 
         if (empty($key)) {
             echo json_encode(array('info' => '参数错误', 'status' => 'n'));
@@ -301,13 +376,30 @@ class AiController extends \app\base\controller\BaseController
 
         $config = AiService::loadConfig();
         if ($type === 'image') {
-            $config['ai_image'] = $key;
+            // 再次点击已启用的模型 => 取消启用（暂停）
+            if (isset($config['ai_image']) && $config['ai_image'] === $key) {
+                $config['ai_image'] = '';
+                $enabled = 0;
+            } else {
+                $config['ai_image'] = $key;
+                $enabled = 1;
+            }
         } else {
-            $config['ai_chat'] = $key;
+            if (isset($config['ai_chat']) && $config['ai_chat'] === $key) {
+                $config['ai_chat'] = '';
+                $enabled = 0;
+            } else {
+                $config['ai_chat'] = $key;
+                $enabled = 1;
+            }
         }
         AiService::saveConfig($config);
 
-        echo json_encode(array('info' => '模型已切换', 'status' => 'y'));
+        echo json_encode(array(
+            'info'    => $enabled ? '已启用' : '已暂停',
+            'status'  => 'y',
+            'enabled' => $enabled,
+        ));
     }
 
     /**

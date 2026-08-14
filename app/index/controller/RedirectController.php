@@ -40,6 +40,18 @@ class RedirectController extends \app\base\controller\BaseController
         $platform = strtolower(trim($this->arg('platform', '')));
         $id       = trim($this->arg('id', ''));
 
+        // 兜底：极端环境下若 $args 未正确合并 $_GET（如某些 SAPI 下 $_GET 被重置），
+        // 直接从原始 QUERY_STRING 再取一次，确保淘宝带 "-" 的 id 百分百可取。
+        if (($platform === '' || $id === '') && isset($_SERVER['QUERY_STRING'])) {
+            parse_str($_SERVER['QUERY_STRING'], $qs);
+            if ($platform === '' && isset($qs['platform'])) {
+                $platform = strtolower(trim($qs['platform']));
+            }
+            if ($id === '' && isset($qs['id'])) {
+                $id = trim($qs['id']);
+            }
+        }
+
         $allow = array('tb', 'jd', 'pdd', 'vip');
 
         // 规范兼容：taobao -> tb，其余未知值标记为空交由下方纠正
@@ -145,7 +157,7 @@ class RedirectController extends \app\base\controller\BaseController
         $maps = array(
             'tb'  => 'https://detail.tmall.com/item.htm?id=',
             'jd'  => 'https://item.jd.com/',
-            'pdd' => 'https://mobile.yangkeduo.com/goods.html?goods_id=',
+            'pdd' => 'https://mobile.yangkeduo.com/goods.html?goods_sign=',
             'vip' => 'https://detail.vip.com/detail-',
         );
         return isset($maps[$platform]) ? ($maps[$platform] . $id) : 'https://www.taobao.com/';

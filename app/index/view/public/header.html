@@ -25,22 +25,32 @@ try {
 <title>{if isset($pageTitle) && $pageTitle != ''}{$pageTitle}{elseif obj('base/Base')->SEO('index_title')}{obj('base/Base')->SEO('index_title')}{else}{obj('base/Base')->SiteConfig('sitename')}{/if}</title>
 <meta name="keywords" content="{if isset($pageKeywords) && $pageKeywords != ''}{$pageKeywords}{elseif obj('base/Base')->SEO('index_keywords')}{obj('base/Base')->SEO('index_keywords')}{else}{obj('base/Base')->SiteConfig('sitekeywords')}{/if}">
 <meta name="description" content="{if isset($pageDescription) && $pageDescription != ''}{$pageDescription}{elseif obj('base/Base')->SEO('index_dec')}{obj('base/Base')->SEO('index_dec')}{else}{obj('base/Base')->SiteConfig('sitedescription')}{/if}">
+<!-- 页面级收录指令：低质/重复页(搜索、分页、归档、404)由控制器置 noindex -->
+<meta name="robots" content="{if isset($pageRobots) && $pageRobots != ''}{$pageRobots}{else}index,follow{/if}">
 {if isset($canonicalUrl)}
 <link rel="canonical" href="{$canonicalUrl}">
 {else}
 <link rel="canonical" href="{obj('base/Base')->SiteConfig('hosturl')}">
 {/if}
+<meta name="theme-color" content="#FF6146">
 <meta property="og:type" content="{if CONTROLLER_NAME=='index' && ACTION_NAME=='view'}article{else}website{/if}">
 <meta property="og:site_name" content="{obj('base/Base')->SiteConfig('sitename')}">
 <meta property="og:title" content="{if isset($pageTitle) && $pageTitle != ''}{$pageTitle}{else}{obj('base/Base')->SiteConfig('sitename')}{/if}">
 <meta property="og:description" content="{if isset($pageDescription) && $pageDescription != ''}{$pageDescription}{else}{obj('base/Base')->SiteConfig('sitedescription')}{/if}">
 <meta property="og:url" content="{if isset($canonicalUrl)}{$canonicalUrl}{else}{obj('base/Base')->SiteConfig('hosturl')}{/if}">
-{if isset($ogImage)}<meta property="og:image" content="{$ogImage}">{/if}
+{if isset($ogImage)}
+<meta property="og:image" content="{$ogImage}">
+{elseif obj('base/Base')->SiteConfig('logo')}
+<meta property="og:image" content="{obj('base/Base')->SiteConfig('logo')}">
+{/if}
 <script type="application/ld+json"><?php
 $siteName = json_encode(obj('base/Base')->SiteConfig('sitename'), JSON_UNESCAPED_UNICODE);
 $hostUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
 echo '{"@context":"https://schema.org","@type":"WebSite","name":' . $siteName . ',"url":' . json_encode($hostUrl) . ',"potentialAction":{"@type":"SearchAction","target":"' . $hostUrl . '/' . search_url() . '?content={search_term_string}","query-input":"required name=search_term_string"}}';
 ?></script>
+{if isset($articleJsonLd)}
+<script type="application/ld+json"><?php echo $articleJsonLd; ?></script>
+{/if}
 <link rel="icon" href="<?php echo rtrim(obj('base/Base')->SiteConfig('hosturl'), '/') . '/favicon.ico'; ?>">
 <!-- 样式优先加载（SEO/渲染最佳实践：CSS 先于内容，避免 FOUC）；?v= 版本参数便于缓存刷新 -->
 <link rel="stylesheet" href="{__PUBLIC__}web/css/blog.css?v=5.0.2">

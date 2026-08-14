@@ -228,7 +228,10 @@ class Tjk {
             }
             // 拼多多优先走官方多多进宝 SDK（好单库作为备用），其余平台走好单库 RatesUrl
             if ($platform == 'pdd' && $this->pdd) {
-                $pddRet = $this->pdd->getPrivilegeLink($goodsId, $pid ?: $this->pddPid);
+                // 拼多多转链必须用 goods_sign；goodsId 字段存储的即 goods_sign，
+                // 但调用方可能已单独解析出真实 goodsSign（如从本地库查询），优先使用。
+                $pddSign = $goodsSign ?: $goodsId;
+                $pddRet = $this->pdd->getPrivilegeLink($pddSign, $pid ?: $this->pddPid);
                 if (isset($pddRet['code']) && $pddRet['code'] == 1) {
                     return $pddRet;
                 }

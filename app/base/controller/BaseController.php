@@ -9,6 +9,91 @@ use ZhiCms\base\ThinkTemplate;
 class BaseController extends \ZhiCms\base\Controller {
 
 	/**
+	 * 页面级 robots 指令（默认允许收录）。低质/重复页（搜索、分页、归档、404）
+	 * 应在对应控制器调用 setNoindex() 避免稀释站点权重。
+	 * @var string
+	 */
+	public $pageRobots = 'index,follow';
+
+	/**
+	 * 标记当前页为 noindex（仍允许跟踪链接）。
+	 */
+	protected function setNoindex() {
+		$this->pageRobots = 'noindex,follow';
+	}
+
+	/**
+	 * 后台访问锁（防爆破/隐藏真实后台入口）
+	 * ----------------------------------------------------------------
+	 * 原理：后台 URL 必须携带一个自定义的动态 GET 参数，例如
+	 *   index.php?r=manage/login/index&zhicms=admin
+	 * 参数名与值由管理员在「基础设置」中自定义（site 组：
+	 * manage_gate_key / manage_gate_val）。
+	 *
+	 * 规则：
+	 *  - 未配置安全参数（首次安装/未设置）→ 不生效，原地址可正常访问；
+	 *  - 已配置 → 缺少参数或参数值不匹配，一律跳转到前台首页（exit），
+	 *    爆破者无法触达任何后台逻辑，连登录页都看不到；
+	 *  - 校验通过后放行，后续请求（含登录）按正常流程进行。
+	 *
+	 * 注意：登录态由 session 维持，管理员需通过带参 URL 进入后台，
+	 * 登录后同域跳转仍会携带该参数（依赖浏览器地址栏/书签）。
+	 */
+	protected function checkManageGate() {
+		// 仅在后台生效
+		if (!defined('\APP_NAME') || \APP_NAME != 'manage') return;
+
+		// 读取安全参数配置（site 组，ConfigStore 优先，失败回落文件）
+		$key = '';
+		$val = '';
+		if (class_exists('\\app\\common\\ConfigStore')) {
+			try {
+				$cfg = \app\common\ConfigStore::load('site');
+				if (isset($cfg['manage_gate_key'])) {
+					$key = (string)$cfg['manage_gate_key'];
+				}
+				if (isset($cfg['manage_gate_val'])) {
+					$val = (string)$cfg['manage_gate_val'];
+				}
+			} catch (\Throwable $e) {
+				$key = '';
+				$val = '';
+			}
+		}
+
+		// 关键：必须【同时】设置了参数名和参数值，锁才生效。
+		// 只要有一项未设置（含空串、未配置、首次安装），锁一律不启用，
+		// 原后台地址 index.php?r=manage/login/index 可正常访问，绝不误伤。
+		// 注意：用严格空串比较，允许管理员把参数值设为 "0" 这类合法值。
+		if ($key === '' || $val === '') {
+			return;
+		}
+
+		// CLI（计划任务等）不拦截
+		if (PHP_SAPI === 'cli') return;
+
+		// 校验 GET 参数（仅 GET，避免 POST 携带导致表单提交失败）
+		$passed = isset($_GET[$key]) && (string)$_GET[$key] === $val;
+		if ($passed) {
+			return;
+		}
+
+		// 校验失败 → 跳转前台首页（不暴露“后台存在”的任何信息）
+		$this->redirectToHome();
+	}
+
+	/**
+	 * 跳转到前台首页（后台锁校验失败时）
+	 */
+	protected function redirectToHome() {
+		$host = $_SERVER['HTTP_HOST'] ?? '';
+		$proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https://' : 'http://';
+		$base = ($host !== '') ? $proto . $host : '';
+		header('Location: ' . $base . '/', true, 302);
+		exit;
+	}
+
+	/**
 	 * 初始化
 	 */
 	public function __construct() {
@@ -38,6 +123,9 @@ class BaseController extends \ZhiCms\base\Controller {
 
 		// 后台导航：注入已启用插件的后台菜单（供 emlog_nav 动态渲染）
 		if (defined('\APP_NAME') && \APP_NAME == 'manage') {
+			// 后台访问锁：必须携带正确的动态 GET 参数才能进入，否则跳首页。
+			// 未设置安全参数时（首次安装/未配置）不生效，保持原地址可访问。
+			$this->checkManageGate();
 			if (class_exists('\\ZhiCms\\base\\PluginManager')) {
 				$this->pluginMenus = \ZhiCms\base\PluginManager::getAdminMenus();
 			} else {
@@ -326,6 +414,21 @@ class BaseController extends \ZhiCms\base\Controller {
             $links = obj("api/ApiData")->dataSelect("yun_link", array(), "`px` ASC, `id` ASC LIMIT 0, 20");
             return $links ?: [];
         }, 600);
+
+        // 侧栏「近期好券」：从选品库(yun_items)取最近商品池里随机 10 条（近似近三日）
+        // 说明：yun_items 入库时未写入可靠的时间戳列(createTime 多为空)，故用 id 近似近期
+        // —— 取最近 300 条(id 最大区间)再随机 10 条，保证数据新鲜且每次刷新有变化。
+        $this->sideCheaps = $cache->remember('sidebar_cheaps', function () {
+            $sql = "SELECT * FROM `yun_items` "
+                 . "WHERE `del` = 0 AND `id` >= (SELECT MAX(`id`) - 300 FROM `yun_items`) "
+                 . "ORDER BY RAND() LIMIT 10";
+            $rows = obj("api/ApiData")->thisQuery($sql);
+            if (empty($rows)) {
+                // 兜底：全表随机 10 条，避免空侧栏
+                $rows = obj("api/ApiData")->thisQuery("SELECT * FROM `yun_items` WHERE `del` = 0 ORDER BY RAND() LIMIT 10");
+            }
+            return $rows ?: [];
+        }, 300);
 
         // 站内速览：5 次 COUNT → 1 次 UNION（对标 emlog 的 site_stat 缓存）
         $today = date("Y-m-d");

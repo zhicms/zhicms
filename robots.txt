@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+
+# 后台、接口与敏感目录禁止抓取
+Disallow: /manage/
+Disallow: /api/
+Disallow: /plugins/
+Disallow: /data/
+Disallow: /runtime/
+Disallow: /upload/
+Disallow: /install.php
+Disallow: /*?*content=          # 搜索结果动态参数
+Disallow: /*?*page=            # 分页参数
+
+# 请将下面域名替换为你站点的真实域名（或改为动态输出 /robots.php）
+Sitemap: https://www.example.com/sitemap.php

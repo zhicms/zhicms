@@ -1,5 +1,18 @@
-location / {
-    if (!-e $request_filename) {
-        rewrite ^(.*)$ /index.php last;
-    }
+# ============================================================
+# ZhiCms 伪静态（Nginx，被 vhost 的 location / 内 include）
+# ------------------------------------------------------------
+# 重要：
+#   - 本文件被 include 进 vhost 的 `location / { }` 内部，
+#     因此【只能写 rewrite 指令，不能包裹 location / 不能嵌套 if】，
+#     否则会触发 “location 嵌套 location” 或 “if 嵌套 if” 导致 nginx 启动失败。
+#   - 安全加固（防挂马/禁目录/禁敏感文件）由 include 本文件的 vhost 自带，
+#     或见同目录 nginx.conf（独立 server 块完整版）。三套配置策略完全一致：
+#       1) 伪静态 rewrite 到 /index.php（交由框架 rule.php 解析业务路由）
+#       2) 禁止 Web 访问敏感目录（data / runtime / vendor / .git / .svn）
+#       3) 禁止下载敏感文件类型
+#       4) 防挂马：默认禁止所有 .php 执行，仅白名单放行 index.php / sitemap.php
+#   - 本文件仅承载第 1) 项伪静态；第 2)~4) 在 vhost / nginx.conf 中实现。
+# ============================================================
+if (!-e $request_filename) {
+    rewrite ^(.*)$ /index.php last;
 }

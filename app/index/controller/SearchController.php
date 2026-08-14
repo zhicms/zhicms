@@ -250,6 +250,8 @@ class SearchController extends \app\base\controller\BaseController
         if (!empty($content)) {
             $this->pageTitle = '"' . $content . '" 的搜索结果 - ' . obj('base/Base')->SiteConfig('sitename');
             $this->pageDescription = '搜索"' . $content . '"的相关商品和优惠信息';
+            // 搜索结果页为低质动态页，避免被收录稀释权重
+            $this->setNoindex();
         } else {
             $this->setPageSEO(
                 obj('base/Base')->SEO('search_title') ?: '搜索',

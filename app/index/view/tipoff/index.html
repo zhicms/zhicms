@@ -29,7 +29,13 @@
         elseif ($p == '淘宝')    { $pColor = '#ff7a00'; }
         else                     { $pColor = '#888'; }
         $goodsId   = !empty($item['id']) ? $item['id'] : 0;
-        $detailUrl = $goodsId ? url('index/view/detail', ['id' => $goodsId, 'type' => 'taobao']) : '';
+        // 线报 itemIds 可能为逗号分隔的多个商品 id，仅取第一个用于跳转购买
+        if (!empty($goodsId) && strpos($goodsId, ',') !== false) {
+            $goodsId = explode(',', $goodsId)[0];
+        }
+        // 跳转购买链接：redirect/jump 内部会用 yun_items 库 item_from 自动纠正平台，
+        // 即使此处平台写死 tb 也能正确转链到京东/拼多多等。
+        $detailUrl = !empty($goodsId) ? url('index/redirect/jump', ['platform' => 'tb', 'id' => $goodsId]) : '';
         $pic       = $item['pic'] ?? '';
         $content   = $item['content'] ?? '';
         $copyText  = !empty($content) ? $content : ($item['contentCopy'] ?? '');

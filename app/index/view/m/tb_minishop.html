@@ -417,8 +417,8 @@
             const param = {
               itemid: item.itemid,
               title: item.itemshorttitle || item.itemtitle,
-              pid: "", //淘宝PID 必填
-              tb_name: "", //好单库后台已授权的淘宝昵称 必填
+              pid: "__HDK_TB_PID__", //淘宝PID 必填
+              tb_name: "__HDK_TB_NAME__", //好单库后台已授权的淘宝昵称 必填
               get_taoword: 1,
               ...customParams.getTransferParams()
             };
@@ -457,8 +457,8 @@
             const param = {
               material_id: item.itemid,
               title: item.itemshorttitle || item.itemtitle,
-              union_id: "", //京东unionID 必填
-              pid: "", //京东PID
+              union_id: "__HDK_JD_UNION__", //京东unionID 必填
+              pid: "__HDK_JD_PID__", //京东PID
               ...customParams.getTransferParams()
             };
 
@@ -523,7 +523,7 @@
     <script>
       function useCustomParams() {
         const customParams = {
-          apikey: "", //必填
+          apikey: "__HDK_APIKEY__", //必填
         }
         return {
           customParams,

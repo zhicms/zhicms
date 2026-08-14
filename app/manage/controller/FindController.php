@@ -108,7 +108,7 @@ class FindController extends \app\base\controller\BaseController
                 if (empty($itemid)) {
                     continue;
                 }
-                $chk = obj("api/ApiData")->dataCount("yun_article", ["`goodsId` = '" . addslashes($itemid) . "'"]);
+                $chk = obj("api/ApiData")->dataCount("yun_article", array("goodsId" => $itemid));
                 if ($chk > 0) {
                     $skip++;
                     continue;
@@ -202,7 +202,7 @@ class FindController extends \app\base\controller\BaseController
 		// 计划任务无管理员 SESSION，取默认管理员（第一条）作为文章作者头像/昵称
 		$defaultAuthor = '管理员';
 		$defaultAuthorPic = '';
-		$admRows = obj("api/ApiData")->dataSelect("yun_manage", "1=1", "id ASC");
+		$admRows = obj("api/ApiData")->dataSelect("yun_manage", array(), "id ASC");
 		if (!empty($admRows) && is_array($admRows)) {
 			$adm = isset($admRows[0]) ? $admRows[0] : $admRows;
 			if (!empty($adm['nickname'])) $defaultAuthor = $adm['nickname'];
@@ -245,7 +245,7 @@ class FindController extends \app\base\controller\BaseController
 			foreach ($list as $item) {
 				$itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? '');
 				if (empty($itemid)) continue;
-				$chk = obj("api/ApiData")->dataCount("yun_article", ["`goodsId` = '" . addslashes($itemid) . "'"]);
+				$chk = obj("api/ApiData")->dataCount("yun_article", array("goodsId" => $itemid));
 				if ($chk > 0) { $skip++; continue; }
 
 				$title = trim($item['items']['itemshorttitle'] ?? '');
@@ -459,11 +459,11 @@ class FindController extends \app\base\controller\BaseController
 	 */
 	private function newsExists($uniquekey, $url, $title){
         if (!empty($uniquekey)) {
-            $chk = obj("api/ApiData")->dataCount("yun_article", array("`surl` = '" . addslashes($uniquekey) . "'"));
+            $chk = obj("api/ApiData")->dataCount("yun_article", array("surl" => $uniquekey));
             if ($chk > 0) return true;
         }
         if (!empty($title)) {
-            $chk = obj("api/ApiData")->dataCount("yun_article", array("`title` = '" . addslashes($title) . "'"));
+            $chk = obj("api/ApiData")->dataCount("yun_article", array("title" => $title));
             if ($chk > 0) return true;
         }
         return false;
@@ -520,7 +520,7 @@ class FindController extends \app\base\controller\BaseController
 		if (!empty($_SESSION['manage_pic'])) {
 			return $_SESSION['manage_pic'];
 		}
-		$admRows = obj("api/ApiData")->dataSelect("yun_manage", "1=1", "id ASC");
+		$admRows = obj("api/ApiData")->dataSelect("yun_manage", array(), "id ASC");
 		if (!empty($admRows) && is_array($admRows)) {
 			$adm = isset($admRows[0]) ? $admRows[0] : $admRows;
 			if (!empty($adm['pic'])) return $adm['pic'];
@@ -672,8 +672,16 @@ class FindController extends \app\base\controller\BaseController
 				if (!empty($matchedGoods['pic']) && empty($pic)) {
 					$pic = $matchedGoods['pic'];
 				}
-			}
-		}
+				}
+				}
+
+				// 封面图兜底：用户未上传封面($pic 为空) 且 AI 也未匹配到商品图时，
+				// 从正文里提取第一张 <img> 作为封面图，避免前台封面空白。
+				if (empty($pic)) {
+				if (preg_match('/<img[^>]+src\s*=\s*["\']([^"\']+)["\']/i', $content, $m)) {
+				$pic = $m[1];
+				}
+				}
 
     		 $startTime=strtotime(date("Y-m-d",time()));
              $endTime=$startTime+60*60*24*7;
@@ -1118,16 +1126,27 @@ public function type(){
 
 	private function aiMatchAndBuildGoods($title, $content)
 	{
-		$result = \app\common\AiService::matchGoodsByAi($title, $content, 'taobao');
+		// 跨平台匹配：依次尝试 淘宝/拼多多/京东/唯品会，取第一个有结果的平台。
+		// 原先写死 'taobao'，导致非淘宝商品或淘宝(大淘客)未配置时永远无结果。
+		$platforms = array('taobao', 'pdd', 'jd', 'vip');
+		$result = null;
+		foreach ($platforms as $plat) {
+			$ret = \app\common\AiService::matchGoodsByAi($title, $content, $plat);
+			if ($ret['code'] == 0 && !empty($ret['items'])) {
+				$result = $ret;
+				break;
+			}
+		}
 
-		if ($result['code'] != 0 || empty($result['items'])) {
+		if (empty($result) || empty($result['items'])) {
 			return array();
 		}
 
 		$item = $result['items'][0];
-		$itemId = isset($item['itemId']) ? $item['itemId'] : (isset($item['itemid']) ? $item['itemid'] : '');
-		$itemUrl = isset($item['itemUrl']) ? $item['itemUrl'] : (isset($item['itemurl']) ? $item['itemurl'] : '');
-		$pic = isset($item['pic']) ? $item['pic'] : (isset($item['itemPic']) ? $item['itemPic'] : '');
+		// 兼容各平台字段：淘宝用 itemId/itemUrl，拼多多用 goodsId/goods_sign(无url)，京东/唯品会用好单库字段
+		$itemId  = isset($item['itemId'])   ? $item['itemId']   : (isset($item['goodsId']) ? $item['goodsId'] : (isset($item['itemid']) ? $item['itemid'] : ''));
+		$itemUrl = isset($item['itemUrl'])  ? $item['itemUrl']  : (isset($item['url']) ? $item['url'] : (isset($item['itemurl']) ? $item['itemurl'] : ''));
+		$pic     = isset($item['pic'])      ? $item['pic']      : (isset($item['itemPic']) ? $item['itemPic'] : (isset($item['pict_url']) ? $item['pict_url'] : ''));
 
 		if (empty($itemId)) {
 			return array();

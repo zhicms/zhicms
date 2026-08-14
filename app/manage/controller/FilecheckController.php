@@ -41,6 +41,23 @@ class FilecheckController extends \app\base\controller\BaseController
     );
 
     /**
+     * 受保护的 data/config 精确文件（不可被后台在线升级/恢复覆盖篡改）
+     * 仅纳入“一旦被改就会危及站点安全或导致无法运行”的核心文件：
+     *  - install.lock      网站重置锁（防止被覆盖后触发重新安装）
+     *  - db.php            数据库配置（含明文密码，泄露即失守）
+     *  - siteconfig.php    网站核心配置
+     *  - global.php        全局配置（含模板引擎、伪静态开关等关键项）
+     * 其余 data/config 文件（如 apiset.php/rule.php/seopush.php 等）
+     * 会随后台设置频繁更新字段，不纳入保护，可被正常在线升级/恢复。
+     */
+    private $protectedFiles = array(
+        'data/config/install.lock',
+        'data/config/db.php',
+        'data/config/siteconfig.php',
+        'data/config/global.php',
+    );
+
+    /**
      * 扫描目录返回相对路径列表
      */
     private function scanFiles(){
@@ -84,10 +101,14 @@ class FilecheckController extends \app\base\controller\BaseController
 
     /**
      * 判断文件是否属于受保护的核心/框架文件（不可修改/篡改）
+     * 支持两种匹配：前缀匹配（框架核心目录）+ 精确文件匹配（少数核心配置文件）
      */
     private function isProtected($rel){
         foreach ($this->protectedPrefixes as $p) {
             if (strpos($rel, $p) === 0) return true;
+        }
+        if (in_array($rel, $this->protectedFiles, true)) {
+            return true;
         }
         return false;
     }
@@ -287,6 +308,11 @@ class FilecheckController extends \app\base\controller\BaseController
         $this->checkManageSession();
         $f = trim($this->arg('file', ''));
         if ($f === '' || strpos($f, '..') !== false) exit(json_encode(array('status' => 'n', 'info' => '参数非法')));
+        // 核心配置文件（install.lock / db.php / siteconfig.php / global.php）禁止被后台在线升级覆盖，
+        // 防止误恢复或恶意篡改导致站点失守（此类文件应手动维护，不在后台批量恢复范围）
+        if ($this->isProtected($f) && in_array($f, $this->protectedFiles, true)) {
+            exit(json_encode(array('status' => 'n', 'info' => '该文件为核心配置文件，不允许通过在线升级覆盖：' . $f)));
+        }
         if (!is_file(\ROOT_PATH . $f) && !$this->isProtected($f)) {
             // 普通文件且本地不存在：仍允许尝试从官方源拉取（等于补回官方文件）
         }
@@ -635,6 +661,128 @@ class FilecheckController extends \app\base\controller\BaseController
     }
 
     /**
+     * 一键清马（与“一键恢复整站”同级的安全急救功能）
+     * ------------------------------------------------------------------
+     * 扫描文件校对基线中的「新增文件(added)」，自动删除【明确不该出现可执行脚本】
+     * 的高危目录（upload/、runtime/、data/）内的危险可执行文件（.php/.php5/.phtml/
+     * .pht/.phps/.cgi/.pl/.py/.sh/.bat/.exe/.phar 等）；其余位置（app/plugins 等）
+     * 新增的可执行文件可能是合法插件/模板，仅列出、不自动删除，交由人工确认。
+     *
+     * 安全约束：
+     *  - 必须已建立基线（否则无 added 列表可比对）；
+     *  - 危险扩展名白名单之外绝不删除（如图片/文本不删）；
+     *  - 删除前二次确认由前端 confirm 完成，后端仍做最终校验；
+     *  - 所有删除动作记入 AdminLog，便于事后追溯。
+     */
+    public function cleanMalware(){
+        $this->checkManageSession();
+        if (!method_exists($this, 'loadManifest') || !$this->loadManifest()) {
+            exit(json_encode(array('status' => 'n', 'info' => '请先建立文件校验基线，才能进行清马（无基线则无“新增文件”可比对）')));
+        }
+        // 复算 added（与 doCheck 同源逻辑）
+        $added = $this->computeAdded();
+        if (empty($added)) {
+            exit(json_encode(array('status' => 'y', 'info' => '未发现可疑的新增可执行文件，站点干净')));
+        }
+
+        // 高危目录：这些位置绝不应当出现可执行脚本，命中即删
+        $autoDirs = array('upload/', 'runtime/', 'data/');
+        // 危险可执行扩展名白名单（仅这些类型才会被考虑删除）
+        $dangerExt = array('php','php5','phtml','pht','phps','cgi','pl','py','sh','bat','exe','phar','phtml');
+
+        $deleted = array();
+        $skipped = array();   // 非高危目录内的可执行新增文件，列出供人工确认
+        foreach ($added as $rel) {
+            $rel = ltrim($rel, '/');
+            $ext = strtolower(pathinfo($rel, PATHINFO_EXTENSION));
+            if (!in_array($ext, $dangerExt, true)) continue;   // 仅处理危险可执行类型
+            $inAuto = false;
+            foreach ($autoDirs as $d) {
+                if (strpos($rel, $d) === 0) { $inAuto = true; break; }
+            }
+            $abs = \ROOT_PATH . $rel;
+            if (!is_file($abs)) continue;
+            if ($inAuto) {
+                // 高危目录内的马：直接删除
+                if (@unlink($abs)) {
+                    $deleted[] = $rel;
+                }
+            } else {
+                // 其余位置（如 plugins/app 下新增 php）：可能是合法插件，跳过不删
+                $skipped[] = $rel;
+            }
+        }
+
+        if ($deleted) {
+            \ZhiCms\ext\AdminLog::write('filecheck', '一键清马：自动删除高危目录可执行文件 ' . count($deleted) . ' 个（' . implode('、', $deleted) . '）'
+                . ($skipped ? '；以下位置新增可执行文件未自动删除（疑似合法），请人工确认：' . implode('、', $skipped) : ''));
+        }
+        $msg = '清马完成：自动删除 ' . count($deleted) . ' 个高危目录可疑文件';
+        if ($skipped) {
+            $msg .= '；另有 ' . count($skipped) . ' 个新增可执行文件位于 app/plugins 等位置（可能为合法插件/模板），未自动删除，请到“新增的文件”列表人工确认。';
+        }
+        if (empty($deleted) && empty($skipped)) {
+            $msg = '未发现任何新增的可执行文件，站点干净';
+        }
+        exit(json_encode(array('status' => 'y', 'info' => $msg, 'deleted' => $deleted, 'skipped' => $skipped)));
+    }
+
+    /**
+     * 计算基线中“新增文件(added)”列表（与 doCheck 同源）
+     * 注意：额外纳入 upload/、runtime/ 两个挂马高发区（原 doCheck 扫描盲区），
+     * 以便清马能发现落地在上传/缓存目录的可执行马。
+     */
+    private function computeAdded(){
+        $manifest = $this->loadManifest();
+        if (!$manifest) return array();
+        $manifestKeys = array_flip(array_keys($manifest));
+        $added = array();
+        $dirs = array_merge($this->scanDirs, array('upload', 'runtime'));
+        foreach ($dirs as $dir) {
+            $full = \ROOT_PATH . $dir;
+            if (!is_dir($full)) continue;
+            $rii = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($full, \FilesystemIterator::SKIP_DOTS));
+            foreach ($rii as $file) {
+                if (!$file->isFile()) continue;
+                if (!in_array(strtolower($file->getExtension()), $this->scanExt, true)) continue;
+                $rel = str_replace('\\', '/', substr($file->getPathname(), strlen(\ROOT_PATH)));
+                if (!isset($manifestKeys[$rel])) {
+                    $added[] = $rel;
+                }
+            }
+        }
+        return $added;
+    }
+
+    /**
+     * 人工删除单个“新增文件”（供操作者在 added 列表中确认后删除可疑文件）
+     * 安全约束：仅允许删除危险可执行类型、且非受保护核心文件，避免误删正常文件。
+     */
+    public function delAdded(){
+        $this->checkManageSession();
+        $f = trim($this->arg('file', ''));
+        if ($f === '' || strpos($f, '..') !== false) exit(json_encode(array('status' => 'n', 'info' => '参数非法')));
+        $f = ltrim($f, '/');
+        $ext = strtolower(pathinfo($f, PATHINFO_EXTENSION));
+        $dangerExt = array('php','php5','phtml','pht','phps','cgi','pl','py','sh','bat','exe','phar');
+        if (!in_array($ext, $dangerExt, true)) {
+            exit(json_encode(array('status' => 'n', 'info' => '仅允许删除可执行类型的新增文件：' . $f)));
+        }
+        if ($this->isProtected($f)) {
+            exit(json_encode(array('status' => 'n', 'info' => '该文件属于受保护核心文件，禁止删除：' . $f)));
+        }
+        $abs = \ROOT_PATH . $f;
+        if (!is_file($abs)) {
+            exit(json_encode(array('status' => 'n', 'info' => '文件不存在：' . $f)));
+        }
+        if (@unlink($abs)) {
+            \ZhiCms\ext\AdminLog::write('filecheck', '手动删除新增可疑文件：' . $f);
+            exit(json_encode(array('status' => 'y', 'info' => '已删除：' . $f)));
+        }
+        exit(json_encode(array('status' => 'n', 'info' => '删除失败（无写入权限？）：' . $f)));
+    }
+
+    /**
      * 恢复前自动备份当前程序文件（app/ZhiCms/public/plugins/vendor）到 data/repo_ref/backup_时间戳.zip
      * 返回备份路径或 false
      */
@@ -827,21 +975,24 @@ class FilecheckController extends \app\base\controller\BaseController
     }
 
     /**
-     * 为比对结果中的每个文件附加元信息：是否受保护、是否可写、是否可从代码仓恢复
+     * 为比对结果中的每个文件附加元信息：是否受保护、是否可写、是否可从代码仓恢复、是否危险可执行
      */
     private function decorate($result){
         if (!is_array($result)) return $result;
+        $dangerExt = array('php','php5','phtml','pht','phps','cgi','pl','py','sh','bat','exe','phar');
         foreach (array('changed', 'missing', 'added') as $key) {
             $out = array();
             foreach ($result[$key] as $rel) {
                 $full = \ROOT_PATH . $rel;
                 $writable = is_file($full) ? is_writable($full) : is_writable(dirname($full));
+                $ext = strtolower(pathinfo($rel, PATHINFO_EXTENSION));
                 $out[] = array(
                     'file'       => $rel,
                     'protected'  => $this->isProtected($rel),
                     'writable'   => $writable,
                     'editable'   => (!$this->isProtected($rel) && $writable),
                     'restorable' => $this->isProtected($rel),   // 受保护文件均可从代码仓恢复
+                    'danger'     => in_array($ext, $dangerExt, true), // 危险可执行类型，疑为木马
                 );
             }
             $result[$key] = $out;

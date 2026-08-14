@@ -101,6 +101,9 @@ class SetController extends \app\base\controller\BaseController
 				'home_plug'      => self::sanitizeHomePlug($_POST['home_plug'] ?? ''),
 				// 统一安全 Key：仅在显式提交时保存（重置由 resetSecurityKey 单独处理），避免误覆盖自动生成值
 				'security_key'   => isset($_POST['security_key']) ? trim($_POST['security_key']) : '',
+				// 后台访问锁：GET 参数名/值（留空 = 关闭锁）。参数名仅允许字母数字下划线，防止注入
+				'manage_gate_key' => isset($_POST['manage_gate_key']) ? preg_replace('/[^a-zA-Z0-9_]/', '', trim($_POST['manage_gate_key'])) : '',
+				'manage_gate_val' => isset($_POST['manage_gate_val']) ? trim($_POST['manage_gate_val']) : '',
 				// mobile_style 由「移动端」标签页单独保存，这里不处理，避免基础设置覆盖移动端风格
 			);
 			// 若未提交 security_key（老表单/其它方式），回退为现有值，避免被清空
@@ -389,6 +392,8 @@ class SetController extends \app\base\controller\BaseController
               'hdk_union_id' => $_POST['hdk_union_id'] ?? ($this->ret['hdk_union_id'] ?? ''),
               'hdk_vip_pid' => $_POST['hdk_vip_pid'] ?? ($this->ret['hdk_vip_pid'] ?? ''),
               'hdk_pdd_pid' => $_POST['hdk_pdd_pid'] ?? ($this->ret['hdk_pdd_pid'] ?? ''),
+              'hdk_tb_pid' => $_POST['hdk_tb_pid'] ?? ($this->ret['hdk_tb_pid'] ?? ''),
+              'hdk_tb_name' => $_POST['hdk_tb_name'] ?? ($this->ret['hdk_tb_name'] ?? ''),
               // 拼多多官方多多进宝 SDK 配置
               'pdd_client_id' => $_POST['pdd_client_id'] ?? ($this->ret['pdd_client_id'] ?? ''),
               'pdd_client_secret' => $_POST['pdd_client_secret'] ?? ($this->ret['pdd_client_secret'] ?? ''),
@@ -632,7 +637,7 @@ class SetController extends \app\base\controller\BaseController
             );
         }
         if ($id > 0) {
-            obj("api/ApiData")->dataUpdate("{pre}union_auth", $data, "`id`=?", array($id));
+            obj("api/ApiData")->dataUpdate("{pre}union_auth", $data, array('id' => $id));
         } else {
             $data['add_time'] = time();
             obj("api/ApiData")->insertData("{pre}union_auth", $data);
@@ -648,6 +653,7 @@ class SetController extends \app\base\controller\BaseController
         $this->checkManageSession();
         $this->ensureUnionAuthTable();
         $this->platforms = $this->unionAuthPlatforms();
+        header('Content-Type: application/json; charset=utf-8');
 
         $id = isset($_GET['id']) ? intval($_GET['id']) : (isset($_POST['id']) ? intval($_POST['id']) : 0);
         $this->row = array(
@@ -686,7 +692,7 @@ class SetController extends \app\base\controller\BaseController
                 'app_secret'  => trim($this->arg("app_secret", '')),
                 'auth_type'   => $unionType,
                 'invite_code' => trim($this->arg("invite_code", '')),
-                'expire_time' => trim($this->arg("expire_time", '')),
+                'expire_time' => trim($this->arg("expire_time", '')) !== '' ? intval($this->arg("expire_time", '')) : 0,
             );
             if ($data['name'] === '' || $data['pid'] === '') {
                 echo json_encode(array("info" => "名称、PID 必填", "status" => "n"));
@@ -694,7 +700,7 @@ class SetController extends \app\base\controller\BaseController
             }
             try {
                 if ($id > 0) {
-                    obj("api/ApiData")->dataUpdate("{pre}union_auth", $data, "`id`=?", array($id));
+                    obj("api/ApiData")->dataUpdate("{pre}union_auth", $data, array('id' => $id));
                 } else {
                     $data['add_time'] = time();
                     obj("api/ApiData")->insertData("{pre}union_auth", $data);
@@ -715,6 +721,7 @@ class SetController extends \app\base\controller\BaseController
      */
     public function unionAuthInfo() {
         $this->checkManageSession();
+        header('Content-Type: application/json; charset=utf-8');
         $id = intval($this->arg("id", 0));
         if ($id <= 0) {
             echo json_encode(array("info" => "参数错误", "status" => "n"));
@@ -733,6 +740,7 @@ class SetController extends \app\base\controller\BaseController
      */
     public function unionAuthDelete() {
         $this->checkManageSession();
+        header('Content-Type: application/json; charset=utf-8');
         $id = intval($this->arg("id", 0));
         if ($id <= 0) {
             echo json_encode(array("info" => "参数错误", "status" => "n"));

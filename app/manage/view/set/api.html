@@ -164,6 +164,14 @@
           <label class="form-label">好单库 拼多多PID</label>
           <input type="text" id="hdk_pdd_pid" class="form-control" placeholder="好单库拼多多 PID" value="<?php echo isset($ret['hdk_pdd_pid']) ? $ret['hdk_pdd_pid'] : ''; ?>">
         </div>
+        <div class="mb-3">
+          <label class="form-label">好单库 淘宝PID（移动端单页用）</label>
+          <input type="text" id="hdk_tb_pid" class="form-control" placeholder="好单库淘宝联盟 PID" value="<?php echo isset($ret['hdk_tb_pid']) ? $ret['hdk_tb_pid'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">好单库 淘宝昵称（移动端单页用）</label>
+          <input type="text" id="hdk_tb_name" class="form-control" placeholder="好单库后台已授权的淘宝昵称" value="<?php echo isset($ret['hdk_tb_name']) ? $ret['hdk_tb_name'] : ''; ?>">
+        </div>
       </div>
 
       <!-- 大淘客 Dtk -->
@@ -274,12 +282,13 @@ function onPlatformChange() {
 }
 
 function openAuthModal(id) {
+    id = id || 0;
     document.getElementById('authModalTitle').textContent = id > 0 ? '修改授权' : '新增授权';
     document.getElementById('auth_id').value = id > 0 ? id : '';
     document.getElementById('auth_name').value = '';
     document.getElementById('auth_pid').value = '';
     var pf = document.getElementById('auth_platform');
-    pf.value = id > 0 ? '' : 'tb';
+    pf.value = 'tb';
     onPlatformChange();
 
     if (id > 0) {
@@ -293,10 +302,18 @@ function openAuthModal(id) {
                         var d = r.data;
                         document.getElementById('auth_name').value = d.name || '';
                         document.getElementById('auth_pid').value = d.pid || '';
-                        if (d.platform) document.getElementById('auth_platform').value = d.platform;
-                        onPlatformChange();
-                        if (d.union_type && document.getElementById('auth_union').value !== d.union_type) {
-                            document.getElementById('auth_union').value = d.union_type;
+                        if (d.platform) {
+                            pf.value = d.platform;
+                            onPlatformChange();
+                        }
+                        if (d.union_type) {
+                            var usel = document.getElementById('auth_union');
+                            // 确保 union_type 在可选项内
+                            var found = false;
+                            for (var i = 0; i < usel.options.length; i++) {
+                                if (usel.options[i].value === d.union_type) { found = true; break; }
+                            }
+                            if (found) usel.value = d.union_type;
                         }
                     }
                 } catch(e) {}
@@ -330,8 +347,10 @@ function submitAuth() {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'index.php?r=manage/set/unionAuthAdd', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4 && xhr.status == 200) {
+        if (xhr.readyState != 4) return;
+        if (xhr.status == 200) {
             try {
                 var r = JSON.parse(xhr.responseText);
                 if (r.status === 'y') {
@@ -342,8 +361,11 @@ function submitAuth() {
                     showToast(r.info || '保存失败', 'danger');
                 }
             } catch(e) {
-                showToast('提交失败，请检查网络', 'danger');
+                showToast('提交失败：' + xhr.responseText.substring(0, 200), 'danger');
+                console.error('unionAuthAdd 返回非JSON：', xhr.responseText);
             }
+        } else {
+            showToast('请求异常（HTTP ' + xhr.status + '）', 'danger');
         }
     };
     xhr.send(params);
@@ -356,7 +378,8 @@ function delAuth(id) {
     xhr.open('POST', 'index.php?r=manage/set/unionAuthDelete', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4 && xhr.status == 200) {
+        if (xhr.readyState != 4) return;
+        if (xhr.status == 200) {
             try {
                 var r = JSON.parse(xhr.responseText);
                 showToast(r.info, r.status === 'y' ? 'success' : 'danger');
@@ -364,6 +387,8 @@ function delAuth(id) {
             } catch(e) {
                 showToast('删除失败', 'danger');
             }
+        } else {
+            showToast('请求异常（HTTP ' + xhr.status + '）', 'danger');
         }
     };
     xhr.send(params);
@@ -387,6 +412,8 @@ function submitUnion() {
     params += '&hdk_union_id=' + encodeURIComponent(document.getElementById('hdk_union_id').value.trim());
     params += '&hdk_vip_pid=' + encodeURIComponent(document.getElementById('hdk_vip_pid').value.trim());
     params += '&hdk_pdd_pid=' + encodeURIComponent(document.getElementById('hdk_pdd_pid').value.trim());
+    params += '&hdk_tb_pid=' + encodeURIComponent(document.getElementById('hdk_tb_pid').value.trim());
+    params += '&hdk_tb_name=' + encodeURIComponent(document.getElementById('hdk_tb_name').value.trim());
     params += '&dtk_appkey=' + encodeURIComponent(document.getElementById('dtk_appkey').value.trim());
     params += '&dtk_appsecret=' + encodeURIComponent(document.getElementById('dtk_appsecret').value.trim());
     params += '&pdd_client_id=' + encodeURIComponent(document.getElementById('pdd_client_id').value.trim());
@@ -402,8 +429,10 @@ function submitUnion() {
     var xhr = new XMLHttpRequest();
     xhr.open('POST', 'index.php?r=manage/set/api', true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.onreadystatechange = function() {
-        if (xhr.readyState == 4 && xhr.status == 200) {
+        if (xhr.readyState != 4) return;
+        if (xhr.status == 200) {
             try {
                 var r = JSON.parse(xhr.responseText);
                 if (r.status === 'y') {
@@ -413,8 +442,11 @@ function submitUnion() {
                     showToast(r.info || '保存失败', 'danger');
                 }
             } catch(e) {
-                showToast('提交失败，请检查网络', 'danger');
+                showToast('提交失败：' + xhr.responseText.substring(0, 200), 'danger');
+                console.error('api 保存返回非JSON：', xhr.responseText);
             }
+        } else {
+            showToast('请求异常（HTTP ' + xhr.status + '）', 'danger');
         }
     };
     xhr.send(params);

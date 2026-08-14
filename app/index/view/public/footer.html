@@ -109,8 +109,9 @@
 
   var top = document.getElementById('back-to-top');
   if (top) {
+    // 用 classList 控制 d-none，避免 utilities.css 的 .d-none{display:none!important} 压制内联 style
     window.addEventListener('scroll', function () {
-      top.style.display = window.scrollY > 300 ? 'flex' : 'none';
+      top.classList.toggle('d-none', window.scrollY <= 300);
     });
     top.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
   }
