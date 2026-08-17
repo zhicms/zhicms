@@ -55,14 +55,15 @@ class ThinkTemplate {
 
 	/**
 	 * 编译缓存目录（可写）
-	 * 固定落在站点根 data/cache/tpl_compile，不依赖 TPL_PATH（模板源目录）。
-	 * 旧逻辑用 TPL_PATH 拼接，当插件把 TPL_PATH 设为 plugins/xxx/view/ 时，
-	 * 编译目录会被错误推到 plugins/xxx/view/data/cache 导致不可写（cache write error）。
+	 * 统一落在站点根 runtime/cache/tpl_compile，与框架级缓存同目录便于统一清理。
+	 * 不依赖 TPL_PATH（模板源目录）：旧逻辑用 TPL_PATH 拼接，当插件把 TPL_PATH 设为
+	 * plugins/xxx/view/ 时，编译目录会被错误推到 plugins/xxx/view/data/cache 导致
+	 * 不可写（cache write error），且散落各处难以清理。
 	 */
 	protected function compilePath() {
 		$base = defined('BASE_PATH') ? rtrim(BASE_PATH, '/\\') : rtrim($_SERVER['DOCUMENT_ROOT'] ?? __DIR__ . '/../..', '/\\');
 		$dir = $base . DIRECTORY_SEPARATOR
-			. 'data' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'tpl_compile' . DIRECTORY_SEPARATOR;
+			. 'runtime' . DIRECTORY_SEPARATOR . 'cache' . DIRECTORY_SEPARATOR . 'tpl_compile' . DIRECTORY_SEPARATOR;
 		if (!is_dir($dir)) {
 			@mkdir($dir, 0755, true);
 		}

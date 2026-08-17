@@ -110,9 +110,50 @@ class SidebarService {
 
     /* ---------------------- 各模块数据来源 ---------------------- */
 
+    /**
+     * 取得大淘客 API 实例（Dtk）。
+     * 侧栏品牌/热榜/好券本应走 API 而非直查数据库（yun_brand / yun_items），
+     * 旧逻辑直查会导致表缺失/字段不符时整页 SQL 报错。
+     * 这里按需 new 一个 Tjk（无参时自动读取本地 api 配置），失败返回 null。
+     */
+    private static function getDtk() {
+        static $dtk = null;
+        static $tried = false;
+        if ($tried) {
+            return $dtk;
+        }
+        $tried = true;
+        try {
+            if (class_exists('\\ZhiCms\\ext\\Tjk')) {
+                $tjk = new \ZhiCms\ext\Tjk();
+                $dtk = method_exists($tjk, 'getDtk') ? $tjk->getDtk() : null;
+            }
+        } catch (\Throwable $e) {
+            $dtk = null;
+        }
+        return $dtk;
+    }
+
     private static function dataCheaps($limit) {
         $cache = CacheService::instance();
         return $cache->remember('sidebar_cheaps', function () use ($limit) {
+            $dtk = self::getDtk();
+            // 优先走大淘客「朋友圈好券」接口
+            if ($dtk && method_exists($dtk, 'FriendsCircleList')) {
+                $resp = $dtk->FriendsCircleList('', (int) $limit, 0, 0);
+                if (!empty($resp['code']) && !empty($resp['items'])) {
+                    $items = $resp['items'];
+                    // 补平台标记后走统一商品结构
+                    foreach ($items as &$it) {
+                        if (empty($it['item_from'])) {
+                            $it['item_from'] = 'taobao';
+                        }
+                    }
+                    unset($it);
+                    return self::normalizeGoods($items);
+                }
+            }
+            // 回落：选品库随机好券（仅在 API 未配置/失败时）
             $rows = obj("api/ApiData")->thisQuery(
                 "SELECT * FROM `yun_items` WHERE `del` = 0 AND `id` >= (SELECT MAX(`id`) - 300 FROM `yun_items`) ORDER BY RAND() LIMIT " . (int) $limit
             );
@@ -126,6 +167,25 @@ class SidebarService {
     private static function dataBrands($limit) {
         $cache = CacheService::instance();
         return $cache->remember('sidebar_brands', function () use ($limit) {
+            $dtk = self::getDtk();
+            // 走大淘客「品牌栏目榜」接口（delanys/brand/get-column-list）
+            if ($dtk && method_exists($dtk, 'GetBrandColumnList')) {
+                $resp = $dtk->GetBrandColumnList((int) $limit, '1', '');
+                if (!empty($resp['code']) && !empty($resp['brands'])) {
+                    $out = array();
+                    foreach ($resp['brands'] as $b) {
+                        $brandId = $b['brandId'] ?? 0;
+                        $out[] = array(
+                            'id'    => $brandId,
+                            'title' => $b['brandName'] ?? '',
+                            'pic'   => $b['brandLogo'] ?? '',
+                            'url'   => url('index/brand/view', array('id' => $brandId)),
+                        );
+                    }
+                    return $out;
+                }
+            }
+            // 回落：品牌表（仅在 API 未配置/失败时）
             $rows = obj("api/ApiData")->thisQuery(
                 "SELECT * FROM `yun_brand` WHERE `state` = 1 ORDER BY `px` ASC, `id` DESC LIMIT " . (int) $limit
             );
@@ -147,6 +207,16 @@ class SidebarService {
     private static function dataRank($limit) {
         $cache = CacheService::instance();
         return $cache->remember('sidebar_rank', function () use ($limit) {
+            $dtk = self::getDtk();
+            // 走大淘客「各大榜单」接口（goods/get-ranking-list，rankType=2 全天热销榜）
+            if ($dtk && method_exists($dtk, 'GetRankingList')) {
+                $resp = $dtk->GetRankingList(2, '', (int) $limit, '1');
+                if (!empty($resp['code']) && !empty($resp['items'])) {
+                    // GetRankingList 返回的 items 已是 standardized 商品结构，直接套用通用渲染
+                    return self::normalizeGoods($resp['items']);
+                }
+            }
+            // 回落：选品库销量榜（仅在 API 未配置/失败时）
             $rows = obj("api/ApiData")->thisQuery(
                 "SELECT * FROM `yun_items` WHERE `del` = 0 ORDER BY `sales` DESC, `id` DESC LIMIT " . (int) $limit
             );

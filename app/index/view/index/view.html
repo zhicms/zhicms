@@ -51,8 +51,8 @@ echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
 <article class="log-con">
   <nav class="crumb">
-    <a href="{url($route='index/index/index', $params=array())}">首页</a>
-    {if $view['cid']} / <a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$view['cid']))}">{obj('index/global','controller')->Cid($view['cid'])}</a>{/if}
+    <a href="{url('index/index/index', array())}">首页</a>
+    {if $view['cid']} / <a href="{url('index/index/index/list=<list>', array('list'=>$view['cid']))}">{obj('index/global','controller')->Cid($view['cid'])}</a>{/if}
   </nav>
 
   <h1 class="log-title">{$view['title']}</h1>
@@ -80,7 +80,7 @@ echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
       </a>
     </span>
     {if $view['cateName']}
-    <span class="log-meta-item post-sort"><a href="{url($route='index/index/index/list=<list>', $params=array('list'=>$view['cid']))}">{obj('index/global','controller')->Cid($view['cid'])}</a></span>
+    <span class="log-meta-item post-sort"><a href="{url('index/index/index/list=<list>', array('list'=>$view['cid']))}">{obj('index/global','controller')->Cid($view['cid'])}</a></span>
     {/if}
   </div>
 
@@ -111,7 +111,7 @@ echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   <nav class="neighbor-log">
     {if $neighbor['prev']}
     <div class="prev-log">
-      <a class="neighbor-link" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$neighbor['prev']['id']))}">
+      <a class="neighbor-link" href="{url('index/index/view/id=<id>', array('id'=>$neighbor['prev']['id']))}">
         <span class="neighbor-dir">← 上一篇</span>
         <span class="neighbor-title">{$neighbor['prev']['title']}</span>
       </a>
@@ -119,7 +119,7 @@ echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     {/if}
     {if $neighbor['next']}
     <div class="next-log">
-      <a class="neighbor-link" href="{url($route='index/index/view/id=<id>', $params=array('id'=>$neighbor['next']['id']))}">
+      <a class="neighbor-link" href="{url('index/index/view/id=<id>', array('id'=>$neighbor['next']['id']))}">
         <span class="neighbor-dir">下一篇 →</span>
         <span class="neighbor-title">{$neighbor['next']['title']}</span>
       </a>
@@ -194,9 +194,9 @@ echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $(function(){
   var articleId = "{$view['id']}";
   var canComment = {if $view['allow_comment'] == 1}true{else}false{/if};
-  var interactUrl = "{url($route='index/interact/comSend', $params=array())}";
-  var likeArticleUrl = "{url($route='index/interact/likeArticle', $params=array())}";
-  var likeCommentUrl = "{url($route='index/interact/likeComment', $params=array())}";
+  var interactUrl = "{url('index/interact/comSend', array())}";
+  var likeArticleUrl = "{url('index/interact/likeArticle', array())}";
+  var likeCommentUrl = "{url('index/interact/likeComment', array())}";
 
   if (!canComment) {
     return;

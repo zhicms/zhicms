@@ -353,14 +353,18 @@ class FindController extends \app\base\controller\BaseController
 		\app\common\ConfigStore::save('api', $apiTmp);
 
 		$success = 0; $update = 0; $pageDone = 0;
+		$errCids = array(); // 记录拉取异常的商品分类，避免单分类失败中断整体采集
 		// 外层：按用户选择的商品分类逐个拉取，每轮文章归入该 cid 对应的文章分类 navid
 		foreach ($map as $loopCid => $navidStore) {
 			$pageId = '';
 		for ($p = 0; $p < $pages; $p++) {
 			$res = $dtk->FriendsCircleList($pageId, $pageSize, $sort, $loopCid);
+			// 大淘客 FriendsCircleList 成功约定 code==1（见 Dtk::FriendsCircleList 第354行），
+			// 与好单库 collect 一致；此处必须判定 code!=1 才是失败
 			if (empty($res['code']) || $res['code'] != 1) {
 				$msg = $res['message'] ?? '大淘客朋友圈接口返回异常';
-				exit(json_encode(array("info" => "商品分类#{$loopCid} 第" . ($p + 1) . "页：" . $msg, "status" => "n")));
+				$errCids[$loopCid] = "商品分类#{$loopCid} 第" . ($p + 1) . "页：" . $msg;
+				break; // 该分类拉取失败：跳过此分类，继续下一个分类
 			}
 			$list = $res['items'];
 			if (empty($list) || !is_array($list)) break;
@@ -444,8 +448,12 @@ class FindController extends \app\base\controller\BaseController
 		}
 		} // foreach map (cid => navid)
 
+		$extra = '';
+		if (!empty($errCids)) {
+			$extra = '；部分分类拉取失败：' . implode('；', $errCids);
+		}
 		exit(json_encode(array(
-			"info" => "大淘客朋友圈采集完成（" . count($map) . " 个商品分类）：翻页 {$pageDone} 次，成功入库 {$success} 条，更新 {$update} 条",
+			"info" => "大淘客朋友圈采集完成（" . count($map) . " 个商品分类）：翻页 {$pageDone} 次，成功入库 {$success} 条，更新 {$update} 条" . $extra,
 			"status" => "y"
 		)));
 	}
