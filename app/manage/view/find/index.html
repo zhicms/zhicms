@@ -212,10 +212,11 @@
 }
 .cat-modal-box {
     background: #fff;
-    width: 380px;
-    max-width: 92%;
+    width: 560px;
+    max-width: 94%;
+    max-height: 88vh;
+    overflow-y: auto;
     border-radius: 10px;
-    overflow: hidden;
     box-shadow: 0 12px 40px rgba(0,0,0,0.25);
 }
 .cat-modal-header {
@@ -248,7 +249,7 @@
                     <option value="dtk">大淘客朋友圈</option>
                 </select>
             </div>
-            <div class="form-group">
+            <div class="form-group" id="collectNavGroup">
                 <label class="small text-muted">发现分类（前台频道）</label>
                 <select class="form-control" id="collectNav">
                     <option value="0">未分类</option>
@@ -268,7 +269,7 @@
                         <thead class="thead-light"><tr><th>热门商品分类</th><th>归属文章分类</th><th>采集</th></tr></thead>
                         <tbody>
                         <?php
-                        $dtkHot = array('1'=>'女装','9'=>'男装','2'=>'母婴','3'=>'化妆品','6'=>'美食','4'=>'居家','8'=>'数码家电','5'=>'鞋包配饰');
+                        $dtkHot = array('9'=>'男装','1'=>'女装','5'=>'鞋包配饰','8'=>'数码家电');
                         if(isset($navs)): foreach($dtkHot as $cid => $cname):
                         ?>
                             <tr>
@@ -527,6 +528,9 @@ document.getElementById('keyword').addEventListener('keypress', function(e) {
 function onCollectSourceChange() {
     var src = document.getElementById('collectSource').value;
     document.getElementById('dtkFields').style.display = (src === 'dtk') ? 'block' : 'none';
+    // 大淘客用「商品分类→文章分类」映射表指定归属，独立的发现分类下拉多余，隐藏；好单库仍需使用
+    var navGroup = document.getElementById('collectNavGroup');
+    if (navGroup) navGroup.style.display = (src === 'dtk') ? 'none' : 'block';
 }
 
 // 一键采集（朋友圈：好单库 / 大淘客）

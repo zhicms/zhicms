@@ -33,7 +33,7 @@ class SidebarController extends \app\base\controller\BaseController
 
             $this->widgets = $widgets;
             $this->allTypes = $allTypes;
-            $this->display('sidebar/index');
+            $this->display('app/manage/view/sidebar/index');
         }
     }
 
