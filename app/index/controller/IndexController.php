@@ -77,7 +77,8 @@ class IndexController extends \app\base\controller\BaseController
             }
         }
 
-        $page = obj('api/ApiData')->page("10", "yun_article", $where, "`id` DESC", $baseUrl);
+        // 推荐文章(featured=1)置顶，其余按 id 倒序；置顶生效
+        $page = obj('api/ApiData')->page("10", "yun_article", $where, "`featured` DESC, `id` DESC", $baseUrl);
         if ($page && !empty($page['list'])) {
             foreach ($page['list'] as &$item) {
                 // 文章卡片分类标签使用「文章资讯分类」(navid / 发现分类)，而非商品分类(cid)
@@ -103,12 +104,12 @@ class IndexController extends \app\base\controller\BaseController
         $maxidResult = obj("api/ApiData")->thisQuery("SELECT MAX(id) as maxid FROM `{pre}article`");
         $this->maxid = isset($maxidResult['0']['maxid']) ? $maxidResult['0']['maxid'] : 0;
 
-        // 幻灯片banner（PC）
-        $pcBanners = obj('api/ApiData')->dataSelect('yun_huan', ['type'=>0], '`id` DESC LIMIT 0,10');
+        // 幻灯片banner（PC）按 px 排序，越小越靠前
+        $pcBanners = obj('api/ApiData')->dataSelect('yun_huan', ['type'=>0], '`px` ASC, `id` DESC LIMIT 0,10');
         $this->banners = $pcBanners ? $pcBanners : [];
 
-        // 友情链接
-        $links = obj('api/ApiData')->dataSelect('yun_link', [], '`id` DESC LIMIT 0,10');
+        // 友情链接按 px 排序
+        $links = obj('api/ApiData')->dataSelect('yun_link', [], '`px` ASC, `id` ASC LIMIT 0,10');
         $this->links = $links ? $links : [];
 
         // ===== SEO：首页/分类/归档页 =====

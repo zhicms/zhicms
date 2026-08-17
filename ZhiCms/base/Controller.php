@@ -1,6 +1,5 @@
 <?php
 namespace ZhiCms\base;
-#[\AllowDynamicProperties]
 class Controller{
 	public $layout = NULL; //layout view
 	protected $engineType = ''; //视图引擎：'' 用 TPL.ENGINE 配置 | 'think' 强制真引擎 | 'legacy' 强制旧引擎

@@ -16,6 +16,36 @@ class IndexController
 
     public function index()
     {
+        // 子目录安装校验：ZhiCms 必须部署在网站根目录，不允许在子目录安装运行
+        $scriptName = isset($_SERVER['SCRIPT_NAME']) ? $_SERVER['SCRIPT_NAME'] : '';
+        $scriptDir  = '';
+        if ($scriptName !== '') {
+            $scriptDir = rtrim(dirname($scriptName), '/\\');
+        }
+        if ($scriptDir !== '' && $scriptDir !== '.' && $scriptDir !== '/') {
+            header('Content-Type: text/html; charset=utf-8');
+            echo '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">'
+                . '<meta name="viewport" content="width=device-width,initial-scale=1">'
+                . '<title>安装被阻止</title><style>'
+                . 'body{font-family:"Microsoft YaHei",system-ui,sans-serif;background:#f5f7fa;'
+                . 'display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}'
+                . '.card{background:#fff;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.08);'
+                . 'max-width:520px;width:92%;padding:36px 32px}'
+                . 'h2{color:#cf1322;font-size:18px;margin:0 0 14px}'
+                . 'p{font-size:14px;color:#555;line-height:1.9}'
+                . 'code{background:#f0f0f0;padding:2px 6px;border-radius:4px;color:#cf1322}'
+                . '</style></head><body><div class="card"><h2>⛔ 安装被阻止：必须在网站根目录安装</h2>'
+                . '<p>检测到当前程序位于子目录 <code>' . htmlspecialchars($scriptDir, ENT_QUOTES) . '</code>，'
+                . 'ZhiCms 不支持在子目录下安装与运行（伪静态规则、路由解析、静态资源路径均按根目录设计，'
+                . '放在子目录会导致整站 404 与资源加载失败）。</p>'
+                . '<p>请按以下步骤操作：</p>'
+                . '<p>1. 将全部程序文件移动到<b>网站根目录</b>（访问地址形如 '
+                . '<code>https://你的域名/index.php</code> 而非 <code>https://你的域名/sub/index.php</code>）。<br>'
+                . '2. 重新访问根目录下的安装入口完成安装。</p>'
+                . '</div></body></html>';
+            exit;
+        }
+
         $this->configPath = \ROOT_PATH . 'data/config/';
 
         // 如果已安装，跳转到首页

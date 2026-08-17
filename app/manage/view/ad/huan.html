@@ -29,6 +29,7 @@
                         <th class="text-center w-70">ID</th>
                         <th>标题</th>
                         <th class="text-center w-100">平台</th>
+                        <th class="text-center w-90">排序</th>
                         <th class="w-160">广告图片</th>
                         <th class="w-200">链接</th>
                         <th class="text-center w-130">添加时间</th>
@@ -46,6 +47,7 @@
                                 <?php echo $row['type'] == 0 ? '网页端' : '移动端'; ?>
                             </span>
                         </td>
+                        <td class="text-center font-weight-bold text-muted"><?php echo intval($row['px']); ?></td>
                         <td>
                             <img src="<?php echo $row['pic']; ?>" alt="" class="mw-120" style="max-height:40px ; border-radius:4px">
                         </td>
@@ -69,7 +71,7 @@
                     <?php endforeach; ?>
                     <?php else: ?>
                     <tr>
-                        <td colspan="7" class="text-center py-5">
+                        <td colspan="8" class="text-center py-5">
                             <div class="empty-state">
                                 <i class="fas fa-images fa-3x text-muted mb-3"></i>
                                 <h5 class="text-muted">暂无广告数据</h5>

@@ -476,6 +476,21 @@ class BaseController extends \ZhiCms\base\Controller {
         $this->weekCount      = $stats['week'];
         $this->monthCount     = $stats['month'];
         $this->totalCount     = $stats['total'];
+
+        // 模块化侧栏：按后台配置（cfg_sidebar）组装 widget 列表
+        // 每项 = array('cfg' => 模块配置, 'data' => 渲染数据)
+        // 旧模板/未配置场景回落 defaultConfig()，视觉零变化。
+        $this->sidebarWidgets = array();
+        if (class_exists('\\app\\common\\SidebarService')) {
+            $widgetCfgs = \app\common\SidebarService::loadConfig();
+            foreach ($widgetCfgs as $cfg) {
+                if (empty($cfg['enabled'])) {
+                    continue;
+                }
+                $data = \app\common\SidebarService::buildWidgetData($cfg['type'], $cfg['limit']);
+                $this->sidebarWidgets[] = array('cfg' => $cfg, 'data' => $data);
+            }
+        }
     }
 
     /**

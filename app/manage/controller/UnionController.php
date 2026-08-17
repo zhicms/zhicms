@@ -134,7 +134,7 @@ class UnionController extends \app\base\controller\BaseController
                         'sort' => $apiSort,
                     ];
 
-                    $response = $client->getGoodsList($pageSize, strval($page), $extra);
+                    $response = $client->getGoodsList($pageSize, strval($page), $extra, true);
 
                     if ($response['code'] == 1 && !empty($response['items'])) {
                         $items = $response['items'];
@@ -854,10 +854,10 @@ class UnionController extends \app\base\controller\BaseController
                 if (empty($avail)) $avail = $tbCids;
                 $cid = $avail[array_rand($avail)];
                 $usedCids[] = $cid;
-                $response = $client->getGoodsList($pageSize, (string)$page, array('cid' => $cid));
+                $response = $client->getGoodsList($pageSize, (string)$page, array('cid' => $cid), true);
                 if ($response['code'] != 1 || empty($response['items'])) {
                     $cid2 = $tbCids[array_rand($tbCids)];
-                    $response = $client->getGoodsList($pageSize, (string)$page, array('cid' => $cid2));
+                    $response = $client->getGoodsList($pageSize, (string)$page, array('cid' => $cid2), true);
                     if ($response['code'] != 1 || empty($response['items'])) break;
                 }
                 foreach ($response['items'] as $item) {
@@ -1014,6 +1014,86 @@ class UnionController extends \app\base\controller\BaseController
 
         } catch (\Throwable $e) {
             $this->writeCollectLog("采集异常: " . $e->getMessage() . ' trace=' . $e->getTraceAsString());
+            exit(json_encode(array("info" => "发生异常: " . $e->getMessage(), "status" => "n")));
+        }
+    }
+
+    /**
+     * 批量入库：将联盟库（API 选品）中勾选的商品批量写入本地选品库(yun_items)
+     * 前端提交选中的商品完整数据（含 title/mainPic/goodsId/goodsSign 等）与统一平台，
+     * 后端逐条走 saveGoodsBatch（含去重 / 智能合并），返回成功与已存在跳过数量。
+     */
+    public function batchStockIn(){
+        $this->checkManageSession();
+        $this->checkCsrfToken();
+
+        try {
+            $raw = $this->arg("items");
+            if (is_string($raw)) {
+                $raw = json_decode($raw, true);
+            }
+            if (!is_array($raw) || empty($raw)) {
+                exit(json_encode(array("info" => "请选择要入库的商品", "status" => "n")));
+            }
+
+            $platform = strtolower($this->arg("platform", 'taobao'));
+            $laiyuan = $this->platformToLaiyuan($platform);
+
+            // 应用手动选择的本地分类（若有），以本地分类体系为准
+            $reqCid = intval($this->arg("cid", 0));
+
+            $total = 0;
+            $inserted = 0;
+            $skipped = 0;
+            $errors = array();
+
+            foreach ($raw as $item) {
+                if (!is_array($item)) {
+                    continue;
+                }
+                // 前端可能传 goodsId / goodsSign / title 等，统一补全 item_from
+                if (empty($item['item_from'])) {
+                    $item['item_from'] = ($laiyuan == 1) ? 'tb' : $platform;
+                }
+                if ($reqCid > 0) {
+                    $item['cid'] = $reqCid;
+                    $item['tbcid'] = $reqCid;
+                }
+                // 淘宝（大淘客）必须保证 goodsSign 存在；若仅有 goodsId 而缺 goodsSign，尝试补查详情
+                $isDtk = ($laiyuan == 1) || in_array(strtolower($item['item_from'] ?? ''), array('tb','taobao','dtk'), true);
+                if ($isDtk && empty($item['goodsSign'])) {
+                    $client = $this->createTjkClient();
+                    if ($client) {
+                        $detail = $client->getGoodsDetail($item['goodsId'] ?? '', $platform);
+                        if (($detail['code'] ?? 0) == 1 && !empty($detail['data'])) {
+                            $item = array_merge($item, $detail['data']);
+                        }
+                    }
+                }
+
+                $total++;
+                $res = $this->saveGoodsBatch(array($item), 'collect', $laiyuan);
+                $inserted += $res['count'];
+                if ($res['count'] <= 0) {
+                    $skipped++;
+                }
+                if (!empty($res['errors'])) {
+                    $errors = array_merge($errors, $res['errors']);
+                }
+            }
+
+            $msg = "批量入库完成：共{$total}条，新增{$inserted}条，已存在跳过{$skipped}条";
+            if (!empty($errors)) {
+                $msg .= '；部分失败：' . implode('；', array_slice($errors, 0, 5));
+            }
+            exit(json_encode(array(
+                "info" => $msg,
+                "status" => $inserted > 0 ? "y" : "n",
+                "inserted" => $inserted,
+                "skipped" => $skipped
+            )));
+
+        } catch (\Throwable $e) {
             exit(json_encode(array("info" => "发生异常: " . $e->getMessage(), "status" => "n")));
         }
     }

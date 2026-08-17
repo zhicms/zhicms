@@ -10,7 +10,8 @@ class TaskController extends \app\base\controller\BaseController
     /** 系统任务定义（代码注册，不可删） */
     private $systemTasks = array(
         'goods_collect'   => array('title' => '商品采集',   'exec_type' => 'php', 'command' => 'job:goods_collect',   'schedule' => 'daily random 1-8'),
-        'moments_collect' => array('title' => '朋友圈采集', 'exec_type' => 'php', 'command' => 'job:moments_collect', 'schedule' => 'daily random 1-8'),
+        'moments_collect' => array('title' => '朋友圈采集（好单库）', 'exec_type' => 'php', 'command' => 'job:moments_collect', 'schedule' => 'daily random 1-8'),
+        'moments_collect_dtk' => array('title' => '朋友圈采集（大淘客）', 'exec_type' => 'php', 'command' => 'job:moments_collect_dtk', 'schedule' => 'daily random 1-8'),
         'news_collect'    => array('title' => '资讯采集',   'exec_type' => 'php', 'command' => 'job:news_collect',    'schedule' => 'daily random 1-8'),
     );
 
@@ -104,10 +105,18 @@ class TaskController extends \app\base\controller\BaseController
         $this->juheTypes235 = \app\common\JuheService::types235();
         $this->juheTypes850 = \app\common\JuheService::types850();
         $this->navs = $this->getFindNavs();
+        // 网站商品分类（与大淘客商品分类 cid 一致）：大淘客分类为固定枚举（1-20），无需查表，直接使用硬编码分类
+        $this->categories = $this->getGoodsCategories();
+        if (!is_array($this->categories)) $this->categories = array();
         $this->juhe235Map = (isset($apiCfg['juhe_235_map']) && is_array($apiCfg['juhe_235_map'])) ? $apiCfg['juhe_235_map'] : array();
         $this->juhe850Map = (isset($apiCfg['juhe_850_map']) && is_array($apiCfg['juhe_850_map'])) ? $apiCfg['juhe_850_map'] : array();
         $this->momentsNavid = isset($apiCfg['moments_navid']) ? intval($apiCfg['moments_navid']) : 0;
         $this->momentsPages = isset($apiCfg['moments_pages']) ? intval($apiCfg['moments_pages']) : 3;
+
+        // 大淘客朋友圈采集配置（供模板回显）：商品分类 cid => 文章分类 navid 映射
+        $this->dtkMomentsMap   = (isset($apiCfg['dtk_moments_map']) && is_array($apiCfg['dtk_moments_map'])) ? $apiCfg['dtk_moments_map'] : array();
+        $this->dtkMomentsSort  = isset($apiCfg['dtk_moments_sort']) ? intval($apiCfg['dtk_moments_sort']) : 0;
+        $this->dtkMomentsPages = isset($apiCfg['dtk_moments_pages']) ? intval($apiCfg['dtk_moments_pages']) : 3;
 
         $this->pageText = array('编辑任务');
         $this->toolTitle = '编辑计划任务';
@@ -129,11 +138,13 @@ class TaskController extends \app\base\controller\BaseController
         // 系统内置任务：命令与执行方式固定（内置脚本库 job:xxx），不可修改，仅可改周期
         if ($id) {
             $exist = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id`=" . $id);
-            $isSystem = !empty($exist) && ($exist['type'] ?? '') === 'system';
+            // thisQuery() 走 query()，返回二维数组 [0 => [...] ，需用 [0] 访问
+            $existRow = !empty($exist) ? $exist[0] : array();
+            $isSystem = !empty($existRow) && ($existRow['type'] ?? '') === 'system';
             if ($isSystem) {
                 // 系统任务命令在 DB 中存为 job:xxx，而 $systemTasks 以 xxx 为键，需去掉前缀匹配
                 // 注意：必须用前缀判断，不能用 ltrim（ltrim 是按字符集剥除，会误伤）
-                $rawCmd = trim($exist['command']);
+                $rawCmd = trim($existRow['command']);
                 $sysKey = (strpos($rawCmd, 'job:') === 0) ? substr($rawCmd, 4) : $rawCmd;
                 $cmd = isset($this->systemTasks[$sysKey]) ? $this->systemTasks[$sysKey]['command'] : $rawCmd;
                 $data['command'] = $cmd;
@@ -171,13 +182,39 @@ class TaskController extends \app\base\controller\BaseController
                 \app\common\ConfigStore::save('api', $apiCfg);
             }
 
-            // 朋友圈采集任务：仅保存「发现分类(navid)」与采集页数（不使用电商产品分类 cid）
+            // 朋友圈采集任务（好单库）：仅保存「发现分类(navid)」与采集页数（不使用电商产品分类 cid）
             $isMoments = ($data['command'] === 'job:moments_collect' || $data['command'] === 'moments_collect');
             if ($isMoments) {
                 $apiCfg = \app\common\ConfigStore::load('api');
                 if (!is_array($apiCfg)) $apiCfg = array();
                 $apiCfg['moments_navid'] = isset($_POST['moments_navid']) ? intval($_POST['moments_navid']) : 0;
                 $apiCfg['moments_pages'] = isset($_POST['moments_pages']) ? max(1, intval($_POST['moments_pages'])) : 3;
+                \app\common\ConfigStore::save('api', $apiCfg);
+            }
+
+            // 朋友圈采集任务（大淘客）：保存「商品分类 cid => 文章分类 navid」映射 + 排序 + 页数
+            $isMomentsDtk = ($data['command'] === 'job:moments_collect_dtk' || $data['command'] === 'moments_collect_dtk');
+            if ($isMomentsDtk) {
+                $apiCfg = \app\common\ConfigStore::load('api');
+                if (!is_array($apiCfg)) $apiCfg = array();
+                // 前端传 map JSON：{"cid":"navid", ...}
+                $mapRaw = isset($_POST['dtk_moments_map']) ? $_POST['dtk_moments_map'] : '';
+                $map = array();
+                if ($mapRaw !== '') {
+                    $mapRaw = html_entity_decode($mapRaw, ENT_QUOTES);
+                    $decoded = json_decode($mapRaw, true);
+                    if (is_array($decoded)) {
+                        foreach ($decoded as $k => $v) {
+                            $c = intval($k); $n = intval($v);
+                            if ($c > 0 && $n > 0) $map[$c] = $n;
+                        }
+                    }
+                }
+                $apiCfg['dtk_moments_map']  = $map;
+                $sort = isset($_POST['dtk_moments_sort']) ? intval($_POST['dtk_moments_sort']) : 0;
+                if ($sort < 0 || $sort > 6) $sort = 0;
+                $apiCfg['dtk_moments_sort']  = $sort;
+                $apiCfg['dtk_moments_pages'] = isset($_POST['dtk_moments_pages']) ? max(1, intval($_POST['dtk_moments_pages'])) : 3;
                 \app\common\ConfigStore::save('api', $apiCfg);
             }
         } else {
@@ -358,8 +395,12 @@ class TaskController extends \app\base\controller\BaseController
                     return $c->collectGoodsCron();
                 case 'moments_collect':
                     $c = new \app\manage\controller\FindController();
-                    // 朋友圈采集（读后台保存的分类参数）
+                    // 朋友圈采集（好单库素材库，读后台保存的分类参数）
                     return $c->collectCron();
+                case 'moments_collect_dtk':
+                    $c = new \app\manage\controller\FindController();
+                    // 朋友圈采集（大淘客朋友圈接口，读后台保存的分类/排序/页数参数）
+                    return $c->collectDtkCron();
                 case 'news_collect':
                     $c = new \app\manage\controller\FindController();
                     // 按后台已保存的 Key 与分类映射采集（无需传参）

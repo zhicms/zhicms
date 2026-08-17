@@ -1,6 +1,12 @@
 <aside class="column-small side-bar">
 
 <style>
+/* 侧栏基础 widget */
+.side-widget{margin-bottom:14px;background:var(--conBgcolor,#fff);border:1px solid var(--borderColor,rgba(0,0,0,.06));border-radius:10px;overflow:hidden;}
+.side-widget h3{margin:0;padding:10px 14px;font-size:15px;font-weight:700;color:var(--aColor,#333);border-bottom:1px solid var(--borderColor,rgba(0,0,0,.06));}
+.side-widget .w-body{padding:10px 14px;}
+
+/* 用户卡片（沿用旧样式，保持零变化） */
 .widget-user{padding:14px;}
 .user-card{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
 .user-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#1677CB,#4a9eff);color:#fff;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;flex-shrink:0;}
@@ -11,148 +17,321 @@
 .user-actions{display:flex;gap:8px;}
 .user-actions .btn{flex:1;text-align:center;}
 
-/* 侧栏「近期好券」卡片 */
-.side-cheaps{margin:0;padding:0;}
-.side-cheap-item{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--borderColor,rgba(0,0,0,.06));}
-.side-cheap-item:last-child{border-bottom:none;}
-.sc-cover{width:62px;height:62px;flex-shrink:0;border-radius:8px;overflow:hidden;background:#f5f5f5;}
-.sc-cover img{width:100%;height:100%;object-fit:cover;}
-.sc-body{flex:1;min-width:0;display:flex;flex-direction:column;}
-.sc-title{font-size:13px;line-height:1.4;color:var(--aColor,#333);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
-.sc-price{margin-top:4px;}
-.sc-now{font-size:16px;font-weight:800;color:#ff4757;}
-.sc-old{font-size:12px;color:#999;text-decoration:line-through;margin-left:6px;}
-.sc-btn{margin-top:6px;align-self:flex-start;padding:3px 14px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border-radius:10px;font-size:12px;font-weight:600;}
+/* 统计 */
+.sr-row{display:flex;gap:8px;}
+.sr-item{flex:1;text-align:center;padding:6px 0;}
+.sr-val{display:block;font-size:18px;font-weight:800;color:#ff4757;}
+.sr-val-sub{color:#1677cb;}
+.sr-val-main{font-size:22px;}
+.sr-label{font-size:12px;color:#999;}
+
+/* 搜索 */
+.widget-search-form{display:flex;gap:8px;}
+.widget-search-input{flex:1;padding:7px 10px;border:1px solid var(--borderColor,rgba(0,0,0,.15));border-radius:8px;font-size:13px;}
+.widget-search-btn{padding:0 16px;border:none;border-radius:8px;background:var(--buttonBgColor,#ff4d4f);color:#fff;cursor:pointer;}
+
+/* 商品/文章/评论 通用行（list） */
+.w-row{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--borderColor,rgba(0,0,0,.06));}
+.w-row:last-child{border-bottom:none;}
+.w-no{width:18px;flex-shrink:0;font-size:12px;font-weight:700;color:#bbb;text-align:center;line-height:42px;}
+.w-no.top{color:#ff4757;}
+.w-cover{width:62px;height:62px;flex-shrink:0;border-radius:8px;overflow:hidden;background:#f5f5f5;}
+.w-cover img{width:100%;height:100%;object-fit:cover;}
+.w-body{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:center;}
+.w-title{font-size:13px;line-height:1.4;color:var(--aColor,#333);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.w-price{margin-top:4px;}
+.w-now{font-size:16px;font-weight:800;color:#ff4757;}
+.w-old{font-size:12px;color:#999;text-decoration:line-through;margin-left:6px;}
+.w-btn{margin-top:6px;align-self:flex-start;padding:3px 14px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border-radius:10px;font-size:12px;font-weight:600;}
+
+/* 图文方向：right（图右） */
+.w-row.img-right{flex-direction:row-reverse;}
+.w-row.img-right .w-body{align-items:flex-start;}
+/* 图文方向：top / bottom（图上/图下） */
+.w-row.img-top,.w-row.img-bottom{flex-direction:column;}
+.w-row.img-top .w-cover,.w-row.img-bottom .w-cover{width:100%;height:120px;}
+
+/* card 样式（大卡） */
+.side-widget.style-card .w-row{border-bottom:none;background:#fafafa;border-radius:8px;margin-bottom:8px;padding:10px;}
+.side-widget.style-card .w-row:last-child{margin-bottom:0;}
+/* grid 样式（多列网格，如品牌） */
+.w-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.w-grid .w-cell{text-align:center;font-size:12px;color:var(--aColor,#333);}
+.w-grid .w-cell img{width:100%;height:54px;object-radius:8px;object-fit:contain;background:#f5f5f5;border-radius:8px;}
+.w-grid .w-cell .w-name{margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* 评论 */
+.cmt-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.cmt-avatar{width:22px;height:22px;border-radius:50%;}
+.cmt-author{font-size:12px;color:#666;font-weight:600;}
+.cmt-time{font-size:11px;color:#aaa;margin-left:auto;}
+.cmt-text{font-size:13px;color:var(--fontColor,#444);line-height:1.5;}
+.cmt-art{font-size:11px;color:#999;margin-top:3px;}
+
+/* 分类/导航列表 */
+.w-list{list-style:none;margin:0;padding:0;}
+.w-list li{padding:8px 0;border-bottom:1px solid var(--borderColor,rgba(0,0,0,.06));}
+.w-list li:last-child{border-bottom:none;}
+.w-list a{color:var(--aColor,#333);font-size:14px;}
 </style>
 
-    {if $showUserEntry}
-    <!-- 用户登录/注册 + 登录后状态 -->
-    <div class="widget widget-user">
-        {if !empty($loginUser)}
-        <div class="user-card">
-            <div class="user-avatar">{substr($loginUser['show_name'],0,1)}</div>
-            <div class="user-meta">
-                <div class="user-name">{$loginUser['show_name']}</div>
-                <div class="user-sub">已登录 · 身份已确认</div>
+    {if empty($sidebarWidgets)}
+        <!-- 未配置模块化侧栏：回落到传统静态区块（兼容旧逻辑） -->
+        {if $showUserEntry}
+        <div class="widget widget-user">
+            {if !empty($loginUser)}
+            <div class="user-card">
+                <div class="user-avatar">{substr($loginUser['show_name'],0,1)}</div>
+                <div class="user-meta">
+                    <div class="user-name">{$loginUser['show_name']}</div>
+                    <div class="user-sub">已登录 · 身份已确认</div>
+                </div>
             </div>
-        </div>
-        <div class="user-actions">
-            <a href="{url($route='index/ucenter/index', $params=array())}" class="btn btn-sm btn-outline-primary">用户中心</a>
-            <a href="javascript:;" onclick="userLogout()" class="btn btn-sm btn-outline-secondary">退出</a>
-        </div>
-        {else}
-        <div class="user-guest">
-            <div class="user-guest-tip">登录后参与评论、发帖与 AI 对话</div>
             <div class="user-actions">
-                <a href="{url($route='index/login/index', $params=array())}" class="btn btn-sm btn-primary">登录</a>
-                <a href="{url($route='index/login/register', $params=array())}" class="btn btn-sm btn-outline-primary">注册</a>
+                <a href="{url($route='index/ucenter/index', $params=array())}" class="btn btn-sm btn-outline-primary">用户中心</a>
+                <a href="javascript:;" onclick="userLogout()" class="btn btn-sm btn-outline-secondary">退出</a>
             </div>
+            {else}
+            <div class="user-guest">
+                <div class="user-guest-tip">登录后参与评论、发帖与 AI 对话</div>
+                <div class="user-actions">
+                    <a href="{url($route='index/login/index', $params=array())}" class="btn btn-sm btn-primary">登录</a>
+                    <a href="{url($route='index/login/register', $params=array())}" class="btn btn-sm btn-outline-primary">注册</a>
+                </div>
+            </div>
+            {/if}
         </div>
         {/if}
-    </div>
-    {/if}
 
-    <div class="widget widget-stats">
-      <h3>站内速览</h3>
-      <div class="stats-report">
-        <div class="sr-row sr-highlight">
-          <div class="sr-item">
-            <span class="sr-val">{if isset($todayCount)}{$todayCount}{else}0{/if}</span>
-            <span class="sr-label">今日</span>
-          </div>
-          <div class="sr-item">
-            <span class="sr-val">{if isset($yesterdayCount)}{$yesterdayCount}{else}0{/if}</span>
-            <span class="sr-label">昨日</span>
-          </div>
-        </div>
-        <div class="sr-row">
-          <div class="sr-item">
-            <span class="sr-val sr-val-sub">{if isset($weekCount)}{$weekCount}{else}0{/if}</span>
-            <span class="sr-label">近7天</span>
-          </div>
-          <div class="sr-item">
-            <span class="sr-val sr-val-sub">{if isset($monthCount)}{$monthCount}{else}0{/if}</span>
-            <span class="sr-label">本月</span>
-          </div>
-        </div>
-        <div class="sr-row sr-total">
-          <div class="sr-item sr-item-wide">
-            <span class="sr-val sr-val-main">{if isset($totalCount)}{$totalCount}{else}0{/if}</span>
-            <span class="sr-label">文章总数</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="widget widget-search">
-      <h3>搜索</h3>
-      <form class="widget-search-form" method="get" action="{search_url()}" autocomplete="off" onsubmit="return false;">
-        <input type="text" name="content" class="widget-search-input" placeholder="搜索好物 / 攻略...">
-        <button type="button" class="widget-search-btn">搜索</button>
-      </form>
-    </div>
-
-    <div class="widget widget-cheaps">
-      <h3>近期好券</h3>
-      <ul class="unstyle-li side-cheaps">
-        {foreach $sideCheaps as $c}
-        <?php
-          $scId = !empty($c['id']) ? $c['id'] : 0;
-          $scTitle = !empty($c['title']) ? $c['title'] : (!empty($c['goods_name']) ? $c['goods_name'] : '优惠券商品');
-          $scGoodsId = !empty($c['goodsId']) ? $c['goodsId'] : (!empty($c['goods_id']) ? $c['goods_id'] : $scId);
-          $scFrom = !empty($c['item_from']) ? $c['item_from'] : (!empty($c['laiyuan']) ? ($c['laiyuan'] == 1 ? 'tb' : ($c['laiyuan'] == 4 ? 'jd' : ($c['laiyuan'] == 2 ? 'pdd' : ($c['laiyuan'] == 3 ? 'vip' : 'tb')))) : 'tb');
-          $scPic = !empty($c['mainPic']) ? $c['mainPic'] : (!empty($c['main_pic']) ? $c['main_pic'] : (!empty($c['image']) ? $c['image'] : ''));
-          $scActual = !empty($c['actualPrice']) ? $c['actualPrice'] : '';
-          $scOriginal = !empty($c['originalPrice']) ? $c['originalPrice'] : '';
-          $scDetail = url('index/view/detail', ['id' => $scGoodsId, 'type' => $scFrom]);
-          $scCoupon = url('index/redirect/jump', ['platform' => $scFrom, 'id' => $scGoodsId]);
-        ?>
-        <li class="side-cheap-item">
-          {if !empty($scPic)}<a class="sc-cover" href="{$scDetail}" target="_blank"><img src="<?php echo $scPic; ?>" alt="<?php echo htmlspecialchars($scTitle); ?>" loading="lazy"></a>{/if}
-          <div class="sc-body">
-            <a class="sc-title" href="{$scDetail}" target="_blank" title="<?php echo htmlspecialchars($scTitle); ?>"><?php echo mb_substr(htmlspecialchars($scTitle), 0, 28, 'UTF-8'); ?>{if mb_strlen($scTitle,'UTF-8')>28}…{/if}</a>
-            <div class="sc-price">
-              {if !empty($scActual)}<span class="sc-now">¥{$scActual}</span>{/if}
-              {if !empty($scOriginal)}<span class="sc-old">¥{$scOriginal}</span>{/if}
+        <div class="widget widget-stats">
+            <h3>站内速览</h3>
+            <div class="stats-report">
+                <div class="sr-row sr-highlight">
+                    <div class="sr-item"><span class="sr-val">{if isset($todayCount)}{$todayCount}{else}0{/if}</span><span class="sr-label">今日</span></div>
+                    <div class="sr-item"><span class="sr-val">{if isset($yesterdayCount)}{$yesterdayCount}{else}0{/if}</span><span class="sr-label">昨日</span></div>
+                </div>
+                <div class="sr-row">
+                    <div class="sr-item"><span class="sr-val sr-val-sub">{if isset($weekCount)}{$weekCount}{else}0{/if}</span><span class="sr-label">近7天</span></div>
+                    <div class="sr-item"><span class="sr-val sr-val-sub">{if isset($monthCount)}{$monthCount}{else}0{/if}</span><span class="sr-label">本月</span></div>
+                </div>
+                <div class="sr-row sr-total">
+                    <div class="sr-item sr-item-wide"><span class="sr-val sr-val-main">{if isset($totalCount)}{$totalCount}{else}0{/if}</span><span class="sr-label">文章总数</span></div>
+                </div>
             </div>
-            <a class="sc-btn" href="{$scCoupon}" target="_blank" rel="nofollow">领券</a>
-          </div>
-        </li>
-        {/foreach}
-      </ul>
-    </div>
-
-    {if in_array(CONTROLLER_NAME, array('Cheaps','Brand','Rank','Hot','View'))}
-    <!-- 电商页（优惠券/大牌/风云榜/热榜/商品详情）：展示商品分类，链接到商品检索 -->
-    <div class="widget">
-      <h3>商品分类</h3>
-      <ul class="unstyle-li widget-list">
-        {foreach $cats as $c}
-        <li><a href="{url($route='index/cheaps/index/id=<cid>', $params=array('id'=>$c['cid']))}">{$c['name']}</a></li>
-        {/foreach}
-      </ul>
-    </div>
-    {else}
-    <!-- 文章资讯页（首页/文章分类页/阅读页/微社区）：展示文章分类，链接到首页按 navid 查资讯 -->
-    <div class="widget">
-      <h3>文章分类</h3>
-      <ul class="unstyle-li widget-list">
-        {foreach $navs as $id=>$name}
-        <li><a href="{url($route='index/index/index/nav=<nav>', $params=array('nav'=>$id))}">{$name}</a></li>
-        {/foreach}
-      </ul>
-    </div>
-    {/if}
-
-    <div class="widget">
-      <h3>热门文章</h3>
-      <div class="unstyle-li">
-        {foreach $hot as $k=>$vo}
-        <div class="hot-item">
-          <span class="hot-rank {if $k<3}top{/if}">{$vo['rank']}</span>
-          <a href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" title="{$vo['title']}">{$vo['title']}</a>
         </div>
+
+        <div class="widget widget-search">
+            <h3>搜索</h3>
+            <form class="widget-search-form" method="get" action="{search_url()}" autocomplete="off" onsubmit="return false;">
+                <input type="text" name="content" class="widget-search-input" placeholder="搜索好物 / 攻略...">
+                <button type="button" class="widget-search-btn">搜索</button>
+            </form>
+        </div>
+
+        <div class="widget widget-cheaps">
+            <h3>近期好券</h3>
+            <ul class="unstyle-li side-cheaps">
+                {foreach $sideCheaps as $c}
+                <?php
+                  $scId = !empty($c['id']) ? $c['id'] : 0;
+                  $scTitle = !empty($c['title']) ? $c['title'] : (!empty($c['goods_name']) ? $c['goods_name'] : '优惠券商品');
+                  $scGoodsId = !empty($c['goodsId']) ? $c['goodsId'] : (!empty($c['goods_id']) ? $c['goods_id'] : $scId);
+                  $scFrom = !empty($c['item_from']) ? $c['item_from'] : (!empty($c['laiyuan']) ? ($c['laiyuan'] == 1 ? 'tb' : ($c['laiyuan'] == 4 ? 'jd' : ($c['laiyuan'] == 2 ? 'pdd' : ($c['laiyuan'] == 3 ? 'vip' : 'tb')))) : 'tb');
+                  $scPic = !empty($c['mainPic']) ? $c['mainPic'] : (!empty($c['main_pic']) ? $c['main_pic'] : (!empty($c['image']) ? $c['image'] : ''));
+                  $scActual = !empty($c['actualPrice']) ? $c['actualPrice'] : '';
+                  $scOriginal = !empty($c['originalPrice']) ? $c['originalPrice'] : '';
+                  $scDetail = url('index/view/detail', ['id' => $scGoodsId, 'type' => $scFrom]);
+                  $scCoupon = url('index/redirect/jump', ['platform' => $scFrom, 'id' => $scGoodsId]);
+                ?>
+                <li class="side-cheap-item">
+                    {if !empty($scPic)}<a class="sc-cover" href="{$scDetail}" target="_blank"><img src="<?php echo $scPic; ?>" alt="<?php echo htmlspecialchars($scTitle); ?>" loading="lazy"></a>{/if}
+                    <div class="sc-body">
+                        <a class="sc-title" href="{$scDetail}" target="_blank" title="<?php echo htmlspecialchars($scTitle); ?>"><?php echo mb_substr(htmlspecialchars($scTitle), 0, 28, 'UTF-8'); ?>{if mb_strlen($scTitle,'UTF-8')>28}…{/if}</a>
+                        <div class="sc-price">
+                            {if !empty($scActual)}<span class="sc-now">¥{$scActual}</span>{/if}
+                            {if !empty($scOriginal)}<span class="sc-old">¥{$scOriginal}</span>{/if}
+                        </div>
+                        <a class="sc-btn" href="{$scCoupon}" target="_blank" rel="nofollow">领券</a>
+                    </div>
+                </li>
+                {/foreach}
+            </ul>
+        </div>
+
+        {if in_array(CONTROLLER_NAME, array('Cheaps','Brand','Rank','Hot','View'))}
+        <div class="widget">
+            <h3>商品分类</h3>
+            <ul class="unstyle-li widget-list">
+                {foreach $cats as $c}
+                <li><a href="{url($route='index/cheaps/index/id=<cid>', $params=array('id'=>$c['cid']))}">{$c['name']}</a></li>
+                {/foreach}
+            </ul>
+        </div>
+        {else}
+        <div class="widget">
+            <h3>文章分类</h3>
+            <ul class="unstyle-li widget-list">
+                {foreach $navs as $id=>$name}
+                <li><a href="{url($route='index/index/index/nav=<nav>', $params=array('nav'=>$id))}">{$name}</a></li>
+                {/foreach}
+            </ul>
+        </div>
+        {/if}
+
+        <div class="widget">
+            <h3>热门文章</h3>
+            <div class="unstyle-li">
+                {foreach $hot as $k=>$vo}
+                <div class="hot-item">
+                    <span class="hot-rank {if $k<3}top{/if}">{$vo['rank']}</span>
+                    <a href="{url($route='index/index/view/id=<id>', $params=array('id'=>$vo['id']))}" title="{$vo['title']}">{$vo['title']}</a>
+                </div>
+                {/foreach}
+            </div>
+        </div>
+    {else}
+        <!-- 模块化侧栏：遍历 sidebarWidgets 渲染 -->
+        {foreach $sidebarWidgets as $w}
+        {if $w['cfg']['type'] == 'user'}
+            {if $showUserEntry}
+            <div class="side-widget" data-wtype="user">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body widget-user">
+                {if !empty($loginUser)}
+                    <div class="user-card">
+                        <div class="user-avatar">{substr($loginUser['show_name'],0,1)}</div>
+                        <div class="user-meta">
+                            <div class="user-name">{$loginUser['show_name']}</div>
+                            <div class="user-sub">已登录 · 身份已确认</div>
+                        </div>
+                    </div>
+                    <div class="user-actions">
+                        <a href="{url($route='index/ucenter/index', $params=array())}" class="btn btn-sm btn-outline-primary">用户中心</a>
+                        <a href="javascript:;" onclick="userLogout()" class="btn btn-sm btn-outline-secondary">退出</a>
+                    </div>
+                {else}
+                    <div class="user-guest">
+                        <div class="user-guest-tip">登录后参与评论、发帖与 AI 对话</div>
+                        <div class="user-actions">
+                            <a href="{url($route='index/login/index', $params=array())}" class="btn btn-sm btn-primary">登录</a>
+                            <a href="{url($route='index/login/register', $params=array())}" class="btn btn-sm btn-outline-primary">注册</a>
+                        </div>
+                    </div>
+                {/if}
+                </div>
+            </div>
+            {/if}
+
+        {elseif $w['cfg']['type'] == 'stats'}
+            <div class="side-widget" data-wtype="stats">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body">
+                    <div class="sr-row sr-highlight">
+                        <div class="sr-item"><span class="sr-val">{if isset($todayCount)}{$todayCount}{else}0{/if}</span><span class="sr-label">今日</span></div>
+                        <div class="sr-item"><span class="sr-val">{if isset($yesterdayCount)}{$yesterdayCount}{else}0{/if}</span><span class="sr-label">昨日</span></div>
+                    </div>
+                    <div class="sr-row">
+                        <div class="sr-item"><span class="sr-val sr-val-sub">{if isset($weekCount)}{$weekCount}{else}0{/if}</span><span class="sr-label">近7天</span></div>
+                        <div class="sr-item"><span class="sr-val sr-val-sub">{if isset($monthCount)}{$monthCount}{else}0{/if}</span><span class="sr-label">本月</span></div>
+                    </div>
+                    <div class="sr-row sr-total">
+                        <div class="sr-item sr-item-wide"><span class="sr-val sr-val-main">{if isset($totalCount)}{$totalCount}{else}0{/if}</span><span class="sr-label">文章总数</span></div>
+                    </div>
+                </div>
+            </div>
+
+        {elseif $w['cfg']['type'] == 'search'}
+            <div class="side-widget" data-wtype="search">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body">
+                    <form class="widget-search-form" method="get" action="{search_url()}" autocomplete="off" onsubmit="return false;">
+                        <input type="text" name="content" class="widget-search-input" placeholder="搜索好物 / 攻略...">
+                        <button type="button" class="widget-search-btn">搜索</button>
+                    </form>
+                </div>
+            </div>
+
+        {elseif $w['cfg']['type'] == 'cats'}
+            <div class="side-widget" data-wtype="cats">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body">
+                    <ul class="w-list">
+                    {foreach $w['data'] as $c}
+                        <li><a href="{url($route='index/cheaps/index/id=<cid>', $params=array('id'=>$c['cid']))}">{$c['name']}</a></li>
+                    {/foreach}
+                    </ul>
+                </div>
+            </div>
+
+        {elseif $w['cfg']['type'] == 'navs'}
+            <div class="side-widget" data-wtype="navs">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body">
+                    <ul class="w-list">
+                    {foreach $w['data'] as $id=>$name}
+                        <li><a href="{url($route='index/index/index/nav=<nav>', $params=array('nav'=>$id))}">{$name}</a></li>
+                    {/foreach}
+                    </ul>
+                </div>
+            </div>
+
+        {elseif $w['cfg']['type'] == 'brands'}
+            <div class="side-widget style-{$w['cfg']['style']}" data-wtype="brands">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body">
+                    <div class="w-grid">
+                    {foreach $w['data'] as $b}
+                        <a class="w-cell" href="{$b['url']}" target="_blank">
+                            {if !empty($b['pic'])}<img src="{$b['pic']}" alt="{$b['title']}" loading="lazy">{/if}
+                            <div class="w-name">{$b['title']}</div>
+                        </a>
+                    {/foreach}
+                    </div>
+                </div>
+            </div>
+
+        {elseif $w['cfg']['type'] == 'comments'}
+            <div class="side-widget" data-wtype="comments">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body">
+                {foreach $w['data'] as $cm}
+                    <div class="w-row img-top" style="border-bottom:1px solid var(--borderColor,rgba(0,0,0,.06));">
+                        <div class="cmt-meta">
+                            {if !empty($cm['avatar'])}<img class="cmt-avatar" src="{$cm['avatar']}" alt="">{/if}
+                            <span class="cmt-author">{$cm['author']}</span>
+                            {if !empty($cm['time'])}<span class="cmt-time">{zc_smart_date(strtotime($cm['time']))}</span>{/if}
+                        </div>
+                        <a class="cmt-text" href="{$cm['url']}" target="_blank">{$cm['content']}</a>
+                        {if !empty($cm['art_title'])}<div class="cmt-art">评：{$cm['art_title']}</div>{/if}
+                    </div>
+                {/foreach}
+                </div>
+            </div>
+
+        {else}
+            <!-- 通用商品/文章行（cheaps / rank / articles） -->
+            <div class="side-widget style-{$w['cfg']['style']}" data-wtype="{$w['cfg']['type']}">
+                <h3>{$w['cfg']['title']}</h3>
+                <div class="w-body">
+                {foreach $w['data'] as $item}
+                    <div class="w-row img-{$w['cfg']['img_pos']}">
+                        {if !empty($w['cfg']['show_no'])}<span class="w-no {if $item['rank']<=3}top{/if}">{$item['rank']}</span>{/if}
+                        {if !empty($item['pic'])}<a class="w-cover" href="{if !empty($item['url'])}{$item['url']}{else}javascript:;{/if}" target="_blank"><img src="{$item['pic']}" alt="{if !empty($item['title'])}{$item['title']}{/if}" loading="lazy"></a>{/if}
+                        <div class="w-body">
+                            <a class="w-title" href="{if !empty($item['url'])}{$item['url']}{else}javascript:;{/if}" target="_blank" title="{if !empty($item['title'])}{$item['title']}{/if}">{if !empty($item['title'])}{zc_sub_string($item['title'],0,28)}{/if}</a>
+                            {if isset($item['actual'])}
+                            <div class="w-price">
+                                {if !empty($item['actual'])}<span class="w-now">¥{$item['actual']}</span>{/if}
+                                {if !empty($item['original'])}<span class="w-old">¥{$item['original']}</span>{/if}
+                            </div>
+                            {if !empty($item['coupon'])}<a class="w-btn" href="{$item['coupon']}" target="_blank" rel="nofollow">领券</a>{/if}
+                            {/if}
+                        </div>
+                    </div>
+                {/foreach}
+                </div>
+            </div>
+        {/if}
         {/foreach}
-      </div>
-    </div>
+    {/if}
   </aside>

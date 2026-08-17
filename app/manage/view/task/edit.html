@@ -191,6 +191,60 @@
       </div>
     {/if}
 
+    <!-- 朋友圈采集（大淘客朋友圈接口）：商品分类(cid) => 文章分类(navid) 映射，参考资讯采集 -->
+    {if $task.command=='job:moments_collect_dtk'}
+      <div class="card mb-4">
+        <div class="card-header bg-white font-weight-bold"><i class="fas fa-comments mr-1 text-warning"></i>大淘客朋友圈采集设置</div>
+        <div class="card-body">
+          <p class="text-muted small mb-2">大淘客商品分类（与网站商品分类一致）对应本地「发现分类（文章分类）」，仅勾选并指定归属的分类参与采集。</p>
+          <div class="table-responsive mb-3">
+            <table class="table table-sm table-bordered">
+              <thead class="thead-light"><tr><th>商品分类</th><th>归属文章分类</th><th>采集</th></tr></thead>
+              <tbody>
+              {foreach $categories as $cid => $cname}
+                <tr>
+                  <td>{$cname} <small class="text-muted">(cid={$cid})</small></td>
+                  <td>
+                    <select class="form-control form-control-sm dtk-task-navid" data-cid="{$cid}">
+                      <option value="0">不采集</option>
+                      {foreach $navs as $nk => $nv}
+                        <option value="{$nk}" {if isset($dtkMomentsMap[$cid]) && $dtkMomentsMap[$cid]==$nk}selected{/if}>{$nv}</option>
+                      {/foreach}
+                    </select>
+                  </td>
+                  <td class="text-center"><input type="checkbox" class="dtk-task-chk" data-cid="{$cid}" {if isset($dtkMomentsMap[$cid])}checked{/if}></td>
+                </tr>
+              {/foreach}
+              </tbody>
+            </table>
+          </div>
+          <!-- 分类映射 JSON，提交时由 JS 组装 -->
+          <input type="hidden" name="dtk_moments_map" id="dtkMomentsMap" value="<?php echo htmlspecialchars(json_encode($dtkMomentsMap, JSON_UNESCAPED_UNICODE)); ?>">
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">排序方式</label>
+            <div class="col-sm-10">
+              <select name="dtk_moments_sort" class="form-control">
+                <option value="0" {if $dtkMomentsSort==0}selected{/if}>0-综合排序</option>
+                <option value="1" {if $dtkMomentsSort==1}selected{/if}>1-商品上架时间从高到低</option>
+                <option value="2" {if $dtkMomentsSort==2}selected{/if}>2-热销从高到低</option>
+                <option value="3" {if $dtkMomentsSort==3}selected{/if}>3-领券量从高到低</option>
+                <option value="4" {if $dtkMomentsSort==4}selected{/if}>4-佣金比例从高到低</option>
+                <option value="5" {if $dtkMomentsSort==5}selected{/if}>5-券后价从高到低</option>
+                <option value="6" {if $dtkMomentsSort==6}selected{/if}>6-券后价从低到高</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">采集页数</label>
+            <div class="col-sm-10">
+              <input type="number" name="dtk_moments_pages" class="form-control" min="1" max="50" value="{$dtkMomentsPages|default=3}">
+              <small class="form-text text-muted">每次定时采集每个分类翻页次数，建议 3-10。</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    {/if}
+
     <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> 保存</button>
     <a href="index.php?r=manage/task/index" class="btn btn-outline-secondary">返回</a>
 </form>
@@ -270,5 +324,25 @@
         if (tip && et) tip.classList.toggle('d-none', et.value !== 'shell' && et.value !== 'python');
     }
     if (et) { et.addEventListener('change', toggleDanger); toggleDanger(); }
+
+    // 大淘客朋友圈：提交前把勾选的「商品分类 cid => 文章分类 navid」组装进隐藏字段
+    var dtkMapInput = document.getElementById('dtkMomentsMap');
+    if (dtkMapInput) {
+        var dtkForm = dtkMapInput.closest('form');
+        if (dtkForm) {
+            dtkForm.addEventListener('submit', function() {
+                var map = {};
+                var chks = document.querySelectorAll('.dtk-task-chk');
+                chks.forEach(function(chk) {
+                    if (!chk.checked) return;
+                    var cid = chk.getAttribute('data-cid');
+                    var sel = document.querySelector('.dtk-task-navid[data-cid="' + cid + '"]');
+                    var nav = sel ? sel.value : '0';
+                    if (nav && nav !== '0') map[cid] = nav;
+                });
+                dtkMapInput.value = JSON.stringify(map);
+            });
+        }
+    }
 })();
 </script>

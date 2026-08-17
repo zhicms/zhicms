@@ -62,7 +62,26 @@ class CacheService
         ];
         $file = $this->dir . $key . '.php';
         $content = '<?php return ' . var_export($data, true) . ';';
-        @file_put_contents($file, $content, LOCK_EX);
+        // 原子写入：先写临时文件再 rename，避免并发读半截；
+        // rename 后 OPcache 会重新编译该路径，规避“旧字节码缓存不刷新”问题。
+        $tmp = $file . '.' . getmypid() . '.' . mt_rand(0, 999999) . '.tmp';
+        if (file_put_contents($tmp, $content, LOCK_EX) === false) {
+            return false;
+        }
+        if (DIRECTORY_SEPARATOR === '\\' && file_exists($file)) {
+            @unlink($file);
+        }
+        if (!@rename($tmp, $file)) {
+            @unlink($tmp);
+            if (file_put_contents($file, $content, LOCK_EX) === false) {
+                return false;
+            }
+        }
+        if (function_exists('opcache_invalidate')) {
+            @opcache_invalidate($file, true);
+        }
+        @clearstatcache(true, $file);
+        return true;
     }
 
     /**

@@ -49,6 +49,7 @@
                     <tr>
                         <th class="text-center w-80">ID</th>
                         <th>链接信息</th>
+                        <th class="text-center w-90">排序</th>
                         <th class="w-200">链接地址</th>
                         <th class="text-center w-120">状态</th>
                         <th class="text-center w-150">操作</th>
@@ -77,6 +78,9 @@
                                     友情链接
                                 </span>
                             </div>
+                        </td>
+                        <td class="text-center font-weight-bold text-muted">
+                            <?php echo intval($item['px']); ?>
                         </td>
                         <td>
                             <div class="text-truncate mw-200">
@@ -115,7 +119,7 @@
                     <?php endforeach; ?>
                     <?php else: ?>
                     <tr>
-                        <td colspan="5" class="text-center py-5">
+                        <td colspan="6" class="text-center py-5">
                             <div class="empty-state">
                                 <i class="fas fa-link fa-3x text-muted mb-3"></i>
                                 <h5 class="text-muted">暂无链接数据</h5>

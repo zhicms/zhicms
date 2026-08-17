@@ -1059,7 +1059,12 @@ PROMPT;
         // 所有平台统一走 index/redirect/jump 转链入口（由 RedirectController 调好单库 RatesUrl
         // 二次转链生成带推广位的佣金链接），避免直接使用搜索接口返回的 couponLink
         // （多为无佣金的落地页），保证站长能拿到返利。
-        $link = url('index/redirect/jump', ['platform' => $from, 'id' => $goodsId]);
+        // 透传 goodsSign（淘宝必需）：未入库商品也能拿到带佣金的转链短链，而非降级到无佣详情页。
+        $jumpParams = ['platform' => $from, 'id' => $goodsId];
+        if ($from === 'tb' && !empty($item['goodsSign'])) {
+            $jumpParams['sign'] = $item['goodsSign'];
+        }
+        $link = url('index/redirect/jump', $jumpParams);
         $pic     = isset($item['mainPic']) ? htmlspecialchars($item['mainPic']) : '';
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;

@@ -24,8 +24,11 @@
         <button class="btn btn-success mr-2" onclick="oneKeyUpdate()">
             <i class="fas fa-sync"></i> 一键更新
         </button>
-        <button class="btn btn-outline-warning" onclick="overdue()">
+        <button class="btn btn-outline-warning mr-2" onclick="overdue()">
             <i class="fas fa-trash-restore"></i> 清理过期
+        </button>
+        <button class="btn btn-danger" id="batchDelBtn" onclick="batchDel()" disabled>
+            <i class="fas fa-trash-alt"></i> 批量删除<span id="batchDelCount"></span>
         </button>
     </div>
 </div>
@@ -85,6 +88,9 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-dark">
                     <tr>
+                        <th class="w-40 text-center">
+                            <input type="checkbox" id="checkAll" onclick="toggleCheckAll(this)">
+                        </th>
                         <th class="w-95">商品图片</th>
                         <th>商品信息</th>
                         <th class="w-120">券后价</th>
@@ -116,7 +122,10 @@
                         $commissionTypeColor = $commissionType == 3 ? '#722ED1' : ($commissionType == 2 ? '#1890FF' : ($commissionType == 1 ? '#13C2C2' : '#8C8C8C'));
                         $freeship = $row['yunfeixian'] ?? $row['freeshipRemoteDistrict'] ?? 0;
                     ?>
-                    <tr class="align-middle">
+                    <tr class="align-middle" data-id="<?php echo $row['id']; ?>">
+                        <td class="text-center">
+                            <input type="checkbox" class="row-check" value="<?php echo $row['id']; ?>" onclick="updateBatchBtn()">
+                        </td>
                         <td>
                             <img src="<?php echo $mainPic; ?>" class="img-thumbnail w-70 h-70 cur-pointer" style="object-fit:cover"
                                  onclick="showImage('<?php echo $mainPic; ?>')">
@@ -203,7 +212,7 @@
                     <?php endforeach; ?>
                     <?php else: ?>
                     <tr>
-                        <td colspan="11" class="text-center py-5">
+                        <td colspan="12" class="text-center py-5">
                             <div class="text-center text-muted">
                                 <i class="fas fa-database fa-3x mb-3 d-block"></i>
                                 <h5>选品库还是空的</h5>
@@ -356,6 +365,60 @@ function delItem(id) {
         };
         xhr.send();
     }
+}
+
+// ============ 批量操作 ============
+function toggleCheckAll(box) {
+    var checks = document.querySelectorAll('.row-check');
+    checks.forEach(function (c) { c.checked = box.checked; });
+    updateBatchBtn();
+}
+
+function updateBatchBtn() {
+    var checked = document.querySelectorAll('.row-check:checked');
+    var btn = document.getElementById('batchDelBtn');
+    var cnt = document.getElementById('batchDelCount');
+    if (checked.length > 0) {
+        btn.disabled = false;
+        cnt.textContent = '(' + checked.length + ')';
+    } else {
+        btn.disabled = true;
+        cnt.textContent = '';
+    }
+}
+
+function batchDel() {
+    var checked = document.querySelectorAll('.row-check:checked');
+    if (checked.length === 0) {
+        showToast('请先选择要删除的商品', 'warning');
+        return;
+    }
+    if (!confirm('确定要删除选中的 ' + checked.length + ' 个商品吗？此操作不可逆！')) {
+        return;
+    }
+    var ids = [];
+    checked.forEach(function (c) { ids.push(c.value); });
+
+    var token = document.getElementById('csrfToken').value;
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/items/batchDel&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var result = JSON.parse(xhr.responseText);
+                if (result.status === 'y') {
+                    showToast(result.info, 'success');
+                    setTimeout(function () { location.reload(); }, 800);
+                } else {
+                    showToast(result.info || '删除失败', 'danger');
+                }
+            } catch (e) {
+                showToast('操作异常', 'danger');
+            }
+        }
+    };
+    xhr.send('ids=' + encodeURIComponent(JSON.stringify(ids)));
 }
 
 function topItem(id) {

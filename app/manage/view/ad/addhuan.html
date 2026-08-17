@@ -55,6 +55,12 @@
                         <input type="text" name="link" class="form-control" placeholder="https:// 或 http:// 开头" value="{$ret['link']}">
                     </div>
 
+                    <div class="form-group">
+                        <label class="font-weight-bold">排序</label>
+                        <input type="number" name="px" class="form-control mw-200" placeholder="0" value="{$ret['px']|default=0}">
+                        <small class="form-text text-muted">数字越小越靠前（按 px 升序展示）</small>
+                    </div>
+
                     {$html}
 
                     <div class="form-group border-top pt-3 mt-4">

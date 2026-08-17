@@ -15,6 +15,7 @@ class CacheController extends \app\base\controller\BaseController
         'tpl'   => array('name' => '模板缓存', 'path' => 'data/cache/tpl'),
         'db'    => array('name' => '数据库查询缓存', 'path' => 'data/cache/db'),
         'data'  => array('name' => '数据缓存', 'path' => 'data/cache', 'loose' => true),
+        'api'   => array('name' => 'API接口缓存', 'path' => 'data/cache', 'prefix' => 'api_'),
         'static'=> array('name' => '全站静态缓存', 'path' => 'runtime/static_cache'),
     );
 
@@ -51,7 +52,10 @@ class CacheController extends \app\base\controller\BaseController
         } elseif (isset(self::$types[$type])) {
             $t = self::$types[$type];
             $dir = \ROOT_PATH . $t['path'];
-            if (!empty($t['loose'])) {
+            if (!empty($t['prefix'])) {
+                // API 缓存：只删 data/cache 下指定前缀（api_）的散落文件，不影响其他缓存
+                $this->clearByPrefix($dir, $t['prefix']);
+            } elseif (!empty($t['loose'])) {
                 // 数据缓存：清理 data/cache 下松散 php 文件，但保留 tpl/db 子目录
                 $this->clearLoose($dir);
             } else {
@@ -87,6 +91,19 @@ class CacheController extends \app\base\controller\BaseController
             }
         }
         closedir($dh);
+    }
+
+    /**
+     * 按文件名前缀清理 data/cache 下散落的缓存文件（如 API 缓存 api_*.php）
+     */
+    private function clearByPrefix($dir, $prefix){
+        if (!is_dir($dir)) return;
+        $files = glob($dir . '/' . $prefix . '*.php');
+        if (!empty($files)) {
+            foreach ($files as $f) {
+                @unlink($f);
+            }
+        }
     }
 
     private function dirSize($dir){

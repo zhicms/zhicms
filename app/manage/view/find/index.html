@@ -237,10 +237,17 @@
 <div class="cat-modal d-none" id="collectModal">
     <div class="cat-modal-box">
         <div class="cat-modal-header">
-            <i class="fas fa-bolt text-warning mr-2"></i> 一键采集（好单库朋友圈）
+            <i class="fas fa-bolt text-warning mr-2"></i> 一键采集（朋友圈）
         </div>
         <div class="cat-modal-body">
-            <p class="text-muted small mb-3">将从好单库朋友圈素材库拉取最新发圈文案并生成文章（含商品卡片）。仅归入「发现分类」，不使用电商产品分类。</p>
+            <p class="text-muted small mb-3">将从朋友圈素材库拉取最新发圈文案并生成文章（含商品卡片）。仅归入「发现分类」，不使用电商产品分类。</p>
+            <div class="form-group">
+                <label class="small text-muted">数据源</label>
+                <select class="form-control" id="collectSource" onchange="onCollectSourceChange()">
+                    <option value="hdk">好单库朋友圈</option>
+                    <option value="dtk">大淘客朋友圈</option>
+                </select>
+            </div>
             <div class="form-group">
                 <label class="small text-muted">发现分类（前台频道）</label>
                 <select class="form-control" id="collectNav">
@@ -252,8 +259,72 @@
                     <?php endif; ?>
                 </select>
             </div>
+
+            <!-- 大淘客朋友圈专属参数（默认隐藏）：商品分类(cid) => 文章分类(navid) 一对一，用户手动指定，不自动映射 -->
+            <div id="dtkFields" style="display:none;">
+                <p class="text-muted small mb-2">大淘客商品分类（与网站商品分类一致）对应本地「发现分类（文章分类）」，仅勾选并指定归属的分类参与采集。</p>
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-2">
+                        <thead class="thead-light"><tr><th>热门商品分类</th><th>归属文章分类</th><th>采集</th></tr></thead>
+                        <tbody>
+                        <?php
+                        $dtkHot = array('1'=>'女装','9'=>'男装','2'=>'母婴','3'=>'化妆品','6'=>'美食','4'=>'居家','8'=>'数码家电','5'=>'鞋包配饰');
+                        if(isset($navs)): foreach($dtkHot as $cid => $cname):
+                        ?>
+                            <tr>
+                                <td><?php echo htmlspecialchars($cname); ?> <small class="text-muted">(cid=<?php echo intval($cid); ?>)</small></td>
+                                <td>
+                                    <select class="form-control form-control-sm dtk-navid" data-cid="<?php echo intval($cid); ?>">
+                                        <option value="0">不采集</option>
+                                        <?php foreach($navs as $nk => $nv): ?>
+                                        <option value="<?php echo $nk; ?>"><?php echo $nv; ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                                <td class="text-center"><input type="checkbox" class="dtk-cid-chk" data-cid="<?php echo intval($cid); ?>" checked></td>
+                            </tr>
+                        <?php endforeach; endif; ?>
+                        </tbody>
+                    </table>
+                    <div class="card card-body bg-light py-2 px-3 mb-2">
+                        <div class="form-row align-items-end">
+                            <div class="col">
+                                <label class="small text-muted mb-1">其他商品分类ID（自定义）</label>
+                                <input type="text" class="form-control form-control-sm" id="dtkCustomCids" placeholder="如 7,13,16">
+                            </div>
+                            <div class="col-auto">
+                                <label class="small text-muted mb-1">归属文章分类</label>
+                                <select class="form-control form-control-sm dtk-custom-navid">
+                                    <option value="0">不采集</option>
+                                    <?php if(isset($navs)): ?><?php foreach($navs as $nk => $nv): ?>
+                                    <option value="<?php echo $nk; ?>"><?php echo $nv; ?></option>
+                                    <?php endforeach; ?><?php endif; ?>
+                                </select>
+                            </div>
+                        </div>
+                        <small class="text-muted mt-1">支持的商品分类ID为 1~20（女装1、男装9、母婴2、化妆品3、美食6、居家4、数码家电8、鞋包配饰5、内衣10、箱包11、配饰12、户外运动13、家装家纺14、珠宝首饰15、奢侈品16、宠物用品17、图书音像18、话费充值19、其他20），可填多个，用英文逗号分隔。</small>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="small text-muted">排序方式</label>
+                    <select class="form-control" id="collectSort">
+                        <option value="0">综合排序</option>
+                        <option value="1">商品上架时间（高→低）</option>
+                        <option value="2">热销（高→低）</option>
+                        <option value="3">领券量（高→低）</option>
+                        <option value="4">佣金比例（高→低）</option>
+                        <option value="5">券后价（高→低）</option>
+                        <option value="6">券后价（低→高）</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="small text-muted">每页条数（pageSize，1~100）</label>
+                    <input type="number" class="form-control" id="collectPageSize" value="50" min="1" max="100" step="1">
+                </div>
+            </div>
+
             <div class="form-group mb-0">
-                <label class="small text-muted">采集页数（每页约5条，建议3~10页）</label>
+                <label class="small text-muted">采集页数（建议3~10页）</label>
                 <input type="number" class="form-control" id="collectPages" value="5" min="1" max="20" step="1">
             </div>
         </div>
@@ -452,21 +523,83 @@ document.getElementById('keyword').addEventListener('keypress', function(e) {
     }
 });
 
-// 一键采集（好单库朋友圈）
+// 数据源切换：大淘客朋友圈时显示专属参数
+function onCollectSourceChange() {
+    var src = document.getElementById('collectSource').value;
+    document.getElementById('dtkFields').style.display = (src === 'dtk') ? 'block' : 'none';
+}
+
+// 一键采集（朋友圈：好单库 / 大淘客）
 function openCollectModal() {
     // 移除 .d-none（display:none !important）类，用内联 display 覆盖，否则弹窗无法显示
     document.getElementById('collectModal').classList.remove('d-none');
     document.getElementById('collectModal').style.display = 'flex';
+    onCollectSourceChange();
     var btn = document.getElementById('collectConfirmBtn');
     btn.disabled = false;
     btn.innerText = '开始采集';
     btn.onclick = function() {
+        var src = document.getElementById('collectSource').value;
         var navid = document.getElementById('collectNav').value;
         var pages = document.getElementById('collectPages').value || 5;
         btn.disabled = true;
         btn.innerText = '采集中（请耐心等待）...';
+        var url;
+        if (src === 'dtk') {
+            // 大淘客朋友圈：收集「商品分类 cid => 文章分类 navid」映射（参考资讯采集），POST 提交
+            var sort = document.getElementById('collectSort').value || 0;
+            var pageSize = document.getElementById('collectPageSize').value || 50;
+            var map = {};
+            var chks = document.querySelectorAll('.dtk-cid-chk');
+            for (var i = 0; i < chks.length; i++) {
+                if (!chks[i].checked) continue;
+                var cid = chks[i].getAttribute('data-cid');
+                var navSel = document.querySelector('.dtk-navid[data-cid="' + cid + '"]');
+                var nav = navSel ? navSel.value : '0';
+                if (nav && nav != '0') map[cid] = nav;
+            }
+            // 自定义商品分类ID：逗号分隔，统一映射到所选文章分类
+            var customInput = document.getElementById('dtkCustomCids');
+            var customNav = document.querySelector('.dtk-custom-navid');
+            var customNavVal = customNav ? customNav.value : '0';
+            if (customInput && customInput.value.trim() !== '' && customNavVal && customNavVal != '0') {
+                var parts = customInput.value.split(',');
+                for (var j = 0; j < parts.length; j++) {
+                    var ccid = parts[j].trim();
+                    if (ccid === '') continue;
+                    if (!/^\d+$/.test(ccid)) continue; // 仅接受纯数字分类ID
+                    map[ccid] = customNavVal;
+                }
+            }
+            if (Object.keys(map).length === 0) {
+                alert('请至少勾选一个大淘客商品分类，并指定其归属的文章分类');
+                btn.disabled = false; btn.innerText = '开始采集';
+                return;
+            }
+            var params = 'map=' + encodeURIComponent(JSON.stringify(map))
+                + '&pages=' + encodeURIComponent(pages)
+                + '&sort=' + encodeURIComponent(sort)
+                + '&pageSize=' + encodeURIComponent(pageSize);
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', 'index.php?r=manage/find/collectDtk', true);
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4 && xhr.status == 200) {
+                    try {
+                        var r = JSON.parse(xhr.responseText);
+                        alert(r.info);
+                        if (r.status === 'y') setTimeout(function() { location.reload(); }, 1500);
+                    } catch(e) { alert('采集异常：' + xhr.responseText.substring(0, 200)); }
+                    closeCollectModal();
+                }
+            };
+            xhr.send(params);
+            return;
+        } else {
+            url = 'index.php?r=manage/find/collect&navid=' + navid + '&pages=' + pages;
+        }
         var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'index.php?r=manage/find/collect&navid=' + navid + '&pages=' + pages, true);
+        xhr.open('GET', url, true);
         xhr.onreadystatechange = function() {
             if (xhr.readyState == 4 && xhr.status == 200) {
                 try {

@@ -281,6 +281,84 @@ foreach ($result['data']['list'] as $item) {
         ];
     }
     
+    /**
+     * 大淘客朋友圈商品列表（friends-circle-list）
+     * 文档：https://www.dataoke.com/pmc/api-d.html?id=25
+     * 排序 sort：0综合 1上架时间 2热销 3领券量 4佣金比例 5券后价高到低 6券后价低到高
+     * cid：大淘客一级/二级分类id，需与网站现有分类映射一致（由调用方传）
+     * @param string $pageId   分页id（首页传 ''）
+     * @param int    $pageSize 每页条数
+     * @param int    $sort     排序方式
+     * @param int    $cid      分类id（0=全部）
+     * @return array
+     */
+    public function FriendsCircleList($pageId = '', $pageSize = 50, $sort = 0, $cid = 0) {
+        $host = 'https://openapi.dataoke.com/api/goods/friends-circle-list';
+        $params = [
+            'version'  => '1.3.0',
+            'pageId'   => (string)$pageId,
+            'pageSize' => (int)$pageSize,
+            'sort'     => (int)$sort,
+        ];
+        if (!empty($cid)) {
+            $params['cid'] = (int)$cid;
+        }
+        $result = $this->request($host, $params, '1.3.0');
+
+        if (!isset($result['code']) || $result['code'] != 0) {
+            return ['code' => 0, 'message' => $result['msg'] ?? '请求失败'];
+        }
+        if (empty($result['data']['list']) || !is_array($result['data']['list'])) {
+            return [
+                'code'    => 0,
+                'message' => '未找到相关商品',
+                'total'   => 0,
+                'pageId'  => '',
+                'items'   => [],
+            ];
+        }
+
+        $items = [];
+        foreach ($result['data']['list'] as $item) {
+            $it = [
+                'id'             => $item['id'] ?? '',
+                'goodsId'        => $item['goodsId'] ?? '',
+                'goodsSign'      => $item['goodsSign'] ?? '',
+                'title'          => $item['title'] ?? '',
+                'dtitle'         => $item['dtitle'] ?? '',
+                'originalPrice'  => $item['originalPrice'] ?? 0,
+                'actualPrice'    => $item['actualPrice'] ?? 0,
+                'shopType'       => $item['shopType'] ?? 0,
+                'monthSales'     => $item['monthSales'] ?? 0,
+                'commissionRate' => $item['commissionRate'] ?? 0,
+                'couponPrice'    => $item['couponPrice'] ?? 0,
+                'couponLink'     => $item['couponLink'] ?? '',
+                'couponStartTime'=> $item['couponStartTime'] ?? '',
+                'couponEndTime'  => $item['couponEndTime'] ?? '',
+                'mainPic'        => $item['mainPic'] ?? '',
+                'marketingMainPic'=> $item['marketingMainPic'] ?? '',
+                'cid'            => $item['cid'] ?? 0,
+                'subcid'        => $item['subcid'] ?? [],
+                'itemLink'       => $item['itemLink'] ?? '',
+                // 朋友圈专属字段
+                'circleText'     => $item['circleText'] ?? '',
+                'picList'        => $item['picList'] ?? [],
+                'item_from'      => 'taobao',
+            ];
+            // 注意：朋友圈素材含专属字段 circleText/picList/item_from，
+            // 不能用 standardizeItem（其 $def 不含这些字段会被丢弃），直接返回映射数组
+            $items[] = $it;
+        }
+
+        return [
+            'code'   => 1,
+            'message'=> 'success',
+            'total'  => $result['data']['totalNum'] ?? 0,
+            'pageId' => $result['data']['pageId'] ?? '',
+            'items'  => $items,
+        ];
+    }
+
     public function TwdToTwd($content) {
         $host = 'https://openapi.dataoke.com/api/tb-service/twd-to-twd';
         $params = ['content' => $content];

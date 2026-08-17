@@ -306,6 +306,7 @@ CREATE TABLE `__PREFIX__huan` (
   `file` int(11) NOT NULL DEFAULT '0',
   `type` int(11) NOT NULL DEFAULT '0' COMMENT '0pc 1移动',
   `date` varchar(30) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `px` int(11) NOT NULL DEFAULT '0' COMMENT '排序，越小越靠前',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;

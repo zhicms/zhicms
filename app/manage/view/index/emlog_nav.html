@@ -94,6 +94,7 @@
                 <div id="collapseSite" class="collapse {if strtolower(CONTROLLER_NAME)=='set' || strtolower(CONTROLLER_NAME)=='nav'}show{/if}" aria-labelledby="headingSite" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='set' && strtolower(ACTION_NAME)!='api'}active{/if}" href="index.php?r=manage/set/index">基础设置</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='sidebar'}active{/if}" href="index.php?r=manage/sidebar/index">侧边栏管理</a>
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='nav'}active{/if}" href="index.php?r=manage/nav/index">导航管理</a>
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='set' && strtolower(ACTION_NAME)=='api'}active{/if}" href="index.php?r=manage/set/api">联盟授权</a>
                     </div>

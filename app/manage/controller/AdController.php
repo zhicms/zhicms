@@ -13,7 +13,7 @@ class AdController extends \app\base\controller\BaseController
  	$this->pageText=array("幻灯广告","幻灯广告管理");
  	$where[] = "1";
     $baseUrl = "index.php?r=manage/ad/huan";
-    $page = obj('api/ApiData')->page("50", "yun_huan", $where, "`id` DESC", $baseUrl);
+    $page = obj('api/ApiData')->page("50", "yun_huan", $where, "`px` ASC, `id` DESC", $baseUrl);
     $this->page = $page;
  	$this->display();
  }
@@ -24,7 +24,7 @@ class AdController extends \app\base\controller\BaseController
  	$this->pageText=array("友情链接","友情链接管理");
  	$where[] = "1";
     $baseUrl = "index.php?r=manage/ad/link";
-    $Page = obj('api/ApiData')->page("50", "yun_link", $where, "`id` DESC", $baseUrl);
+    $Page = obj('api/ApiData')->page("50", "yun_link", $where, "`px` ASC, `id` DESC", $baseUrl);
     $this->Page = $Page;
  	$this->display();
  }
@@ -119,6 +119,7 @@ $this->checkManageSession();
 			 $data = obj('api/Api')->Form($this->POSTarg());
 			 $data['file'] = isset($data['file']) ? intval($data['file']) : 0;
 			 $data['type'] = isset($data['type']) && $data['type'] !== '' ? intval($data['type']) : 0;
+			 $data['px'] = isset($data['px']) && $data['px'] !== '' ? intval($data['px']) : 0;
 			 $data['date']=date("Y-m-d H:i:s",time());
 			 obj('api/ApiData')->insertData('yun_huan', $data);
 			echo json_encode(array("info" => "保存成功", "status" => "y"));
@@ -159,6 +160,7 @@ $this->checkManageSession();
             unset($data['id']);
             $data['file'] = isset($data['file']) ? intval($data['file']) : 0;
             $data['type'] = isset($data['type']) && $data['type'] !== '' ? intval($data['type']) : 0;
+            $data['px'] = isset($data['px']) && $data['px'] !== '' ? intval($data['px']) : 0;
             obj("api/ApiData")->dataUpdate("yun_huan",$data,$where);
             echo json_encode(array("info" => "保存成功", "status" => "y"));
         } catch(\Exception $e) {

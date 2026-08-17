@@ -1,5 +1,16 @@
 ﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿{include file="app/index/view/public/header"}
 
+<style>
+.article-tags{margin:24px 0 8px;padding-top:16px;border-top:1px dashed rgba(0,0,0,.08);font-size:14px;line-height:2;display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.article-tags-label{color:var(--lightColor,#888);font-weight:600;margin-right:4px}
+.article-tags-label .fas{margin-right:4px;color:var(--aHoverColor,#ff4d4f)}
+.article-tag{display:inline-block;padding:3px 12px;border:1px solid rgba(0,0,0,.1);border-radius:20px;color:var(--aColor,#333);text-decoration:none;transition:all .2s;background:rgba(0,0,0,.02)}
+.article-tag:hover{color:#fff;background:var(--aHoverColor,#ff4d4f);border-color:var(--aHoverColor,#ff4d4f)}
+[data-theme="dark"] .article-tags{border-top-color:rgba(255,255,255,.1)}
+[data-theme="dark"] .article-tag{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12);color:var(--aColor,#e8eaed)}
+[data-theme="dark"] .article-tag:hover{background:var(--aHoverColor,#ff4d4f);border-color:var(--aHoverColor,#ff4d4f);color:#fff}
+</style>
+
 <script type="application/ld+json"><?php
 $article = array(
   '@context' => 'https://schema.org',
@@ -74,6 +85,26 @@ echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   </div>
 
   <div class="log-content">{$newBody}</div>
+
+  <!-- 文章关键词标签（尾部自动生成，点击调用站内搜索） -->
+  {php
+    $__kw = trim($view['keywords'] ?? '');
+    if ($__kw !== '') {
+        // 支持中英文逗号、空格、竖线分隔
+        $__kwArr = preg_split('/[,，\|、\s]+/u', $__kw, -1, PREG_SPLIT_NO_EMPTY);
+        if (!empty($__kwArr)) {
+            echo '<div class="article-tags">';
+            echo '<span class="article-tags-label"><i class="fas fa-tags"></i> 关键词：</span>';
+            foreach ($__kwArr as $__k) {
+                $__k = trim($__k);
+                if ($__k === '') continue;
+                $__u = search_url() . '?content=' . urlencode($__k) . '&platform=local&type=article';
+                echo '<a class="article-tag" href="' . htmlspecialchars($__u, ENT_QUOTES) . '" rel="tag">' . htmlspecialchars($__k, ENT_QUOTES) . '</a>';
+            }
+            echo '</div>';
+        }
+    }
+  }
 
   <!-- 上下篇 -->
   {if isset($neighbor)}

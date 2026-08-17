@@ -293,6 +293,292 @@ class FindController extends \app\base\controller\BaseController
 	}
 
 	/**
+	 * 大淘客朋友圈采集（新增数据源，与好单库朋友圈 collect() 并列，互不影响）
+	 * 接口：https://openapi.dataoke.com/api/goods/friends-circle-list
+	 * 入参：version=1.3.0, pageId(分页), pageSize(每页条数), sort(0-6), cid(分类id)
+	 * cid 与网站现有分类一致：前端下拉选网站分类，其 id 即作为大淘客 cid 传入
+	 */
+	public function collectDtk(){
+		$this->checkManageSession();
+		set_time_limit(0);
+
+		$api = \app\common\ConfigStore::load('api');
+		$dtkAppKey = $api['dtk_appkey'] ?? '';
+		$dtkAppSecret = $api['dtk_appsecret'] ?? '';
+		if (empty($dtkAppKey) || empty($dtkAppSecret)) {
+			exit(json_encode(array("info" => "请先在后台配置大淘客 AppKey/AppSecret", "status" => "n")));
+		}
+
+		$tjk = new \ZhiCms\ext\Tjk(array(
+			'DtkappKey'    => $dtkAppKey,
+			'DtkappSecret' => $dtkAppSecret,
+			'HdkApiKey'    => $api['hdk_appkey'] ?? '',
+		));
+		$dtk = $tjk->getDtk();
+		if (!$dtk) {
+			exit(json_encode(array("info" => "大淘客API未配置", "status" => "n")));
+		}
+
+		// 分类映射：商品分类(cid，与网站商品分类一致) => 文章分类(navid，网站发现分类)
+		// 参考资讯采集：用户在前端对每个商品分类选一个文章分类并勾选「采集」，手动指定，不做任何自动映射
+		$mapRaw = isset($_POST['map']) ? $_POST['map'] : $this->arg("map", '');
+		if (is_string($mapRaw) && $mapRaw !== '') {
+			$mapRaw = html_entity_decode($mapRaw, ENT_QUOTES);
+			$mapArr = json_decode($mapRaw, true);
+		} else {
+			$mapArr = is_array($mapRaw) ? $mapRaw : array();
+		}
+		$map = array(); // cid(int) => navid(int)
+		if (!empty($mapArr) && is_array($mapArr)) {
+			foreach ($mapArr as $k => $v) {
+				$cid = intval($k); $nav = intval($v);
+				if ($cid > 0 && $nav > 0) $map[$cid] = $nav;
+			}
+		}
+		if (empty($map)) {
+			exit(json_encode(array("info" => "请至少选择一个商品分类，并指定其归属的文章分类", "status" => "n")));
+		}
+
+		$sort = intval($this->arg("sort", 0));
+		if ($sort < 0 || $sort > 6) $sort = 0;
+		$pages = max(1, intval($this->arg("pages", 5)));
+		$pageSize = max(1, min(100, intval($this->arg("pageSize", 50))));
+
+		// 持久化参数，供「计划任务-大淘客朋友圈采集」复用（保存 map + sort + pages）
+		$apiTmp = \app\common\ConfigStore::load('api');
+		if (!is_array($apiTmp)) $apiTmp = array();
+		$apiTmp['dtk_moments_map']  = $map;
+		$apiTmp['dtk_moments_sort'] = $sort;
+		$apiTmp['dtk_moments_pages']= $pages;
+		\app\common\ConfigStore::save('api', $apiTmp);
+
+		$success = 0; $update = 0; $pageDone = 0;
+		// 外层：按用户选择的商品分类逐个拉取，每轮文章归入该 cid 对应的文章分类 navid
+		foreach ($map as $loopCid => $navidStore) {
+			$pageId = '';
+		for ($p = 0; $p < $pages; $p++) {
+			$res = $dtk->FriendsCircleList($pageId, $pageSize, $sort, $loopCid);
+			if (empty($res['code']) || $res['code'] != 1) {
+				$msg = $res['message'] ?? '大淘客朋友圈接口返回异常';
+				exit(json_encode(array("info" => "商品分类#{$loopCid} 第" . ($p + 1) . "页：" . $msg, "status" => "n")));
+			}
+			$list = $res['items'];
+			if (empty($list) || !is_array($list)) break;
+
+			foreach ($list as $item) {
+				$itemid = $item['goodsId'] ?? '';
+				if (empty($itemid)) continue;
+
+				$title = trim($item['title'] ?? '');
+				$dtitle = trim($item['dtitle'] ?? '');
+				$mainPic = $item['mainPic'] ?? '';
+				// 商品描述（desc）作为正文主内容
+				$desc = trim($item['desc'] ?? '');
+				if ($desc !== '') {
+					$desc = $this->cleanMomentsText($desc);
+				}
+				// 发圈文案（朋友圈专属字段 circleText），清洗占位符（口令/emoji 标签）
+				$circleText = $item['circleText'] ?? '';
+				if ($circleText !== '') {
+					$circleText = $this->cleanMomentsText($circleText);
+				}
+
+				// 内容组装：desc 是主内容；circleText 与 desc 不同（去空白后不一致）时，
+				// 作为「发圈文案」补充拼到内容里，避免与 desc 重复。
+				$contentText = '';
+				if ($desc !== '') {
+					$contentText .= '<p>' . $desc . '</p>';
+				}
+				if ($circleText !== '' && trim(preg_replace('/\s+/u', '', $circleText)) !== trim(preg_replace('/\s+/u', '', $desc))) {
+					$contentText .= '<p class="circle-text">' . $circleText . '</p>';
+				}
+				// 商品卡标记：大淘客朋友圈商品平台固定淘宝(tb)，复用 buildGoodsMarker
+				$contentText .= $this->buildGoodsMarker($dtk, $item);
+
+				// 摘要：优先 desc，其次 circleText，截断 120 字
+				$decSource = $desc !== '' ? $desc : $circleText;
+				$decText = strip_tags($decSource);
+				$decText = mb_substr($decText, 0, 120, 'UTF-8');
+
+				// 关键词：综合标题、短标题、描述，去重后用空格连接（利于站内搜索）
+				$kwParts = array_unique(array_filter(array($title, $dtitle, $desc)));
+				$keywords = implode(' ', $kwParts);
+
+				$data = array(
+					'goodsId'  => $itemid,
+					'itemLink' => $item['itemLink'] ?? ('https://item.taobao.com/item.htm?id=' . $itemid),
+					'title'    => $title,
+					'content'  => $contentText,
+					'cid'      => 0,
+					'navid'    => $navidStore,
+					'mainPic'  => $mainPic,
+					'keywords' => $keywords,
+					'dec'      => $decText,
+					'view'     => 0,
+					'like'     => 0,
+					'lock'     => 0,
+					'status'   => 1,
+					'couponEndTime' => '',
+					'date'     => date("Y-m-d H:i:s", time()),
+				);
+				// 作者默认调用当前管理员昵称/头像（前台展示用）
+				$data['author'] = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== ''
+					? $_SESSION['manage_nickname']
+					: (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
+				$data['author_pic'] = isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
+
+				if ($this->saveArticleUpsert($data, $itemid) === 'update') {
+					$update++;
+				} else {
+					$success++;
+				}
+			}
+
+			$pageDone++;
+			$nextPageId = $res['pageId'] ?? '';
+			if (empty($nextPageId) || count($list) < $pageSize) {
+				break;
+			}
+			$pageId = $nextPageId;
+			usleep(300000);
+		}
+		} // foreach map (cid => navid)
+
+		exit(json_encode(array(
+			"info" => "大淘客朋友圈采集完成（" . count($map) . " 个商品分类）：翻页 {$pageDone} 次，成功入库 {$success} 条，更新 {$update} 条",
+			"status" => "y"
+		)));
+	}
+
+	/**
+	 * 大淘客朋友圈采集（计划任务专用）：读取后台保存参数，定时跑无需传参。
+	 * 复用 collectDtk() 的大淘客朋友圈接口采集逻辑。
+	 * @return array ['ok'=>bool,'output'=>string]
+	 */
+	public function collectDtkCron(){
+		set_time_limit(0);
+		$api = \app\common\ConfigStore::load('api');
+		$dtkAppKey = $api['dtk_appkey'] ?? '';
+		$dtkAppSecret = $api['dtk_appsecret'] ?? '';
+		if (empty($dtkAppKey) || empty($dtkAppSecret)) {
+			return array('ok' => false, 'output' => '请先在后台配置大淘客 AppKey/AppSecret，方可采集大淘客朋友圈');
+		}
+
+		$tjk = new \ZhiCms\ext\Tjk(array(
+			'DtkappKey'    => $dtkAppKey,
+			'DtkappSecret' => $dtkAppSecret,
+			'HdkApiKey'    => $api['hdk_appkey'] ?? '',
+		));
+		$dtk = $tjk->getDtk();
+		if (!$dtk) return array('ok' => false, 'output' => '大淘客API未配置');
+
+		// 分类映射：商品分类(cid) => 文章分类(navid)，由用户在设置项中手动指定，不做自动映射
+		$map = isset($api['dtk_moments_map']) && is_array($api['dtk_moments_map']) ? $api['dtk_moments_map'] : array();
+		$map = array_filter($map, function($v, $k){ return intval($k) > 0 && intval($v) > 0; }, ARRAY_FILTER_USE_BOTH);
+		$sort  = isset($api['dtk_moments_sort']) ? intval($api['dtk_moments_sort']) : 0;
+		$pages = isset($api['dtk_moments_pages']) ? max(1, intval($api['dtk_moments_pages'])) : 3;
+		if ($sort < 0 || $sort > 6) $sort = 0;
+
+		// 计划任务无管理员 SESSION，取默认管理员作为文章作者
+		$defaultAuthor = '管理员';
+		$defaultAuthorPic = '';
+		$admRows = obj("api/ApiData")->dataSelect("yun_manage", array(), "id ASC");
+		if (!empty($admRows) && is_array($admRows)) {
+			$adm = isset($admRows[0]) ? $admRows[0] : $admRows;
+			if (!empty($adm['nickname'])) $defaultAuthor = $adm['nickname'];
+			if (!empty($adm['pic'])) $defaultAuthorPic = $adm['pic'];
+		}
+
+		if (empty($map)) {
+			return array('ok' => false, 'output' => '未设置大淘客朋友圈分类映射（商品分类=>文章分类），请先在大淘客朋友圈采集中选择商品分类并指定文章分类后保存');
+		}
+
+		$success = 0; $update = 0; $pageDone = 0;
+		// 外层：按用户映射的每个商品分类逐个拉取，文章归入对应文章分类 navid
+		foreach ($map as $loopCid => $navid) {
+			$pageId = '';
+		for ($p = 0; $p < $pages; $p++) {
+			$res = $dtk->FriendsCircleList($pageId, 50, $sort, intval($loopCid));
+			if (empty($res['code']) || $res['code'] != 1) break;
+			$list = $res['items'];
+			if (empty($list) || !is_array($list)) break;
+
+			foreach ($list as $item) {
+				$itemid = $item['goodsId'] ?? '';
+				if (empty($itemid)) continue;
+
+				$title = trim($item['title'] ?? '');
+				$dtitle = trim($item['dtitle'] ?? '');
+				$mainPic = $item['mainPic'] ?? '';
+				$desc = trim($item['desc'] ?? '');
+				if ($desc !== '') $desc = $this->cleanMomentsText($desc);
+				$circleText = $item['circleText'] ?? '';
+				if ($circleText !== '') $circleText = $this->cleanMomentsText($circleText);
+
+				$contentText = '';
+				if ($desc !== '') $contentText .= '<p>' . $desc . '</p>';
+				if ($circleText !== '' && trim(preg_replace('/\s+/u', '', $circleText)) !== trim(preg_replace('/\s+/u', '', $desc))) {
+					$contentText .= '<p class="circle-text">' . $circleText . '</p>';
+				}
+				$contentText .= $this->buildGoodsMarker($dtk, $item);
+
+				$decSource = $desc !== '' ? $desc : $circleText;
+				$decText = strip_tags($decSource);
+				$decText = mb_substr($decText, 0, 120, 'UTF-8');
+
+				$kwParts = array_unique(array_filter(array($title, $dtitle, $desc)));
+				$keywords = implode(' ', $kwParts);
+
+				$data = array(
+					'goodsId'  => $itemid,
+					'itemLink' => $item['itemLink'] ?? ('https://item.taobao.com/item.htm?id=' . $itemid),
+					'title'    => $title,
+					'content'  => $contentText,
+					'cid'      => 0,
+					'navid'    => $navid,
+					'mainPic'  => $mainPic,
+					'keywords' => $keywords,
+					'dec'      => $decText,
+					'view'     => 0,
+					'like'     => 0,
+					'lock'     => 0,
+					'status'   => 1,
+					'couponEndTime' => '',
+					'date'     => date("Y-m-d H:i:s", time()),
+				);
+				$data['author'] = $defaultAuthor;
+				$data['author_pic'] = $defaultAuthorPic;
+
+				if ($this->saveArticleUpsert($data, $itemid) === 'update') {
+					$update++;
+				} else {
+					$success++;
+				}
+			}
+			$pageDone++;
+			$nextPageId = $res['pageId'] ?? '';
+			if (empty($nextPageId) || count($list) < 50) break;
+			$pageId = $nextPageId;
+			usleep(300000);
+		}
+		}
+		return array('ok' => true, 'output' => "大淘客朋友圈采集完成（" . count($map) . " 个商品分类）：翻页{$pageDone}次，成功入库{$success}条，更新{$update}条");
+	}
+
+	/**
+	 * 清洗朋友圈发圈文案：去除 [emoji:xxx] / [口令] 等占位符，避免污染正文
+	 */
+	private function cleanMomentsText($text){
+		if ($text === '') return '';
+		// 去除形如 [emoji:xxx]、[xx:xx] 的占位符
+		$text = preg_replace('/\[[^\]\n]{0,30}\]/u', '', $text);
+		// 去除淘口令等不可见字符块（￥...￥ / 🍑...🍑）
+		$text = preg_replace('/[￥€$][^￥€$]{4,40}[￥€$]/u', '', $text);
+		$text = preg_replace('/(🍑|🍊|🔗)\s*[^🍑🍊🔗\n]{0,40}\s*(🍑|🍊|🔗)/u', '', $text);
+		return trim($text);
+	}
+
+	/**
 	 * 资讯采集（聚合数据 235 新闻头条 + 850 AI新闻简报）
 	 * 接收两个独立 key 与分类映射（聚合分类 => 本地发现分类 navid），逐类拉取新闻入库 yun_article。
 	 */
@@ -661,7 +947,7 @@ class FindController extends \app\base\controller\BaseController
 
     		$goodsId=$this->arg("goodsid");
     		$title=$this->arg("title");
-    		$cid=$this->arg("cid");
+    		$cid=intval($this->arg("cid"));
     		$navid=intval($this->arg("navid"));
     		$pic=$this->arg("pic");
     		$keywords=$this->arg("keywords");
@@ -838,7 +1124,7 @@ class FindController extends \app\base\controller\BaseController
     		}
     		$title=$this->arg("title");
     		$pic=$this->arg("pic");
-    		$cid=$this->arg("cid");
+    		$cid=intval($this->arg("cid"));
     		$navid=intval($this->arg("navid"));
     		$keywords=$this->arg("keywords");
     		$dec=$this->arg("dec");

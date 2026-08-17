@@ -1,6 +1,5 @@
 <?php
 namespace ZhiCms\base;
-#[\AllowDynamicProperties]
 class Model{
 	protected $config =array();
 	protected $options = array(

@@ -5,6 +5,9 @@
 // 最前引入入口引导（Session / 编码 / 错误处理 / 响应头 / gzip）
 require __DIR__ . '/bootstrap.php';
 
+// 通用辅助函数库（吸收 emlog 精华：zc_sub_string / zc_smart_date 等），全局可用
+require_once __DIR__ . '/../app/common/helpers.php';
+
 // 后台操作日志扩展（提供全局函数 admin_log()）
 require_once __DIR__ . '/ext/AdminLog.php';
 

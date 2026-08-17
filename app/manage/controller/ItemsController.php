@@ -184,8 +184,9 @@ class ItemsController extends \app\base\controller\BaseController
             exit(json_encode(array("info" => "延期置顶成功", "status" => "y")));
         }elseif($lock == "2"){
             $data['top'] = 0;
-            $data['top_stime'] = 0;
-            $data['top_etime'] = 0;
+            // 取消置顶时清空时间：datetime 列写 0 在 MySQL8 严格模式下报 1292，用 null 安全
+            $data['top_stime'] = null;
+            $data['top_etime'] = null;
             obj("api/ApiData")->dataUpdate("yun_items", $data, $where);
             exit(json_encode(array("info" => "取消置顶成功", "status" => "y")));
 
@@ -205,5 +206,40 @@ class ItemsController extends \app\base\controller\BaseController
         obj('api/ApiData')->thisQuery($del);
 
         exit(json_encode(array("info" => "更新成功", "status" => "y")));
+    }
+
+    /**
+     * 批量删除商品（支持列表复选框勾选）
+     */
+    public function batchDel(){
+        $this->checkManageSession();
+        $this->checkCsrfToken();
+        $ids = $this->arg("ids");
+
+        if (empty($ids)) {
+            exit(json_encode(array("info" => "请选择要删除的商品", "status" => "n")));
+        }
+        if (!is_array($ids)) {
+            $ids = array($ids);
+        }
+        $ids = array_filter(array_map('intval', $ids), function($v){ return $v > 0; });
+        if (empty($ids)) {
+            exit(json_encode(array("info" => "ID 参数无效", "status" => "n")));
+        }
+
+        $api = obj("api/ApiData");
+        $ok = 0;
+        foreach ($ids as $id) {
+            $rs = $api->deleteThis("yun_items", "`id` = ?", array($id));
+            if ($rs !== false) {
+                $ok++;
+            }
+        }
+        \think\facade\Cache::clear();
+        exit(json_encode(array(
+            "info" => "成功删除 {$ok} 条商品",
+            "status" => "y",
+            "count" => $ok
+        )));
     }
 }

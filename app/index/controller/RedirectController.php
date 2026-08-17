@@ -40,6 +40,7 @@ class RedirectController extends \app\base\controller\BaseController
     {
         $platform = strtolower(trim($this->arg('platform', '')));
         $id       = trim($this->arg('id', ''));
+        $sign     = trim($this->arg('sign', ''));
 
         // 兜底：极端环境下若 $args 未正确合并 $_GET（如某些 SAPI 下 $_GET 被重置），
         // 直接从原始 QUERY_STRING 再取一次，确保淘宝带 "-" 的 id 百分百可取。
@@ -77,6 +78,11 @@ class RedirectController extends \app\base\controller\BaseController
                     // 大淘客商品转链优先用 goodsSign（与采集入库一致），DTK 用 goodsSign 可正确生成券链接
                     $dbGoodsSign = $item['goodsSign'] ?? '';
                     if (!in_array($dbPlatform, $allow)) $dbPlatform = '';
+                }
+                // URL 传入的 sign（如 AI 搜索实时返回的 goodsSign）优先于库内值：
+                // 未入库商品也能拿到带佣金的转链短链，而非降级到无佣详情页。
+                if ($sign !== '') {
+                    $dbGoodsSign = $sign;
                 }
             } catch (\Exception $e) {
             }

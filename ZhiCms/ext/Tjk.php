@@ -4,6 +4,7 @@ namespace ZhiCms\ext;
 use ZhiCms\ext\Tjk\Dtk;
 use ZhiCms\ext\Tjk\Hdk;
 use ZhiCms\ext\Tjk\Pdd;
+use app\common\CacheService;
 
 class Tjk {
     
@@ -407,49 +408,109 @@ class Tjk {
      * 全量商品列表（get-goods-list），返回完整字段包括标题/主图/销量等
      * 适用于联盟库淘宝页面的无关键词全库浏览，替代 pullGoodsByTime
      */
-    public function getGoodsList($pageSize = 50, $pageId = '1', $extra = []) {
+    /**
+     * API 结果缓存装饰器（仅用于前端展示型接口，节省外部 API 调用次数）
+     *
+     * 设计要点：
+     *  - $key 已含参数维度（page/cid/rankType 等），不同参数独立缓存；
+     *  - $ttl 秒级过期，到点自动失效（CacheService 原生支持）；
+     *  - 失败兜底：API 抛异常或返回 code!=1 时，若已有旧缓存则**返回旧数据**（保证前端不崩、SEO 友好），
+     *    绝不返回空数组误导页面；
+     *  - 实时查询（searchGoods/getGoodsDetail/getPrivilegeLink）不走此方法。
+     *
+     * @param string   $key      缓存键（建议前缀 api_）
+     * @param int      $ttl      过期秒数
+     * @param callable $callback 真正调用 API 的闭包，需返回数组且含 'code' 键
+     * @return array
+     */
+    private function apiCache($key, $ttl, $callback) {
+        $cache  = CacheService::instance($ttl);
+        $cached = $cache->get($key);
+        if ($cached !== null && $cached !== false) {
+            return $cached;
+        }
+        try {
+            $result = $callback();
+        } catch (\Throwable $e) {
+            // API 异常：有旧缓存则返回旧，否则原样返回空结构（由上层决定）
+            $old = $cache->get($key);
+            if ($old !== null && $old !== false) {
+                return $old;
+            }
+            return ['code' => 0, 'message' => 'API请求异常：' . $e->getMessage()];
+        }
+        // 仅当 API 正常返回（code 存在，兼容 1/200/y 等成功态）才写入缓存；
+        // 失败结果不缓存，下次请求仍打 API 重试。
+        $ok = isset($result['code']) ? $result['code'] : 0;
+        $isOk = ($ok == 1 || $ok == 200 || $ok === 'y' || $ok === true);
+        if ($isOk) {
+            $cache->set($key, $result, $ttl);
+        } else {
+            // 返回失败但有旧缓存，降级返回旧缓存
+            $old = $cache->get($key);
+            if ($old !== null && $old !== false) {
+                return $old;
+            }
+        }
+        return $result;
+    }
+
+    public function getGoodsList($pageSize = 50, $pageId = '1', $extra = [], $nocache = false) {
         if (!$this->dtk) {
             return ['code' => 0, 'message' => '大淘客API未配置', 'items' => [], 'total' => 0];
         }
-        return $this->dtk->GetGoodsList($pageSize, $pageId, $extra);
+        // 后台联盟列表 / 实时场景传 $nocache=true 跳过缓存；前台列表/首页默认走缓存
+        if ($nocache) {
+            return $this->dtk->GetGoodsList($pageSize, $pageId, $extra);
+        }
+        $key = 'api_goodslist_' . md5(json_encode([$pageSize, $pageId, $extra]));
+        return $this->apiCache($key, 600, function () use ($pageSize, $pageId, $extra) {
+            return $this->dtk->GetGoodsList($pageSize, $pageId, $extra);
+        });
     }
     
     public function getBrandList($pageSize = 50, $pageId = '1', $cid = '') {
         if (!$this->dtk) {
             return ['code' => 0, 'message' => '大淘客API未配置', 'total' => 0, 'pageId' => '', 'brands' => []];
         }
-        return $this->dtk->GetBrandColumnList($pageSize, $pageId, $cid);
+        $key = 'api_brandlist_' . md5(json_encode([$pageSize, $pageId, $cid]));
+        return $this->apiCache($key, 1800, function () use ($pageSize, $pageId, $cid) {
+            return $this->dtk->GetBrandColumnList($pageSize, $pageId, $cid);
+        });
     }
     
     public function getBrandGoods($brandId, $pageSize = 50, $pageId = '1') {
         if (!$this->dtk) {
             return ['code' => 0, 'message' => '大淘客API未配置', 'total' => 0, 'pageId' => '', 'goods' => [], 'brandInfo' => []];
         }
-        $result = $this->dtk->GetBrandGoodsList($brandId, $pageSize, $pageId);
+        $key = 'api_brandgoods_' . md5(json_encode([$brandId, $pageSize, $pageId]));
+        return $this->apiCache($key, 600, function () use ($brandId, $pageSize, $pageId) {
+            $result = $this->dtk->GetBrandGoodsList($brandId, $pageSize, $pageId);
 
-        // 品牌官方商品为空时，用品牌名称作为关键词搜索，补充产品数据
-        if ($result['code'] == 1 && empty($result['goods']) && !empty($result['brandInfo']['brandName'])) {
-            $keyword = trim($result['brandInfo']['brandName']);
-            $search  = $this->dtk->SearchGoods($keyword, 1, $pageSize);
-            if ($search['code'] == 1 && !empty($search['items'])) {
-                // 优先保留标题中含品牌名的商品以提升相关性；无匹配则回退到全部搜索结果
-                $matched = [];
-                foreach ($search['items'] as $it) {
-                    if ($keyword !== '' && stripos((string)($it['title'] ?? ''), $keyword) !== false) {
-                        $matched[] = $it;
+            // 品牌官方商品为空时，用品牌名称作为关键词搜索，补充产品数据
+            if ($result['code'] == 1 && empty($result['goods']) && !empty($result['brandInfo']['brandName'])) {
+                $keyword = trim($result['brandInfo']['brandName']);
+                $search  = $this->dtk->SearchGoods($keyword, 1, $pageSize);
+                if ($search['code'] == 1 && !empty($search['items'])) {
+                    // 优先保留标题中含品牌名的商品以提升相关性；无匹配则回退到全部搜索结果
+                    $matched = [];
+                    foreach ($search['items'] as $it) {
+                        if ($keyword !== '' && stripos((string)($it['title'] ?? ''), $keyword) !== false) {
+                            $matched[] = $it;
+                        }
                     }
+                    if (!empty($matched)) {
+                        $result['goods'] = array_slice($matched, 0, $pageSize);
+                        $result['total'] = count($matched);
+                    } else {
+                        $result['goods'] = $search['items'];
+                        $result['total'] = $search['total'] ?? count($search['items']);
+                    }
+                    $result['fromSearch'] = true;
                 }
-                if (!empty($matched)) {
-                    $result['goods'] = array_slice($matched, 0, $pageSize);
-                    $result['total'] = count($matched);
-                } else {
-                    $result['goods'] = $search['items'];
-                    $result['total'] = $search['total'] ?? count($search['items']);
-                }
-                $result['fromSearch'] = true;
             }
-        }
-        return $result;
+            return $result;
+        });
     }
     
     /**
@@ -464,7 +525,10 @@ class Tjk {
         if (!$this->dtk) {
             return ['code' => 0, 'message' => '大淘客API未配置', 'rankType' => $rankType, 'items' => [], 'keywords' => []];
         }
-        return $this->dtk->GetRankingList($rankType, $cid, $pageSize, $pageId);
+        $key = 'api_ranking_' . md5(json_encode([$rankType, $cid, $pageSize, $pageId]));
+        return $this->apiCache($key, 900, function () use ($rankType, $cid, $pageSize, $pageId) {
+            return $this->dtk->GetRankingList($rankType, $cid, $pageSize, $pageId);
+        });
     }
 
     /**

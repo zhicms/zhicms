@@ -20,11 +20,19 @@
             </button>
         </div>
 
-    <!--div class="action-buttons">
-        <button class="btn btn-success mr-2" onclick="oneKeyUpdate()">
-            <i class="fas fa-sync"></i> 一键更新
+    <div class="action-buttons d-flex align-items-center">
+        <select class="form-control mr-2" id="batchCid" style="width:auto">
+            <option value="">不指定分类</option>
+            <?php if(isset($categories)): ?>
+            <?php foreach($categories as $key => $value): ?>
+            <option value="<?php echo $key; ?>"><?php echo $value; ?></option>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </select>
+        <button class="btn btn-success" id="batchStockBtn" onclick="batchStockIn()" disabled>
+            <i class="fas fa-cloud-download-alt"></i> 批量入库<span id="batchStockCount"></span>
         </button>
-    </div-->
+    </div>
 </div>
 
 <!-- 当前状态提示 -->
@@ -203,6 +211,9 @@
             <table class="table table-hover table-striped">
                 <thead class="thead-dark">
                     <tr>
+                        <th class="w-40 text-center">
+                            <input type="checkbox" id="unionCheckAll" onclick="unionToggleAll(this)">
+                        </th>
                         <th class="w-95">商品图片</th>
                         <th>商品信息</th>
                         <th class="w-120">券后价</th>
@@ -233,7 +244,32 @@
                         // 判断是否已入库
                         $isCollected = !empty($dbGoodsIds) && isset($dbGoodsIds[$row['goodsId']]);
                     ?>
-                    <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>">
+                    <?php
+                        // 批量入库需要的商品字段（与单条 collectGoods 入库字段保持一致）
+                        $batchItem = array(
+                            'goodsId'     => $row['goodsId'] ?? '',
+                            'title'       => $row['title'] ?? '',
+                            'dtitle'      => $row['dtitle'] ?? '',
+                            'mainPic'     => $mainPic,
+                            'item_from'   => $itemFrom,
+                            'goodsSign'   => $row['goodsSign'] ?? '',
+                            'actualPrice' => $row['actualPrice'] ?? 0,
+                            'originalPrice' => $row['originalPrice'] ?? 0,
+                            'couponPrice' => $couponPrice,
+                            'commissionRate' => $commissionRate,
+                            'couponReceiveNum' => $couponReceiveNum,
+                            'monthSales'  => $row['monthSales'] ?? 0,
+                            'shopName'    => $row['shopName'] ?? '',
+                            'itemLink'    => $itemLink,
+                            'cid'         => $row['cid'] ?? 0,
+                            'tbcid'       => $row['tbcid'] ?? 0,
+                        );
+                        $batchJson = htmlspecialchars(json_encode($batchItem, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES);
+                    ?>
+                    <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>" data-item="<?php echo $batchJson; ?>">
+                        <td class="text-center">
+                            <input type="checkbox" class="union-check" value="<?php echo $row['goodsId']; ?>" <?php echo $isCollected ? 'disabled' : ''; ?> onclick="unionUpdateBtn()">
+                        </td>
                         <td>
                             <img src="<?php echo $mainPic; ?>" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;<?php echo $isCollected ? ' opacity: 0.6;' : ''; ?>"
                                  onclick="showImage('<?php echo $mainPic; ?>')">
@@ -326,7 +362,7 @@
                     <?php endforeach; ?>
                     <?php else: ?>
                     <tr>
-                        <td colspan="9" class="text-center py-5">
+                        <td colspan="10" class="text-center py-5">
                             <div class="text-center text-muted">
                                 <i class="fas fa-cloud-download-alt fa-3x mb-3 d-block"></i>
                                 <h5>没有找到商品</h5>
@@ -621,6 +657,81 @@ function collectGoods(goodsId, platform) {
             submitCollect(goodsId, platform, 0);
         }
     }
+}
+
+// ============ 联盟库批量入库 ============
+function unionToggleAll(box) {
+    var checks = document.querySelectorAll('.union-check:not([disabled])');
+    checks.forEach(function (c) { c.checked = box.checked; });
+    unionUpdateBtn();
+}
+
+function unionUpdateBtn() {
+    var checked = document.querySelectorAll('.union-check:checked');
+    var btn = document.getElementById('batchStockBtn');
+    var cnt = document.getElementById('batchStockCount');
+    if (checked.length > 0) {
+        btn.disabled = false;
+        cnt.textContent = '(' + checked.length + ')';
+    } else {
+        btn.disabled = true;
+        cnt.textContent = '';
+    }
+}
+
+function batchStockIn() {
+    var checked = document.querySelectorAll('.union-check:checked');
+    if (checked.length === 0) {
+        showToast('请先勾选要入库的商品', 'warning');
+        return;
+    }
+    // 仅收集未入库的勾选项（disabled 的已入库项不会被勾选）
+    var items = [];
+    checked.forEach(function (c) {
+        var tr = c.closest('tr');
+        if (tr && tr.getAttribute('data-item')) {
+            try { items.push(JSON.parse(tr.getAttribute('data-item'))); } catch (e) {}
+        }
+    });
+    if (items.length === 0) {
+        showToast('没有可入库的商品数据', 'warning');
+        return;
+    }
+    if (!confirm('确定要将选中的 ' + items.length + ' 个商品批量入库吗？已入库的会自动跳过。')) {
+        return;
+    }
+
+    var platform = document.getElementById('platform') ? document.getElementById('platform').value : 'taobao';
+    var cid = document.getElementById('batchCid') ? document.getElementById('batchCid').value : '';
+    var token = document.getElementById('csrfToken').value;
+
+    var btn = document.getElementById('batchStockBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 入库中...';
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', 'index.php?r=manage/union/batchStockIn&_token=' + token, true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4 && xhr.status == 200) {
+            try {
+                var result = JSON.parse(xhr.responseText);
+                if (result.status === 'y') {
+                    showToast(result.info, 'success');
+                    setTimeout(function () { location.reload(); }, 1000);
+                } else {
+                    showToast(result.info || '入库失败', 'danger');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库<span id="batchStockCount"></span>';
+                }
+            } catch (e) {
+                showToast('操作异常', 'danger');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库<span id="batchStockCount"></span>';
+            }
+        }
+    };
+    xhr.send('items=' + encodeURIComponent(JSON.stringify(items)) + '&platform=' + encodeURIComponent(platform) + '&cid=' + encodeURIComponent(cid));
 }
 
 // 打开分类选择弹窗（拼多多/京东/唯品会）

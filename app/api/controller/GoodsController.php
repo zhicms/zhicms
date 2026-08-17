@@ -715,7 +715,7 @@ class GoodsController extends ApiBaseController {
 
         try {
             $ch = curl_init();
-            $method = strtoupper($_SERVER['\REQUEST_METHOD'] ?? 'GET');
+            $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
             if ($method === 'POST') {
                 curl_setopt($ch, CURLOPT_URL, $url);
                 curl_setopt($ch, CURLOPT_POST, true);
