@@ -29,9 +29,11 @@
             <?php endforeach; ?>
             <?php endif; ?>
         </select>
-        <button class="btn btn-success" id="batchStockBtn" onclick="batchStockIn()" disabled>
-            <i class="fas fa-cloud-download-alt"></i> 批量入库<span id="batchStockCount"></span>
-        </button>
+        <div class="btn-group d-none" id="batchBtnGroup">
+            <button type="button" class="btn btn-success" onclick="batchAction('stockin')">
+                <i class="fas fa-cloud-download-alt"></i> 批量入库
+            </button>
+        </div>
     </div>
 </div>
 
@@ -212,7 +214,7 @@
                 <thead class="thead-dark">
                     <tr>
                         <th class="w-40 text-center">
-                            <input type="checkbox" id="unionCheckAll" onclick="unionToggleAll(this)">
+                            <input type="checkbox" id="selectAll" onclick="toggleAll(this)">
                         </th>
                         <th class="w-95">商品图片</th>
                         <th>商品信息</th>
@@ -268,7 +270,7 @@
                     ?>
                     <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>" data-item="<?php echo $batchJson; ?>">
                         <td class="text-center">
-                            <input type="checkbox" class="union-check" value="<?php echo $row['goodsId']; ?>" <?php echo $isCollected ? 'disabled' : ''; ?> onclick="unionUpdateBtn()">
+                            <input type="checkbox" class="row-checkbox" value="<?php echo $row['goodsId']; ?>" <?php echo $isCollected ? 'disabled' : ''; ?> onclick="updateBatchBtns()">
                         </td>
                         <td>
                             <img src="<?php echo $mainPic; ?>" class="img-thumbnail" style="width: 70px; height: 70px; object-fit: cover; cursor: pointer;<?php echo $isCollected ? ' opacity: 0.6;' : ''; ?>"
@@ -659,42 +661,44 @@ function collectGoods(goodsId, platform) {
     }
 }
 
-// ============ 联盟库批量入库 ============
-function unionToggleAll(box) {
-    var checks = document.querySelectorAll('.union-check:not([disabled])');
+// ============ 联盟库批量入库（对齐 FindController 范式） ============
+function toggleAll(box) {
+    var checks = document.querySelectorAll('.row-checkbox:not([disabled])');
     checks.forEach(function (c) { c.checked = box.checked; });
-    unionUpdateBtn();
+    updateBatchBtns();
 }
 
-function unionUpdateBtn() {
-    var checked = document.querySelectorAll('.union-check:checked');
-    var btn = document.getElementById('batchStockBtn');
-    var cnt = document.getElementById('batchStockCount');
-    if (checked.length > 0) {
-        btn.disabled = false;
-        cnt.textContent = '(' + checked.length + ')';
+function updateBatchBtns() {
+    var n = document.querySelectorAll('.row-checkbox:checked').length;
+    var g = document.getElementById('batchBtnGroup');
+    if (n > 0) {
+        g.classList.remove('d-none');
+        g.style.display = 'inline-flex';
     } else {
-        btn.disabled = true;
-        cnt.textContent = '';
+        g.classList.add('d-none');
+        g.style.display = 'none';
     }
 }
 
-function batchStockIn() {
-    var checked = document.querySelectorAll('.union-check:checked');
-    if (checked.length === 0) {
-        showToast('请先勾选要入库的商品', 'warning');
-        return;
-    }
-    // 仅收集未入库的勾选项（disabled 的已入库项不会被勾选）
+function getSelectedItems() {
     var items = [];
-    checked.forEach(function (c) {
+    document.querySelectorAll('.row-checkbox:checked').forEach(function (c) {
         var tr = c.closest('tr');
         if (tr && tr.getAttribute('data-item')) {
             try { items.push(JSON.parse(tr.getAttribute('data-item'))); } catch (e) {}
         }
     });
+    return items;
+}
+
+function batchAction(action) {
+    if (action !== 'stockin') {
+        alert('未知操作');
+        return;
+    }
+    var items = getSelectedItems();
     if (items.length === 0) {
-        showToast('没有可入库的商品数据', 'warning');
+        alert('请先勾选要入库的商品');
         return;
     }
     if (!confirm('确定要将选中的 ' + items.length + ' 个商品批量入库吗？已入库的会自动跳过。')) {
@@ -705,29 +709,27 @@ function batchStockIn() {
     var cid = document.getElementById('batchCid') ? document.getElementById('batchCid').value : '';
     var token = document.getElementById('csrfToken').value;
 
-    var btn = document.getElementById('batchStockBtn');
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 入库中...';
+    var group = document.getElementById('batchBtnGroup');
+    var btn = group.querySelector('button');
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 入库中...'; }
 
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'index.php?r=manage/union/batchStockIn&_token=' + token, true);
+    xhr.open('POST', 'index.php?r=manage/union/batch&action=stockin&_token=' + token, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
             try {
                 var result = JSON.parse(xhr.responseText);
                 if (result.status === 'y') {
-                    showToast(result.info, 'success');
+                    alert(result.info);
                     setTimeout(function () { location.reload(); }, 1000);
                 } else {
-                    showToast(result.info || '入库失败', 'danger');
-                    btn.disabled = false;
-                    btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库<span id="batchStockCount"></span>';
+                    alert(result.info || '入库失败');
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库'; }
                 }
             } catch (e) {
-                showToast('操作异常', 'danger');
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库<span id="batchStockCount"></span>';
+                alert('操作异常');
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库'; }
             }
         }
     };

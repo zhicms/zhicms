@@ -27,9 +27,14 @@
         <button class="btn btn-outline-warning mr-2" onclick="overdue()">
             <i class="fas fa-trash-restore"></i> 清理过期
         </button>
-        <button class="btn btn-danger" id="batchDelBtn" onclick="batchDel()" disabled>
-            <i class="fas fa-trash-alt"></i> 批量删除<span id="batchDelCount"></span>
-        </button>
+        <div class="btn-group d-none" id="batchBtnGroup">
+            <button type="button" class="btn btn-outline-warning" onclick="batchAction('top')">
+                <i class="fas fa-arrow-up"></i> 批量置顶
+            </button>
+            <button type="button" class="btn btn-danger" onclick="batchAction('delete')">
+                <i class="fas fa-trash-alt"></i> 批量删除
+            </button>
+        </div>
     </div>
 </div>
 
@@ -89,7 +94,7 @@
                 <thead class="thead-dark">
                     <tr>
                         <th class="w-40 text-center">
-                            <input type="checkbox" id="checkAll" onclick="toggleCheckAll(this)">
+                            <input type="checkbox" id="selectAll" onclick="toggleAll(this)">
                         </th>
                         <th class="w-95">商品图片</th>
                         <th>商品信息</th>
@@ -124,7 +129,7 @@
                     ?>
                     <tr class="align-middle" data-id="<?php echo $row['id']; ?>">
                         <td class="text-center">
-                            <input type="checkbox" class="row-check" value="<?php echo $row['id']; ?>" onclick="updateBatchBtn()">
+                            <input type="checkbox" class="row-checkbox" value="<?php echo $row['id']; ?>" onclick="updateBatchBtns()">
                         </td>
                         <td>
                             <img src="<?php echo $mainPic; ?>" class="img-thumbnail w-70 h-70 cur-pointer" style="object-fit:cover"
@@ -367,58 +372,61 @@ function delItem(id) {
     }
 }
 
-// ============ 批量操作 ============
-function toggleCheckAll(box) {
-    var checks = document.querySelectorAll('.row-check');
+// ============ 批量操作（对齐 FindController 范式） ============
+function toggleAll(box) {
+    var checks = document.querySelectorAll('.row-checkbox');
     checks.forEach(function (c) { c.checked = box.checked; });
-    updateBatchBtn();
+    updateBatchBtns();
 }
 
-function updateBatchBtn() {
-    var checked = document.querySelectorAll('.row-check:checked');
-    var btn = document.getElementById('batchDelBtn');
-    var cnt = document.getElementById('batchDelCount');
-    if (checked.length > 0) {
-        btn.disabled = false;
-        cnt.textContent = '(' + checked.length + ')';
+function updateBatchBtns() {
+    var n = document.querySelectorAll('.row-checkbox:checked').length;
+    var g = document.getElementById('batchBtnGroup');
+    if (n > 0) {
+        g.classList.remove('d-none');
+        g.style.display = 'inline-flex';
     } else {
-        btn.disabled = true;
-        cnt.textContent = '';
+        g.classList.add('d-none');
+        g.style.display = 'none';
     }
 }
 
-function batchDel() {
-    var checked = document.querySelectorAll('.row-check:checked');
-    if (checked.length === 0) {
-        showToast('请先选择要删除的商品', 'warning');
-        return;
-    }
-    if (!confirm('确定要删除选中的 ' + checked.length + ' 个商品吗？此操作不可逆！')) {
-        return;
-    }
+function getSelectedIds() {
     var ids = [];
-    checked.forEach(function (c) { ids.push(c.value); });
+    document.querySelectorAll('.row-checkbox:checked').forEach(function (c) { ids.push(c.value); });
+    return ids;
+}
 
+function batchAction(action) {
+    var ids = getSelectedIds();
+    if (ids.length === 0) {
+        alert('请先选择要操作的商品');
+        return;
+    }
+    var tip = action === 'delete' ? '确定要删除选中的 ' + ids.length + ' 个商品吗？此操作不可逆！' : '确定要置顶选中的 ' + ids.length + ' 个商品吗？';
+    if (!confirm(tip)) {
+        return;
+    }
     var token = document.getElementById('csrfToken').value;
     var xhr = new XMLHttpRequest();
-    xhr.open('POST', 'index.php?r=manage/items/batchDel&_token=' + token, true);
+    xhr.open('POST', 'index.php?r=manage/items/batch&_token=' + token, true);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.onreadystatechange = function () {
         if (xhr.readyState == 4 && xhr.status == 200) {
             try {
                 var result = JSON.parse(xhr.responseText);
                 if (result.status === 'y') {
-                    showToast(result.info, 'success');
+                    alert(result.info);
                     setTimeout(function () { location.reload(); }, 800);
                 } else {
-                    showToast(result.info || '删除失败', 'danger');
+                    alert(result.info || '操作失败');
                 }
             } catch (e) {
-                showToast('操作异常', 'danger');
+                alert('操作异常');
             }
         }
     };
-    xhr.send('ids=' + encodeURIComponent(JSON.stringify(ids)));
+    xhr.send('action=' + encodeURIComponent(action) + '&ids=' + encodeURIComponent(ids.join(',')));
 }
 
 function topItem(id) {

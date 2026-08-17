@@ -109,15 +109,14 @@ layui.use(['form'], function(){
     form.render();
 });
 
-// 启用/停用切换
+// 启用/停用切换（layui switch 已自行翻转 checkbox，这里只据当前状态同步卡片）
 function toggleCard(el){
     var card = $(el).closest('.sb-card');
     var chk  = card.find('.f-enabled');
     var nowOn = chk.prop('checked');
-    chk.prop('checked', !nowOn);
-    card.toggleClass('disabled', nowOn);
-    $(el).text(nowOn ? '启用' : '停用');
-    layui.form.render('checkbox');
+    card.toggleClass('disabled', !nowOn);
+    $(el).text(nowOn ? '停用' : '启用');
+    if (typeof layui !== 'undefined' && layui.form) layui.form.render('checkbox');
 }
 
 // 拖拽排序（HTML5 drag）
@@ -128,7 +127,14 @@ $('#sbList').on('dragstart', '.sb-card', function(e){
 });
 $('#sbList').on('dragover', '.sb-card', function(e){
     e.preventDefault();
-    if (this !== dragEl) $('#sbList').append(dragEl);
+    if (this === dragEl) return;
+    var rect = this.getBoundingClientRect();
+    var next = (e.clientY - rect.top) / rect.height > 0.5;
+    if (next) {
+        this.parentNode.insertBefore(dragEl, this.nextSibling);
+    } else {
+        this.parentNode.insertBefore(dragEl, this);
+    }
 });
 
 function submitForm(){
@@ -149,7 +155,7 @@ function submitForm(){
     $('#widgetsJson').val(JSON.stringify(list));
 
     $.ajax({
-        url: '{url($route="manage/sidebar/save", $params=array())}',
+        url: '<?php echo url("manage/sidebar/save"); ?>',
         type: 'POST',
         data: { widgets: JSON.stringify(list) },
         dataType: 'json',

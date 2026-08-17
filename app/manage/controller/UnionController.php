@@ -1023,6 +1023,20 @@ class UnionController extends \app\base\controller\BaseController
      * 前端提交选中的商品完整数据（含 title/mainPic/goodsId/goodsSign 等）与统一平台，
      * 后端逐条走 saveGoodsBatch（含去重 / 智能合并），返回成功与已存在跳过数量。
      */
+    /**
+     * 批量操作统一入口（范式对齐 FindController::batch）
+     * action=stockin 时复用 batchStockIn：将勾选的联盟商品入库到选品库
+     */
+    public function batch(){
+        $this->checkManageSession();
+        $this->checkCsrfToken();
+        $action = $this->arg("action");
+        if ($action === 'stockin') {
+            return $this->batchStockIn();
+        }
+        exit(json_encode(array("info" => "未知操作", "status" => "n")));
+    }
+
     public function batchStockIn(){
         $this->checkManageSession();
         $this->checkCsrfToken();

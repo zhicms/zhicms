@@ -209,7 +209,65 @@ class ItemsController extends \app\base\controller\BaseController
     }
 
     /**
-     * 批量删除商品（支持列表复选框勾选）
+     * 批量操作（统一入口，范式对齐 FindController::batch）
+     * action: delete(批量删除) / top(批量置顶7天)
+     * ids: 勾选的商品ID数组
+     */
+    public function batch(){
+        $this->checkManageSession();
+        $this->checkCsrfToken();
+        error_reporting(0);
+        header('Content-Type: application/json');
+
+        $action = $this->arg("action");
+        $ids = $this->arg("ids");
+        if (empty($ids)) {
+            exit(json_encode(array("info" => "请选择要操作的商品", "status" => "n")));
+        }
+        // 支持逗号分隔字符串（find 范式）或 JSON 数组两种传参
+        if (is_array($ids)) {
+            $ids = array_filter(array_map('intval', $ids), function($v){ return $v > 0; });
+        } else {
+            // 尝试 JSON 解析，失败则按逗号分隔处理
+            $decoded = json_decode($ids, true);
+            if (is_array($decoded)) {
+                $ids = array_filter(array_map('intval', $decoded), function($v){ return $v > 0; });
+            } else {
+                $ids = array_filter(array_map('intval', explode(',', $ids)), function($v){ return $v > 0; });
+            }
+        }
+        if (empty($ids)) {
+            exit(json_encode(array("info" => "ID 参数无效", "status" => "n")));
+        }
+
+        $api = obj("api/ApiData");
+        if ($action === 'delete') {
+            $ok = 0;
+            foreach ($ids as $id) {
+                $rs = $api->deleteThis("yun_items", "`id` = ?", array($id));
+                if ($rs !== false) {
+                    $ok++;
+                }
+            }
+            \think\facade\Cache::clear();
+            exit(json_encode(array("info" => "成功删除 {$ok} 条商品", "status" => "y")));
+        } elseif ($action === 'top') {
+            foreach ($ids as $id) {
+                $ret = $api->dataSelect("yun_items", array("id" => $id));
+                $topEtime = isset($ret['top_etime']) ? strtotime($ret['top_etime']) : false;
+                if ($topEtime === false || $topEtime <= 0) $topEtime = time();
+                $endTime = $topEtime + 60*60*24*7;
+                $api->dataUpdate("yun_items", array("top" => 1, "top_etime" => date("Y-m-d H:i:s", $endTime)), array("id" => $id));
+            }
+            \think\facade\Cache::clear();
+            exit(json_encode(array("info" => "批量置顶成功", "status" => "y")));
+        }
+
+        exit(json_encode(array("info" => "未知操作", "status" => "n")));
+    }
+
+    /**
+     * 批量删除商品（兼容旧调用）
      */
     public function batchDel(){
         $this->checkManageSession();
@@ -219,10 +277,16 @@ class ItemsController extends \app\base\controller\BaseController
         if (empty($ids)) {
             exit(json_encode(array("info" => "请选择要删除的商品", "status" => "n")));
         }
-        if (!is_array($ids)) {
-            $ids = array($ids);
+        if (is_array($ids)) {
+            $ids = array_filter(array_map('intval', $ids), function($v){ return $v > 0; });
+        } else {
+            $decoded = json_decode($ids, true);
+            if (is_array($decoded)) {
+                $ids = array_filter(array_map('intval', $decoded), function($v){ return $v > 0; });
+            } else {
+                $ids = array_filter(array_map('intval', explode(',', $ids)), function($v){ return $v > 0; });
+            }
         }
-        $ids = array_filter(array_map('intval', $ids), function($v){ return $v > 0; });
         if (empty($ids)) {
             exit(json_encode(array("info" => "ID 参数无效", "status" => "n")));
         }
