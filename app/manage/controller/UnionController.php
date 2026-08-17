@@ -1042,9 +1042,12 @@ class UnionController extends \app\base\controller\BaseController
         $this->checkCsrfToken();
 
         try {
-            $raw = $this->arg("items");
+            // 注意：Controller::arg() 会对字符串做 htmlspecialchars(ENT_QUOTES)，
+            // 会把 JSON 的双引号转成 &quot; 导致 json_decode 失败。
+            // 因此必须直接从 $_POST 取原始值并 html_entity_decode 还原后再解析。
+            $raw = isset($_POST['items']) ? $_POST['items'] : $this->arg("items");
             if (is_string($raw)) {
-                $raw = json_decode($raw, true);
+                $raw = json_decode(html_entity_decode($raw, ENT_QUOTES, 'UTF-8'), true);
             }
             if (!is_array($raw) || empty($raw)) {
                 exit(json_encode(array("info" => "请选择要入库的商品", "status" => "n")));

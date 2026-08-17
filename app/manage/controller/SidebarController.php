@@ -2,6 +2,7 @@
 namespace app\manage\controller;
 use \app\base\controller\ManageControllerTrait;
 use \app\common\SidebarService;
+use \app\common\ConfigStore;
 
 /**
  * 网页版右侧侧栏模块化后台管理
@@ -15,7 +16,7 @@ class SidebarController extends \app\base\controller\BaseController
     public function index()
     {
         $this->checkManageSession();
-
+        $this->pageText = array('系统设置', '边侧栏管理');
         if (!\IS_POST) {
             $widgets = SidebarService::loadConfig();
             // 全部可选类型（含被禁用/未启用的，便于后台勾选启用）
@@ -41,16 +42,19 @@ class SidebarController extends \app\base\controller\BaseController
     {
         $this->checkManageSession();
         if (!\IS_POST) {
-            Output::error('请求方式错误');
+            echo json_encode(array('info' => '请求方式错误', 'status' => 'n'));
+            return;
         }
 
-        $raw = Input::postStrVar('widgets');
+        $raw = isset($_POST['widgets']) ? $_POST['widgets'] : '';
         if (empty($raw)) {
-            Output::error('未接收到侧栏配置');
+            echo json_encode(array('info' => '未接收到侧栏配置', 'status' => 'n'));
+            return;
         }
         $list = json_decode($raw, true);
         if (!is_array($list)) {
-            Output::error('配置格式错误');
+            echo json_encode(array('info' => '配置格式错误', 'status' => 'n'));
+            return;
         }
 
         $clean = array();
@@ -71,19 +75,16 @@ class SidebarController extends \app\base\controller\BaseController
         }
 
         if (empty($clean)) {
-            Output::error('没有有效的侧栏模块');
+            echo json_encode(array('info' => '没有有效的侧栏模块', 'status' => 'n'));
+            return;
         }
 
-        $ok = SidebarService::saveConfig($clean);
-        if ($ok) {
-            // 清前台侧栏缓存，立即生效
-            $cache = CacheService::instance();
-            foreach (array('sidebar_cheaps','sidebar_brands','sidebar_rank','sidebar_articles','sidebar_comments') as $k) {
-                $cache->delete($k);
-            }
-            Output::ok('侧栏配置已保存');
-        } else {
-            Output::error('保存失败，请重试');
+        try {
+            SidebarService::saveConfig($clean);
+            ConfigStore::clearCache('cfg_sidebar');
+            echo json_encode(array('info' => '侧栏配置已保存', 'status' => 'y'));
+        } catch (\Throwable $e) {
+            echo json_encode(array('info' => '保存失败：' . $e->getMessage(), 'status' => 'n'));
         }
     }
 

@@ -208,6 +208,16 @@ class SidebarService {
         foreach ($map as $id => $name) {
             $out[$id] = $name;
         }
+        // 兜底：文章分类(yun_nav)为空时，回退到商品一级分类(yun_group)，
+        // 避免右侧导航模块只显示标题而无任何链接（表现为"导航没加载"）。
+        if (empty($out)) {
+            $groups = obj("api/ApiData")->dataSelect("yun_group", array("1"), "`px` ASC, `id` ASC");
+            if (!empty($groups)) {
+                foreach ($groups as $g) {
+                    $out[(int)($g['id'] ?? 0)] = $g['name'] ?? '';
+                }
+            }
+        }
         return $out;
     }
 

@@ -1,122 +1,122 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-    <meta charset="UTF-8">
-    <title>侧边栏管理 - 管理后台</title>
-    <link rel="stylesheet" href="{__PUBLIC__}manage/css/layui.css?v=5.0.2">
-    <link rel="stylesheet" href="{__PUBLIC__}manage/css/style.css?v=5.0.2">
+{include file="app/manage/view/index/emlog_nav"}
+
+<div class="container-fluid">
     <style>
         .sb-tip{color:#888;font-size:12px;margin:8px 0 16px;line-height:1.6;}
         .sb-tip code{background:#f3f3f3;padding:1px 5px;border-radius:3px;color:#e53935;}
-        .sb-list{display:flex;flex-direction:column;gap:10px;}
-        .sb-card{border:1px solid #e6e6e6;border-radius:8px;padding:12px 14px;background:#fff;transition:box-shadow .2s;}
+        .sb-list{display:flex;flex-direction:column;gap:14px;}
+        .sb-card{border:1px solid #e6e6e6;border-radius:8px;padding:16px 18px;background:#fff;transition:box-shadow .2s;}
         .sb-card:hover{box-shadow:0 2px 10px rgba(0,0,0,.06);}
         .sb-card.disabled{opacity:.55;}
-        .sb-head{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+        .sb-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
         .sb-drag{cursor:move;color:#bbb;font-size:18px;user-select:none;}
         .sb-name{font-weight:700;font-size:15px;color:#333;}
         .sb-type{font-size:11px;color:#999;border:1px solid #eee;padding:1px 6px;border-radius:10px;}
-        .sb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px 16px;align-items:flex-end;}
+        .sb-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px 16px;align-items:flex-end;}
         .sb-field{display:flex;flex-direction:column;gap:3px;}
         .sb-field label{font-size:12px;color:#666;}
-        .sb-field input,.sb-field select{height:32px;border:1px solid #dcdfe6;border-radius:5px;padding:0 8px;font-size:13px;}
-        .sb-row{display:flex;align-items:center;gap:14px;margin-top:10px;flex-wrap:wrap;}
-        .sb-row .layui-form-switch{margin:0;}
+        .sb-field input,.sb-field select{height:34px;border:1px solid #dcdfe6;border-radius:5px;padding:0 8px;font-size:13px;}
+        .sb-row{display:flex;align-items:center;gap:14px;margin-top:12px;flex-wrap:wrap;}
         .sb-del{margin-left:auto;color:#c00;cursor:pointer;font-size:13px;}
+        .custom-switch-row{display:flex;align-items:center;gap:8px;}
     </style>
-</head>
-<body>
-<div class="layui-fluid" style="padding:15px;">
-    <div class="layui-card">
-        <div class="layui-card-header">网页版右侧边栏管理</div>
-        <div class="layui-card-body">
-            <div class="sb-tip">
-                拖动左侧 <code>≡</code> 调整显示顺序；勾选「启用」控制是否展示；「条数」控制该模块抓取数据数量；
-                「图文方向」支持 左图 / 右图 / 上图 / 下图；「序号」为文章/热榜类模块显示排名；
-                「样式」支持 列表 / 卡片 / 网格（品牌推荐默认网格）。保存后立即生效，未配置时回落默认布局，视觉零变化。
-            </div>
 
-            <form id="sbForm" class="layui-form">
-                <div class="sb-list" id="sbList">
-                    {foreach $widgets as $w}
-                    <div class="sb-card {if empty($w['enabled'])}disabled{/if}" data-type="{$w['type']}">
-                        <div class="sb-head">
-                            <span class="sb-drag">≡</span>
-                            <span class="sb-name">{$w['title']}</span>
-                            <span class="sb-type">{$w['type']}</span>
-                            <span class="sb-del" onclick="toggleCard(this)">[ {if empty($w['enabled'])}启用{else}停用{/if} ]</span>
-                        </div>
-                        <div class="sb-grid">
-                            <div class="sb-field">
-                                <label>模块标题</label>
-                                <input type="text" class="f-title" value="{$w['title']}">
-                            </div>
-                            <div class="sb-field">
-                                <label>排序（数字越小越靠前）</label>
-                                <input type="number" class="f-sort" value="{$w['sort']}">
-                            </div>
-                            <div class="sb-field">
-                                <label>展示条数</label>
-                                <input type="number" class="f-limit" value="{$w['limit']}" min="1" max="50">
-                            </div>
-                            <div class="sb-field">
-                                <label>图文方向</label>
-                                <select class="f-imgpos">
-                                    <option value="left"  {if $w['img_pos']=='left'}selected{/if}>左图</option>
-                                    <option value="right" {if $w['img_pos']=='right'}selected{/if}>右图</option>
-                                    <option value="top"   {if $w['img_pos']=='top'}selected{/if}>上图</option>
-                                    <option value="bottom"{if $w['img_pos']=='bottom'}selected{/if}>下图</option>
-                                </select>
-                            </div>
-                            <div class="sb-field">
-                                <label>展示样式</label>
-                                <select class="f-style">
-                                    <option value="list" {if $w['style']=='list'}selected{/if}>列表</option>
-                                    <option value="card" {if $w['style']=='card'}selected{/if}>卡片</option>
-                                    <option value="grid" {if $w['style']=='grid'}selected{/if}>网格</option>
-                                </select>
-                            </div>
-                            <div class="sb-field">
-                                <label>显示序号</label>
-                                <select class="f-showno">
-                                    <option value="0" {if empty($w['show_no'])}selected{/if}>不显示</option>
-                                    <option value="1" {if !empty($w['show_no'])}selected{/if}>显示</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="sb-row">
-                            <input type="checkbox" class="f-enabled" {if !empty($w['enabled'])}checked{/if} lay-skin="switch" lay-text="启用|停用">
-                        </div>
+    <h1 class="page-title">
+        <i class="fas fa-th-large"></i>
+        网页版右侧边栏管理
+    </h1>
+
+    <div class="row">
+        <div class="col-lg-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="sb-tip">
+                        拖动左侧 <code>≡</code> 调整显示顺序；勾选「启用」控制是否展示；「条数」控制该模块抓取数据数量；
+                        「图文方向」支持 左图 / 右图 / 上图 / 下图；「序号」为文章/热榜类模块显示排名；
+                        「样式」支持 列表 / 卡片 / 网格（品牌推荐默认网格）。保存后立即生效，未配置时回落默认布局，视觉零变化。
                     </div>
-                    {/foreach}
-                </div>
 
-                <div style="margin-top:20px;">
-                    <button type="button" class="layui-btn layui-btn-normal" onclick="submitForm()">保存配置</button>
-                    <span id="sbMsg" style="margin-left:12px;color:#16a34a;"></span>
+                    <form id="sbForm">
+                        <div class="sb-list" id="sbList">
+                            {foreach $widgets as $w}
+                            <div class="sb-card {if empty($w['enabled'])}disabled{/if}" data-type="{$w['type']}">
+                                <div class="sb-head">
+                                    <span class="sb-drag">≡</span>
+                                    <span class="sb-name">{$w['title']}</span>
+                                    <span class="sb-type">{$w['type']}</span>
+                                    <span class="sb-del" onclick="toggleCard(this)">[ {if empty($w['enabled'])}启用{else}停用{/if} ]</span>
+                                </div>
+                                <div class="sb-grid">
+                                    <div class="sb-field">
+                                        <label>模块标题</label>
+                                        <input type="text" class="form-control f-title" value="{$w['title']}">
+                                    </div>
+                                    <div class="sb-field">
+                                        <label>排序（数字越小越靠前）</label>
+                                        <input type="number" class="form-control f-sort" value="{$w['sort']}">
+                                    </div>
+                                    <div class="sb-field">
+                                        <label>展示条数</label>
+                                        <input type="number" class="form-control f-limit" value="{$w['limit']}" min="1" max="50">
+                                    </div>
+                                    <div class="sb-field">
+                                        <label>图文方向</label>
+                                        <select class="form-control f-imgpos">
+                                            <option value="left"  {if $w['img_pos']=='left'}selected{/if}>左图</option>
+                                            <option value="right" {if $w['img_pos']=='right'}selected{/if}>右图</option>
+                                            <option value="top"   {if $w['img_pos']=='top'}selected{/if}>上图</option>
+                                            <option value="bottom"{if $w['img_pos']=='bottom'}selected{/if}>下图</option>
+                                        </select>
+                                    </div>
+                                    <div class="sb-field">
+                                        <label>展示样式</label>
+                                        <select class="form-control f-style">
+                                            <option value="list" {if $w['style']=='list'}selected{/if}>列表</option>
+                                            <option value="card" {if $w['style']=='card'}selected{/if}>卡片</option>
+                                            <option value="grid" {if $w['style']=='grid'}selected{/if}>网格</option>
+                                        </select>
+                                    </div>
+                                    <div class="sb-field">
+                                        <label>显示序号</label>
+                                        <select class="form-control f-showno">
+                                            <option value="0" {if empty($w['show_no'])}selected{/if}>不显示</option>
+                                            <option value="1" {if !empty($w['show_no'])}selected{/if}>显示</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="sb-row">
+                                    <div class="custom-control custom-switch">
+                                        <input type="checkbox" class="custom-control-input f-enabled" id="enabled_{$w['type']}" {if !empty($w['enabled'])}checked{/if}>
+                                        <label class="custom-control-label" for="enabled_{$w['type']}">启用该模块</label>
+                                    </div>
+                                </div>
+                            </div>
+                            {/foreach}
+                        </div>
+
+                        <div class="form-group border-top pt-3 mt-4">
+                            <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm()">
+                                <i class="fas fa-save"></i> 保存设置
+                            </button>
+                        </div>
+                        <input type="hidden" name="widgets" id="widgetsJson">
+                    </form>
                 </div>
-                <input type="hidden" name="widgets" id="widgetsJson">
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
-<script src="{__PUBLIC__}manage/js/jquery.min.js?v=5.0.2"></script>
-<script src="{__PUBLIC__}manage/js/layui.js?v=5.0.2"></script>
-<script>
-layui.use(['form'], function(){
-    var form = layui.form;
-    form.render();
-});
+{include file="app/manage/view/index/emlog_footer"}
 
-// 启用/停用切换（layui switch 已自行翻转 checkbox，这里只据当前状态同步卡片）
+<script>
+// 启用/停用切换
 function toggleCard(el){
     var card = $(el).closest('.sb-card');
     var chk  = card.find('.f-enabled');
     var nowOn = chk.prop('checked');
     card.toggleClass('disabled', !nowOn);
     $(el).text(nowOn ? '停用' : '启用');
-    if (typeof layui !== 'undefined' && layui.form) layui.form.render('checkbox');
 }
 
 // 拖拽排序（HTML5 drag）
@@ -154,33 +154,24 @@ function submitForm(){
     });
     $('#widgetsJson').val(JSON.stringify(list));
 
-    $.ajax({
-        url: '<?php echo url("manage/sidebar/save"); ?>',
-        type: 'POST',
-        data: { widgets: JSON.stringify(list) },
-        dataType: 'json',
-        success: function(res){
-            if (res && res.status === 'y') {
-                $('#sbMsg').text('✓ ' + (res.info || '保存成功'));
-                showToast(res.info || '保存成功', 'success');
-            } else {
-                $('#sbMsg').css('color','#e53935').text('✗ ' + (res.info || '保存失败'));
-                showToast(res.info || '保存失败', 'error');
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '?r=manage/sidebar/save', true);
+    xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.onreadystatechange = function(){
+        if (xhr.readyState === 4) {
+            try {
+                var res = JSON.parse(xhr.responseText);
+                if (res && res.status === 'y') {
+                    showToast(res.info || '保存成功', 'success');
+                } else {
+                    showToast((res && res.info) || '保存失败', 'danger');
+                }
+            } catch (e) {
+                showToast('保存失败，请重试', 'danger');
             }
-        },
-        error: function(){ showToast('请求异常', 'error'); }
-    });
-}
-
-// 全局 toast（与后台统一）
-function showToast(msg, type){
-    var wrap = $('#zc-toast-wrap');
-    if (!wrap.length){ $('body').append('<div id="zc-toast-wrap" class="zc-toast-wrap"></div>'); wrap = $('#zc-toast-wrap'); }
-    var el = $('<div class="zc-toast ' + (type==='error'?'zc-toast-error':'') + '">' + msg + '</div>');
-    wrap.append(el);
-    setTimeout(function(){ el.addClass('zc-toast-show'); }, 10);
-    setTimeout(function(){ el.remove(); }, 2200);
+        }
+    };
+    xhr.send('widgets=' + encodeURIComponent(JSON.stringify(list)));
 }
 </script>
-</body>
-</html>

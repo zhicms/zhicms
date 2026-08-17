@@ -252,28 +252,32 @@
             </div>
 
         {elseif $w['cfg']['type'] == 'cats'}
+            {if !empty($w['data'])}
             <div class="side-widget" data-wtype="cats">
                 <h3>{$w['cfg']['title']}</h3>
                 <div class="w-body">
                     <ul class="w-list">
                     {foreach $w['data'] as $c}
-                        <li><a href="{url($route='index/cheaps/index/id=<cid>', $params=array('id'=>$c['cid']))}">{$c['name']}</a></li>
+                        <li><a href="{url($route='index/cheaps/index', $params=array('id'=>$c['cid']))}">{$c['name']}</a></li>
                     {/foreach}
                     </ul>
                 </div>
             </div>
+            {/if}
 
         {elseif $w['cfg']['type'] == 'navs'}
+            {if !empty($w['data'])}
             <div class="side-widget" data-wtype="navs">
                 <h3>{$w['cfg']['title']}</h3>
                 <div class="w-body">
                     <ul class="w-list">
                     {foreach $w['data'] as $id=>$name}
-                        <li><a href="{url($route='index/index/index/nav=<nav>', $params=array('nav'=>$id))}">{$name}</a></li>
+                        <li><a href="{url($route='index/index/index', $params=array('nav'=>$id))}">{$name}</a></li>
                     {/foreach}
                     </ul>
                 </div>
             </div>
+            {/if}
 
         {elseif $w['cfg']['type'] == 'brands'}
             <div class="side-widget style-{$w['cfg']['style']}" data-wtype="brands">

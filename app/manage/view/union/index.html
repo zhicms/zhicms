@@ -229,6 +229,7 @@
                 </thead>
                 <tbody>
                     <?php if (!empty($page['list'])): ?>
+                    <?php $batchJsItems = array(); ?>
                     <?php foreach ($page['list'] as $row):
                         $itemFrom = $row['item_from'] ?? 'taobao';
                         $platformText = $itemFrom == 'pdd' ? '拼多多' : ($itemFrom == 'jd' ? '京东' : ($itemFrom == 'vip' ? '唯品会' : '淘宝'));
@@ -266,9 +267,10 @@
                             'cid'         => $row['cid'] ?? 0,
                             'tbcid'       => $row['tbcid'] ?? 0,
                         );
-                        $batchJson = json_encode($batchItem, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+                        // 用 JS 映射存储，避免 data-item HTML 编码（单引号/& 实体）导致 JSON.parse 失败
+                        $batchJsItems[ (string)($row['goodsId'] ?? '') ] = $batchItem;
                     ?>
-                    <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>" data-item='<?php echo $batchJson; ?>'>
+                    <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>">
                         <td class="text-center">
                             <input type="checkbox" class="row-checkbox" value="<?php echo $row['goodsId']; ?>" <?php echo $isCollected ? 'disabled' : ''; ?> onclick="updateBatchBtns()">
                         </td>
@@ -362,6 +364,9 @@
                         </td>
                     </tr>
                     <?php endforeach; ?>
+                    <script type="text/javascript">
+                        window.__BATCH_ITEMS = <?php echo json_encode($batchJsItems, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES); ?>;
+                    </script>
                     <?php else: ?>
                     <tr>
                         <td colspan="10" class="text-center py-5">
@@ -682,10 +687,11 @@ function updateBatchBtns() {
 
 function getSelectedItems() {
     var items = [];
+    var map = window.__BATCH_ITEMS || {};
     document.querySelectorAll('.row-checkbox:checked').forEach(function (c) {
-        var tr = c.closest('tr');
-        if (tr && tr.getAttribute('data-item')) {
-            try { items.push(JSON.parse(tr.getAttribute('data-item'))); } catch (e) {}
+        var id = c.value;
+        if (id && map[id]) {
+            items.push(map[id]);
         }
     });
     return items;
