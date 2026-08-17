@@ -254,6 +254,8 @@ class FindController extends \app\base\controller\BaseController
 				$contentText = '';
 				if ($commentHtml !== '') $contentText .= '<p>' . $commentHtml . '</p>';
 				if ($descText !== '')    $contentText .= '<p>' . $descText . '</p>';
+				// 商品卡标记：与手动采集一致，确保朋友圈文章带 [ZhiCmsUrl] 站内商品卡
+				$contentText .= $this->buildGoodsMarker($tjk, $item);
 
 				$data = array(
 					'goodsId'  => $itemid,
