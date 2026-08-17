@@ -87,9 +87,7 @@ class SiteController extends GuangdiuController
             'hot'       => $hot,
             'total'     => $total,
             'pager'     => $pager,
-            'page_title'=> '发现值得买 - 高性价比网购推荐',
-            'page_keywords'   => $this->siteName() . ',优惠券,好物推荐,网购省钱,白菜价,返利优惠,折扣精选',
-            'page_description'=> $this->siteName() . ' 每日精选高性价比优惠券与好物推荐，覆盖淘宝、京东、拼多多、唯品会大额券，领券下单更省，帮你省钱逛遍全网好货。',
+            'seo_prefix'=> '发现值得买',
         ));
 
         $this->display('index');
@@ -275,9 +273,8 @@ class SiteController extends GuangdiuController
             'filter_from'   => $filterFrom,
             'pager'     => $pager,
             'is_search' => true,
-            'page_title'=> '搜索：' . $kw . ' - 发现值得买',
-            'page_keywords'   => $kw . ',优惠券,好物推荐,' . $this->siteName() . ',网购省钱',
-            'page_description'=> '在 ' . $this->siteName() . ' 搜索「' . $kw . '」共找到 ' . $total . ' 条结果，包含优惠文章与可领券商品，点击查看详情并领券购买更省。',
+            'seo_prefix'=> '搜索：' . $kw,
+            'seo_kw'    => $kw,
         ));
 
         $this->display('search');
@@ -398,9 +395,7 @@ class SiteController extends GuangdiuController
         $this->assign(array(
             'article'   => $row,
             'related'   => $related,
-            'page_title'=> (isset($row['title']) ? $row['title'] : '详情') . ' - 发现值得买',
-            'page_keywords'   => (isset($row['title']) ? $row['title'] : '好物推荐') . ',优惠券,网购省钱,' . $this->siteName(),
-            'page_description'=> !empty($row['dec']) ? $this->stripSummary($row['dec']) : ($this->stripSummary($row['content'] ?? '') ?: ((isset($row['title']) ? $row['title'] : '好物推荐') . ' - ' . $this->siteName() . ' 精选优惠好物，查看详情领券更省。')),
+            'seo_prefix'=> (isset($row['title']) ? $row['title'] : '详情'),
             'og_image'  => $row['mainPic'] ?? '',
         ));
 
@@ -781,9 +776,7 @@ class SiteController extends GuangdiuController
             'list'   => $list,
             'total'  => $total,
             'pager'  => $this->buildModPager($page, $pageSize, $total, 'cheaps'),
-            'page_title' => '优惠券 - ' . $this->siteName(),
-            'page_keywords'   => '优惠券,领券中心,淘宝优惠券,京东优惠券,拼多多优惠券,唯品会优惠券,' . $this->siteName(),
-            'page_description'=> '每日更新大额优惠券与券后低价好物，覆盖淘宝、京东、拼多多、唯品会，先领券再下单立省，' . $this->siteName() . ' 优惠券专区帮你花更少买更好。',
+            'seo_prefix'=> '优惠券',
         ));
         $this->display('cheaps');
     }
@@ -806,9 +799,7 @@ class SiteController extends GuangdiuController
             'total' => $total,
             'tips'  => $tips,
             'pager' => $this->buildModPager($page, 20, $total, 'brand'),
-            'page_title' => '大牌 - ' . $this->siteName(),
-            'page_keywords'   => '大牌优惠,品牌折扣,品牌优惠券,品牌特卖,' . $this->siteName(),
-            'page_description'=> '汇集各大品牌官方折扣与限时特卖，天猫京东拼多多大牌优惠券一键领，' . $this->siteName() . ' 大牌专区带你用更优价格入手品质好物。',
+            'seo_prefix'=> '大牌',
         ));
         $this->display('brand');
     }
@@ -832,9 +823,7 @@ class SiteController extends GuangdiuController
             'types'    => $types,
             'list'     => $list,
             'tips'     => $tips,
-            'page_title' => $types[$type] . ' - ' . $this->siteName(),
-            'page_keywords'   => $types[$type] . ',热门榜单,热销排行,人气好物,网购排行榜,' . $this->siteName(),
-            'page_description'=> $this->siteName() . ' ' . $types[$type] . '实时更新，汇总全网最热销、最受欢迎的优惠好物与高人气商品，跟着榜单买不踩坑，省钱又省心。',
+            'seo_prefix'=> $types[$type],
         ));
         $this->display('rank');
     }

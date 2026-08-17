@@ -1,5 +1,20 @@
 ﻿﻿﻿﻿﻿﻿{include file="app/index/view/public/header"}
 
+<script type="application/ld+json"><?php
+$siteUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
+$brandName = isset($brandInfo['brandName']) ? $brandInfo['brandName'] : '品牌商品';
+$breadcrumb = array(
+  '@context' => 'https://schema.org',
+  '@type' => 'BreadcrumbList',
+  'itemListElement' => array(
+    array('@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => $siteUrl . '/'),
+    array('@type' => 'ListItem', 'position' => 2, 'name' => '品牌中心', 'item' => $siteUrl . '/brand.html'),
+    array('@type' => 'ListItem', 'position' => 3, 'name' => $brandName, 'item' => $siteUrl . '/brand-view-' . ($brandInfo['id'] ?? '') . '.html')
+  )
+);
+echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?></script>
+
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">品牌商品</span>
   <div class="blog-hotbar-list">

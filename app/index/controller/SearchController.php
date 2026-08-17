@@ -763,6 +763,8 @@ class SearchController extends \app\base\controller\BaseController
         
         $goodsId = $item['goodsId'] ?? '';
         $platform = $item['item_from'] ?? ($item['laiyuan'] == 2 ? 'pdd' : ($item['laiyuan'] == 4 ? 'jd' : ($item['laiyuan'] == 3 ? 'vip' : 'tb')));
+        // 大淘客淘宝标记 dtk / 全拼 taobao 统一规范为 tb
+        if ($platform === 'dtk' || $platform === 'taobao') $platform = 'tb';
 
         // 统一走 Tjk 转链，不再用 itemLink 直跳（itemLink 为原始链接，无佣金）
         if (!empty($goodsId)) {

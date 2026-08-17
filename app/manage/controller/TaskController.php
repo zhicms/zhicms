@@ -282,6 +282,19 @@ class TaskController extends \app\base\controller\BaseController
             header('HTTP/1.1 403 Forbidden');
             exit('invalid token');
         }
+        // 并发锁：外部 cron 若配置过密（如每分钟）且上一次采集未结束，可能重叠触发导致
+        // 重复采集/数据错乱。用 data/cache 下的锁文件做跨平台互斥（flock LOCK_EX|LOCK_NB，
+        // Windows 同样支持）。拿不到锁说明上轮仍在跑，直接返回跳过本次。
+        $lockDir = defined('ROOT_PATH') ? rtrim(ROOT_PATH, '/\\') . '/data/cache' : __DIR__ . '/../../data/cache';
+        if (!is_dir($lockDir)) @mkdir($lockDir, 0777, true);
+        $lockFile = $lockDir . '/cron_run.lock';
+        $lockFp = @fopen($lockFile, 'w');
+        if ($lockFp && !flock($lockFp, LOCK_EX | LOCK_NB)) {
+            fclose($lockFp);
+            echo json_encode(array('executed' => 0, 'time' => date('Y-m-d H:i:s'), 'note' => 'previous run still in progress, skipped'));
+            exit;
+        }
+
         // 健康检查：记录外部 cron/计划任务的最近触发时间
         \ZhiCms\ext\CronRunner::markPing();
         $now = time();
@@ -296,6 +309,8 @@ class TaskController extends \app\base\controller\BaseController
             $this->updateResult($task['id'], $res);
             $executed++;
         }
+        // 释放并发锁
+        if (isset($lockFp) && $lockFp) { flock($lockFp, LOCK_UN); fclose($lockFp); }
         echo json_encode(array('executed' => $executed, 'time' => date('Y-m-d H:i:s', $now)));
     }
 

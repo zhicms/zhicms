@@ -32,6 +32,9 @@ try {
 {else}
 <link rel="canonical" href="{obj('base/Base')->SiteConfig('hosturl')}">
 {/if}
+{if isset($mAltUrl) && $mAltUrl != ''}
+<link rel="alternate" media="only screen and (max-width: 640px)" href="{$mAltUrl}">
+{/if}
 <meta name="theme-color" content="#FF6146">
 <meta property="og:type" content="{if CONTROLLER_NAME=='index' && ACTION_NAME=='view'}article{else}website{/if}">
 <meta property="og:site_name" content="{obj('base/Base')->SiteConfig('sitename')}">

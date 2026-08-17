@@ -453,6 +453,8 @@ class IndexController extends \app\base\controller\BaseController
         $itemsUrl= $itemsId['0']['0'];
         $itemsUrl=preg_replace('/\[\/ZhiCmsUrl]/','',$itemsUrl);
         $content=urldecode($itemsUrl);
+        // 平台归一化：大淘客淘宝标记 buy-dtk.html / 全拼 buy-taobao.html 统一规范为 buy-tb.html
+        $content = preg_replace('/buy-(dtk|taobao)\.html/i', 'buy-tb.html', $content);
         // 本站转链入口：buy-tb/jd/pdd/vip.html?id=加密goodsId
         // 这种链接的 id 本身就是大淘客商品 ID，可直接拿去解析商品详情
         $buyId = $this->extractBuyLinkId($content);

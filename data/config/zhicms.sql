@@ -405,6 +405,11 @@ CREATE TABLE `__PREFIX__items` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='电商选品库（本地库）';
 /*!40101 SET character_set_client = @saved_cs_client */;
 
+-- 防御性兜底：将历史可能存在的 item_from 别名（dtk/taobao/tmall/tm）统一归并为 tb，
+-- 与转链入口 RedirectController::jump() 白名单（tb/jd/pdd/vip）保持一致。
+-- 全新安装时表为空，本语句影响 0 行；对已存在库重新导入时起到清洗作用。
+UPDATE `__PREFIX__items` SET `item_from` = 'tb' WHERE `item_from` IN ('dtk', 'taobao', 'tmall', 'tm');
+
 --
 -- Table structure for table `__PREFIX__items_old_feed`
 --

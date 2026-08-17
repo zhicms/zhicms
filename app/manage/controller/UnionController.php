@@ -861,6 +861,11 @@ class UnionController extends \app\base\controller\BaseController
                     if ($response['code'] != 1 || empty($response['items'])) break;
                 }
                 foreach ($response['items'] as $item) {
+                    // 显式标注淘宝来源：checkGoodsExists / saveGoodsBatch 均依赖 item_from
+                    // 判定是否走 goodsSign 前缀匹配策略。getGoodsList 返回的商品不带 item_from，
+                    // 若不标注，checkGoodsExists 会误判为非大淘客，导致 goodsSign 后半段变化后
+                    // 重复入库或漏判"已存在"，故此处强制设为 tb（与 saveGoodsBatch 的 laiyuan=1 一致）。
+                    $item['item_from'] = 'tb';
                     // 大淘客（淘宝）入库 ID 用 goodsSign，优先取 goodsSign
                     $goodsId = $item['goodsSign'] ?? $item['goodsId'] ?? '';
                     if (empty($goodsId)) continue;
@@ -1112,9 +1117,18 @@ class UnionController extends \app\base\controller\BaseController
 
             // 根据API实际返回的字段进行处理，只包含yun_items表实际存在的字段
             // 统一字段入库：键名与 Tjk::standardizeItem 输出、yun_items 表字段一一对应
+            // 入库兜底：item_from 统一规范（dtk/taobao/tmall/tm 全部归并为 tb），
+            // 防止任何上游未规范分支把脏值写进库，导致后续转链 jump() 白名单拦截 400。
+            $rawFrom = strtolower(trim((string)($item['item_from'] ?? '')));
+            $normFrom = $rawFrom;
+            if (in_array($rawFrom, ['tb', 'taobao', 'dtk', 'tmall', 'tm'], true)) {
+                $normFrom = 'tb';
+            } elseif (!in_array($rawFrom, ['jd', 'pdd', 'vip'], true)) {
+                $normFrom = '';
+            }
             $data = [
                 'laiyuan' => $laiyuan,
-                'item_from' => $item['item_from'] ?? '',
+                'item_from' => $normFrom,
                 'goodsId' => $goodsId,
                 'goodsSign' => $item['goodsSign'] ?? '',
                 'title' => $item['title'] ?? '',

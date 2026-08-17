@@ -204,6 +204,12 @@ class Tjk {
     
     public function getPrivilegeLink($goodsId = '', $itemUrl = '', $platform = 'dtk', $goodsSign = '', $pid = '') {
         $platform = strtolower($platform);
+        // 平台别名统一归一：taobao/dtk/tmall/tm 都视为淘宝(tb)，jd/pdd/vip 保持，
+        // 避免调用方（网页端 jump 已规范、小程序 open/transfer/convert 仍传 taobao/dtk）传入别名时
+        // 因未命中分支而落入兜底大淘客（对京东/拼多多/唯品会会转链失败）。
+        if (in_array($platform, ['taobao', 'dtk', 'tmall', 'tm'], true)) {
+            $platform = 'tb';
+        }
 
         // 淘宝 -> 大淘客；京东/拼多多/唯品会 -> 好单库（拼多多优先官方SDK，失败回退好单库）
         if ($platform == 'tb') {

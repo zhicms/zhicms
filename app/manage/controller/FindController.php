@@ -89,7 +89,7 @@ class FindController extends \app\base\controller\BaseController
         \app\common\ConfigStore::save('api', $apiTmp);
 
         $success = 0;
-        $skip = 0;
+        $update = 0;
         $pageDone = 0;
         $lastMinId = $minId;
 
@@ -104,65 +104,64 @@ class FindController extends \app\base\controller\BaseController
             }
 
             foreach ($list as $item) {
-                $itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? '');
-                if (empty($itemid)) {
-                    continue;
-                }
-                $chk = obj("api/ApiData")->dataCount("yun_article", array("goodsId" => $itemid));
-                if ($chk > 0) {
-                    $skip++;
-                    continue;
-                }
+            	$itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? '');
+            	if (empty($itemid)) {
+            		continue;
+            	}
 
-                $title = trim($item['items']['itemshorttitle'] ?? '');
-                $mainPic = $item['items']['itempic'] ?? '';
-                $commentHtml = $item['comment']['copy_content'] ?? '';
-                $descText = $item['items']['itemdesc'] ?? '';
+            	$title = trim($item['items']['itemshorttitle'] ?? '');
+            	$mainPic = $item['items']['itempic'] ?? '';
+            	$commentHtml = $item['comment']['copy_content'] ?? '';
+            	$descText = $item['items']['itemdesc'] ?? '';
 
-                // 处理朋友圈文案中的 emoji/淘口令占位符，避免 [emoji:xxx] 污染正文
-                if ($commentHtml !== '') {
-                    $commentHtml = $hdk->ProcessEmoji($commentHtml);
-                }
-                if ($descText !== '') {
-                    $descText = $hdk->ProcessEmoji($descText);
-                }
+            	// 处理朋友圈文案中的 emoji/淘口令占位符，避免 [emoji:xxx] 污染正文
+            	if ($commentHtml !== '') {
+            		$commentHtml = $hdk->ProcessEmoji($commentHtml);
+            	}
+            	if ($descText !== '') {
+            		$descText = $hdk->ProcessEmoji($descText);
+            	}
 
-                $contentText = '';
-                if ($commentHtml !== '') {
-                    $contentText .= '<p>' . $commentHtml . '</p>';
-                }
-                if ($descText !== '') {
-                    $contentText .= '<p>' . $descText . '</p>';
-                }
-                $contentText .= $this->buildGoodsMarker($dtk, $item);
+            	$contentText = '';
+            	if ($commentHtml !== '') {
+            		$contentText .= '<p>' . $commentHtml . '</p>';
+            	}
+            	if ($descText !== '') {
+            		$contentText .= '<p>' . $descText . '</p>';
+            	}
+            	$contentText .= $this->buildGoodsMarker($dtk, $item);
 
-                $decText = strip_tags($commentHtml);
-                $decText = mb_substr($decText, 0, 120, 'UTF-8');
+            	$decText = strip_tags($commentHtml);
+            	$decText = mb_substr($decText, 0, 120, 'UTF-8');
 
-                $data = [
-                    'goodsId' => $itemid,
-                    'itemLink' => $item['items']['couponurl'] ?? ('https://item.taobao.com/item.htm?id=' . $itemid),
-                    'title' => $title,
-                    'content' => $contentText,
-                    'cid' => $cid,
-                    'navid' => $navid,
-                    'mainPic' => $mainPic,
-                    'keywords' => $item['items']['itemshorttitle'] ?? '',
-                    'dec' => $decText,
-                    'view' => 0,
-                    'like' => 0,
-                    'lock' => 0,
-                    'status' => 1,
-                    'couponEndTime' => '',
-                    'date' => date("Y-m-d H:i:s", time()),
-                ];
-                // 商品采集（朋友圈素材）入库：作者默认调用当前管理员昵称/头像（前台展示用）
-                $data['author'] = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== ''
-                    ? $_SESSION['manage_nickname']
-                    : (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
-                $data['author_pic'] = isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
-                obj("api/ApiData")->insertData("yun_article", $data);
-                $success++;
+            	$data = [
+            		'goodsId' => $itemid,
+            		'itemLink' => $item['items']['couponurl'] ?? ('https://item.taobao.com/item.htm?id=' . $itemid),
+            		'title' => $title,
+            		'content' => $contentText,
+            		'cid' => $cid,
+            		'navid' => $navid,
+            		'mainPic' => $mainPic,
+            		'keywords' => $item['items']['itemshorttitle'] ?? '',
+            		'dec' => $decText,
+            		'view' => 0,
+            		'like' => 0,
+            		'lock' => 0,
+            		'status' => 1,
+            		'couponEndTime' => '',
+            		'date' => date("Y-m-d H:i:s", time()),
+            	];
+            	// 商品采集（朋友圈素材）入库：作者默认调用当前管理员昵称/头像（前台展示用）
+            	$data['author'] = isset($_SESSION['manage_nickname']) && $_SESSION['manage_nickname'] !== ''
+            		? $_SESSION['manage_nickname']
+            		: (isset($_SESSION['manage_system']) ? $_SESSION['manage_system'] : '管理员');
+            	$data['author_pic'] = isset($_SESSION['manage_pic']) ? $_SESSION['manage_pic'] : '';
+            	// 重复不再丢弃，按 goodsId 更新已有记录（手动/自动任务一致）
+            	if ($this->saveArticleUpsert($data, $itemid) === 'update') {
+            		$update++;
+            	} else {
+            		$success++;
+            	}
             }
 
             $pageDone++;
@@ -170,21 +169,21 @@ class FindController extends \app\base\controller\BaseController
             // 获取下一页游标，如果未变化说明到最后一页了
             $nextMinId = intval($res['min_id'] ?? 0);
             if ($nextMinId > 0 && $nextMinId != $minId) {
-                $lastMinId = $minId;
-                $minId = $nextMinId;
+            	$lastMinId = $minId;
+            	$minId = $nextMinId;
             } else {
-                break;
+            	break;
             }
 
             // 页间稍歇，避免频繁请求被限
             usleep(300000);
-        }
+            }
 
-        exit(json_encode(array(
-            "info" => "采集完成：翻页 {$pageDone} 次，成功入库 {$success} 条，跳过重复 {$skip} 条",
+            exit(json_encode(array(
+            "info" => "采集完成：翻页 {$pageDone} 次，成功入库 {$success} 条，更新 {$update} 条",
             "status" => "y"
-        )));
-	}
+            )));
+            }
 
 	/**
 	 * 朋友圈采集（计划任务专用）：读取后台保存的分类参数，定时跑无需传参。
@@ -235,7 +234,7 @@ class FindController extends \app\base\controller\BaseController
 		$hdk = $tjk->getHdk();
 		if (!$hdk) return array('ok' => false, 'output' => '好单库API未配置');
 
-		$success = 0; $skip = 0; $pageDone = 0;
+		$success = 0; $update = 0; $pageDone = 0;
 		for ($p = 0; $p < $pages; $p++) {
 			$res = $hdk->FriendsCircleItems($minId);
 			if ($res['code'] != 1) break;
@@ -245,8 +244,6 @@ class FindController extends \app\base\controller\BaseController
 			foreach ($list as $item) {
 				$itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? '');
 				if (empty($itemid)) continue;
-				$chk = obj("api/ApiData")->dataCount("yun_article", array("goodsId" => $itemid));
-				if ($chk > 0) { $skip++; continue; }
 
 				$title = trim($item['items']['itemshorttitle'] ?? '');
 				$mainPic = $item['items']['itempic'] ?? '';
@@ -278,15 +275,19 @@ class FindController extends \app\base\controller\BaseController
 				// 计划任务商品采集入库：作者默认调用管理员昵称/头像（前台展示用）
 				$data['author'] = $defaultAuthor;
 				$data['author_pic'] = $defaultAuthorPic;
-				obj("api/ApiData")->insertData("yun_article", $data);
-				$success++;
+				// 重复不再丢弃，按 goodsId 更新已有记录
+				if ($this->saveArticleUpsert($data, $itemid) === 'update') {
+					$update++;
+				} else {
+					$success++;
+				}
 			}
 			$pageDone++;
 			$nextMinId = intval($res['min_id'] ?? 0);
 			if ($nextMinId > 0 && $nextMinId != $minId) { $minId = $nextMinId; } else { break; }
 			usleep(300000);
 		}
-		return array('ok' => true, 'output' => "朋友圈采集完成：翻页{$pageDone}次，成功入库{$success}条，跳过重复{$skip}条");
+		return array('ok' => true, 'output' => "朋友圈采集完成：翻页{$pageDone}次，成功入库{$success}条，更新{$update}条");
 	}
 
 	/**
@@ -332,7 +333,7 @@ class FindController extends \app\base\controller\BaseController
         \app\common\ConfigStore::save('api', $api);
 
         $success = 0;
-        $skip = 0;
+        $update = 0;
         $failMsg = array();
 
         // ---- 接口 235 新闻头条 ----
@@ -349,12 +350,11 @@ class FindController extends \app\base\controller\BaseController
                 }
                 foreach ($res['list'] as $news) {
                     if (empty($news['title'])) continue;
-                    if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) {
-                        $skip++;
-                        continue;
+                    if ($this->insertNews($news, $navid, 'juhe_235') === 'update') {
+                        $update++;
+                    } else {
+                        $success++;
                     }
-                    $this->insertNews($news, $navid, 'juhe_235');
-                    $success++;
                 }
             }
         }
@@ -373,25 +373,24 @@ class FindController extends \app\base\controller\BaseController
                 }
                 foreach ($res['list'] as $news) {
                     if (empty($news['title'])) continue;
-                    if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) {
-                        $skip++;
-                        continue;
+                    if ($this->insertNews($news, $navid, 'juhe_850') === 'update') {
+                        $update++;
+                    } else {
+                        $success++;
                     }
-                    $this->insertNews($news, $navid, 'juhe_850');
-                    $success++;
                 }
             }
         }
 
         if (!empty($failMsg)) {
             exit(json_encode(array(
-                "info" => "采集完成：成功入库 {$success} 条，跳过重复 {$skip} 条。部分分类失败：" . implode('；', $failMsg),
+                "info" => "采集完成：成功入库 {$success} 条，更新 {$update} 条。部分分类失败：" . implode('；', $failMsg),
                 "status" => $success > 0 ? "y" : "n"
             )));
         }
 
         exit(json_encode(array(
-            "info" => "资讯采集完成：成功入库 {$success} 条，跳过重复 {$skip} 条",
+            "info" => "资讯采集完成：成功入库 {$success} 条，更新 {$update} 条",
             "status" => "y"
         )));
 	}
@@ -412,11 +411,21 @@ class FindController extends \app\base\controller\BaseController
 		if (empty($key235) && empty($key850)) {
 			return array('ok' => false, 'output' => '尚未配置聚合接口 Key（后台「发现-资讯采集」或 API 设置中填写）');
 		}
-		if ((!empty($key235) && empty($map235)) && (!empty($key850) && empty($map850))) {
-			return array('ok' => false, 'output' => '已配置 Key 但未设置分类映射，无法采集');
+		// 分别校验：已填 Key 但对应分类映射为空时，明确提示，避免静默采集 0 条。
+		// 注意用「各自独立判断」而非整体 AND：例如只配了 235 Key 却漏填 map235，
+		// 旧逻辑 && 条件不成立会直接跳过、静默 0 条，不符合"配置正确即能采"的预期。
+		$missMap = array();
+		if (!empty($key235) && empty($map235)) {
+			$missMap[] = '新闻头条(235)';
+		}
+		if (!empty($key850) && empty($map850)) {
+			$missMap[] = 'AI新闻简报(850)';
+		}
+		if (!empty($missMap)) {
+			return array('ok' => false, 'output' => '已配置 Key 但未设置分类映射，无法采集：' . implode('、', $missMap) . ' 请在后台资讯采集弹窗中指定本地发现分类');
 		}
 
-		$success = 0; $skip = 0; $failMsg = array();
+		$success = 0; $update = 0; $failMsg = array();
 		if (!empty($key235) && !empty($map235)) {
 			foreach ($map235 as $type => $navid) {
 				$navid = intval($navid);
@@ -427,9 +436,7 @@ class FindController extends \app\base\controller\BaseController
 				if (!$res['ok']) { $failMsg[] = "235[{$type}]: " . $res['error']; continue; }
 				foreach ($res['list'] as $news) {
 					if (empty($news['title'])) continue;
-					if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) { $skip++; continue; }
-					$this->insertNews($news, $navid, 'juhe_235');
-					$success++;
+					if ($this->insertNews($news, $navid, 'juhe_235') === 'update') { $update++; } else { $success++; }
 				}
 			}
 		}
@@ -443,34 +450,19 @@ class FindController extends \app\base\controller\BaseController
 				if (!$res['ok']) { $failMsg[] = "850[{$type}]: " . $res['error']; continue; }
 				foreach ($res['list'] as $news) {
 					if (empty($news['title'])) continue;
-					if ($this->newsExists($news['uniquekey'], $news['url'], $news['title'])) { $skip++; continue; }
-					$this->insertNews($news, $navid, 'juhe_850');
-					$success++;
+					if ($this->insertNews($news, $navid, 'juhe_850') === 'update') { $update++; } else { $success++; }
 				}
 			}
 		}
-		$msg = "资讯采集完成：成功入库 {$success} 条，跳过重复 {$skip} 条";
+		$msg = "资讯采集完成：成功入库 {$success} 条，更新 {$update} 条";
 		if (!empty($failMsg)) $msg .= '；部分分类失败：' . implode('；', $failMsg);
 		return array('ok' => true, 'output' => $msg);
 	}
 
 	/**
-	 * 判断资讯是否已存在（按 uniquekey / url / title 去重）
-	 */
-	private function newsExists($uniquekey, $url, $title){
-        if (!empty($uniquekey)) {
-            $chk = obj("api/ApiData")->dataCount("yun_article", array("surl" => $uniquekey));
-            if ($chk > 0) return true;
-        }
-        if (!empty($title)) {
-            $chk = obj("api/ApiData")->dataCount("yun_article", array("title" => $title));
-            if ($chk > 0) return true;
-        }
-        return false;
-	}
-
-	/**
-	 * 将一条标准化新闻写入 yun_article（归到本地发现分类 navid）
+	 * 将一条标准化新闻写入 yun_article（归到本地发现分类 navid）。
+	 * 改为 upsert 语义：按 surl（聚合接口唯一键）/ title 判断，已存在则更新，避免重复丢弃。
+	 * @return string 'insert' | 'update'
 	 */
 	private function insertNews($news, $navid, $source){
         $content = '';
@@ -510,7 +502,43 @@ class FindController extends \app\base\controller\BaseController
             'couponEndTime' => '',
             'date'          => $news['pubDate'] ?? date('Y-m-d H:i:s'),
         );
-        obj("api/ApiData")->insertData("yun_article", $data);
+
+        $api = obj("api/ApiData");
+        // 去重键：优先 surl（聚合唯一键），其次 title
+        $existCond = null;
+        if (!empty($news['uniquekey'])) {
+            $chk = $api->dataCount("yun_article", array("surl" => $news['uniquekey']));
+            if ($chk > 0) $existCond = array("surl" => $news['uniquekey']);
+        }
+        if ($existCond === null && !empty($news['title'])) {
+            $chk = $api->dataCount("yun_article", array("title" => $news['title']));
+            if ($chk > 0) $existCond = array("title" => $news['title']);
+        }
+        if ($existCond !== null) {
+            // 已存在：更新内容/图片/摘要等，保留原 id 与统计字段（view/like/hits）
+            $api->dataUpdate("yun_article", $data, $existCond);
+            return 'update';
+        }
+        $api->insertData("yun_article", $data);
+        return 'insert';
+	}
+
+	/**
+	 * 朋友圈商品文章 upsert：按 goodsId 去重，已存在则更新整条记录（含 content/图片/标题），不存在则新增。
+	 * @param array $data 完整字段
+	 * @param string $itemid 商品 ID（goodsId）
+	 * @return string 'insert' | 'update'
+	 */
+	private function saveArticleUpsert($data, $itemid){
+		$api = obj("api/ApiData");
+		$chk = $api->dataCount("yun_article", array("goodsId" => $itemid));
+		if ($chk > 0) {
+			// 更新时保留原统计字段（浏览/点赞），仅刷新内容类字段
+			$api->dataUpdate("yun_article", $data, array("goodsId" => $itemid));
+			return 'update';
+		}
+		$api->insertData("yun_article", $data);
+		return 'insert';
 	}
 
 	/**
@@ -536,14 +564,28 @@ class FindController extends \app\base\controller\BaseController
 	 * 兜底：Dtk 未配置或短链为空时，用商品详情页链接；解析失败时渲染去购买按钮
 	 */
 	private function buildGoodsMarker($dtk, $item) {
-        // 好单库朋友圈素材均为淘宝联盟商品，平台固定 tb
-        $itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? '');
+        // 好单库朋友圈素材均为淘宝联盟商品，平台固定 tb。
+        // itemid 取值需兼容多种字段名：原始好单库素材用 itemid；
+        // 经 standardizeItem 归一化后（collectCron/单条采集均走此路径）字段名为 goodsId。
+        // 旧逻辑仅取 itemid，导致标准化后的 $item 取不到 → 直接 return '' → 商品卡标记丢失。
+        $itemid = $item['items']['itemid'] ?? ($item['itemid'] ?? ($item['goodsId'] ?? ''));
         if (empty($itemid)) {
             return '';
         }
 
-        // 统一走站内转链（buy-tb.html?id= 伪静态），便于统计与佣金追踪
-        $goodsUrl = url('index/redirect/jump', array('platform' => 'tb', 'id' => $itemid));
+        // 平台归一：优先取 item 真实来源，默认 tb（朋友圈素材多淘宝）
+        $platform = 'tb';
+        if (!empty($item['item_from'])) {
+            $pf = strtolower(trim($item['item_from']));
+            $pfMap = array('taobao' => 'tb', 'tb' => 'tb', 'dtk' => 'tb',
+                           'jd' => 'jd', 'jingdong' => 'jd',
+                           'pdd' => 'pdd', 'paioduoduo' => 'pdd',
+                           'vip' => 'vip', 'weipinhui' => 'vip');
+            $platform = $pfMap[$pf] ?? 'tb';
+        }
+
+        // 统一走站内转链（buy-<platform>.html?id= 伪静态），便于统计与佣金追踪
+        $goodsUrl = url('index/redirect/jump', array('platform' => $platform, 'id' => $itemid));
 
         return "\n[ZhiCmsUrl]" . $goodsUrl . "[/ZhiCmsUrl]\n";
 	}
@@ -1129,6 +1171,7 @@ public function type(){
 		// 跨平台匹配：依次尝试 淘宝/拼多多/京东/唯品会，取第一个有结果的平台。
 		// 原先写死 'taobao'，导致非淘宝商品或淘宝(大淘客)未配置时永远无结果。
 		$platforms = array('taobao', 'pdd', 'jd', 'vip');
+		$plat = '';
 		$result = null;
 		foreach ($platforms as $plat) {
 			$ret = \app\common\AiService::matchGoodsByAi($title, $content, $plat);
@@ -1152,11 +1195,20 @@ public function type(){
 			return array();
 		}
 
-		$marker = "\n[ZhiCmsUrl]" . $itemUrl . "[/ZhiCmsUrl]\n";
+		// 平台归一：AI 匹配时已确定平台（$plat，如 taobao/pdd/jd/vip），
+		// taobao/dtk/tmall/tm 统一规范为 tb，保证生成的站内转链形态正确、可被 findItems 解析为商品卡片。
+		$linkPlat = strtolower(trim($plat));
+		if (in_array($linkPlat, ['taobao', 'dtk', 'tmall', 'tm'], true)) {
+			$linkPlat = 'tb';
+		}
+		// 优先生成站内转链（buy-<platform>.html?id=），便于统计与佣金追踪；
+		// 非淘宝平台无卡片解析时也能走跳转兜底。原始平台 URL 仅作为 itemLink 兜底保留。
+		$markerUrl = url('index/redirect/jump', array('platform' => $linkPlat, 'id' => $itemId));
+		$marker = "\n[ZhiCmsUrl]" . $markerUrl . "[/ZhiCmsUrl]\n";
 
 		return array(
 			'goodsId'  => $itemId,
-			'itemLink' => $itemUrl,
+			'itemLink' => $markerUrl,
 			'marker'   => $marker,
 			'pic'      => $pic,
 		);

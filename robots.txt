@@ -12,5 +12,7 @@ Disallow: /install.php
 Disallow: /*?*content=          # 搜索结果动态参数
 Disallow: /*?*page=            # 分页参数
 
-# 请将下面域名替换为你站点的真实域名（或改为动态输出 /robots.php）
+# Sitemap 指向站点真实域名（部署后请将 example.com 改为你的域名）
+# 插件模板页（plug-guangdiu.html / plug-kiees.html 等）通过伪静态暴露，不在 /plugins/ 下，
+# 故不会被下方 Disallow: /plugins/ 屏蔽，可被正常抓取与收录。
 Sitemap: https://www.example.com/sitemap.php

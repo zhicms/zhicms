@@ -1,16 +1,24 @@
 <meta name="renderer" content="webkit">
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-<title>{$seo_title}</title>
+<meta name="theme-color" content="#FF6146">
 <meta name="keywords" content="{$page_keywords}">
 <meta name="description" content="{$page_description}">
+<!-- 页面级收录指令：搜索/分页/低质页由控制器置 noindex；默认跟随全站 -->
+<meta name="robots" content="{if isset($page_robots) && $page_robots != ''}{$page_robots}{else}index,follow{/if}">
 <link rel="canonical" href="{$canonical}">
 <meta property="og:type" content="{$og_type}">
 <meta property="og:site_name" content="{$site_name}">
 <meta property="og:title" content="{$seo_title}">
 <meta property="og:description" content="{$page_description}">
 <meta property="og:url" content="{$canonical}">
-{if !empty($og_image)}<meta property="og:image" content="{$og_image}">{/if}
+{if !empty($og_image)}<meta property="og:image" content="{$og_image}">{elseif !empty($site_logo)}<meta property="og:image" content="{$site_logo}">{/if}
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"WebSite","name":"{$site_name}","url":"{$canonical}","potentialAction":{"@type":"SearchAction","target":"{$canonical}?mod=search&kw={search_term_string}","query-input":"required name=search_term_string"}}
 </script>
+{if !empty($articleJsonLd)}<script type="application/ld+json">
+{$articleJsonLd}
+</script>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"首页","item":"{$canonical}"}]}
+</script>{/if}
 <link rel="icon" href="{$public}favicon.ico">

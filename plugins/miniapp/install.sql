@@ -90,3 +90,7 @@ ALTER TABLE `{pre}shop_order` ADD `express_no` varchar(40) NOT NULL DEFAULT '' C
 ALTER TABLE `{pre}shop_order` ADD `ship_time` datetime DEFAULT NULL COMMENT '发货时间';
 ALTER TABLE `{pre}shop_order` ADD `confirm_time` datetime DEFAULT NULL COMMENT '确认收货时间';
 
+-- 用户余额字段（商城余额支付/积分依赖，幂等：已存在则忽略）
+-- 注意：主库 zhicms.sql 的 yun_user 无此列，这里在插件安装时补充，确保 ShopController 余额支付可用
+ALTER TABLE `{pre}user` ADD `balance` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '账户余额';
+

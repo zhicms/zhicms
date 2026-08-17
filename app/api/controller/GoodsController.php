@@ -530,6 +530,8 @@ class GoodsController extends ApiBaseController {
         }
 
         $goodsId = $it['goodsId'] ?? '';
+        // 大淘客淘宝标记 dtk / 全拼 taobao 统一规范为 tb（影响 detail_url 的 type 参数）
+        if ($itemFrom === 'dtk' || $itemFrom === 'taobao') $itemFrom = 'tb';
         // 静态兼容：内联 siteUrl（原 ApiBaseController::siteUrl 仅依赖 $_SERVER）
         $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https://' : 'http://';
         $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
@@ -555,7 +557,7 @@ class GoodsController extends ApiBaseController {
             'sold'         => isset($it['monthSales']) ? intval($it['monthSales']) : 0,
             'shopType'     => $shopType,
             'shopName'     => $it['shopName'] ?? '',
-            'platform'     => $itemFrom,
+            'platform'     => (($itemFrom === 'dtk' || $itemFrom === 'taobao') ? 'tb' : $itemFrom),
             // 推广/领券链接优先（itemLink 在大淘客搜索接口中常为空串），小程序点击跳转用
             'itemLink'     => (!empty($it['itemLink']) ? $it['itemLink'] : ($it['couponLink'] ?? '')),
             'couponLink'   => $it['couponLink'] ?? '',

@@ -7,6 +7,7 @@ class RedirectController extends \app\base\controller\BaseController
     private $platformConfig = [
         'tb'     => ['name' => '淘宝',   'api_platform' => 'taobao'],
         'taobao' => ['name' => '淘宝',   'api_platform' => 'taobao'],
+        'dtk'    => ['name' => '淘宝',   'api_platform' => 'taobao'],
         'jd'     => ['name' => '京东',   'api_platform' => 'jd'],
         'pdd'    => ['name' => '拼多多', 'api_platform' => 'pdd'],
         'vip'    => ['name' => '唯品会', 'api_platform' => 'vip']
@@ -54,8 +55,8 @@ class RedirectController extends \app\base\controller\BaseController
 
         $allow = array('tb', 'jd', 'pdd', 'vip');
 
-        // 规范兼容：taobao -> tb，其余未知值标记为空交由下方纠正
-        if ($platform === 'taobao') $platform = 'tb';
+        // 规范兼容：taobao / dtk（大淘客淘宝标记）-> tb，其余未知值标记为空交由下方纠正
+        if ($platform === 'taobao' || $platform === 'dtk') $platform = 'tb';
 
         // 以数据库真实记录为准做「纠正」，但必须用 goodsId 列匹配
         // （模板传入的 id 是各平台商品 id，如淘宝 num_iid，绝非 yun_items 自增主键 id），
@@ -70,7 +71,8 @@ class RedirectController extends \app\base\controller\BaseController
                 $item = obj('api/ApiData')->dataSelect('yun_items', array('goodsId' => $id));
                 if (!empty($item) && !empty($item['item_from'])) {
                     $dbPlatform = strtolower($item['item_from']);
-                    if ($dbPlatform === 'taobao') $dbPlatform = 'tb';
+                    // 大淘客淘宝商品 item_from 存的是 'dtk' 或 'taobao'，统一规范为 'tb'
+                    if ($dbPlatform === 'taobao' || $dbPlatform === 'dtk') $dbPlatform = 'tb';
                     $dbGoodsId  = $item['goodsId'];
                     // 大淘客商品转链优先用 goodsSign（与采集入库一致），DTK 用 goodsSign 可正确生成券链接
                     $dbGoodsSign = $item['goodsSign'] ?? '';

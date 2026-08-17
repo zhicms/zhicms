@@ -85,6 +85,8 @@ ALTER TABLE `__PREFIX__user` ADD COLUMN `reg_time` varchar(20) NOT NULL DEFAULT 
 ALTER TABLE `__PREFIX__user` ADD COLUMN `reg_ip` varchar(64) NOT NULL DEFAULT '' COMMENT '注册IP' AFTER `reg_time`;
 ALTER TABLE `__PREFIX__user` ADD COLUMN `login_ip` varchar(64) NOT NULL DEFAULT '' COMMENT '最后登录IP' AFTER `reg_ip`;
 ALTER TABLE `__PREFIX__user` ADD COLUMN `status` tinyint(4) NOT NULL DEFAULT '1' COMMENT '1正常 0禁用' AFTER `login_ip`;
+-- 账户余额（商城余额支付 / 积分依赖；主库 yun_user 无此列，升级时补）
+ALTER TABLE `__PREFIX__user` ADD COLUMN `balance` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '账户余额' AFTER `status`;
 
 -- 手机号 / 用户名唯一索引
 -- 注意：若目标库已存在重复数据会报错，需先清理重复记录再执行
@@ -192,6 +194,18 @@ UPDATE `__PREFIX__article` SET `keywords` = '' WHERE `keywords` LIKE 'HTTP错误
 -- 导致登录接口抛异常、前端报「网络请求失败」。扩容后即可正常写入。
 -- ------------------------------------------------------------
 ALTER TABLE `__PREFIX__manage` MODIFY COLUMN `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录密码（md5 或 bcrypt）';
+
+-- ------------------------------------------------------------
+-- 5.0.2 补丁：商品来源标识 item_from 归一化（闭环转链断裂根因）
+-- ------------------------------------------------------------
+-- 旧版采集/入库未对 item_from 做规范，可能写入 dtk / taobao / tmall / tm 等别名，
+-- 而转链入口 RedirectController::jump() 白名单只认 tb/jd/pdd/vip，命中别名会被拦截 400，
+-- 导致前台「去购买/领券」全部失效。下方将所有别名统一归并为 tb（淘宝/天猫），
+-- jd/pdd/vip 保持不变。新版本代码已在入库（UnionController::saveGoodsBatch）与
+-- getPrivilegeLink 处做别名归一，本语句仅清洗历史已存在的脏数据。
+UPDATE `__PREFIX__items` SET `item_from` = 'tb'
+WHERE `item_from` IN ('dtk', 'taobao', 'tmall', 'tm');
+
 
 -- ------------------------------------------------------------
 -- 版本号对齐（务必放在最后执行）

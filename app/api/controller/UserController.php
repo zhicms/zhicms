@@ -84,11 +84,8 @@ class UserController extends ApiBaseController {
         if ($mobile === '' || $password === '') {
             $this->json(array('code' => 0, 'message' => '请输入手机号和密码'), 400);
         }
-        // 防 SQL 注入：转义手机号中的特殊字符
-        $mobile = addslashes($mobile);
-
-        $where[] = "`mobile` = '{$mobile}'";
-        $u = obj('api/ApiData')->dataSelect('yun_user', $where);
+        // 防 SQL 注入：使用参数化查询（? 占位符）
+        $u = obj('api/ApiData')->dataSelect('yun_user', array("`mobile` = ?", $mobile));
         if (empty($u)) {
             $this->json(array('code' => 0, 'message' => '用户不存在，请先注册'), 400);
         }
@@ -129,11 +126,11 @@ class UserController extends ApiBaseController {
             $this->json(array('code' => 0, 'message' => '密码至少 6 位'), 400);
         }
 
-        $wMobile[] = "`mobile` = '{$mobile}'";
+        $wMobile[] = array("`mobile` = ?", $mobile);
         if (obj('api/ApiData')->dataSelect('yun_user', $wMobile)) {
             $this->json(array('code' => 0, 'message' => '该手机号已注册'), 400);
         }
-        $wName[] = "`username` = '{$username}'";
+        $wName[] = array("`username` = ?", $username);
         if (obj('api/ApiData')->dataSelect('yun_user', $wName)) {
             $this->json(array('code' => 0, 'message' => '昵称已存在'), 400);
         }

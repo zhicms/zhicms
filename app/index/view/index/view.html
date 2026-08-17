@@ -17,6 +17,27 @@ $article = array(
 echo json_encode($article, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 ?></script>
 
+<script type="application/ld+json"><?php
+$siteUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
+$bcItems = array(
+  array('@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => $siteUrl . '/')
+);
+if (!empty($view['cid'])) {
+  $bcItems[] = array(
+    '@type' => 'ListItem',
+    'position' => 2,
+    'name' => obj('index/global', 'controller')->Cid($view['cid']),
+    'item' => $siteUrl . '/index/index/index/list=' . $view['cid'] . '.html'
+  );
+}
+$breadcrumb = array(
+  '@context' => 'https://schema.org',
+  '@type' => 'BreadcrumbList',
+  'itemListElement' => $bcItems
+);
+echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+?></script>
+
 <article class="log-con">
   <nav class="crumb">
     <a href="{url($route='index/index/index', $params=array())}">首页</a>

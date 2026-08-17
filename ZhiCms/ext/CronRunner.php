@@ -131,9 +131,9 @@ class CronRunner {
                         // 以 "php xxx" 开头的 CLI 命令：改为调用 php 二进制，在项目根目录执行
                         $phpBin = self::phpBinary();
                         if (!$phpBin) { $output = '未找到 php 可执行文件'; $ok = false; break; }
-                        // 去掉开头的 "php "，用绝对 php 路径补全
+                        // 去掉开头的 "php "，用绝对 php 路径补全（路径含空格须加引号）
                         $realCmd = preg_replace('/^php\s+/i', '', $trimCmd, 1);
-                        $full = $phpBin . ' ' . $realCmd;
+                        $full = self::quotePath($phpBin) . ' ' . $realCmd;
                         $block = self::blockedCommand($realCmd);
                         if ($block) { $output = '危险命令已拦截：' . $block; $ok = false; break; }
                         $output = self::runProc($full);
@@ -164,11 +164,11 @@ class CronRunner {
                     $py = self::pythonBinary();
                     if (!$py) { $output = '未找到 python 可执行文件'; $ok = false; break; }
                     if (preg_match('/\.py$/', trim($cmd)) && is_file($cmd)) {
-                        $output = self::runProc($py . ' ' . escapeshellarg($cmd));
+                        $output = self::runProc(self::quotePath($py) . ' ' . self::quotePath($cmd));
                     } else {
                         $tmp = tempnam(sys_get_temp_dir(), 'py_') . '.py';
                         file_put_contents($tmp, $cmd);
-                        $output = self::runProc($py . ' ' . escapeshellarg($tmp));
+                        $output = self::runProc(self::quotePath($py) . ' ' . self::quotePath($tmp));
                         @unlink($tmp);
                     }
                     $ok = ($output !== null);
@@ -236,38 +236,87 @@ class CronRunner {
         if ($cwd === null) {
             $cwd = defined('ROOT_PATH') ? ROOT_PATH : (getcwd() ?: null);
         }
-        $descriptors = array(0 => array('pipe','r'), 1 => array('pipe','w'), 2 => array('pipe','w'));
-        $proc = @proc_open($command, $descriptors, $pipes, $cwd);
+        // 跨平台安全转义：Linux/macOS 用 escapeshellcmd 防注入（路径已 quotePath 加引号，空格安全）；
+        // Windows 下不转义（cmd /c 能正确解析带引号的含空格路径，escapeshellcmd 反而破坏）。
+        $isWin = (stripos(PHP_OS, 'WIN') === 0);
+        $realCmd = $isWin ? $command : escapeshellcmd($command);
+        // 将 stderr 合并到 stdout（2>&1），避免 Windows 下 stderr 管道空读导致 stream_get_contents 阻塞死锁
+        $realCmd .= ' 2>&1';
+        $descriptors = array(0 => array('pipe','r'), 1 => array('pipe','w'));
+        $proc = @proc_open($realCmd, $descriptors, $pipes, $cwd);
         if (!is_resource($proc)) return '无法启动进程';
+        fclose($pipes[0]); // 关闭 stdin，避免某些程序等待输入而挂起
         $out = stream_get_contents($pipes[1]);
-        $err = stream_get_contents($pipes[2]);
-        fclose($pipes[0]); fclose($pipes[1]); fclose($pipes[2]);
+        fclose($pipes[1]);
         proc_close($proc);
-        $result = $out . ($err ? "\n[err] " . $err : '');
-        return substr($result, 0, 800);
+        return substr((string)$out, 0, 800);
+    }
+
+    /**
+     * 路径加引号（兼容含空格的路径）：Windows/Linux 均用双引号包裹。
+     * 用于拼装 "解释器 脚本" 类命令，避免 "C:\Program Files\php\php.exe" 被拆成多段。
+     */
+    private static function quotePath($path){
+        $p = trim((string)$path);
+        if ($p === '') return $p;
+        // 已带引号则不重复包裹
+        if (isset($p[0]) && ($p[0] === '"' || $p[0] === "'")) return $p;
+        return '"' . $p . '"';
+    }
+
+    /**
+     * 跨平台探测命令路径：Windows 用 where，Linux/macOS 用 which。
+     * @param string $name 命令名（如 php / python3）
+     * @param array  $candidates 常见绝对路径候选（含空格路径也 OK）
+     */
+    private static function detectBinary($name, array $candidates){
+        // 1) 先校验常见绝对路径候选（Linux 下避免对 /usr/bin/php 再探测）
+        foreach ($candidates as $c) {
+            if ($c && is_string($c) && trim($c) !== '' && is_file($c)) return $c;
+        }
+        // 2) PHP_BINARY（CLI 模式下最准，能拿到当前解释器真实路径）
+        if ($name === 'php' && PHP_BINARY && is_file(PHP_BINARY) && is_executable(PHP_BINARY)) {
+            return PHP_BINARY;
+        }
+        // 3) 用系统命令探测：Windows=where，Linux/macOS=which
+        $probe = (stripos(PHP_OS, 'WIN') === 0) ? 'where' : 'which';
+        $out = @shell_exec("{$probe} {$name} 2>nul");
+        if ($out && trim($out) !== '') {
+            // where 可能返回多行（含别名），取第一行真实路径
+            $lines = preg_split('/\r?\n/', trim($out));
+            foreach ($lines as $ln) {
+                $ln = trim($ln);
+                if ($ln !== '' && is_file($ln)) return $ln;
+            }
+        }
+        return '';
     }
 
     private static function phpBinary(){
-        $candidates = array(PHP_BINARY, 'php', '/usr/bin/php', '/usr/local/bin/php', 'D:/phpstudy_pro/Extensions/php/php8.0.2nts/php.exe');
-        foreach ($candidates as $c) {
-            if ($c && is_string($c) && trim($c) !== '') {
-                if (is_file($c)) return $c;
-            }
-        }
-        // 用 where 探测
-        foreach (array('php', '/usr/bin/php', '/usr/local/bin/php') as $c) {
-            $out = @shell_exec("where $c 2>nul");
-            if ($out && trim($out) !== '') return trim(explode("\n", $out)[0]);
-        }
-        return '';
+        // 常见安装路径候选（覆盖各版本/各环境，含空格路径用引号无所谓，is_file 校验）
+        $candidates = array(
+            PHP_BINARY,
+            'D:/phpstudy_pro/Extensions/php/php8.0.2nts/php.exe',
+            'D:/phpstudy_pro/Extensions/php/php7.4.3nts/php.exe',
+            '/usr/bin/php',
+            '/usr/local/bin/php',
+            '/usr/local/php/bin/php',
+            '/opt/php/bin/php',
+        );
+        $bin = self::detectBinary('php', $candidates);
+        return $bin;
     }
 
     private static function pythonBinary(){
-        $candidates = array('python3', 'python', '/usr/bin/python3', '/usr/bin/python', 'C:/Python39/python.exe');
-        foreach ($candidates as $c) {
-            $out = @shell_exec("where $c 2>nul");
-            if ($out && trim($out) !== '') return trim(explode("\n", $out)[0]);
-        }
-        return '';
+        $candidates = array(
+            'C:/Python39/python.exe',
+            'C:/Python38/python.exe',
+            '/usr/bin/python3',
+            '/usr/bin/python',
+            '/usr/local/bin/python3',
+            '/usr/local/bin/python',
+        );
+        return self::detectBinary('python3', $candidates)
+            ?: self::detectBinary('python', array('/usr/bin/python', '/usr/local/bin/python', 'C:/Python39/python.exe'));
     }
 }

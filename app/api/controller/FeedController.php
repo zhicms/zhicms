@@ -208,7 +208,7 @@ class FeedController extends ApiBaseController {
                     'goodsSign' => $b['goodsSign'],
                     'itemLink' => $b['itemLink'],
                     'couponLink' => $b['couponLink'],
-                    'item_from' => $b['item_from'],
+                    'item_from' => (($b['item_from'] === 'dtk' || $b['item_from'] === 'taobao') ? 'tb' : $b['item_from']),
                 );
             }
         }
@@ -224,7 +224,7 @@ class FeedController extends ApiBaseController {
                     'goodsSign' => $b['goodsSign'],
                     'itemLink' => $b['itemLink'],
                     'couponLink' => $b['couponLink'],
-                    'item_from' => $b['item_from'],
+                    'item_from' => (($b['item_from'] === 'dtk' || $b['item_from'] === 'taobao') ? 'tb' : $b['item_from']),
                 );
             }
         }
@@ -385,7 +385,7 @@ class FeedController extends ApiBaseController {
             'worthRate'    => $worthRate,       // 值率（%）
             'itemLink'     => $it['itemLink'],
             'couponLink'   => $it['couponLink'], // 领券/推广链接，转链失败时的兜底
-            'item_from'    => $it['item_from'],
+            'item_from'    => (($it['item_from'] === 'dtk' || $it['item_from'] === 'taobao') ? 'tb' : $it['item_from']),
             'isChoice'     => intval($it['choice']) === 1,
         );
     }

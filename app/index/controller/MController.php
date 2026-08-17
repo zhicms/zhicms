@@ -202,6 +202,7 @@ public function rank(){
 			return obj("api/Api")->objectArray(json_decode($newData->http($host)));
 		}, 300);
 		$time=$data['data']['time'];
+	$html='';
 	$html.='<div class="rankhead">
 	<div class="rankheadtitle">天猫淘宝出单风云榜&nbsp;·&nbsp;今日'.$time.'点档）</div>
    </div>';
@@ -255,7 +256,11 @@ public function cheaps(){
 		$ret=obj("api/ApiData")->dataSelect("yun_items",$sql,"`id` DESC LIMIT {$pageSize} , {$pageN}");
 		foreach ($ret as $key => $value) {
 
-		$quanLink=url('index/redirect/jump', array('platform'=>$value['platform'], 'id'=>$value['goodsId']));
+		$mPlatform = strtolower(trim((string)($value['platform'] ?? '')));
+		if ($mPlatform === 'taobao' || $mPlatform === 'dtk' || $mPlatform === 'tmall' || $mPlatform === 'tm') {
+			$mPlatform = 'tb';
+		}
+		$quanLink=url('index/redirect/jump', array('platform'=>$mPlatform ?: 'tb', 'id'=>$value['goodsId']));
 	$html='<div class="cheapitem">
 	<div class="cheapleftcontent">
 		<div class="clear"></div>
@@ -451,6 +456,8 @@ public function getDeviceType()
         $itemsUrl= $itemsId['0']['0'];
         $itemsUrl=preg_replace('/\[\/ZhiCmsUrl]/','',$itemsUrl);
         $content=urldecode($itemsUrl);
+        // 平台归一化：大淘客淘宝标记 buy-dtk.html / 全拼 buy-taobao.html 统一规范为 buy-tb.html
+        $content = preg_replace('/buy-(dtk|taobao)\.html/i', 'buy-tb.html', $content);
         // 本站转链入口：buy-tb/jd/pdd/vip.html?id=加密goodsId
         // 这种链接的 id 本身就是大淘客商品 ID，可直接拿去解析商品详情
         $buyId = $this->extractBuyLinkId($content);

@@ -164,13 +164,68 @@ class KieesController
         // 移动端切回桌面版链接（带上 ?pc=1 并记忆 cookie）
         $engine->assign('pc_url', $this->currentUrlWith('pc=1'));
 
-        // ===== SEO 通用变量（仿主站 public/header.html 做法）=====
-        $engine->assign('canonical', $this->currentUrlWith(''));               // 规范链接：当前 URL 去 m/pc 参数
-        $engine->assign('page_keywords', $this->vars['page_keywords'] ?? ($siteName . ',优惠券,好物推荐,网购省钱'));
-        $engine->assign('page_description', $this->vars['page_description'] ?? ($siteName . ' - 精选高性价比优惠券与好物推荐，领券更省。'));
+        // ===== SEO 统一（与主站 public/header.html 规则一致）=====
+        // 彻底去除 SiteController 硬编码文案：页面只传「语义片段」（seo_prefix/seo_kw），
+        // 此处统一组装为「后台 SEO 配置 -> 站点配置 -> 页面语义 + 站点名兜底」。
+        // 站点名/站点关键词/站点描述均来自后台网站设置，确保插件页真正引用网站配置。
+        $seoIndexTitle   = $base->SEO('index_title');
+        $seoIndexKw      = $base->SEO('index_keywords');
+        $seoIndexDec     = $base->SEO('index_dec');
+        $siteKeywords    = $base->SiteConfig('sitekeywords');
+        $siteDescription = $base->SiteConfig('sitedescription');
+
+        // 页面语义片段（由 SiteController 传入，不再写死整段文案）
+        $seoPrefix = $this->vars['seo_prefix'] ?? '';   // 标题前缀：文章标题 / 搜索词 / 模块名
+        $seoKw     = $this->vars['seo_kw'] ?? '';       // 额外关键词：搜索词等
+
+        // canonical：去除分页/排序参数，避免 ?page=2 等自成规范链接稀释权重
+        $canonical = $this->currentUrlWithout(array('page', 'sort', 'order'));
+        $engine->assign('canonical', $canonical);
+        // 搜索页 / 分页页：自动 noindex（仍 follow），与主站 SearchController 行为对齐
+        $isPaginated = ($this->arg('page', 1) > 1);
+        $pageRobots  = ($this->vars['is_search'] ?? false) || $isPaginated ? 'noindex,follow' : 'index,follow';
+        $engine->assign('page_robots', $pageRobots);
+
+        // 标题：后台SEO配置 -> 页面语义前缀 + 站点名 -> 仅站点名
+        $title = $seoIndexTitle ?: ($seoPrefix !== '' ? ($seoPrefix . ' - ' . $siteName) : $siteName);
+        $engine->assign('seo_title', $title);
+
+        // 关键词：后台SEO配置 -> 站点配置 -> 页面语义关键词 + 站点名 -> 仅站点名
+        $kw = $seoIndexKw ?: ($siteKeywords ?: ($seoKw !== '' ? ($seoKw . ',' . $siteName) : $siteName));
+        $engine->assign('page_keywords', $kw);
+
+        // 描述：后台SEO配置 -> 站点配置 -> 兜底（语义前缀 + 站点名）
+        $desc = $seoIndexDec ?: ($siteDescription ?: ($seoPrefix !== '' ? ($seoPrefix . ' - ' . $siteName) : $siteName . ' - 精选高性价比优惠券与好物推荐，领券更省。'));
+        $engine->assign('page_description', $desc);
+
         $engine->assign('og_image', $this->vars['og_image'] ?? '');
         $engine->assign('og_type', ($tpl === 'detail') ? 'article' : 'website');
-        $engine->assign('seo_title', $this->vars['page_title'] ?? $siteName);
+        $engine->assign('is_search', $this->vars['is_search'] ?? false);
+
+        // 详情页结构化数据（Article JSON-LD，与主站 ViewController 对齐）
+        $articleJsonLd = '';
+        if ($tpl === 'detail' && !empty($this->vars['article'])) {
+            $art = $this->vars['article'];
+            $artTitle   = isset($art['title']) ? strip_tags($art['title']) : $siteName;
+            $artImg     = isset($art['mainPic']) ? $art['mainPic'] : (isset($art['pic']) ? $art['pic'] : '');
+            $artDate    = isset($art['date']) ? date('c', strtotime($art['date'])) : date('c');
+            $artDesc    = isset($art['dec']) ? mb_substr(strip_tags($art['dec']), 0, 200, 'UTF-8') : $siteDescription;
+            $ld = array(
+                '@context' => 'https://schema.org',
+                '@type'    => 'Article',
+                'headline' => $artTitle,
+                'image'    => array($artImg),
+                'datePublished' => $artDate,
+                'dateModified'  => $artDate,
+                'author'   => array('@type' => 'Organization', 'name' => $siteName),
+                'publisher'=> array('@type' => 'Organization', 'name' => $siteName,
+                                    'logo' => array('@type' => 'ImageObject', 'url' => $logo)),
+                'description' => $artDesc,
+                'mainEntityOfPage' => array('@type' => 'WebPage', '@id' => $this->currentUrlWith('')),
+            );
+            $articleJsonLd = json_encode($ld, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        $engine->assign('articleJsonLd', $articleJsonLd);
 
         $engine->display($tplReal);
         exit;
@@ -190,6 +245,19 @@ class KieesController
         parse_str($append, $a);
         $q = array_merge($q, $a);
         // 去掉与移动端判断冲突的参数
+        unset($q['m']);
+        $qstr = http_build_query($q);
+        return $path . ($qstr !== '' ? ('?' . $qstr) : '');
+    }
+
+    protected function currentUrlWithout($drop = array())
+    {
+        $uri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '/';
+        $parts = parse_url($uri);
+        $path = isset($parts['path']) ? $parts['path'] : '/';
+        $query = isset($parts['query']) ? $parts['query'] : '';
+        parse_str($query, $q);
+        foreach ((array) $drop as $k) { unset($q[$k]); }
         unset($q['m']);
         $qstr = http_build_query($q);
         return $path . ($qstr !== '' ? ('?' . $qstr) : '');

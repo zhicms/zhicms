@@ -16,6 +16,13 @@ class BaseController extends \ZhiCms\base\Controller {
 	public $pageRobots = 'index,follow';
 
 	/**
+	 * 移动版（m 站）对应页 URL，用于 <link rel="alternate"> 移动适配标注。
+	 * 仅频道/首页类页由 __construct 注入；详情/搜索/用户中心等留空不输出。
+	 * @var string
+	 */
+	public $mAltUrl = '';
+
+	/**
 	 * 标记当前页为 noindex（仍允许跟踪链接）。
 	 */
 	protected function setNoindex() {
@@ -144,6 +151,17 @@ class BaseController extends \ZhiCms\base\Controller {
 				$this->showUserEntry = $this->resolveUserSwitch('user_show_login', '1') === '1';
 			} catch (\Throwable $e) {
 				$this->showUserEntry = true;
+			}
+
+			// 移动端适配标注（alternate）：m 站为 SPA，仅首页/频道"列表类"页输出指向 m.html，
+			// 详情/搜索/用户中心等无对应 m 独立页，留空避免误导爬虫。
+			$listActions = array('index', 'rank', 'cheaps', 'brand', 'hot', 'forum', 'bbs');
+			if (in_array(strtolower(\ACTION_NAME), $listActions, true)) {
+				$host = '';
+				try { $host = obj('base/Base')->SiteConfig('hosturl'); } catch (\Throwable $e) { $host = ''; }
+				if ($host !== '') {
+					$this->mAltUrl = rtrim($host, '/') . '/m.html';
+				}
 			}
 		}
 	}

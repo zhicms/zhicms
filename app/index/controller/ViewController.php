@@ -27,7 +27,8 @@ class ViewController extends \app\base\controller\BaseController
 
         if($type && in_array($type,$valid)){
             $platform = $type;
-            if($platform == 'taobao') $platform = 'tb';
+            // 大淘客淘宝标记 dtk 以及全拼 taobao 统一规范为 tb
+            if($platform == 'taobao' || $platform == 'dtk') $platform = 'tb';
         } else {
             $platform = 'tb';
         }
@@ -41,7 +42,10 @@ class ViewController extends \app\base\controller\BaseController
             if(!empty($itemFromDb)){
                 $itemFromDb = $itemFromDb[0];
                 if(!$platform || $platform == 'taobao'){
-                    $platform = $itemFromDb['item_from'] ?? ($itemFromDb['laiyuan'] == 1 ? 'taobao' : ($itemFromDb['laiyuan'] == 4 ? 'jd' : ($itemFromDb['laiyuan'] == 2 ? 'pdd' : ($itemFromDb['laiyuan'] == 3 ? 'vip' : 'taobao'))));
+                    $dbFrom = $itemFromDb['item_from'] ?? ($itemFromDb['laiyuan'] == 1 ? 'taobao' : ($itemFromDb['laiyuan'] == 4 ? 'jd' : ($itemFromDb['laiyuan'] == 2 ? 'pdd' : ($itemFromDb['laiyuan'] == 3 ? 'vip' : 'taobao'))));
+                    // 大淘客淘宝标记 dtk 统一规范为 tb
+                    if($dbFrom == 'dtk' || $dbFrom == 'taobao') $dbFrom = 'tb';
+                    $platform = $dbFrom;
                 }
             }
         }
