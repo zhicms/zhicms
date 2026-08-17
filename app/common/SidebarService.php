@@ -134,7 +134,7 @@ class SidebarService {
         return $dtk;
     }
 
-    private static function dataCheaps($limit) {
+    public static function dataCheaps($limit) {
         $cache = CacheService::instance();
         return $cache->remember('sidebar_cheaps', function () use ($limit) {
             $dtk = self::getDtk();
@@ -165,14 +165,16 @@ class SidebarService {
     }
 
     private static function dataBrands($limit) {
+        $limit = max(1, (int) $limit);
         $cache = CacheService::instance();
         return $cache->remember('sidebar_brands', function () use ($limit) {
             $dtk = self::getDtk();
+            $out = array();
             // 走大淘客「品牌栏目榜」接口（delanys/brand/get-column-list）
+            // 注意：该接口返回数量可能不受 pageSize 控制，故统一在下方随机抽取 $limit 条。
             if ($dtk && method_exists($dtk, 'GetBrandColumnList')) {
-                $resp = $dtk->GetBrandColumnList((int) $limit, '1', '');
+                $resp = $dtk->GetBrandColumnList(50, '1', '');
                 if (!empty($resp['code']) && !empty($resp['brands'])) {
-                    $out = array();
                     foreach ($resp['brands'] as $b) {
                         $brandId = $b['brandId'] ?? 0;
                         $out[] = array(
@@ -182,23 +184,28 @@ class SidebarService {
                             'url'   => url('index/brand/view', array('id' => $brandId)),
                         );
                     }
-                    return $out;
                 }
             }
-            // 回落：品牌表（仅在 API 未配置/失败时）
-            $rows = obj("api/ApiData")->thisQuery(
-                "SELECT * FROM `yun_brand` WHERE `state` = 1 ORDER BY `px` ASC, `id` DESC LIMIT " . (int) $limit
-            );
-            $out = array();
-            if (!empty($rows)) {
-                foreach ($rows as $r) {
-                    $out[] = array(
-                        'id'    => $r['id'] ?? 0,
-                        'title' => $r['name'] ?? '',
-                        'pic'   => $r['logo'] ?? ($r['pic'] ?? ''),
-                        'url'   => url('index/brand/view', array('id' => $r['id'] ?? 0)),
-                    );
+            // 回落：品牌表（仅在 API 未配置/失败/无数据时）
+            if (empty($out)) {
+                $rows = obj("api/ApiData")->thisQuery(
+                    "SELECT * FROM `yun_brand` WHERE `state` = 1 ORDER BY `px` ASC, `id` DESC"
+                );
+                if (!empty($rows)) {
+                    foreach ($rows as $r) {
+                        $out[] = array(
+                            'id'    => $r['id'] ?? 0,
+                            'title' => $r['name'] ?? '',
+                            'pic'   => $r['logo'] ?? ($r['pic'] ?? ''),
+                            'url'   => url('index/brand/view', array('id' => $r['id'] ?? 0)),
+                        );
+                    }
                 }
+            }
+            // 随机打乱后只取 $limit 条（保证「后台控制的数量」严格生效）
+            if (count($out) > $limit) {
+                shuffle($out);
+                $out = array_slice($out, 0, $limit);
             }
             return $out;
         }, 600);
@@ -251,7 +258,7 @@ class SidebarService {
         $cache = CacheService::instance();
         return $cache->remember('sidebar_comments', function () use ($limit) {
             $sql = "SELECT c.*, a.`title` AS art_title, a.`id` AS art_id "
-                 . "FROM `{pre}comment` c LEFT JOIN `{pre}article` a ON c.`gid` = a.`id` "
+                 . "FROM `{pre}comment` c LEFT JOIN `{pre}article` a ON c.`mid` = a.`id` "
                  . "WHERE c.`hide` = 'n' AND c.`model` = '2' ORDER BY c.`id` DESC LIMIT " . (int) $limit;
             $rows = obj("api/ApiData")->thisQuery($sql);
             $out = array();

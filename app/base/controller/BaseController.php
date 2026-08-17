@@ -433,20 +433,14 @@ class BaseController extends \ZhiCms\base\Controller {
             return $links ?: [];
         }, 600);
 
-        // 侧栏「近期好券」：从选品库(yun_items)取最近商品池里随机 10 条（近似近三日）
-        // 说明：yun_items 入库时未写入可靠的时间戳列(createTime 多为空)，故用 id 近似近期
-        // —— 取最近 300 条(id 最大区间)再随机 10 条，保证数据新鲜且每次刷新有变化。
-        $this->sideCheaps = $cache->remember('sidebar_cheaps', function () {
-            $sql = "SELECT * FROM `yun_items` "
-                 . "WHERE `del` = 0 AND `id` >= (SELECT MAX(`id`) - 300 FROM `yun_items`) "
-                 . "ORDER BY RAND() LIMIT 10";
-            $rows = obj("api/ApiData")->thisQuery($sql);
-            if (empty($rows)) {
-                // 兜底：全表随机 10 条，避免空侧栏
-                $rows = obj("api/ApiData")->thisQuery("SELECT * FROM `yun_items` WHERE `del` = 0 ORDER BY RAND() LIMIT 10");
-            }
-            return $rows ?: [];
-        }, 300);
+        // 侧栏「近期好券」：统一走 SidebarService::dataCheaps()（大淘客 API 优先，
+        // 选品库回落），返回 normalizeGoods 标准结构（含 goods_id/platform/pic/actual/coupon），
+        // 字段统一后链接生成正确，避免老数据 goodsId 为空导致「跳转失败、没有链接」。
+        if (class_exists('\\app\\common\\SidebarService')) {
+            $this->sideCheaps = \app\common\SidebarService::dataCheaps(10);
+        } else {
+            $this->sideCheaps = array();
+        }
 
         // 站内速览：5 次 COUNT → 1 次 UNION（对标 emlog 的 site_stat 缓存）
         $today = date("Y-m-d");

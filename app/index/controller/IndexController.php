@@ -244,6 +244,25 @@ class IndexController extends \app\base\controller\BaseController
       $view['author_pic'] = isset($view['author_pic']) ? $view['author_pic'] : '';
       $this->view = $view;
 
+      // 文章关键词标签 HTML（在控制器生成，模板只输出变量，规避 legacy 引擎 {php} 标签编译问题）
+      $keywordsHtml = '';
+      $__kw = trim($view['keywords'] ?? '');
+      if ($__kw !== '') {
+          $__kwArr = preg_split('/[,，\|、\s]+/u', $__kw, -1, PREG_SPLIT_NO_EMPTY);
+          if (!empty($__kwArr)) {
+              $keywordsHtml .= '<div class="article-tags">';
+              $keywordsHtml .= '<span class="article-tags-label"><i class="fas fa-tags"></i> 关键词：</span>';
+              foreach ($__kwArr as $__k) {
+                  $__k = trim($__k);
+                  if ($__k === '') continue;
+                  $__u = search_url() . '?content=' . urlencode($__k) . '&platform=local&type=article';
+                  $keywordsHtml .= '<a class="article-tag" href="' . htmlspecialchars($__u, ENT_QUOTES) . '" rel="tag">' . htmlspecialchars($__k, ENT_QUOTES) . '</a>';
+              }
+              $keywordsHtml .= '</div>';
+          }
+      }
+      $this->keywordsHtml = $keywordsHtml;
+
       // ===== SEO 优化：文章详情页面标题/关键词/描述 =====
       $siteName = obj('base/Base')->SiteConfig('sitename');
       $articleTitle = isset($view['title']) ? trim($view['title']) : '';

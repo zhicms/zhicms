@@ -10,11 +10,12 @@ class Template {
 		$this->config = $config;
 		$this->assign('__Template', $this);
 		$this->label = array(         
-			/**raw php block
+			/**raw php block —— 由 compile() 中的 parsePhpBlock() 使用花括号配对处理，
+			 * 以支持块内包含多个 } 的情况（如 if/foreach 的闭合花括号）
 				{php echo $x;}  =>  <?php echo $x;?>
 				{php $a=1; echo $a; } => <?php $a=1; echo $a; ?>
 			*/
-			'/\{\s*php\s+([\s\S]+?)\s*\}/i' => '<?php \\1 ?>',
+			// '{php}' 规则已移入 parsePhpBlock()，见 compile()
 			/**variable label
 				{$name} => <?php echo $name;?>
 				{$user['name']} => <?php echo $user['name'];?>
@@ -124,13 +125,91 @@ class Template {
 		if ( empty($ret['template']) || ($isTpl&&filemtime($tplFile)>($ret['compile_time'])) ) {
 			$template = $isTpl ? file_get_contents( $tplFile ) : $tpl;
 			if( false === Hook::listen('templateParse', array($template), $template) ){
+				// 先处理 {php ... } 块（花括号配对，支持块内含多个 }）
+				$template = $this->parsePhpBlock($template);
 				foreach ($this->label as $key => $value) {
 					$template = preg_replace($key, $value, $template);
-				}		
+				}
+				// 展开 {include file="app/.../xxx"} —— legacy 引擎原生不支持 include，需在此递归展开
+				$template = $this->parseInclude($template, $isTpl);
 			}
 			$ret = array('template'=>$template, 'compile_time'=>time());
 			$this->cache->set( $tplKey, serialize($ret), 86400*365);
-		}	
-		return $ret['template'];
+			}	
+			return $ret['template'];
+			}
+
+			/**
+			* 展开模板中的 {include file="app/xxx/yyy"} 标签（legacy 引擎原生不支持 include）
+			* 将子模板内容读入并同样经过 label 编译，支持嵌套 include。
+			*/
+			protected function parseInclude($template, $isTpl = true) {
+			$self = $this;
+			$template = preg_replace_callback('/\{\s*include\s+file=["\']?([^"\']+)["\']?\s*\}/i', function($m) use ($self, $isTpl) {
+			$incFile = $self->config['TPL_PATH'] . $m[1] . $self->config['TPL_SUFFIX'];
+			if (!file_exists($incFile)) {
+				return '<!-- include not found: ' . $m[1] . ' -->';
+			}
+			$sub = file_get_contents($incFile);
+			// 子模板同样走 label 编译
+			foreach ($self->label as $key => $value) {
+				$sub = preg_replace($key, $value, $sub);
+			}
+			// 递归展开子模板内的 include（防止无限递归：最多 10 层）
+			static $depth = 0;
+			if ($depth < 10) {
+				$depth++;
+				$sub = $self->parseInclude($sub, $isTpl);
+				$depth--;
+			}
+			return $sub;
+		}, $template);
+		return $template;
+	}
+
+	/**
+	 * 处理 {php ... } 原始 PHP 块标签。
+	 * 使用花括号配对（栈计数），避免块内 if/foreach 的闭合 } 被非贪婪正则提前截断，
+	 * 导致尾部 PHP 代码泄露为纯文本。
+	 */
+	protected function parsePhpBlock($template) {
+		$result = '';
+		$offset = 0;
+		$len = strlen($template);
+		while (($pos = stripos($template, '{php', $offset)) !== false) {
+			// 把 {php 之前的内容原样保留
+			$result .= substr($template, $offset, $pos - $offset);
+			// 从 {php 之后开始配对花括号
+			$i = $pos + 4; // 跳过 {php
+			// 跳过 {php 后的空白
+			while ($i < $len && ctype_space($template[$i])) $i++;
+			$depth = 1; // 已经遇到一个 {
+			$start = $i;
+			$end = false;
+			while ($i < $len) {
+				$ch = $template[$i];
+				if ($ch === '{') {
+					$depth++;
+				} elseif ($ch === '}') {
+					$depth--;
+					if ($depth === 0) {
+						$end = $i;
+						break;
+					}
+				}
+				$i++;
+			}
+			if ($end === false) {
+				// 没有配对的 }，原样保留
+				$result .= substr($template, $pos);
+				$offset = $len;
+				break;
+			}
+			$phpCode = substr($template, $start, $end - $start);
+			$result .= '<?php ' . $phpCode . ' ?>';
+			$offset = $end + 1; // 跳过 }
+		}
+		$result .= substr($template, $offset);
+		return $result;
 	}
 }

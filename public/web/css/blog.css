@@ -755,6 +755,9 @@ a.nav-link[target="_blank"]::after,
     font-size: 12px; font-weight: 700; color: #fff;
     background: var(--gradient); border-radius: 12px;
 }
+.pc-coupon-label {
+    background: #8896a8 !important;
+}
 
 .pc-meta {
     display: flex; gap: 14px; font-size: 12.5px; color: var(--lightColor);

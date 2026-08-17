@@ -133,4 +133,8 @@
   .form-control{background:var(--inputBgColor,#20242c);color:var(--inputTextColor,#e8eaed);border-color:var(--inputBorderColor,#2a2f38);}
   .form-group label{color:var(--lightColor,#828a96);}
   .uc-form .form-control:disabled{background:var(--surfaceHover,#23272f);color:var(--lightColor,#828a96);}
+  /* 文章详情页标签 dark 适配（原为 view.html 内联，被 legacy 模板引擎误编译，移至此处） */
+  .article-tags{border-top-color:rgba(255,255,255,.1);}
+  .article-tag{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.12);color:var(--aColor,#e8eaed);}
+  .article-tag:hover{background:var(--aHoverColor,#ff4d4f);border-color:var(--aHoverColor,#ff4d4f);color:#fff;}
 }

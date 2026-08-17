@@ -55,7 +55,7 @@
 .side-widget.style-card .w-row{border-bottom:none;background:#fafafa;border-radius:8px;margin-bottom:8px;padding:10px;}
 .side-widget.style-card .w-row:last-child{margin-bottom:0;}
 /* grid 样式（多列网格，如品牌/好券/热榜/文章） */
-.w-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;}
+.w-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
 .w-grid .w-cell{text-align:center;font-size:12px;color:var(--aColor,#333);}
 .w-grid .w-cell img{width:100%;height:54px;object-radius:8px;object-fit:contain;background:#f5f5f5;border-radius:8px;}
 .w-grid .w-cell .w-name{margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
@@ -66,7 +66,7 @@
 /* 品牌推荐：列表 / 卡片 样式（style 生效） */
 .side-widget.style-list .w-list .w-brand-mini{width:20px;height:20px;border-radius:4px;vertical-align:middle;margin-right:6px;object-fit:contain;background:#f5f5f5;}
 .side-widget.style-card .w-brand-cards{display:flex;flex-wrap:wrap;gap:8px;}
-.side-widget.style-card .w-brand-card{width:calc(33.33% - 6px);text-align:center;border:1px solid var(--borderColor,rgba(0,0,0,.06));border-radius:8px;padding:8px 4px;background:#fafafa;}
+.side-widget.style-card .w-brand-card{width:calc(25% - 6px);text-align:center;border:1px solid var(--borderColor,rgba(0,0,0,.06));border-radius:8px;padding:8px 4px;background:#fafafa;}
 .side-widget.style-card .w-brand-card img{width:100%;height:48px;object-fit:contain;background:#fff;border-radius:6px;}
 .side-widget.style-card .w-brand-card .w-name{margin-top:4px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
@@ -150,15 +150,21 @@
             <ul class="unstyle-li side-cheaps">
                 {foreach $sideCheaps as $c}
                 <?php
+                  // 适配 normalizeGoods 标准结构（SidebarService::dataCheaps 输出）
                   $scId = !empty($c['id']) ? $c['id'] : 0;
                   $scTitle = !empty($c['title']) ? $c['title'] : (!empty($c['goods_name']) ? $c['goods_name'] : '优惠券商品');
-                  $scGoodsId = !empty($c['goodsId']) ? $c['goodsId'] : (!empty($c['goods_id']) ? $c['goods_id'] : $scId);
-                  $scFrom = !empty($c['item_from']) ? $c['item_from'] : (!empty($c['laiyuan']) ? ($c['laiyuan'] == 1 ? 'tb' : ($c['laiyuan'] == 4 ? 'jd' : ($c['laiyuan'] == 2 ? 'pdd' : ($c['laiyuan'] == 3 ? 'vip' : 'tb')))) : 'tb');
-                  $scPic = !empty($c['mainPic']) ? $c['mainPic'] : (!empty($c['main_pic']) ? $c['main_pic'] : (!empty($c['image']) ? $c['image'] : ''));
-                  $scActual = !empty($c['actualPrice']) ? $c['actualPrice'] : '';
-                  $scOriginal = !empty($c['originalPrice']) ? $c['originalPrice'] : '';
-                  $scDetail = url('index/view/detail', ['id' => $scGoodsId, 'type' => $scFrom]);
-                  $scCoupon = url('index/redirect/jump', ['platform' => $scFrom, 'id' => $scGoodsId]);
+                  $scGoodsId = !empty($c['goods_id']) ? $c['goods_id'] : (!empty($c['goodsId']) ? $c['goodsId'] : $scId);
+                  $scFrom = !empty($c['platform']) ? $c['platform'] : (!empty($c['item_from']) ? $c['item_from'] : 'tb');
+                  // 平台规范：taobao/dtk -> tb
+                  if ($scFrom == 'taobao' || $scFrom == 'dtk') $scFrom = 'tb';
+                  $scPic = !empty($c['pic']) ? $c['pic'] : (!empty($c['mainPic']) ? $c['mainPic'] : (!empty($c['main_pic']) ? $c['main_pic'] : ''));
+                  $scActual = !empty($c['actual']) ? $c['actual'] : (!empty($c['actualPrice']) ? $c['actualPrice'] : '');
+                  $scOriginal = !empty($c['original']) ? $c['original'] : (!empty($c['originalPrice']) ? $c['originalPrice'] : '');
+                  // 优先用 normalizeGoods 已生成的标准链接；无则临时拼
+                  $scDetail = !empty($c['url']) ? $c['url'] : url('index/view/detail', ['id' => $scGoodsId, 'type' => $scFrom]);
+                  $scCoupon = !empty($c['coupon']) ? $c['coupon'] : url('index/redirect/jump', ['platform' => $scFrom, 'id' => $scGoodsId]);
+                  // 商品 id 为空则跳过该条，避免渲染无效空链接
+                  if ($scGoodsId === '' || $scGoodsId === '0' || $scGoodsId === 0) { continue; }
                 ?>
                 <li class="side-cheap-item">
                     {if !empty($scPic)}<a class="sc-cover" href="{$scDetail}" target="_blank"><img src="<?php echo $scPic; ?>" alt="<?php echo htmlspecialchars($scTitle); ?>" loading="lazy"></a>{/if}
