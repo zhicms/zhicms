@@ -39,58 +39,96 @@
                     <form id="sbForm">
                         <div class="sb-list" id="sbList">
                             {foreach $widgets as $w}
-                            <div class="sb-card {if empty($w['enabled'])}disabled{/if}" data-type="{$w['type']}">
-                                <div class="sb-head">
-                                    <span class="sb-drag">≡</span>
-                                    <span class="sb-name">{$w['title']}</span>
-                                    <span class="sb-type">{$w['type']}</span>
-                                    <span class="sb-del" onclick="toggleCard(this)">[ {if empty($w['enabled'])}启用{else}停用{/if} ]</span>
-                                </div>
-                                <div class="sb-grid">
-                                    <div class="sb-field">
-                                        <label>模块标题</label>
-                                        <input type="text" class="form-control f-title" value="{$w['title']}">
+                            {if in_array($w['type'], array('user','stats','search','cats','navs'))}
+                                {* 纯结构类模块：不展示 条数 / 图文方向 / 展示样式 / 显示序号 *}
+                                <div class="sb-card {if empty($w['enabled'])}disabled{/if}" data-type="{$w['type']}">
+                                    <div class="sb-head">
+                                        <span class="sb-drag">≡</span>
+                                        <span class="sb-name">{$w['title']}</span>
+                                        <span class="sb-type">{$w['type']}</span>
+                                        <span class="sb-del" onclick="toggleCard(this)">[ {if empty($w['enabled'])}启用{else}停用{/if} ]</span>
                                     </div>
-                                    <div class="sb-field">
-                                        <label>排序（数字越小越靠前）</label>
-                                        <input type="number" class="form-control f-sort" value="{$w['sort']}">
+                                    <div class="sb-grid">
+                                        <div class="sb-field">
+                                            <label>模块标题</label>
+                                            <input type="text" class="form-control f-title" value="{$w['title']}">
+                                        </div>
+                                        <div class="sb-field">
+                                            <label>排序（数字越小越靠前）</label>
+                                            <input type="number" class="form-control f-sort" value="{$w['sort']}">
+                                        </div>
                                     </div>
-                                    <div class="sb-field">
-                                        <label>展示条数</label>
-                                        <input type="number" class="form-control f-limit" value="{$w['limit']}" min="1" max="50">
-                                    </div>
-                                    <div class="sb-field">
-                                        <label>图文方向</label>
-                                        <select class="form-control f-imgpos">
-                                            <option value="left"  {if $w['img_pos']=='left'}selected{/if}>左图</option>
-                                            <option value="right" {if $w['img_pos']=='right'}selected{/if}>右图</option>
-                                            <option value="top"   {if $w['img_pos']=='top'}selected{/if}>上图</option>
-                                            <option value="bottom"{if $w['img_pos']=='bottom'}selected{/if}>下图</option>
-                                        </select>
-                                    </div>
-                                    <div class="sb-field">
-                                        <label>展示样式</label>
-                                        <select class="form-control f-style">
-                                            <option value="list" {if $w['style']=='list'}selected{/if}>列表</option>
-                                            <option value="card" {if $w['style']=='card'}selected{/if}>卡片</option>
-                                            <option value="grid" {if $w['style']=='grid'}selected{/if}>网格</option>
-                                        </select>
-                                    </div>
-                                    <div class="sb-field">
-                                        <label>显示序号</label>
-                                        <select class="form-control f-showno">
-                                            <option value="0" {if empty($w['show_no'])}selected{/if}>不显示</option>
-                                            <option value="1" {if !empty($w['show_no'])}selected{/if}>显示</option>
-                                        </select>
+                                    <div class="sb-row">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input f-enabled" id="enabled_{$w['type']}" {if !empty($w['enabled'])}checked{/if}>
+                                            <label class="custom-control-label" for="enabled_{$w['type']}">启用该模块</label>
+                                        </div>
+                                        <span class="sb-tip" style="margin:0;">该模块无需额外样式设置</span>
                                     </div>
                                 </div>
-                                <div class="sb-row">
-                                    <div class="custom-control custom-switch">
-                                        <input type="checkbox" class="custom-control-input f-enabled" id="enabled_{$w['type']}" {if !empty($w['enabled'])}checked{/if}>
-                                        <label class="custom-control-label" for="enabled_{$w['type']}">启用该模块</label>
+                            {else}
+                                {* 列表/图文类模块：按类型展示对应字段（条数/图文方向/展示样式/显示序号） *}
+                                <div class="sb-card {if empty($w['enabled'])}disabled{/if}" data-type="{$w['type']}">
+                                    <div class="sb-head">
+                                        <span class="sb-drag">≡</span>
+                                        <span class="sb-name">{$w['title']}</span>
+                                        <span class="sb-type">{$w['type']}</span>
+                                        <span class="sb-del" onclick="toggleCard(this)">[ {if empty($w['enabled'])}启用{else}停用{/if} ]</span>
+                                    </div>
+                                    <div class="sb-grid">
+                                        <div class="sb-field">
+                                            <label>模块标题</label>
+                                            <input type="text" class="form-control f-title" value="{$w['title']}">
+                                        </div>
+                                        <div class="sb-field">
+                                            <label>排序（数字越小越靠前）</label>
+                                            <input type="number" class="form-control f-sort" value="{$w['sort']}">
+                                        </div>
+                                        {if in_array($w['type'], array('cheaps','rank','articles','brands','comments','cats','navs'))}
+                                        <div class="sb-field">
+                                            <label>展示条数</label>
+                                            <input type="number" class="form-control f-limit" value="{$w['limit']}" min="1" max="50">
+                                        </div>
+                                        {/if}
+                                        {if in_array($w['type'], array('cheaps','rank','articles','comments'))}
+                                        <div class="sb-field">
+                                            <label>图文方向</label>
+                                            <select class="form-control f-imgpos">
+                                                <option value="left"  {if $w['img_pos']=='left'}selected{/if}>左图</option>
+                                                <option value="right" {if $w['img_pos']=='right'}selected{/if}>右图</option>
+                                                <option value="top"   {if $w['img_pos']=='top'}selected{/if}>上图</option>
+                                                <option value="bottom"{if $w['img_pos']=='bottom'}selected{/if}>下图</option>
+                                            </select>
+                                        </div>
+                                        {/if}
+                                        {if in_array($w['type'], array('cheaps','rank','articles','brands','comments'))}
+                                        <div class="sb-field">
+                                            <label>展示样式</label>
+                                            <select class="form-control f-style">
+                                                <option value="list" {if $w['style']=='list'}selected{/if}>列表</option>
+                                                <option value="card" {if $w['style']=='card'}selected{/if}>卡片</option>
+                                                <option value="grid" {if $w['style']=='grid'}selected{/if}>网格</option>
+                                            </select>
+                                        </div>
+                                        {/if}
+                                        {if in_array($w['type'], array('cheaps','rank','articles'))}
+                                        <div class="sb-field">
+                                            <label>显示序号</label>
+                                            <select class="form-control f-showno">
+                                                <option value="0" {if empty($w['show_no'])}selected{/if}>不显示</option>
+                                                <option value="1" {if !empty($w['show_no'])}selected{/if}>显示</option>
+                                            </select>
+                                        </div>
+                                        {/if}
+                                    </div>
+                                    <div class="sb-row">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input f-enabled" id="enabled_{$w['type']}" {if !empty($w['enabled'])}checked{/if}>
+                                            <label class="custom-control-label" for="enabled_{$w['type']}">启用该模块</label>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            {/if}
                             {/foreach}
                         </div>
 
