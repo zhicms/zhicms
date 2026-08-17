@@ -266,9 +266,9 @@
                             'cid'         => $row['cid'] ?? 0,
                             'tbcid'       => $row['tbcid'] ?? 0,
                         );
-                        $batchJson = htmlspecialchars(json_encode($batchItem, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), ENT_QUOTES);
+                        $batchJson = json_encode($batchItem, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
                     ?>
-                    <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>" data-item="<?php echo $batchJson; ?>">
+                    <tr class="align-middle<?php echo $isCollected ? ' table-secondary' : ''; ?>" data-item='<?php echo $batchJson; ?>'>
                         <td class="text-center">
                             <input type="checkbox" class="row-checkbox" value="<?php echo $row['goodsId']; ?>" <?php echo $isCollected ? 'disabled' : ''; ?> onclick="updateBatchBtns()">
                         </td>
@@ -728,10 +728,14 @@ function batchAction(action) {
                     if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库'; }
                 }
             } catch (e) {
-                alert('操作异常');
+                alert('操作异常：服务端返回非JSON\n' + xhr.responseText.substring(0, 200));
                 if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库'; }
             }
         }
+    };
+    xhr.onerror = function () {
+        alert('网络请求失败，请重试');
+        if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fas fa-cloud-download-alt"></i> 批量入库'; }
     };
     xhr.send('items=' + encodeURIComponent(JSON.stringify(items)) + '&platform=' + encodeURIComponent(platform) + '&cid=' + encodeURIComponent(cid));
 }

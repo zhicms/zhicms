@@ -249,7 +249,7 @@ class ItemsController extends \app\base\controller\BaseController
                     $ok++;
                 }
             }
-            \think\facade\Cache::clear();
+            try { \think\facade\Cache::clear(); } catch (\Throwable $e) {}
             exit(json_encode(array("info" => "成功删除 {$ok} 条商品", "status" => "y")));
         } elseif ($action === 'top') {
             foreach ($ids as $id) {
@@ -259,7 +259,7 @@ class ItemsController extends \app\base\controller\BaseController
                 $endTime = $topEtime + 60*60*24*7;
                 $api->dataUpdate("yun_items", array("top" => 1, "top_etime" => date("Y-m-d H:i:s", $endTime)), array("id" => $id));
             }
-            \think\facade\Cache::clear();
+            try { \think\facade\Cache::clear(); } catch (\Throwable $e) {}
             exit(json_encode(array("info" => "批量置顶成功", "status" => "y")));
         }
 
@@ -299,7 +299,7 @@ class ItemsController extends \app\base\controller\BaseController
                 $ok++;
             }
         }
-        \think\facade\Cache::clear();
+        try { \think\facade\Cache::clear(); } catch (\Throwable $e) {}
         exit(json_encode(array(
             "info" => "成功删除 {$ok} 条商品",
             "status" => "y",

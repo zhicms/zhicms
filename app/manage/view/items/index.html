@@ -422,9 +422,12 @@ function batchAction(action) {
                     alert(result.info || '操作失败');
                 }
             } catch (e) {
-                alert('操作异常');
+                alert('操作异常：服务端返回非JSON\n' + xhr.responseText.substring(0, 200));
             }
         }
+    };
+    xhr.onerror = function () {
+        alert('网络请求失败，请重试');
     };
     xhr.send('action=' + encodeURIComponent(action) + '&ids=' + encodeURIComponent(ids.join(',')));
 }
