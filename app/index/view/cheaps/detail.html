@@ -19,9 +19,9 @@
 </div>
 {else}
 
-<script type="application/ld+json"><?php
+<script type="application/ld+json">{php}
 $siteUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
-$platformName = ['taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会'][$platform] ?? '商城';
+$platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
 $breadcrumb = array(
   '@context' => 'https://schema.org',
   '@type' => 'BreadcrumbList',
@@ -32,7 +32,7 @@ $breadcrumb = array(
   )
 );
 echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-?></script>
+{/php}</script>
 
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">优惠券详情</span>

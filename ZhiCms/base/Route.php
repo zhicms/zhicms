@@ -82,6 +82,11 @@ class Route {
 					if ($name === 'platform') {
 						$pat = '\w+';
 					}
+					// type 占位符（优惠券详情页 cheaps-detail-<id>-<type>.html）同样只需平台标识 tb/jd/pdd/vip，
+					// 用 \w+ 严格限定，避免 <id> 贪婪匹配时把后面的 -tb 吞入，导致 type 解析失败。
+					if ($name === 'type') {
+						$pat = '\w+';
+					}
 					return '(?<' . $name . '>' . $pat . ')';
 				}, $rule);
 				$rule = '/'.str_ireplace(array('\\\\', 'http://', '-', '/', '.'), array('', '', '\-', '\/', '\.'), $rule).'/i';

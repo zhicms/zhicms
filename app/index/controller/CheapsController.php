@@ -126,6 +126,7 @@ class CheapsController extends \app\base\controller\BaseController
         if (!empty($item)) {
             $this->ret = $item;
             $this->platform = $platform;
+            $this->platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
             $this->setDetailSeo($item, $platform);
             // 解析详情图
             $detailPics = $item['detailPics'] ?? '';
@@ -147,6 +148,7 @@ class CheapsController extends \app\base\controller\BaseController
 
         $this->ret = null;
         $this->platform = $platform;
+        $this->platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
         $this->errmsg = '优惠券商品信息获取失败，请稍后重试';
         $siteName = obj('base/Base')->SiteConfig('sitename');
         $this->pageTitle = '优惠券详情 - ' . $siteName;

@@ -265,6 +265,7 @@ class SetController extends \app\base\controller\BaseController
 					'brand-view-<id>.html' => 'index/brand/view/id=<id>',
 					'cheaps.html' => 'index/cheaps/index',
 					'cheaps-<id>.html' => 'index/cheaps/index/id=<id>',
+					'cheaps-detail-<id>-<type>.html' => 'index/cheaps/detail/id=<id>/type=<type>',
 					'rank.html' => 'index/rank/index',
 					'hot.html' => 'index/hot/index',
 					'detail-<id>.html' => 'index/view/detail/id=<id>',
