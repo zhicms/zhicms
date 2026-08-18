@@ -443,6 +443,8 @@ class SetController extends \app\base\controller\BaseController
             'theme_color'   => isset($_POST['theme_color']) ? trim($_POST['theme_color']) : '#6C63FF',
             'default_role'  => isset($_POST['default_role']) ? trim($_POST['default_role']) : 'shopping',
             'token'         => isset($_POST['token']) ? trim($_POST['token']) : '',
+            // 前端 AI 助手悬浮窗总开关（右下角悬浮按钮，默认开启）
+            'widget_enabled' => !empty($_POST['widget_enabled']) ? true : false,
         );
 
         ConfigStore::save('aichat', $cfg);

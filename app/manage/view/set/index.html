@@ -734,6 +734,16 @@ https://www.example.com/brand.html"></textarea>
                                 <small class="form-text text-muted">该下拉来自「AI 开放平台」中类型为「文本对话」的模型；切换后前端机器人立即生效</small>
                             </div>
 
+                            <h5 class="section-title mt-4"><i class="fas fa-window-restore"></i> 前端 AI 助手悬浮窗</h5>
+                            <div class="form-group">
+                                <label class="d-block font-weight-bold mb-2">右下角 AI 助手悬浮按钮</label>
+                                <div class="custom-control custom-switch">
+                                    <input type="checkbox" class="custom-control-input" id="widget_enabled" name="widget_enabled" value="1" <?php echo (!isset($ret['widget_enabled']) || $ret['widget_enabled']) ? 'checked' : ''; ?>>
+                                    <label class="custom-control-label" for="widget_enabled">在前端页面显示右下角 AI 助手悬浮窗（关闭后全站不显示）</label>
+                                </div>
+                                <small class="form-text text-muted">控制前台所有页面右下角的「AI 助手」悬浮入口；关闭后用户无法发起前端 AI 对话，但后台 AI 助手不受影响</small>
+                            </div>
+
                             <div class="form-group border-top pt-3 mt-4">
                                 <button type="button" class="btn btn-primary btn-lg px-5" onclick="submitForm('aichat')">
                                     <i class="fas fa-save"></i> 保存设置

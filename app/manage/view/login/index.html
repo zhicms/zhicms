@@ -173,14 +173,25 @@
             btn.innerHTML = '登录中...';
             btn.disabled = true;
             
-            layui.jquery.post('index.php?r=manage/login/index', {
+            // 后台访问锁：若当前登录页是带锁参数进入的，登录成功后跳转也需带上该参数，否则会被锁踢回首页
+            var gateParam = '';
+            try {
+                var u = new URL(window.location.href);
+                u.searchParams.forEach(function(v, k) {
+                    if (k !== 'r' && k !== 'username' && k !== 'password') {
+                        gateParam += (gateParam === '' ? '' : '&') + encodeURIComponent(k) + '=' + encodeURIComponent(v);
+                    }
+                });
+            } catch (e) {}
+
+            layui.jquery.post('index.php?r=manage/login/index' + (gateParam !== '' ? '&' + gateParam : ''), {
                 username: username,
                 password: password
             }, function(res) {
                 if (res.status === 'y') {
                     btn.innerHTML = '登录成功，正在跳转...';
                     setTimeout(function() {
-                        window.location.href = 'index.php?r=manage/index/index';
+                        window.location.href = 'index.php?r=manage/index/index' + (gateParam !== '' ? '&' + gateParam : '');
                     }, 1000);
                 } else {
                     btn.innerHTML = '登 录';

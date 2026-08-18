@@ -19,7 +19,7 @@
         $goodsId = !empty($item['goodsId']) ? $item['goodsId'] : (!empty($item['goods_id']) ? $item['goods_id'] : $detailId);
         $itemFrom = !empty($item['item_from']) ? $item['item_from'] : (!empty($item['laiyuan']) ? ($item['laiyuan'] == 1 ? 'tb' : ($item['laiyuan'] == 4 ? 'jd' : ($item['laiyuan'] == 2 ? 'pdd' : ($item['laiyuan'] == 3 ? 'vip' : 'tb')))) : 'tb');
         if ($itemFrom == 'taobao') $itemFrom = 'tb';
-        $detailUrl = url('index/view/detail', ['id' => $goodsId, 'type' => $itemFrom]);
+        $detailUrl = url('index/cheaps/detail', ['id' => $goodsId, 'type' => $itemFrom]);
         $couponVal = !empty($item['couponPrice']) ? $item['couponPrice'] : (!empty($item['coupon_price']) ? $item['coupon_price'] : (!empty($item['coupon']) ? $item['coupon'] : ''));
         $actualPrice = !empty($item['actualPrice']) ? $item['actualPrice'] : (!empty($item['goodsVipPrice']) ? $item['goodsVipPrice'] : (!empty($item['price']) ? $item['price'] : (!empty($item['unit_price']) ? $item['unit_price'] : (!empty($item['now_price']) ? $item['now_price'] : ''))));
         $originalPrice = !empty($item['originalPrice']) ? $item['originalPrice'] : (!empty($item['original_price']) ? $item['original_price'] : (!empty($item['originPrice']) ? $item['originPrice'] : (!empty($item['marketPrice']) ? $item['marketPrice'] : '')));

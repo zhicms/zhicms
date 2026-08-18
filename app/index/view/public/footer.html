@@ -203,7 +203,14 @@
 })();
 </script>
 
+{php}
+// 后台「系统设置 → AI对话」中的前端 AI 助手悬浮窗总开关（widget_enabled），默认开启
+$_aiWidgetCfg = \app\common\ConfigStore::load('aichat', 'widget_enabled');
+$_aiWidgetOn = ($_aiWidgetCfg === null || $_aiWidgetCfg === true || $_aiWidgetCfg === 1 || $_aiWidgetCfg === '1');
+{/php}
+{if $_aiWidgetOn}
 {include file="app/index/view/index/ai_widget"}
+{/if}
 
 <!-- 移动端底部导航栏（类似 emlog 风格，≤767px 显示） -->
 <nav class="mobile-bottom-nav">

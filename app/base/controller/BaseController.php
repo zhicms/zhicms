@@ -79,6 +79,13 @@ class BaseController extends \ZhiCms\base\Controller {
 		// CLI（计划任务等）不拦截
 		if (PHP_SAPI === 'cli') return;
 
+		// 登录入口放行：允许管理员在不带锁参数的情况下访问登录页，避免锁开启后自己也无法登录。
+		// 锁仍保护所有后台功能页（控制台/设置/内容等），登录成功后由前端自动携带锁参数跳转。
+		$r = $_GET['r'] ?? '';
+		if ($r === 'manage/login/index' || $r === 'manage/login' || $r === 'manage/login/login') {
+			return;
+		}
+
 		// 校验 GET 参数（仅 GET，避免 POST 携带导致表单提交失败）
 		$passed = isset($_GET[$key]) && (string)$_GET[$key] === $val;
 		if ($passed) {

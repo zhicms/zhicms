@@ -78,6 +78,100 @@ class CheapsController extends \app\base\controller\BaseController
     }
     
     /**
+     * 优惠券商品独立详情页 - 显示产品详情信息
+     */
+    public function detail()
+    {
+        $goodsId = trim($this->arg('id'));
+        $type = $this->arg('type');
+        $valid = array('tb', 'jd', 'pdd', 'vip', 'taobao');
+        $platform = ($type && in_array($type, $valid)) ? $type : 'tb';
+        if ($platform == 'taobao' || $platform == 'dtk') {
+            $platform = 'tb';
+        }
+
+        $item = null;
+        $itemFromDb = null;
+
+        if ($goodsId) {
+            $goodsId = addslashes($goodsId);
+            $itemFromDb = obj('api/ApiData')->thisQuery("SELECT * FROM yun_items WHERE goodsId = '{$goodsId}' AND del = 0 LIMIT 1");
+            if (!empty($itemFromDb)) {
+                $itemFromDb = $itemFromDb[0];
+                if (!$platform || $platform == 'taobao') {
+                    $dbFrom = $itemFromDb['item_from'] ?? ($itemFromDb['laiyuan'] == 1 ? 'taobao' : ($itemFromDb['laiyuan'] == 4 ? 'jd' : ($itemFromDb['laiyuan'] == 2 ? 'pdd' : ($itemFromDb['laiyuan'] == 3 ? 'vip' : 'taobao'))));
+                    if ($dbFrom == 'dtk' || $dbFrom == 'taobao') {
+                        $dbFrom = 'tb';
+                    }
+                    $platform = $dbFrom;
+                }
+            }
+        }
+
+        if ($platform && $goodsId) {
+            $tjk = new \ZhiCms\ext\Tjk();
+            $res = $tjk->getGoodsDetail($goodsId, $platform);
+            if ($res['code'] == 1 && !empty($res['item'])) {
+                $item = $res['item'];
+                if (!empty($itemFromDb)) {
+                    $item = array_merge($itemFromDb, $item);
+                }
+            }
+        }
+
+        if (empty($item) && !empty($itemFromDb)) {
+            $item = $itemFromDb;
+        }
+
+        if (!empty($item)) {
+            $this->ret = $item;
+            $this->platform = $platform;
+            $this->setDetailSeo($item, $platform);
+            // 解析详情图
+            $detailPics = $item['detailPics'] ?? '';
+            if (is_string($detailPics)) {
+                $detailPics = json_decode($detailPics, true);
+            }
+            $this->detailPicsHtml = '';
+            if (is_array($detailPics) && !empty($detailPics)) {
+                foreach ($detailPics as $img) {
+                    if (!empty($img)) {
+                        $this->detailPicsHtml .= '<img src="' . htmlspecialchars($img) . '" alt="商品详情" style="width:100%;height:auto;margin-bottom:12px;border-radius:8px;">';
+                    }
+                }
+            }
+            $this->loadCommonSidebar();
+            $this->display('app/index/view/cheaps/detail');
+            return;
+        }
+
+        $this->ret = null;
+        $this->platform = $platform;
+        $this->errmsg = '优惠券商品信息获取失败，请稍后重试';
+        $siteName = obj('base/Base')->SiteConfig('sitename');
+        $this->pageTitle = '优惠券详情 - ' . $siteName;
+        $this->loadCommonSidebar();
+        $this->display('app/index/view/cheaps/detail');
+    }
+
+    /**
+     * 设置详情页SEO
+     */
+    private function setDetailSeo($item, $platform)
+    {
+        $title = $item['title'] ?? '';
+        $platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
+        $siteName = obj('base/Base')->SiteConfig('sitename');
+        $this->pageTitle = $title . ' - ' . $platformName . '优惠券 - ' . $siteName;
+        $this->pageKeywords = ($item['dtitle'] ?? '') . ',' . obj('base/Base')->SEO('cheaps_keywords') . ',' . $platformName;
+        $this->pageDescription = mb_substr(strip_tags($item['content'] ?? $item['dtitle'] ?? $title), 0, 180, 'UTF-8') ?: ($title . '|' . $platformName . '优惠券');
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'cheaps-detail-' . ($item['goodsId'] ?? '') . '.html';
+        if (!empty($item['mainPic'])) {
+            $this->ogImage = $item['mainPic'];
+        }
+    }
+
+    /**
      * 获取所有分类用于导航
      */
     public function getAllCategories()
