@@ -167,7 +167,7 @@ class CheapsController extends \app\base\controller\BaseController
         $this->pageTitle = $title . ' - ' . $platformName . '优惠券 - ' . $siteName;
         $this->pageKeywords = ($item['dtitle'] ?? '') . ',' . obj('base/Base')->SEO('cheaps_keywords') . ',' . $platformName;
         $this->pageDescription = mb_substr(strip_tags($item['content'] ?? $item['dtitle'] ?? $title), 0, 180, 'UTF-8') ?: ($title . '|' . $platformName . '优惠券');
-        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'cheaps-detail-' . ($item['goodsId'] ?? '') . '.html';
+        $this->canonicalUrl = obj('base/Base')->SiteConfig('hosturl') . 'cheaps-detail.html?type=' . urlencode($platform) . '&id=' . urlencode($item['goodsId'] ?? '');
         if (!empty($item['mainPic'])) {
             $this->ogImage = $item['mainPic'];
         }

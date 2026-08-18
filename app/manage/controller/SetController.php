@@ -264,8 +264,8 @@ class SetController extends \app\base\controller\BaseController
 					'brand.html' => 'index/brand/index',
 					'brand-view-<id>.html' => 'index/brand/view/id=<id>',
 					'cheaps.html' => 'index/cheaps/index',
+					'cheaps-detail.html' => 'index/cheaps/detail',
 					'cheaps-<id>.html' => 'index/cheaps/index/id=<id>',
-					'cheaps-detail-<id>-<type>.html' => 'index/cheaps/detail/id=<id>/type=<type>',
 					'rank.html' => 'index/rank/index',
 					'hot.html' => 'index/hot/index',
 					'detail-<id>.html' => 'index/view/detail/id=<id>',
@@ -274,6 +274,7 @@ class SetController extends \app\base\controller\BaseController
 					// ===== 搜索 / 单页 / 用户 =====
 					'so.html' => 'index/search/index',
 					'so-<key>.html' => 'index/search/index/content=<key>',
+					'page-<alias>.html' => 'index/page/index/alias=<alias>',
 					'page-<id>.html' => 'index/page/index/id=<id>',
 					'app.html' => 'index/page/app',
 					'side.html' => 'index/page/side',
