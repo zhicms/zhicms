@@ -127,6 +127,8 @@ class CheapsController extends \app\base\controller\BaseController
             $this->ret = $item;
             $this->platform = $platform;
             $this->platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
+            $this->savedAmount = number_format(floatval($item['originalPrice'] ?? 0) - floatval($item['actualPrice'] ?? 0), 2);
+            $this->breadcrumbJson = $this->buildBreadcrumbJson($platform);
             $this->setDetailSeo($item, $platform);
             // 解析详情图
             $detailPics = $item['detailPics'] ?? '';
@@ -149,6 +151,8 @@ class CheapsController extends \app\base\controller\BaseController
         $this->ret = null;
         $this->platform = $platform;
         $this->platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
+        $this->savedAmount = '0.00';
+        $this->breadcrumbJson = '';
         $this->errmsg = '优惠券商品信息获取失败，请稍后重试';
         $siteName = obj('base/Base')->SiteConfig('sitename');
         $this->pageTitle = '优惠券详情 - ' . $siteName;
@@ -171,6 +175,25 @@ class CheapsController extends \app\base\controller\BaseController
         if (!empty($item['mainPic'])) {
             $this->ogImage = $item['mainPic'];
         }
+    }
+
+    /**
+     * 生成面包屑 JSON-LD（替代模板内 {php} 块，兼容 think 引擎）
+     */
+    private function buildBreadcrumbJson($platform)
+    {
+        $siteUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
+        $platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
+        $breadcrumb = array(
+            '@context' => 'https://schema.org',
+            '@type' => 'BreadcrumbList',
+            'itemListElement' => array(
+                array('@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => $siteUrl . '/'),
+                array('@type' => 'ListItem', 'position' => 2, 'name' => '优惠券中心', 'item' => $siteUrl . '/cheaps.html'),
+                array('@type' => 'ListItem', 'position' => 3, 'name' => $platformName . '优惠券', 'item' => $siteUrl . '/cheaps.html')
+            )
+        );
+        return json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     }
 
     /**

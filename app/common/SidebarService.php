@@ -321,7 +321,7 @@ class SidebarService {
                 'pic'      => $pic,
                 'actual'   => $actual,
                 'original' => $original,
-                'url'      => url('index/view/detail', array('id' => (!empty($c['goodsId']) ? $c['goodsId'] : (!empty($c['goods_id']) ? $c['goods_id'] : $id)), 'type' => $platform)),
+                'url'      => url('index/cheaps/detail', array('id' => (!empty($c['goodsId']) ? $c['goodsId'] : (!empty($c['goods_id']) ? $c['goods_id'] : $id)), 'type' => $platform)),
                 'coupon'   => url('index/redirect/jump', array('platform' => $platform, 'id' => (!empty($c['goodsId']) ? $c['goodsId'] : (!empty($c['goods_id']) ? $c['goods_id'] : $id)))),
             );
         }

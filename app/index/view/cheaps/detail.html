@@ -19,20 +19,7 @@
 </div>
 {else}
 
-<script type="application/ld+json">{php}
-$siteUrl = rtrim(obj('base/Base')->SiteConfig('hosturl'), '/');
-$platformName = array('taobao' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会')[$platform] ?? '商城';
-$breadcrumb = array(
-  '@context' => 'https://schema.org',
-  '@type' => 'BreadcrumbList',
-  'itemListElement' => array(
-    array('@type' => 'ListItem', 'position' => 1, 'name' => '首页', 'item' => $siteUrl . '/'),
-    array('@type' => 'ListItem', 'position' => 2, 'name' => '优惠券中心', 'item' => $siteUrl . '/cheaps.html'),
-    array('@type' => 'ListItem', 'position' => 3, 'name' => $platformName . '优惠券', 'item' => $siteUrl . '/cheaps.html')
-  )
-);
-echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-{/php}</script>
+<script type="application/ld+json">{if !empty($breadcrumbJson)}{$breadcrumbJson}{/if}</script>
 
 <div class="blog-hotbar">
   <span class="blog-hotbar-label">优惠券详情</span>
@@ -77,7 +64,7 @@ echo json_encode($breadcrumb, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
               <span style="font-size:16px;color:#999;text-decoration:line-through;">¥{$ret['originalPrice']}</span>
             </div>
             <div style="background:#ff4757;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:6px;">
-              立省 ¥{php}echo number_format(floatval($ret['originalPrice'])-floatval($ret['actualPrice']),2);{/php}
+              立省 ¥{$savedAmount}
             </div>
             {/if}
             {/if}

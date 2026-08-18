@@ -161,7 +161,7 @@
                   $scActual = !empty($c['actual']) ? $c['actual'] : (!empty($c['actualPrice']) ? $c['actualPrice'] : '');
                   $scOriginal = !empty($c['original']) ? $c['original'] : (!empty($c['originalPrice']) ? $c['originalPrice'] : '');
                   // 优先用 normalizeGoods 已生成的标准链接；无则临时拼
-                  $scDetail = !empty($c['url']) ? $c['url'] : url('index/view/detail', ['id' => $scGoodsId, 'type' => $scFrom]);
+                  $scDetail = !empty($c['url']) ? $c['url'] : url('index/cheaps/detail', ['id' => $scGoodsId, 'type' => $scFrom]);
                   $scCoupon = !empty($c['coupon']) ? $c['coupon'] : url('index/redirect/jump', ['platform' => $scFrom, 'id' => $scGoodsId]);
                   // 商品 id 为空则跳过该条，避免渲染无效空链接
                   if ($scGoodsId === '' || $scGoodsId === '0' || $scGoodsId === 0) { continue; }
