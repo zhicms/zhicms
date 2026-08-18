@@ -181,7 +181,9 @@ class Tjk {
     
     public function getGoodsDetail($goodsId, $platform = 'dtk') {
         $platform = strtolower($platform);
-        
+        $goodsId  = trim((string)$goodsId);
+
+        // jd/hdk/pdd/vip 走好单库
         if ($platform == 'jd' || $platform == 'hdk' || $platform == 'pdd' || $platform == 'vip') {
             if (!$this->hdk) {
                 return [
@@ -192,15 +194,31 @@ class Tjk {
             }
             return $this->hdk->GetGoodsDetails($goodsId);
         }
-        
-        if (!$this->dtk) {
-            return [
-                'code' => 0,
-                'message' => '大淘客API未配置',
-                'item' => null,
-            ];
+
+        // tb/taobao 平台：大淘客优先（goodsId 支持非纯数字，如淘宝/天猫编码），失败时回退好单库兜底
+        if ($this->dtk) {
+            $res = $this->dtk->GetGoodsDetails($goodsId);
+            if (($res['code'] ?? 0) == 1) {
+                return $res;
+            }
+            if ($this->hdk) {
+                $hdkRes = $this->hdk->GetGoodsDetails($goodsId);
+                if (($hdkRes['code'] ?? 0) == 1) {
+                    return $hdkRes;
+                }
+            }
+            return $res;
         }
-        return $this->dtk->GetGoodsDetails($goodsId);
+
+        if ($this->hdk) {
+            return $this->hdk->GetGoodsDetails($goodsId);
+        }
+
+        return [
+            'code' => 0,
+            'message' => 'API未配置',
+            'item' => null,
+        ];
     }
     
     public function getPrivilegeLink($goodsId = '', $itemUrl = '', $platform = 'dtk', $goodsSign = '', $pid = '') {

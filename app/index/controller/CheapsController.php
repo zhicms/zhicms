@@ -111,8 +111,10 @@ class CheapsController extends \app\base\controller\BaseController
         if ($platform && $goodsId) {
             $tjk = new \ZhiCms\ext\Tjk();
             $res = $tjk->getGoodsDetail($goodsId, $platform);
-            if ($res['code'] == 1 && !empty($res['item'])) {
-                $item = $res['item'];
+            // getGoodsDetail 返回键为 'data'（Dtk/Hdk::GetGoodsDetails 输出），兼容旧 'item' 键
+            $resData = !empty($res['data']) ? $res['data'] : (!empty($res['item']) ? $res['item'] : null);
+            if ($res['code'] == 1 && !empty($resData)) {
+                $item = $resData;
                 if (!empty($itemFromDb)) {
                     $item = array_merge($itemFromDb, $item);
                 }

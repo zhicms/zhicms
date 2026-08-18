@@ -68,7 +68,7 @@ class GoodsController extends ApiBaseController {
         $this->json(array(
             'code'    => 1,
             'message' => 'success',
-            'product' => $this->mapProduct($res['item'] ?? array()),
+            'product' => $this->mapProduct(!empty($res['data']) ? $res['data'] : ($res['item'] ?? array())),
         ));
     }
 

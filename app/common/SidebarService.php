@@ -309,6 +309,9 @@ class SidebarService {
             $title   = !empty($c['title']) ? $c['title'] : (!empty($c['goods_name']) ? $c['goods_name'] : '优惠商品');
             $from    = !empty($c['item_from']) ? $c['item_from'] : (!empty($c['laiyuan']) ? $c['laiyuan'] : 'tb');
             $platform = is_numeric($from) ? zc_laiyuan_to_platform($from) : $from;
+            // 归一化平台标识为短码（tb/jd/pdd/vip），避免 taobao/tmall 等别名导致详情页链接不一致
+            $platformMap = array('taobao' => 'tb', 'tmall' => 'tb', 'tb' => 'tb', 'jd' => 'jd', 'pdd' => 'pdd', 'vip' => 'vip');
+            $platform = isset($platformMap[$platform]) ? $platformMap[$platform] : 'tb';
             $pic     = !empty($c['mainPic']) ? $c['mainPic'] : (!empty($c['main_pic']) ? $c['main_pic'] : (!empty($c['image']) ? $c['image'] : ''));
             $actual  = !empty($c['actualPrice']) ? $c['actualPrice'] : '';
             $original= !empty($c['originalPrice']) ? $c['originalPrice'] : '';
