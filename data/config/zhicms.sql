@@ -667,6 +667,8 @@ CREATE TABLE `__PREFIX__user` (
   `vest` tinyint(4) DEFAULT '1',
   `lock` tinyint(4) DEFAULT '0',
   `date` varchar(50) DEFAULT NULL,
+  `wx_openid` varchar(64) NOT NULL DEFAULT '' COMMENT '微信开放平台 openid（小程序/微信登录）',
+  `wx_unionid` varchar(64) NOT NULL DEFAULT '' COMMENT '微信开放平台 unionid（跨应用唯一标识）',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_mobile` (`mobile`),
   UNIQUE KEY `uk_username` (`username`)

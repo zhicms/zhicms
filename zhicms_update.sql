@@ -88,6 +88,10 @@ ALTER TABLE `__PREFIX__user` ADD COLUMN `status` tinyint(4) NOT NULL DEFAULT '1'
 -- 账户余额（商城余额支付 / 积分依赖；主库 yun_user 无此列，升级时补）
 ALTER TABLE `__PREFIX__user` ADD COLUMN `balance` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '账户余额' AFTER `status`;
 
+-- 微信登录 / 小程序 openid、unionid（miniapp 插件使用；旧库升级时补齐）
+ALTER TABLE `__PREFIX__user` ADD COLUMN `wx_openid` varchar(64) NOT NULL DEFAULT '' COMMENT '微信开放平台 openid（小程序/微信登录）' AFTER `date`;
+ALTER TABLE `__PREFIX__user` ADD COLUMN `wx_unionid` varchar(64) NOT NULL DEFAULT '' COMMENT '微信开放平台 unionid（跨应用唯一标识）' AFTER `wx_openid`;
+
 -- 手机号 / 用户名唯一索引
 -- 注意：若目标库已存在重复数据会报错，需先清理重复记录再执行
 ALTER TABLE `__PREFIX__user` ADD UNIQUE KEY `uk_mobile` (`mobile`);
@@ -212,6 +216,20 @@ WHERE `item_from` IN ('dtk', 'taobao', 'tmall', 'tm');
 -- 旧库无 px 列会导致列表/前台按 id 默认排序，无法调整顺序
 -- ------------------------------------------------------------
 ALTER TABLE `__PREFIX__huan` ADD COLUMN `px` int NOT NULL DEFAULT '0' COMMENT '排序，越小越靠前';
+
+
+-- ------------------------------------------------------------
+-- 5.0.2 补丁：补齐所有被 ORDER BY px 排序的表的 px 列
+-- 旧版初始化/升级漏加 px 会导致前台访问报
+--   SQLSTATE[42S22]: Column not found: 1054 Unknown column 'px' in 'order clause'
+-- 涉及：link（友情链接）、nav（发现分类）、bankuai（论坛板块）、`group`（小组）
+-- 统一使用 __PREFIX__ 占位符，由安装/升级程序按站点真实 DB_PREFIX 替换，不写死。
+-- 列已存在时 ALTER 报 Duplicate column，升级器已将其识别为可忽略错误（幂等），重复执行安全。
+-- ------------------------------------------------------------
+ALTER TABLE `__PREFIX__link`    ADD COLUMN `px` int NOT NULL DEFAULT 0 COMMENT '排序，越小越靠前';
+ALTER TABLE `__PREFIX__nav`     ADD COLUMN `px` int NOT NULL DEFAULT 0 COMMENT '排序，越小越靠前';
+ALTER TABLE `__PREFIX__bankuai` ADD COLUMN `px` int NOT NULL DEFAULT 0 COMMENT '排序，越小越靠前';
+ALTER TABLE `__PREFIX__group`   ADD COLUMN `px` int NOT NULL DEFAULT 0 COMMENT '排序，越小越靠前';
 
 
 -- ------------------------------------------------------------

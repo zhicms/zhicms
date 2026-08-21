@@ -96,8 +96,42 @@ class ApiDataModel extends \app\base\model\BaseModel {
 	   }
 	}
 
+   /**
+    * 把 WHERE / ORDER 条件中的硬编码表名（yun_xxx）按当前站点前缀归一。
+    * 条件可能是字符串、一维数组（['id'=>5]）或二维数组（['id'=>['=',5]]），
+    * 仅对字符串片段做 realTable 替换（表名模式，不会误伤普通值）。
+    */
+   private function normWhere($cond){
+        if (is_string($cond)) {
+            return $this->realTable($cond);
+        }
+        if (is_array($cond)) {
+            $out = array();
+            foreach ($cond as $k => $v) {
+                // 键名若是表引用（如 `yun_comment`.`uid`）也归一
+                $nk = is_string($k) ? $this->realTable($k) : $k;
+                if (is_string($v)) {
+                    $out[$nk] = $this->realTable($v);
+                } elseif (is_array($v)) {
+                    // 二维条件，对数组内每个字符串元素归一
+                    $sub = array();
+                    foreach ($v as $sk => $sv) {
+                        $sub[$sk] = is_string($sv) ? $this->realTable($sv) : $sv;
+                    }
+                    $out[$nk] = $sub;
+                } else {
+                    $out[$nk] = $v;
+                }
+            }
+            return $out;
+        }
+        return $cond;
+   }
+
    public function pageIndex($row, $table, $where, $order, $root){
         $table = $this->realTable($table);
+        $where = $this->normWhere($where);
+        $order = is_string($order) ? $this->realTable($order) : $order;
         $page = new \ZhiCms\ext\PageIndex;
         $url = $root . "?page={page}";
         $listRows = $row;
@@ -112,6 +146,8 @@ class ApiDataModel extends \app\base\model\BaseModel {
 
    public function page($row, $table, $where, $order, $root){
         $table = $this->realTable($table);
+        $where = $this->normWhere($where);
+        $order = is_string($order) ? $this->realTable($order) : $order;
         $page = new \ZhiCms\ext\Page;
         $sep = (strpos($root, '?') !== false) ? '&' : '?';
         $url = $root . $sep . "page={page}";

@@ -224,8 +224,9 @@ class SidebarService {
                 }
             }
             // 回落：选品库销量榜（仅在 API 未配置/失败时）
+            // 注意：选品库表(yun_items)销量字段为 monthSales，非 sales
             $rows = obj("api/ApiData")->thisQuery(
-                "SELECT * FROM `yun_items` WHERE `del` = 0 ORDER BY `sales` DESC, `id` DESC LIMIT " . (int) $limit
+                "SELECT * FROM `yun_items` WHERE `del` = 0 ORDER BY `monthSales` DESC, `id` DESC LIMIT " . (int) $limit
             );
             return self::normalizeGoods($rows ?: []);
         }, 300);
