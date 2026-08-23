@@ -64,11 +64,33 @@ class UserController extends ApiBaseController {
      */
     private function maskUser($u) {
         return array(
-            'id'       => $u['id'],
-            'username' => $u['username'] ?? '',
-            'mobile'   => $u['mobile'] ?? '',
-            'date'     => $u['date'] ?? '',
+            'id'         => $u['id'],
+            'username'   => $u['username'] ?? '',
+            'mobile'     => $u['mobile'] ?? '',
+            'date'       => $u['date'] ?? '',
+            'invite_code'=> $u['invite_code'] ?? '',
         );
+    }
+
+    /**
+     * 生成专属邀请码：6 位「大小写字母 + 数字」随机串
+     * 去除易混淆字符 0/O/1/l/I，循环重试保证唯一（uk_invite_code 兜底）
+     */
+    private function genInviteCode() {
+        $chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+        $max   = strlen($chars) - 1;
+        for ($i = 0; $i < 20; $i++) {
+            $code = '';
+            for ($j = 0; $j < 6; $j++) {
+                $code .= $chars[mt_rand(0, $max)];
+            }
+            $w = array(array("`invite_code` = ?", $code));
+            if (!obj('api/ApiData')->dataSelect('yun_user', $w)) {
+                return $code;
+            }
+        }
+        // 极端碰撞兜底：时间戳后缀
+        return substr($code . time(), -6);
     }
 
     /**
@@ -143,8 +165,20 @@ class UserController extends ApiBaseController {
             'lock'     => 0,
             'date'     => date('Y-m-d H:i:s'),
         );
+        // 生成专属邀请码（6位大小写字母+数字，去除易混淆字符，保证唯一）
+        $data['invite_code'] = $this->genInviteCode();
+
+        // 解析邀请人（前端传 inviter：可能是邀请码或 uid；忽略无效/自邀/闭环）
+        $inviterRaw = trim($this->raw('inviter', ''));
+        $data['invited_by'] = $this->resolveInviter($inviterRaw);
+
         $uid   = obj('api/ApiData')->insertData('yun_user', $data);
         $token = $this->makeToken($uid, $mobile);
+
+        // 上报邀请成功（失败静默，用于后续佣金/统计）
+        if ($data['invited_by'] > 0) {
+            $this->reportInviteBound($data['invited_by'], $uid);
+        }
 
         $this->json(array(
             'code'    => 1,
@@ -152,6 +186,66 @@ class UserController extends ApiBaseController {
             'token'   => $token,
             'user'    => $this->maskUser(array_merge(array('id' => $uid), $data)),
         ));
+    }
+
+    /**
+     * 按邀请标识（邀请码或 uid）反查邀请人 uid
+     * 规则：无效/不存在/与自身相同/形成闭环 → 返回 0
+     * @param string $raw  邀请码或 uid 字符串
+     * @return int
+     */
+    private function resolveInviter($raw) {
+        $raw = trim((string) $raw);
+        if ($raw === '' || $raw === '0') return 0;
+        // 纯数字按 uid 查；否则按 invite_code 查
+        if (ctype_digit($raw)) {
+            $w = array(array("`id` = ?", (int) $raw));
+        } else {
+            $w = array(array("`invite_code` = ?", $raw));
+        }
+        $inv = obj('api/ApiData')->dataSelect('yun_user', $w);
+        if (empty($inv)) return 0;
+        return (int) $inv['id'];
+    }
+
+    /** 上报邀请绑定成功（预留：佣金/统计，失败静默） */
+    private function reportInviteBound($inviterUid, $newUid) {
+        // TODO: 写入邀请记录表 / 触发新手奖励，按需扩展
+    }
+
+    /**
+     * 已登录用户回绑邀请人（幂等：仅首次有效）
+     * POST index.php?r=api/user/bindInviter  icode=邀请码或uid
+     * Header: Authorization: Bearer <token>
+     */
+    public function bindInviter() {
+        $this->options();
+        $token   = $this->requestToken();
+        $payload = $this->parseToken($token);
+        if (!$payload) {
+            $this->json(array('code' => 401, 'message' => '未登录或登录已过期'), 401);
+        }
+        $uid = (int) $payload['uid'];
+
+        // 已绑定则忽略（幂等）
+        $me = obj('api/ApiData')->dataSelect('yun_user', array("`id` = ?", $uid));
+        if (empty($me)) {
+            $this->json(array('code' => 401, 'message' => '用户不存在'), 401);
+        }
+        if (!empty($me['invited_by'])) {
+            $this->json(array('code' => 1, 'message' => '已绑定邀请关系', 'invited_by' => (int) $me['invited_by']));
+        }
+
+        $inviterUid = $this->resolveInviter(trim($this->raw('icode', '')));
+        // 防自邀
+        if ($inviterUid === $uid) {
+            $this->json(array('code' => 0, 'message' => '不能邀请自己'), 400);
+        }
+        if ($inviterUid > 0) {
+            obj('api/ApiData')->dataUpdate('yun_user', array('invited_by' => $inviterUid), array("`id` = ?", $uid));
+            $this->reportInviteBound($inviterUid, $uid);
+        }
+        $this->json(array('code' => 1, 'message' => $inviterUid > 0 ? '绑定成功' : '无有效邀请人', 'invited_by' => $inviterUid));
     }
 
     /**

@@ -51,6 +51,11 @@ class Dtk {
                 return ['code' => -1, 'msg' => curl_error($ch)];
             }
             curl_close($ch);
+            // 大淘客部分接口返回 GBK 编码（如 get-top100 的 hotWords），
+            // json_decode 要求 UTF-8，需先转码否则中文会被丢弃
+            if (!mb_check_encoding($output, 'UTF-8')) {
+                $output = mb_convert_encoding($output, 'UTF-8', ['GBK', 'GB2312']);
+            }
             return json_decode($output, true);
         } catch (\Exception $e) {
             return ['code' => -1, 'msg' => $e->getMessage()];
@@ -243,7 +248,64 @@ foreach ($result['data']['list'] as $item) {
             'data' => $d,
         ];
     }
-    
+
+    /**
+     * 大淘客商品详情 V2（get_goods_detail_v2）
+     * 与 V1 入参一致（goodsId），但返回字段更全：
+     *  - desc：推广文案（有则返回，用于详情页文案展示）
+     *  - detailPics：淘宝详情页切图（数组，需逐张拼接展示）
+     * 其余字段（价格/券/销量/图集等）与 V1 一致，统一走 standardizeItem 归一化。
+     */
+    public function GetGoodsDetailsV2($goodsId) {
+        $host = 'https://openapi.dataoke.com/open-api/goods/get_goods_detail_v2';
+        $params = ['goodsId' => $goodsId];
+        $result = $this->request($host, $params);
+
+        if (!isset($result['code']) || $result['code'] != 0) {
+            return ['code' => 0, 'message' => $result['msg'] ?? '请求失败'];
+        }
+        if (empty($result['data'])) {
+            return ['code' => 0, 'message' => $result['msg'] ?? '商品数据为空'];
+        }
+
+        $detail = $result['data'];
+        // 兼容 goodsSign（V2 可能用 id 或 goodsSign）
+        $detail['goodsSign'] = $detail['goodsSign'] ?? ($detail['id'] ?? '');
+        $d = \ZhiCms\ext\Tjk::standardizeItem($detail, 'taobao');
+        return [
+            'code' => 1,
+            'message' => 'success',
+            'data' => $d,
+        ];
+    }
+
+    /**
+     * 大淘客热门搜索词（get-top100）
+     * @param int $type 1=买家热搜榜（默认），2=淘客热搜榜
+     * @return array ['code'=>1, 'data'=>[关键词字符串,...]]  （已转 UTF-8）
+     */
+    public function GetTop100($type = 1) {
+        $host = 'https://openapi.dataoke.com/api/category/get-top100';
+        $params = ['type' => intval($type)];
+        $result = $this->request($host, $params);   // request 已做 GBK->UTF-8 转码
+
+        if (!isset($result['code']) || $result['code'] != 0) {
+            return ['code' => 0, 'message' => $result['msg'] ?? '请求失败'];
+        }
+        $data = $result['data'] ?? [];
+        // 关键词在 data.hotWords（数组）；部分版本可能直接在 data 数组里
+        $words = [];
+        if (isset($data['hotWords']) && is_array($data['hotWords'])) {
+            $words = array_values($data['hotWords']);
+        } elseif (is_array($data)) {
+            $words = array_values($data);
+        }
+        // 过滤非字符串/空值
+        $words = array_filter($words, function ($w) { return is_string($w) && trim($w) !== ''; });
+        $words = array_values($words);
+        return ['code' => 1, 'message' => 'success', 'data' => $words];
+    }
+
     public function ParseContent($content) {
         $host = 'https://openapi.dataoke.com/api/tb-service/parse-content';
         $params = ['content' => $content];

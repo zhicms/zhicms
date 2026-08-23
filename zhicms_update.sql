@@ -233,6 +233,35 @@ ALTER TABLE `__PREFIX__group`   ADD COLUMN `px` int NOT NULL DEFAULT 0 COMMENT '
 
 
 -- ------------------------------------------------------------
+-- 用户专属邀请码：表结构 + 存量用户补码
+-- ------------------------------------------------------------
+-- 1) 新增字段（幂等：重复执行自动忽略）
+ALTER TABLE `__PREFIX__user` ADD COLUMN `invite_code` varchar(8) NOT NULL DEFAULT '' COMMENT '专属邀请码（6位大小写字母+数字，唯一）';
+ALTER TABLE `__PREFIX__user` ADD UNIQUE KEY `uk_invite_code` (`invite_code`);
+
+-- 2) 存量用户补充邀请码
+--    说明：邀请码为 6 位「大小写字母 + 数字」随机串（去除易混淆字符 0/O/1/l/I），
+--    由后端注册逻辑生成。存量数据无法在纯 SQL 中保证随机唯一，
+--    故采用「临时号段 + 唯一索引兜底」方式批量填充：
+--      - 先用 MySQL 函数拼出 6 位随机串（字母数字混合）
+--      - 若与已有记录冲突（唯一索引），UPDATE 会被跳过，需由后台「修复邀请码」脚本兜底重跑
+--    推荐：升级后执行一次后台修复任务（app/api 的 fixInviteCode 接口）确保全部唯一。
+--    下面给出一条可重复执行的基础填充语句（仅填充 invite_code 为空的行）：
+UPDATE `__PREFIX__user`
+SET `invite_code` = (
+    SELECT GROUP_CONCAT(c ORDER BY RAND() SEPARATOR '')
+    FROM (
+        SELECT SUBSTRING('abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789', 1 + FLOOR(RAND() * 54), 1) AS c
+        FROM (SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6) AS t
+    ) AS chars
+)
+WHERE `invite_code` = '' OR `invite_code` IS NULL;
+
+-- 3) 邀请关系字段（存量用户无邀请人，默认 0）
+ALTER TABLE `__PREFIX__user` ADD COLUMN `invited_by` int(11) NOT NULL DEFAULT '0' COMMENT '邀请人uid（0=无）';
+ALTER TABLE `__PREFIX__user` ADD KEY `idx_invited_by` (`invited_by`);
+
+-- ------------------------------------------------------------
 -- 版本号对齐（务必放在最后执行）
 -- ------------------------------------------------------------
 INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')

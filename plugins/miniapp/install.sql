@@ -94,3 +94,13 @@ ALTER TABLE `{pre}shop_order` ADD `confirm_time` datetime DEFAULT NULL COMMENT '
 -- 注意：主库 zhicms.sql 的 yun_user 无此列，这里在插件安装时补充，确保 ShopController 余额支付可用
 ALTER TABLE `{pre}user` ADD `balance` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '账户余额';
 
+-- 专属邀请码字段（幂等：已存在则忽略）
+-- 6位大小写字母+数字，注册时随机生成；用于分享邀请归因，不使用 uid
+ALTER TABLE `{pre}user` ADD `invite_code` varchar(8) NOT NULL DEFAULT '' COMMENT '专属邀请码（6位大小写字母+数字）';
+ALTER TABLE `{pre}user` ADD UNIQUE KEY `uk_invite_code` (`invite_code`);
+
+-- 邀请人关系字段（幂等：已存在则忽略）
+-- 存储邀请人的 uid（非邀请码，稳定可关联）；0 表示无邀请人
+ALTER TABLE `{pre}user` ADD `invited_by` int(11) NOT NULL DEFAULT '0' COMMENT '邀请人uid';
+ALTER TABLE `{pre}user` ADD KEY `idx_invited_by` (`invited_by`);
+

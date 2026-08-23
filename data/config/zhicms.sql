@@ -669,9 +669,13 @@ CREATE TABLE `__PREFIX__user` (
   `date` varchar(50) DEFAULT NULL,
   `wx_openid` varchar(64) NOT NULL DEFAULT '' COMMENT '微信开放平台 openid（小程序/微信登录）',
   `wx_unionid` varchar(64) NOT NULL DEFAULT '' COMMENT '微信开放平台 unionid（跨应用唯一标识）',
+  `invite_code` varchar(8) NOT NULL DEFAULT '' COMMENT '专属邀请码（6位大小写字母+数字，注册时随机生成，唯一）',
+  `invited_by` int(11) NOT NULL DEFAULT '0' COMMENT '邀请人uid（0=无邀请人；指向 yun_user.id）',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_mobile` (`mobile`),
-  UNIQUE KEY `uk_username` (`username`)
+  UNIQUE KEY `uk_username` (`username`),
+  UNIQUE KEY `uk_invite_code` (`invite_code`),
+  KEY `idx_invited_by` (`invited_by`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;

@@ -271,6 +271,19 @@ class GoodsController extends ApiBaseController {
         $jumpUrl = $d['shortUrl'] ?? ($d['shortLink'] ?? ($d['couponLink'] ?? ($d['url'] ?? '')));
         $encoded = $jumpUrl !== '' ? rawurlencode($jumpUrl) : '';
 
+        // 商品详情 / 优惠券信息（转链接口一并返回，透传给前端用于详情页展示）
+        $detail = array(
+            'title'            => $d['title'] ?? ($d['itemTitle'] ?? ''),
+            'pic'              => $d['mainPic'] ?? ($d['pic'] ?? ''),
+            'actualPrice'      => isset($d['actualPrice']) ? floatval($d['actualPrice']) : 0,
+            'originalPrice'    => isset($d['originalPrice']) ? floatval($d['originalPrice']) : 0,
+            'couponInfo'       => $d['couponInfo'] ?? '',
+            'couponPrice'      => isset($d['couponPrice']) ? floatval($d['couponPrice']) : 0,
+            'couponTotalCount' => isset($d['couponTotalCount']) ? intval($d['couponTotalCount']) : 0,
+            'couponRemainCount'=> isset($d['couponRemainCount']) ? intval($d['couponRemainCount']) : 0,
+            'monthSales'       => isset($d['monthSales']) ? intval($d['monthSales']) : 0,
+        );
+
         if ($apiPlatform === 'taobao') {
             $open = array(
                 'type'      => 'tb',
@@ -317,6 +330,9 @@ class GoodsController extends ApiBaseController {
                 );
             }
         }
+
+        // 将商品详情/优惠券信息并入 open，前端详情页可直接使用
+        $open = array_merge($open, $detail);
 
         $this->json(array(
             'code'    => 1,

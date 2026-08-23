@@ -135,6 +135,11 @@ class Plugin extends BasePlugin
         if (strpos($currentRoute, 'index/plug') === 0) {
             return true;
         }
+        // API 接口（?r=api/...）返回 JSON，绝不能整页静态缓存，
+        // 否则前端拿到的是缓存的 HTML 错误页而非 JSON，导致解析失败、详情页只剩标题。
+        if (strpos($currentRoute, 'api/') === 0) {
+            return true;
+        }
         $reqUri = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : '';
         if (preg_match('#/plug-[\w-]*\.html#i', $reqUri)) {
             return true;

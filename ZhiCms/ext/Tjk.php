@@ -195,9 +195,13 @@ class Tjk {
             return $this->hdk->GetGoodsDetails($goodsId);
         }
 
-        // tb/taobao 平台：大淘客优先（goodsId 支持非纯数字，如淘宝/天猫编码），失败时回退好单库兜底
+        // tb/taobao 平台：大淘客 V2 优先（含 desc 推广文案 / detailPics 详情切图），
+        // V2 失败时回退 V1，再回退好单库兜底。goodsId 支持非纯数字（淘宝/天猫编码）。
         if ($this->dtk) {
-            $res = $this->dtk->GetGoodsDetails($goodsId);
+            $res = $this->dtk->GetGoodsDetailsV2($goodsId);
+            if (($res['code'] ?? 0) != 1) {
+                $res = $this->dtk->GetGoodsDetails($goodsId);
+            }
             if (($res['code'] ?? 0) == 1) {
                 return $res;
             }
@@ -220,7 +224,19 @@ class Tjk {
             'item' => null,
         ];
     }
-    
+
+    /**
+     * 热门搜索词（大淘客 get-top100）
+     * @param int $type 1=买家热搜榜 2=淘客热搜榜，默认随机
+     */
+    public function getTopWords($type = 0) {
+        if ($this->dtk) {
+            if ($type <= 0) $type = rand(1, 2);   // 随机榜
+            return $this->dtk->GetTop100($type);
+        }
+        return ['code' => 0, 'message' => 'API未配置', 'data' => []];
+    }
+
     public function getPrivilegeLink($goodsId = '', $itemUrl = '', $platform = 'dtk', $goodsSign = '', $pid = '') {
         $platform = strtolower($platform);
         // 平台别名统一归一：taobao/dtk/tmall/tm 都视为淘宝(tb)，jd/pdd/vip 保持，

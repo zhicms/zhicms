@@ -391,6 +391,175 @@ class FeedController extends ApiBaseController {
     }
 
     /**
+     * 商品详情（读 yun_items 数据库，与优惠券列表同源）
+     * GET index.php?r=api/feed/detail&goodsId=xxx  或  &id=xxx（yun_items.id）
+     *
+     * 返回 mapItem 统一字段 + 图集 images（主图 + 详情图）+ 预估返利 estimateAmount。
+     * 这样「优惠券/数据库商品」与「小时榜/API商品」展示字段完全一致；
+     * 转链（api/goods/open）仅在用户点击购买时按需调用，不阻塞详情渲染。
+     */
+    public function detail() {
+        $this->options();
+        $goodsId = trim($this->raw('goodsId', ''));
+        $id      = intval($this->raw('id', 0));
+
+        $w = array("`del` = 0");
+        if ($goodsId !== '') {
+            $gid = addslashes($goodsId);
+            $w[] = "`goodsId` = '{$gid}'";
+        } elseif ($id > 0) {
+            $w[] = "`id` = {$id}";
+        } else {
+            $this->json(array('code' => 0, 'message' => '缺少商品标识'));
+            return;
+        }
+
+        // —— 主逻辑：用 yun_items 记录的 goodsId 查询淘客实时详情，数据以实时为准 ——
+        // 优惠券页 / 小时榜商品均用其 goodsId（或 goodsSign）查淘客详情接口，返回实时数据渲染。
+        // yun_items 仅作兜底：实时查询失败时用库内静态字段，避免页面空白。
+        $item  = null;
+        $images = array();
+        $detailPicsArr = array();
+
+        if ($goodsId !== '' && class_exists('\\ZhiCms\\ext\\Tjk')) {
+            try {
+                $tjk = new \ZhiCms\ext\Tjk();
+                $dtl = $tjk->getGoodsDetail($goodsId, 'dtk');   // 大淘客 get-goods-details 以 goodsId 查询
+                if (($dtl['code'] ?? 0) == 1 && !empty($dtl['data'])) {
+                    $d = $dtl['data'];
+                    // 实时数据统一映射（字段与大淘客 standardizeItem 一致）
+                    $item = array(
+                        'id'            => null,
+                        'goodsId'       => $goodsId,
+                        'goodsSign'     => $d['goodsSign'] ?? $goodsId,
+                        'title'         => $d['title'] ?? $d['dtitle'] ?? '',
+                        'pic'           => $d['mainPic'] ?? '',
+                        'price'         => floatval($d['actualPrice'] ?? 0),     // 券后价
+                        'originalPrice' => floatval($d['originalPrice'] ?? 0),
+                        'couponPrice'   => floatval($d['couponPrice'] ?? 0),
+                        'discount'      => (isset($d['originalPrice']) && $d['originalPrice'] > 0 && isset($d['actualPrice']))
+                                            ? round(floatval($d['actualPrice']) / floatval($d['originalPrice']) * 10, 1) : 0,
+                        'shopType'      => intval($d['shopType'] ?? 0),
+                        'shopLabel'     => (intval($d['shopType'] ?? 0) === 1) ? '天猫' : '淘宝',
+                        'shopName'      => $d['shopName'] ?? '',
+                        'cid'           => 0,
+                        'catName'       => '',
+                        'monthSales'    => intval($d['monthSales'] ?? 0),
+                        'worthRate'     => 0,
+                        'itemLink'      => $d['itemLink'] ?? '',
+                        'couponLink'    => $d['couponLink'] ?? '',
+                        'item_from'     => 'tb',
+                        'isChoice'      => false,
+                        // V2 新增字段：推广文案 + 淘宝详情切图
+                        'desc'          => $d['desc'] ?? $d['content'] ?? '',   // 推广文案（V2 返回 desc）
+                        'detailPics'    => array(),                              // 淘宝详情切图（下面填充）
+                    );
+                    // 图集：主图 + 详情图
+                    if (!empty($d['mainPic'])) $images[] = $d['mainPic'];
+                    if (!empty($d['images']) && is_array($d['images'])) {
+                        foreach ($d['images'] as $u) { if (!empty($u)) $images[] = $u; }
+                    }
+                    if (!empty($d['detailPics'])) {
+                        $dp = is_array($d['detailPics']) ? $d['detailPics'] : json_decode($d['detailPics'], true);
+                        if (is_array($dp)) {
+                            foreach ($dp as $u) { if (!empty($u)) { $images[] = $u; $detailPicsArr[] = $u; } }
+                        } elseif (is_string($d['detailPics']) && strpos($d['detailPics'], ',') !== false) {
+                            foreach (explode(',', $d['detailPics']) as $u) { $u = trim($u); if ($u) { $images[] = $u; $detailPicsArr[] = $u; } }
+                        } elseif (!empty($d['detailPics'])) {
+                            $images[] = $d['detailPics'];
+                            $detailPicsArr[] = $d['detailPics'];
+                        }
+                    }
+                    // 淘宝详情切图（detailPics）单独保留，供前端「商品详情」区块逐张拼接展示
+                    $item['detailPics'] = isset($detailPicsArr) ? array_values(array_unique($detailPicsArr)) : array();
+                    $item['images'] = array_values(array_unique($images));
+                    // 预估返利（元）：优先实时 estimateAmount，否则 佣金比例 × 券后价
+                    if (isset($d['estimateAmount']) && $d['estimateAmount'] !== '' && $d['estimateAmount'] > 0) {
+                        $item['estimateAmount'] = floatval($d['estimateAmount']);
+                    } else {
+                        $rate = floatval($d['commissionRate'] ?? 0);
+                        $item['estimateAmount'] = ($rate > 0 && $item['price'] > 0) ? round($item['price'] * $rate / 100, 2) : 0;
+                    }
+                    $item['commissionRate'] = floatval($d['commissionRate'] ?? 0);
+                }
+            } catch (\Throwable $e) {
+                $item = null;   // 实时失败，下面回退查库
+            }
+        }
+
+        // 实时查询无结果：回退读 yun_items（库内静态字段兜底）
+        if (empty($item)) {
+            $row = obj('api/ApiData')->dataSelect('yun_items', $w);
+            if (empty($row)) {
+                $this->json(array('code' => 0, 'message' => '商品不存在或已下架'));
+                return;
+            }
+            $item = $this->mapItem($row);
+            if (empty($item)) {
+                $this->json(array('code' => 0, 'message' => '商品数据异常'));
+                return;
+            }
+            $fbImages = array();
+            if (!empty($row['mainPic'])) $fbImages[] = $row['mainPic'];
+            if (!empty($row['detailPics'])) {
+                $dp = json_decode($row['detailPics'], true);
+                if (is_array($dp)) {
+                    foreach ($dp as $u) { if (!empty($u)) $fbImages[] = $u; }
+                } elseif (strpos($row['detailPics'], ',') !== false) {
+                    foreach (explode(',', $row['detailPics']) as $u) { $u = trim($u); if ($u && !in_array($u, $fbImages)) $fbImages[] = $u; }
+                } elseif (!in_array($row['detailPics'], $fbImages)) {
+                    $fbImages[] = $row['detailPics'];
+                }
+            }
+            $item['images'] = array_values(array_unique($fbImages));
+            $rate = floatval($row['commissionRate'] ?? 0);
+            $item['estimateAmount'] = ($rate > 0 && $item['price'] > 0) ? round($item['price'] * $rate / 100, 2) : floatval($row['estimateAmount'] ?? 0);
+            $item['commissionRate'] = $rate;
+        }
+
+        $this->json(array(
+            'code'    => 1,
+            'message' => 'success',
+            'item'    => $item,
+        ));
+    }
+
+    /**
+     * 热门搜索词（大淘客 get-top100），随机榜 + 随机抽取若干词
+     * GET/POST: type(可选,1买家2淘客,默认随机); limit(可选,默认随机6~12)
+     */
+    public function topWords() {
+        $type  = intval($this->raw('type', 0));
+        $limit = intval($this->raw('limit', 0));
+        if ($limit <= 0) $limit = rand(6, 12);   // 随机展示几个
+
+        $words = array();
+        if (class_exists('\\ZhiCms\\ext\\Tjk')) {
+            try {
+                $tjk = new \ZhiCms\ext\Tjk();
+                $res = $tjk->getTopWords($type);
+                if (($res['code'] ?? 0) == 1 && !empty($res['data'])) {
+                    $words = $res['data'];
+                }
+            } catch (\Throwable $e) {
+                // 忽略，回退默认词
+            }
+        }
+
+        // 随机抽取 limit 个（不重复）
+        if (count($words) > $limit) {
+            shuffle($words);
+            $words = array_slice($words, 0, $limit);
+        }
+
+        $this->json(array(
+            'code'  => 1,
+            'message' => 'success',
+            'data'  => array_values($words),
+        ));
+    }
+
+    /**
      * 分类列表（精选 + 各分类），供首页顶部导航使用
      * 统一复用网站前台 CheapsController 的分类来源，避免两处写死不同步
      */
