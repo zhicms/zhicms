@@ -492,14 +492,8 @@ class IndexController extends \ZhiCms\base\Controller {
     private function copyFilesSafe($srcDir) {
         $protect = array(
             'data/config/db.php',
-            'data/config/rule.php',
-            'data/config/siteconfig.php',
-            'data/config/seo.php',
-            'data/config/sms.php',
-            'data/config/apiset.php',
             'data/config/global.php',
             'data/config/install.lock',
-            'data/config/version.php',
         );
         $root = dirname(__DIR__, 3);
         $this->copyDir($srcDir, $root, $protect);
