@@ -54,5 +54,18 @@ $rule=array (
     'm-search-<key>.html' => 'index/m/search/key=<key>',
     'buy-<platform>.html' => 'index/redirect/jump/platform=<platform>',
     'buy.html' => 'index/redirect/jump',
+    // 分享/邀请落地页：动态与伪静态双支持
+    //   动态：index.php?r=index/invite/index&inviter=CODE
+    //   伪静态：/invite.html?inviter=CODE  /  invite-<inviter>.html  /  /invite/CODE
+    //   动态：index.php?r=index/share/index&type=tb&id=123&inviter=CODE
+    //   伪静态：/share.html?type=tb&id=123&inviter=CODE  /  share-<type>-<id>.html?inviter=CODE
+    'invite.html' => 'index/invite/index',
+    'invite-<inviter>.html' => 'index/invite/index/inviter=<inviter>',
+    'invite/<inviter>' => 'index/invite/index/inviter=<inviter>',
+    'invite' => 'index/invite/index',
+    'share.html' => 'index/share/index',
+    'share-<type>-<id>.html' => 'index/share/index/type=<type>/id=<id>',
+    'share/<type>/<id>' => 'index/share/index/type=<type>/id=<id>',
+    'share' => 'index/share/index',
   ),
 );

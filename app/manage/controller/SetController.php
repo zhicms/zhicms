@@ -298,8 +298,21 @@ class SetController extends \app\base\controller\BaseController
 					// 商品购买转链（京东/拼多多/唯品会/淘宝统一入口，由 RedirectController 二次转链生成佣金链接）
 					// 使用 buy- 前缀，避免与 vip-<id>（商品详情页）等规则冲突
 					'buy-<platform>.html' => 'index/redirect/jump/platform=<platform>',
-				),
-			);
+					// ===== 分享 / 邀请落地页（动态 + 伪静态双路由）=====
+					//   动态：index.php?r=index/invite/index&inviter=CODE
+					//   伪静态：/invite.html?inviter=CODE  /  invite-<inviter>.html  /  /invite/CODE
+					//   动态：index.php?r=index/share/index&type=tb&id=123&inviter=CODE
+					//   伪静态：/share.html?type=tb&id=123&inviter=CODE  /  share-<type>-<id>.html?inviter=CODE  /  /share/type/id
+					'invite.html' => 'index/invite/index',
+					'invite-<inviter>.html' => 'index/invite/index/inviter=<inviter>',
+					'invite/<inviter>' => 'index/invite/index/inviter=<inviter>',
+					'invite' => 'index/invite/index',
+					'share.html' => 'index/share/index',
+					'share-<type>-<id>.html' => 'index/share/index/type=<type>/id=<id>',
+					'share/<type>/<id>' => 'index/share/index/type=<type>/id=<id>',
+					'share' => 'index/share/index',
+					),
+					);
 
 			$content = "<?php\r\n\$rule=" . var_export($rule, true) . ";\n";
 			$content = str_replace("'\ROOT_PATH . \\'data/log/\\''", '\ROOT_PATH . \'data/log/\'', $content);

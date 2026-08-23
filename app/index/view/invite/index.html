@@ -1,0 +1,36 @@
+{include file="app/index/view/public/header"}
+
+<div class="container mw-520" style="padding:48px 0;">
+    <div class="card" style="border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.08);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#ff6a00,#ff3d00);padding:40px 24px;text-align:center;color:#fff;">
+            {if $inviterName}
+            <div style="font-size:15px;opacity:.9;">{$inviterName} 邀请你加入</div>
+            {else}
+            <div style="font-size:15px;opacity:.9;">好友邀请你加入</div>
+            {/if}
+            <div style="font-size:30px;font-weight:700;margin-top:6px;letter-spacing:1px;">好价精选</div>
+            <div style="font-size:14px;opacity:.85;margin-top:8px;">领券省钱 · 分享赚钱</div>
+        </div>
+        <div class="card-body p-4 text-center">
+            <p class="text-muted mb-4" style="font-size:14px;">
+                注册即绑定邀请关系，下单返佣、邀请有奖，与你邀请人共享收益。
+            </p>
+            <a href="{$regUrl}" class="btn btn-primary btn-lg w-full" style="background:#ff5000;border-color:#ff5000;border-radius:24px;">
+                立即注册领福利
+            </a>
+            <div class="mt-3">
+                <a href="/" class="text-muted" style="font-size:13px;">先逛逛首页 →</a>
+            </div>
+            {if $inviter}
+            <div class="mt-3" style="font-size:12px;color:#aaa;">
+                邀请码：{$inviter}
+            </div>
+            {/if}
+        </div>
+    </div>
+    <div class="text-center mt-3" style="font-size:12px;color:#bbb;">
+        微信搜一搜「好价精选」小程序，随时随地点开即省
+    </div>
+</div>
+
+{include file="app/index/view/public/footer"}

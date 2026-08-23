@@ -193,6 +193,9 @@ class LoginController extends \app\base\controller\BaseController
             }
         }
 
+        // 邀请归因：从落地页写入的 Cookie(inviter_code) 解析邀请人 uid
+        $invitedBy = $this->resolveInvitedBy();
+
         $data = array(
             'username' => $mobile,
             'password' => md5($password . self::SALT),
@@ -206,6 +209,9 @@ class LoginController extends \app\base\controller\BaseController
             'login_ip' => $this->clientIp(),
             'date'     => date('Y-m-d H:i:s'),
         );
+        if ($invitedBy > 0) {
+            $data['invited_by'] = $invitedBy;
+        }
         $newId = obj("api/ApiData")->insertData("yun_user", $data);
         if (!$newId) {
             exit(json_encode(array('status' => 'n', 'info' => '注册失败，请稍后重试')));
@@ -214,6 +220,32 @@ class LoginController extends \app\base\controller\BaseController
         setcookie(self::COOKIE_NAME, $mobile, time() + 86400 * 30, '/');
         $this->bindAiUid($newId);
         exit(json_encode(array('status' => 'y', 'info' => '注册成功，已自动登录')));
+    }
+
+    /**
+     * 邀请归因解析：从 Cookie(inviter_code) 取邀请人，返回其 uid 或 0
+     *   纯数字 -> 按 uid 查；否则按 invite_code 查；
+     *   查不到 / 是本人 -> 返回 0（不计归因）
+     */
+    private function resolveInvitedBy()
+    {
+        $raw = isset($_COOKIE['inviter_code']) ? trim($_COOKIE['inviter_code']) : '';
+        if ($raw === '' || !preg_match('/^[A-Za-z0-9]+$/', $raw)) {
+            return 0;
+        }
+        if (ctype_digit($raw)) {
+            $inviterId = intval($raw);
+        } else {
+            $row = obj("api/ApiData")->thisQuery(
+                "SELECT `id` FROM `{pre}user` WHERE `invite_code` = ? LIMIT 1",
+                array($raw)
+            );
+            $inviterId = isset($row[0]['id']) ? intval($row[0]['id']) : 0;
+        }
+        if ($inviterId <= 0) {
+            return 0;
+        }
+        return $inviterId;
     }
 
     /**

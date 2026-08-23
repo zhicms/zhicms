@@ -106,8 +106,8 @@ class UserController extends ApiBaseController {
         if ($mobile === '' || $password === '') {
             $this->json(array('code' => 0, 'message' => '请输入手机号和密码'), 400);
         }
-        // 防 SQL 注入：使用参数化查询（? 占位符）
-        $u = obj('api/ApiData')->dataSelect('yun_user', array("`mobile` = ?", $mobile));
+        // 防 SQL 注入：使用参数化查询（关联数组写法，框架会正确绑定参数）
+        $u = obj('api/ApiData')->dataSelect('yun_user', array('mobile' => $mobile));
         if (empty($u)) {
             $this->json(array('code' => 0, 'message' => '用户不存在，请先注册'), 400);
         }
@@ -148,12 +148,10 @@ class UserController extends ApiBaseController {
             $this->json(array('code' => 0, 'message' => '密码至少 6 位'), 400);
         }
 
-        $wMobile[] = array("`mobile` = ?", $mobile);
-        if (obj('api/ApiData')->dataSelect('yun_user', $wMobile)) {
+        if (obj('api/ApiData')->dataSelect('yun_user', array('mobile' => $mobile))) {
             $this->json(array('code' => 0, 'message' => '该手机号已注册'), 400);
         }
-        $wName[] = array("`username` = ?", $username);
-        if (obj('api/ApiData')->dataSelect('yun_user', $wName)) {
+        if (obj('api/ApiData')->dataSelect('yun_user', array('username' => $username))) {
             $this->json(array('code' => 0, 'message' => '昵称已存在'), 400);
         }
 
@@ -228,7 +226,7 @@ class UserController extends ApiBaseController {
         $uid = (int) $payload['uid'];
 
         // 已绑定则忽略（幂等）
-        $me = obj('api/ApiData')->dataSelect('yun_user', array("`id` = ?", $uid));
+        $me = obj('api/ApiData')->dataSelect('yun_user', array('id' => $uid));
         if (empty($me)) {
             $this->json(array('code' => 401, 'message' => '用户不存在'), 401);
         }
