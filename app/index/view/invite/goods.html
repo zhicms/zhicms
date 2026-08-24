@@ -1,0 +1,154 @@
+{include file="app/index/view/public/header"}
+
+<div class="container" style="max-width:760px;padding:32px 0;">
+
+    {if !empty($item)}
+    <!-- 商品信息 -->
+    <div class="card shadow-theme of-hidden" style="border-radius:16px;border:1px solid rgba(0,0,0,.06);overflow:hidden;">
+        {if !empty($mainPic)}
+        <div class="pos-rel">
+            <img src="{$mainPic}" alt="{$item['title']}" class="w-full" style="height:auto">
+            {if !empty($couponPrice)}
+            <div class="pos-abs" style="top:16px;right:16px;background:linear-gradient(135deg,#ff4757,#ff6b35);color:#fff;padding:8px 20px;border-radius:25px;font-size:16px;font-weight:700;box-shadow:0 4px 16px rgba(255,71,87,0.4);">
+                ¥{$couponPrice}券
+            </div>
+            {/if}
+        </div>
+        {/if}
+
+        <div style="padding:24px;">
+            <h1 class="mb-20" style="font-size:21px;font-weight:700;color:var(--aColor,#1f2329);line-height:1.6;">
+                {$item['title']}
+            </h1>
+
+            <!-- 价格 / 券 -->
+            <div class="mb-20" style="background:linear-gradient(135deg,#fff8f0,#fff5ee);border-radius:12px;padding:20px;border-left:4px solid #ff8e53;">
+                <div class="d-flex mb-12" style="align-items:flex-end;gap:16px;flex-wrap:wrap;">
+                    {if $price !== '' && $price !== null}
+                    <div>
+                        <span style="font-size:38px;font-weight:800;color:#ff4757;">¥{$price}</span>
+                    </div>
+                    {if !empty($originalPrice) && $originalPrice > $price}
+                    <div style="margin-bottom:6px;">
+                        <span style="font-size:15px;color:#999;text-decoration:line-through;">¥{$originalPrice}</span>
+                    </div>
+                    <div style="background:#ff4757;color:#fff;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-bottom:6px;">
+                        立省 ¥{$savedAmount}
+                    </div>
+                    {/if}
+                    {/if}
+                </div>
+                <div class="d-flex" style="flex-wrap:wrap;align-items:center;gap:10px;">
+                    {if !empty($item['couponConditions'])}
+                    <span style="background:#e8f4fd;color:#4080ff;padding:5px 12px;border-radius:6px;font-size:13px;">满{$item['couponConditions']}可用</span>
+                    {/if}
+                    {if !empty($item['monthSales'])}
+                    <span style="background:#fff8f0;color:#ff8c00;padding:5px 12px;border-radius:6px;font-size:13px;">月销 {$item['monthSales']}</span>
+                    {/if}
+                    {if !empty($item['couponEndTime']) && $item['couponEndTime'] != '0'}
+                    <span style="background:#fff0f0;color:#ff4757;padding:5px 12px;border-radius:6px;font-size:13px;">有效期至 {$item['couponEndTime']}</span>
+                    {/if}
+                </div>
+            </div>
+
+            <!-- 立即领券购买 -->
+            <div class="mb-20">
+                <a href="{url($route='index/redirect/jump', $params=array('platform'=>$platform,'id'=>$item['goodsId']))}" class="btn btn-buy w-full text-center" target="_blank" rel="nofollow" style="padding:16px;background:linear-gradient(135deg,#ff6b6b,#ff8e53);color:#fff;border:none;border-radius:12px;font-size:17px;font-weight:700;box-shadow:0 4px 16px rgba(255,107,107,0.3);">🚀 立即领券购买</a>
+            </div>
+
+            <!-- 商品信息 / 有效期 -->
+            <div class="d-flex" style="flex-wrap:wrap;gap:16px;margin-bottom:20px;">
+                <div class="minw-200" style="flex:1;background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04);border:1px solid #f0f0f0;">
+                    <h4 class="mb-10" style="font-size:14px;font-weight:600;color:#999;">📋 商品信息</h4>
+                    <div class="d-flex" style="flex-wrap:wrap;gap:12px;">
+                        {if !empty($item['monthSales'])}
+                        <div><span style="color:#666;font-size:13px;">月销</span><span style="color:var(--fontColor,#333);font-weight:600;margin-left:6px;">{$item['monthSales']}</span></div>
+                        {/if}
+                        {if !empty($couponPrice)}
+                        <div><span style="color:#666;font-size:13px;">优惠券</span><span style="color:#ff4757;font-weight:600;margin-left:6px;">¥{$couponPrice}</span></div>
+                        {/if}
+                        {if !empty($item['couponConditions'])}
+                        <div><span style="color:#666;font-size:13px;">满减</span><span style="color:#4080ff;font-weight:600;margin-left:6px;">{$item['couponConditions']}</span></div>
+                        {/if}
+                        {if !empty($item['couponRemainCount'])}
+                        <div><span style="color:#666;font-size:13px;">剩余</span><span style="color:var(--fontColor,#333);font-weight:600;margin-left:6px;">{$item['couponRemainCount']}</span></div>
+                        {/if}
+                    </div>
+                </div>
+                {if !empty($item['couponStartTime']) || (!empty($item['couponEndTime']) && $item['couponEndTime'] != '0')}
+                <div class="minw-200" style="flex:1;background:#fff;border-radius:12px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.04);border:1px solid #f0f0f0;">
+                    <h4 class="mb-10" style="font-size:14px;font-weight:600;color:#999;">📅 有效期</h4>
+                    <div style="font-size:13px;color:#666;line-height:1.8;">
+                        {if !empty($item['couponStartTime']) && $item['couponStartTime'] != '0'}
+                        <div>开始: <span style="color:var(--fontColor,#333);">{$item['couponStartTime']}</span></div>
+                        {/if}
+                        {if !empty($item['couponEndTime']) && $item['couponEndTime'] != '0'}
+                        <div>结束: <span style="color:#ff4757;font-weight:600;">{$item['couponEndTime']}</span></div>
+                        {/if}
+                    </div>
+                </div>
+                {/if}
+            </div>
+
+            <!-- 产品详情切图 -->
+            {if !empty($detailPicsHtml)}
+            <div style="border-top:1px solid #eee;padding-top:24px;margin-bottom:20px;">
+                <h3 style="font-size:18px;font-weight:700;color:var(--fontColor,#333);margin-bottom:16px;">📷 产品详情</h3>
+                {$detailPicsHtml}
+            </div>
+            {/if}
+
+            <!-- 推广文案 -->
+            {if !empty($item['desc'])}
+            <div style="border-top:1px solid #eee;padding-top:20px;">
+                <h3 style="font-size:18px;font-weight:700;color:var(--fontColor,#333);margin-bottom:12px;">📢 推广文案</h3>
+                <div style="color:#666;line-height:1.8;font-size:14px;background:#f8f9fa;border-radius:8px;padding:16px;">{$item['desc']}</div>
+            </div>
+            {elseif !empty($item['dtitle'])}
+            <div style="border-top:1px solid #eee;padding-top:20px;">
+                <h3 style="font-size:18px;font-weight:700;color:var(--fontColor,#333);margin-bottom:12px;">📢 推荐理由</h3>
+                <div style="color:#666;line-height:1.8;font-size:14px;background:#f8f9fa;border-radius:8px;padding:16px;">{$item['dtitle']}</div>
+            </div>
+            {/if}
+        </div>
+    </div>
+    {else}
+    <div class="card" style="border-radius:16px;text-align:center;padding:60px 24px;">
+        <div style="font-size:60px;margin-bottom:16px;">😅</div>
+        <h3 style="font-size:22px;color:var(--aColor,#333);margin-bottom:12px;">商品已下架或不存在</h3>
+        <p style="color:#999;font-size:14px;margin-bottom:24px;">该商品可能已被下架或链接有误</p>
+        <a href="/" class="btn btn-primary" style="background:#ff5000;border-color:#ff5000;border-radius:24px;">去首页看看</a>
+    </div>
+    {/if}
+
+    <!-- 邀请注册区 -->
+    <div class="card" style="border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.08);overflow:hidden;margin-top:24px;">
+        <div style="background:linear-gradient(135deg,#ff6a00,#ff3d00);padding:32px 24px;text-align:center;color:#fff;">
+            {if $inviterName}
+            <div style="font-size:15px;opacity:.9;">{$inviterName} 邀请你加入</div>
+            {else}
+            <div style="font-size:15px;opacity:.9;">好友邀请你加入</div>
+            {/if}
+            <div style="font-size:26px;font-weight:700;margin-top:6px;letter-spacing:1px;">好价精选</div>
+            <div style="font-size:14px;opacity:.85;margin-top:8px;">领券省钱 · 分享赚钱</div>
+        </div>
+        <div class="card-body p-4 text-center">
+            <p class="text-muted mb-4" style="font-size:14px;">
+                注册即绑定邀请关系，下单返佣、邀请有奖，与你邀请人共享收益。
+            </p>
+            <a href="{$regUrl}" class="btn btn-primary btn-lg w-full" style="background:#ff5000;border-color:#ff5000;border-radius:24px;">
+                立即注册领福利
+            </a>
+            <div class="mt-3">
+                <a href="/" class="text-muted" style="font-size:13px;">先逛逛首页 →</a>
+            </div>
+            {if $inviter}
+            <div class="mt-3" style="font-size:12px;color:#aaa;">
+                邀请码：{$inviter}
+            </div>
+            {/if}
+        </div>
+    </div>
+</div>
+
+{include file="app/index/view/public/footer"}

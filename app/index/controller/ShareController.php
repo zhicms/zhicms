@@ -23,13 +23,19 @@ class ShareController extends \app\base\controller\BaseController
 
     public function index()
     {
-        $type    = isset($_GET['type'])    ? trim($_GET['type'])    : 'app';
+        $type    = isset($_GET['type'])    ? trim($_GET['type'])    : '';
         $id      = isset($_GET['id'])      ? trim($_GET['id'])      : '';
         $inviter = isset($_GET['inviter']) ? trim($_GET['inviter']) : '';
 
         if ($inviter !== '' && preg_match('/^[A-Za-z0-9]+$/', $inviter)) {
             setcookie(self::INVITER_COOKIE, $inviter, time() + self::COOKIE_EXPIRE, '/');
             $_COOKIE[self::INVITER_COOKIE] = $inviter;
+        }
+
+        // 兼容旧分享链接格式：/share?inviter=xxx&id=商品id（未带 type）
+        //   有 id 视为淘客商品分享（默认淘宝），无 id 视为纯邀请
+        if ($type === '') {
+            $type = $id !== '' ? 'tb' : 'app';
         }
 
         $target = $this->resolveTarget($type, $id, $inviter);
@@ -55,7 +61,9 @@ class ShareController extends \app\base\controller\BaseController
             case 'jd':
             case 'pdd':
             case 'vip':
-                return $base . '?r=index/cheaps/detail&id=' . rawurlencode($id) . '&type=' . rawurlencode($type);
+                // 淘客商品分享：跳到"邀请注册 + 商品"落地页，同时展示商品信息和邀请入口
+                return $base . '?r=index/invite/goods&id=' . rawurlencode($id) . '&type=' . rawurlencode($type)
+                    . ($inviter ? '&inviter=' . rawurlencode($inviter) : '');
             case 'shop':
                 // 自营商城商品网页版暂无详情页，兜底到商城列表（不 404）
                 return $base . '?r=index/shop/index';

@@ -621,6 +621,34 @@ class Tjk {
         if (empty($out['content']))  $out['content']  = $item['desc'] ?? $item['itemdesc'] ?? '';
         if (empty($out['shopId']))   $out['shopId']   = intval($item['sellerId'] ?? 0);
         $out['shopId'] = intval($out['shopId']);
+        // ---- 好单库(HDK)字段别名兜底：字段名与大淘客差异大，逐项归一化 ----
+        if (empty($out['goodsId']))     $out['goodsId']     = $item['itemid'] ?? '';
+        if (empty($out['title']))       $out['title']       = $item['goodsname'] ?? $item['itemtitle'] ?? '';
+        if (empty($out['mainPic']))     $out['mainPic']     = $item['goodsimage'] ?? $item['itempic'] ?? $item['taobao_image'] ?? '';
+        if (empty($out['content']))     $out['content']     = $item['desc'] ?? $item['itemdesc'] ?? '';
+        if (empty($out['actualPrice'])) $out['actualPrice'] = $item['itemprice'] ?? $item['itemendprice'] ?? $item['price'] ?? 0;
+        if (empty($out['originalPrice'])) $out['originalPrice'] = $item['itemprice'] ?? $item['originalprice'] ?? $item['price'] ?? 0;
+        if (empty($out['couponPrice'])) $out['couponPrice'] = $item['couponmoney'] ?? $item['couponprice'] ?? 0;
+        if (empty($out['monthSales']))  $out['monthSales']  = $item['itemsale'] ?? $item['sales'] ?? 0;
+        if (empty($out['couponConditions'])) $out['couponConditions'] = $item['couponinfo'] ?? $item['min_buy'] ?? '';
+        if (empty($out['couponStartTime']) || $out['couponStartTime'] == '0') $out['couponStartTime'] = $item['couponstarttime'] ?? '0';
+        if (empty($out['couponEndTime'])   || $out['couponEndTime']   == '0') $out['couponEndTime']   = $item['couponendtime']   ?? '0';
+        if (empty($out['shopName']))    $out['shopName']    = $item['shopname'] ?? $item['sellernick'] ?? '';
+        if (empty($out['couponLink']))  $out['couponLink']  = $item['couponurl'] ?? $item['coupon_share_url'] ?? '';
+        if (empty($out['itemLink']))    $out['itemLink']    = $item['clickurl'] ?? $item['couponurl'] ?? '';
+        if (empty($out['commissionRate'])) $out['commissionRate'] = $item['income_rate'] ?? $item['tkmoney'] ?? 0;
+        if (empty($out['estimateAmount'])) $out['estimateAmount'] = $item['income_info'] ?? 0;
+        // 店铺类型归一化（好单库 shoptype：1=天猫 2=淘宝）
+        if (empty($out['shopType']) && isset($item['shoptype'])) {
+            $st = intval($item['shoptype']);
+            $out['shopType'] = ($st == 1) ? 1 : 0;
+        }
+        // 好单库 subcid 可能是字符串数组 JSON，统一转数组再回 JSON 字符串
+        if (isset($item['son_category']) && empty($out['subcid'])) {
+            $out['subcid'] = is_array($item['son_category'])
+                ? json_encode($item['son_category'], JSON_UNESCAPED_UNICODE)
+                : $item['son_category'];
+        }
         // 店铺类型归一化：B/天猫 -> 1，C/淘宝 -> 0
         $st = $item['shopType'] ?? $out['shopType'];
         if (is_string($st)) {
