@@ -227,11 +227,11 @@ class MysqlPdoDriver implements DbInterface {
 				}
 			}else{
 				// 数字索引分支：裸 SQL 片段拼接（框架历史用法，如 "`del` = 0"）。
-				// 为防御调用方未过滤就拼入用户输入，对字符串值再做一次 addslashes 兜底，
-				// 阻断引号闭合注入；静态片段（无引号）经 addslashes 后不变，无副作用。
-				if (is_string($v)) {
-					$v = addslashes($v);
-				}
+				// 注意：$v 是「完整 SQL 条件片段」(含字段名/操作符/可能已引号包裹的值)，
+				// 不是单纯的数值/字符串"值"。对其整体 addslashes 会把片段里本已合法的
+				// 引号转义成 \'，导致生成 `field` = \'2617\' 这种畸形 SQL，触发
+				// MySQL 1064 (near '\'0\'')。片段里的值转义应由调用方负责（本系统各
+				// 调用点大多已用 is_numeric / addslashes 处理），此处不再二次转义。
 				$sqlArr[] = $v;
 			}
 		}

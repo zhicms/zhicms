@@ -155,10 +155,10 @@ class TaskController extends \app\base\controller\BaseController
         }
 
         if ($id) {
-            obj('api/ApiData')->executeQuery("UPDATE `yun_cron_task` SET `title`='" . addslashes($data['title'])
-                . "', `exec_type`='" . addslashes($data['exec_type']) . "', `command`='" . addslashes($data['command'])
-                . "', `schedule`='" . addslashes($data['schedule']) . "', `status`=" . $data['status']
-                . ", `next_run`=" . (int)$data['next_run'] . " WHERE `id`=" . $id);
+            obj('api/ApiData')->executeQuery(
+                "UPDATE `yun_cron_task` SET `title`=?, `exec_type`=?, `command`=?, `schedule`=?, `status`=?, `next_run`=? WHERE `id`=?",
+                array($data['title'], $data['exec_type'], $data['command'], $data['schedule'], (int)$data['status'], (int)$data['next_run'], (int)$id)
+            );
             \ZhiCms\ext\AdminLog::write('task', '编辑了计划任务：' . $data['title']);
 
             // 商品采集任务：保存可选分类 cid
@@ -248,7 +248,10 @@ class TaskController extends \app\base\controller\BaseController
         $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
         if (empty($row)) exit(json_encode(array('info' => '任务不存在', 'status' => 'n')));
         $new = $row[0]['status'] ? 0 : 1;
-        obj('api/ApiData')->executeQuery("UPDATE `yun_cron_task` SET `status`={$new}, `next_run`=" . \ZhiCms\ext\CronRunner::nextRun($row[0]['schedule']) . " WHERE `id`={$id}");
+        obj('api/ApiData')->executeQuery(
+            "UPDATE `yun_cron_task` SET `status`=?, `next_run`=? WHERE `id`=?",
+            array($new, (int)\ZhiCms\ext\CronRunner::nextRun($row[0]['schedule']), (int)$id)
+        );
         // B 方案：启用/停用任务后，同步操作系统计划任务（启用后确保 OS 层有触发，停用则保留但无害）
         $this->syncOsCron();
         exit(json_encode(array('info' => $new ? '已启用' : '已停用', 'status' => 'y')));
@@ -473,10 +476,11 @@ class TaskController extends \app\base\controller\BaseController
     }
 
     private function updateResult($id, $res){
-        obj('api/ApiData')->executeQuery("UPDATE `yun_cron_task` SET `last_run`=" . time()
-            . ", `last_result`='" . addslashes(mb_substr($res['output'], 0, 480)) . "'"
-            . ", `next_run`=(SELECT CASE WHEN `schedule`<>'' THEN " . \ZhiCms\ext\CronRunner::nextRun($this->taskSchedule($id)) . " ELSE 0 END)"
-            . " WHERE `id`=" . (int)$id);
+        $nextRun = \ZhiCms\ext\CronRunner::nextRun($this->taskSchedule($id));
+        obj('api/ApiData')->executeQuery(
+            "UPDATE `yun_cron_task` SET `last_run`=?, `last_result`=?, `next_run`=(SELECT CASE WHEN `schedule`<>'' THEN ? ELSE 0 END) WHERE `id`=?",
+            array(time(), mb_substr($res['output'], 0, 480), (int)$nextRun, (int)$id)
+        );
     }
 
     private function taskSchedule($id){
