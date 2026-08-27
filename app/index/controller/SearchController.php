@@ -485,7 +485,10 @@ class SearchController extends \app\base\controller\BaseController
 
         $where = array();
         $where[] = "`del` = 0";
-        $where[] = "`title` LIKE '%" . addslashes($keyword) . "%'";
+        // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+        $kwEsc = addslashes($keyword);
+        $kwEsc = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kwEsc);
+        $where[] = "`title` LIKE '%{$kwEsc}%'";
 
         if ($platform !== 'local') {
             $laiyuan = $this->platformToLaiyuan($platform);
@@ -496,6 +499,7 @@ class SearchController extends \app\base\controller\BaseController
         if ($brandKey !== '') {
             $bw = addslashes(self::brandKeyword($brandKey, $cat));
             if ($bw !== '') {
+                $bw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $bw);
                 $where[] = "(`brandName` LIKE '%{$bw}%' OR `title` LIKE '%{$bw}%')";
             }
         } else {
@@ -504,6 +508,7 @@ class SearchController extends \app\base\controller\BaseController
             $detected = self::matchBrandAlias($keyword, $cat);
             if ($detected !== '') {
                 $dw = addslashes($detected);
+                $dw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $dw);
                 $where[] = "`title` LIKE '%{$dw}%'";
             }
         }
@@ -550,7 +555,10 @@ class SearchController extends \app\base\controller\BaseController
     private function searchArticles($keyword, $pageNum, $pageSize, $nav = 0){
         $where = array();
         $where[] = "`status` = 1";
-        $where[] = "`title` LIKE '%" . addslashes($keyword) . "%'";
+        // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+        $kwEsc = addslashes($keyword);
+        $kwEsc = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kwEsc);
+        $where[] = "`title` LIKE '%{$kwEsc}%'";
 
         $nav = intval($nav);
         if ($nav > 0) {
@@ -598,7 +606,10 @@ class SearchController extends \app\base\controller\BaseController
     private function searchLocalCompare($keyword){
         $where = array();
         $where[] = "`del` = 0";
-        $where[] = "`title` LIKE '%" . addslashes($keyword) . "%'";
+        // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+        $kwEsc = addslashes($keyword);
+        $kwEsc = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kwEsc);
+        $where[] = "`title` LIKE '%{$kwEsc}%'";
 
         $items = obj('api/ApiData')->dataSelect("yun_items", $where, "`id` DESC LIMIT 0, 30");
         

@@ -226,6 +226,12 @@ class MysqlPdoDriver implements DbInterface {
 					$params[$key] = $v;
 				}
 			}else{
+				// 数字索引分支：裸 SQL 片段拼接（框架历史用法，如 "`del` = 0"）。
+				// 为防御调用方未过滤就拼入用户输入，对字符串值再做一次 addslashes 兜底，
+				// 阻断引号闭合注入；静态片段（无引号）经 addslashes 后不变，无副作用。
+				if (is_string($v)) {
+					$v = addslashes($v);
+				}
 				$sqlArr[] = $v;
 			}
 		}

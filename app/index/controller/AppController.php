@@ -19,10 +19,16 @@ class AppController extends \app\base\controller\BaseController {
 		$pageN="30";
 
 		if($keywords){
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+            $keywords = addslashes($keywords);
+            $keywords = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keywords);
 
 			$where[]="`title` LIKE  '%{$keywords}%'";
 		}else{
-
+        // 防御 SQL 注入：$model 转义引号并转义 LIKE 通配符；$type 强转为整型
+        $model = addslashes($model);
+        $model = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $model);
+        $type = intval($type);
 
 		if($mall=="index" || !$mall){
 		  $where[]="`type` LIKE  '{$model}' AND  `mall` LIKE  '{$model}'";
@@ -148,9 +154,12 @@ class AppController extends \app\base\controller\BaseController {
 		}
 
 		$pageN="30";
-	    $where[]="`title` LIKE  '%{$keywords}%'";
+		// 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+		$keywords = addslashes($keywords);
+		$keywords = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keywords);
+		$where[]="`title` LIKE  '%{$keywords}%'";
 
-	    $count=obj("api/ApiData")->dataCount("youhuiquan",$where);
+		$count=obj("api/ApiData")->dataCount("youhuiquan",$where);
 
 		$indexpage=round($count/$pageN);
 		$pageSize=($page-1)*$pageN;

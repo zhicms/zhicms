@@ -56,7 +56,9 @@ class FeedController extends ApiBaseController {
             $where[] = "`cid` = {$cid}";
         }
         if ($keyword !== '') {
-            $kw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keyword);
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+            $kw = addslashes($keyword);
+            $kw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kw);
             $where[] = "`title` LIKE '%{$kw}%'";
         }
 

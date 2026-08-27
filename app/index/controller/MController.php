@@ -110,7 +110,7 @@ class MController extends \app\base\controller\BaseController {
 		$pageN="30";
 
 		if($action=="search"){
-		 $key=addslashes(urldecode($this->arg("key")));
+		 $key=addslashes($this->arg("key"));
 		 $where[]="`title` LIKE  '%{$key}%'";
 
 
@@ -123,7 +123,7 @@ class MController extends \app\base\controller\BaseController {
 		$indexpage=round($count/$pageN);
 		$pageSize=($page-1)*$pageN;
 		if($action=="search"){
-		 $key=addslashes(urldecode($this->arg("key")));
+		 $key=addslashes($this->arg("key"));
 		 $sql[]="`title` LIKE  '%{$key}%'";
 
 		}else{
@@ -295,17 +295,18 @@ echo $html;
 		$p = intval($this->arg('p', 1));
 		if ($p < 1) $p = 1;
 		$pageN = 20;
-		$keyword = urldecode($this->arg('keyword', ''));
+		// 直接取 arg（已 htmlspecialchars+trim），去除冗余 urldecode；LIKE 场景统一转义通配符
+		$keyword = $this->arg('keyword', '');
 		$out = array('code' => 1, 'type' => $type, 'data' => array(), 'next_page' => $p + 1, 'finished' => false);
 
 		if ($type === 'cheaps') {
-			$where = $keyword ? array("`title` LIKE '%" . addslashes($keyword) . "%'") : array("`del` = 0");
+			$where = $keyword ? array("`title` LIKE '%" . addslashes(str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keyword)) . "%'") : array("`del` = 0");
 			$ret = obj('api/ApiData')->dataSelect('yun_items', $where, "`id` DESC LIMIT " . (($p - 1) * $pageN) . ", {$pageN}");
 			$out['data'] = $this->normGoods($ret);
 		} elseif ($type === 'hot') {
 			$api = obj('api/ApiData');
 			$order = $keyword ? "`id` DESC" : "`monthSales` DESC";
-			$where = $keyword ? array("`title` LIKE '%" . addslashes($keyword) . "%'") : array("1");
+			$where = $keyword ? array("`title` LIKE '%" . addslashes(str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keyword)) . "%'") : array("1");
 			try {
 				$ret = $api->dataSelect('yun_items', $where, $order . " LIMIT " . (($p - 1) * $pageN) . ", {$pageN}");
 			} catch (\Exception $e) {
@@ -313,7 +314,7 @@ echo $html;
 			}
 			// yun_items 无数据时回退到优惠券商品（按销量），保证热榜 tab 不为空
 			if (empty($ret)) {
-				$fbWhere = $keyword ? array("`title` LIKE '%" . addslashes($keyword) . "%'") : array("`del` = 0");
+				$fbWhere = $keyword ? array("`title` LIKE '%" . addslashes(str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keyword)) . "%'") : array("`del` = 0");
 				$ret = $api->dataSelect('yun_items', $fbWhere, "`monthSales` DESC LIMIT " . (($p - 1) * $pageN) . ", {$pageN}");
 			}
 			$out['data'] = $this->normGoods($ret);
@@ -331,13 +332,13 @@ echo $html;
 			// 外部大牌接口无数据时回退到优惠券精选商品（按置顶/精选），保证大牌 tab 不为空
 			if (empty($items)) {
 				$api = obj('api/ApiData');
-				$fbWhere = $keyword ? array("`title` LIKE '%" . addslashes($keyword) . "%'") : array("`del` = 0");
+				$fbWhere = $keyword ? array("`title` LIKE '%" . addslashes(str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keyword)) . "%'") : array("`del` = 0");
 				$ret = $api->dataSelect('yun_items', $fbWhere, "`top` DESC, `id` DESC LIMIT " . (($p - 1) * $pageN) . ", {$pageN}");
 				$items = $this->normGoods($ret);
 			}
 			$out['data'] = $items;
 		} else {
-			$where = $keyword ? array("`title` LIKE '%" . addslashes($keyword) . "%'") : array("1");
+			$where = $keyword ? array("`title` LIKE '%" . addslashes(str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $keyword)) . "%'") : array("1");
 			$ret = obj('api/ApiData')->dataSelect('yun_article', $where, "`id` DESC LIMIT " . (($p - 1) * $pageN) . ", {$pageN}");
 			$out['data'] = $this->normArticle($ret);
 		}

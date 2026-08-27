@@ -269,6 +269,8 @@ foreach ($result['data']['list'] as $item) {
         }
 
         $detail = $result['data'];
+        // V2 接口自身参数适配：商品ID用 goodsId，缺则回退 id（仅作用于本方法局部 $detail）
+        $detail['goodsId'] = $detail['goodsId'] ?? ($detail['id'] ?? '');
         // 兼容 goodsSign（V2 可能用 id 或 goodsSign）
         $detail['goodsSign'] = $detail['goodsSign'] ?? ($detail['id'] ?? '');
         $d = \ZhiCms\ext\Tjk::standardizeItem($detail, 'taobao');

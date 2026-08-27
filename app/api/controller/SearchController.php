@@ -96,7 +96,10 @@ class SearchController extends ApiBaseController {
         $articleList = array();
 
         if ($type === 'all' || $type === 'goods') {
-            $where = array("`del` = 0", "`title` LIKE '%" . addslashes($keyword) . "%'");
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+            $kw = addslashes($keyword);
+            $kw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kw);
+            $where = array("`del` = 0", "`title` LIKE '%{$kw}%'");
             // 本地价格区间筛选
             if (is_numeric($filters['pmin'])) {
                 $where[] = "`actualPrice` >= " . floatval($filters['pmin']);
@@ -115,7 +118,10 @@ class SearchController extends ApiBaseController {
             }
         }
         if ($type === 'all' || $type === 'article') {
-            $where = array("`status` = 1", "`title` LIKE '%" . addslashes($keyword) . "%'");
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+            $kw = addslashes($keyword);
+            $kw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kw);
+            $where = array("`status` = 1", "`title` LIKE '%{$kw}%'");
             $rows = obj('api/ApiData')->dataSelect('yun_article', $where, '`id` DESC');
             $rows = $rows ?: array();
             foreach ($rows as $a) {

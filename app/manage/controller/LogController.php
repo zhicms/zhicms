@@ -23,7 +23,9 @@ class LogController extends \app\base\controller\BaseController
         }
         $keyword = $this->arg('keyword', '');
         if ($keyword) {
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（纵深防御）
             $safeKey = addslashes($keyword);
+            $safeKey = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $safeKey);
             $where = array("`content` LIKE '%{$safeKey}%' OR `operator` LIKE '%{$safeKey}%'");
         }
         // 每页条数：支持 10 / 20 / 30 / 50，默认 20（与后台列表统一）

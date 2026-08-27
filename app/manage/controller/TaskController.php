@@ -37,7 +37,9 @@ class TaskController extends \app\base\controller\BaseController
         $this->cronStatus   = $ok ? 'ok' : 'bad';
         $this->cronLastText = $last ? date('Y-m-d H:i:s', $last) : '从未触发';
         $this->cronMsg      = $ok ? '定时触发正常（服务器 cron/计划任务已在调用）'
-                                   : '已超过 3 分钟未检测到触发，请检查服务器 crontab / 计划任务程序是否配置 index.php?r=manage/task/run&token=...';
+                                   : '已超过 3 分钟未检测到触发。系统会在「保存/启用任务」时自动把触发脚本写入操作系统计划任务；若环境无权限写入，请手动配置：'
+                                     . 'Linux 执行 `crontab -e` 加入 `* * * * * php ' . realpath(__DIR__ . '/../../../cron_dispatch.php') . ' >/dev/null 2>&1`，'
+                                     . 'Windows 在「任务计划程序」每 5 分钟运行 `php ' . realpath(__DIR__ . '/../../../cron_dispatch.php') . '`';
 
         $this->display();
     }
@@ -223,6 +225,8 @@ class TaskController extends \app\base\controller\BaseController
             obj('api/ApiData')->insertData('yun_cron_task', $data);
             \ZhiCms\ext\AdminLog::write('task', '新增了计划任务：' . $data['title']);
         }
+        // B 方案：保存任务后，把高频触发脚本写进操作系统计划任务（自动调度）
+        $this->syncOsCron();
         $this->alert('保存成功', 'index.php?r=manage/task/index');
     }
 
@@ -245,6 +249,8 @@ class TaskController extends \app\base\controller\BaseController
         if (empty($row)) exit(json_encode(array('info' => '任务不存在', 'status' => 'n')));
         $new = $row[0]['status'] ? 0 : 1;
         obj('api/ApiData')->executeQuery("UPDATE `yun_cron_task` SET `status`={$new}, `next_run`=" . \ZhiCms\ext\CronRunner::nextRun($row[0]['schedule']) . " WHERE `id`={$id}");
+        // B 方案：启用/停用任务后，同步操作系统计划任务（启用后确保 OS 层有触发，停用则保留但无害）
+        $this->syncOsCron();
         exit(json_encode(array('info' => $new ? '已启用' : '已停用', 'status' => 'y')));
     }
 
@@ -349,6 +355,59 @@ class TaskController extends \app\base\controller\BaseController
         // 释放并发锁
         if (isset($lockFp) && $lockFp) { flock($lockFp, LOCK_UN); fclose($lockFp); }
         echo json_encode(array('executed' => $executed, 'time' => date('Y-m-d H:i:s', $now)));
+    }
+
+    /**
+     * B 方案：把「高频触发脚本」写进操作系统计划任务。
+     * ------------------------------------------------------------
+     * 真正的时间判断（next_run <= now）在 task/run 内部完成，
+     * 这里只需保证操作系统会「每 5 分钟」调用一次 cron_dispatch.php，
+     * 所有任务的执行时段/间隔由 PHP 层调度，OS 层无需逐任务写行。
+     *
+     * 用唯一标记 # zc-cron-dispatch 管理，重复保存也不会叠加多行；
+     * 命令不可用时（无权限/虚拟主机）静默跳过，不影响后台正常使用
+     * （用户仍可手动点「立即执行」，或自行在 OS 配 cron 访问该脚本）。
+     *
+     * 调用时机：save() / toggle() 之后。
+     */
+    protected function syncOsCron(){
+        $script = realpath(__DIR__ . '/../../../cron_dispatch.php');
+        if (!$script || !is_file($script)) return;
+
+        if (strtolower(substr(PHP_OS, 0, 3)) === 'win') {
+            $this->syncOsCronWindows($script);
+        } else {
+            $this->syncOsCronLinux($script);
+        }
+    }
+
+    protected function syncOsCronLinux($script){
+        // 优先用 php CLI 直接跑（不依赖 Web 服务可达）
+        $phpBin = PHP_BINARY ?: 'php';
+        $line = "* * * * * " . escapeshellarg($phpBin) . " " . escapeshellarg($script) . " >/dev/null 2>&1 # zc-cron-dispatch";
+        $marker = '# zc-cron-dispatch';
+
+        $existing = @shell_exec('crontab -l 2>/dev/null');
+        if ($existing === null && !is_callable('shell_exec')) return; // 命令不可用
+        $lines = $existing === null ? array() : explode("\n", $existing);
+        // 去掉旧的本系统标记行，避免重复叠加
+        $lines = array_filter($lines, function($l) use ($marker) {
+            return strpos($l, $marker) === false;
+        });
+        $lines[] = $line;
+        $newCron = implode("\n", $lines) . "\n";
+        @shell_exec("echo " . escapeshellarg($newCron) . " | crontab - 2>/dev/null");
+    }
+
+    protected function syncOsCronWindows($script){
+        $phpBin = PHP_BINARY ?: 'php.exe';
+        $taskName = 'ZhiCmsCronDispatch';
+        // 先删除旧任务（若存在），避免重复
+        @exec('schtasks /Delete /TN "' . $taskName . '" /F >nul 2>&1');
+        // 每 5 分钟触发一次
+        $cmd = 'schtasks /Create /TN "' . $taskName . '" /TR "\"'.$phpBin.'\" \"'.$script.'\"" '
+             . '/SC MINUTE /MO 5 /F >nul 2>&1';
+        @exec($cmd);
     }
 
     /**

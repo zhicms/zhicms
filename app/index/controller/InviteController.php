@@ -119,7 +119,10 @@ class InviteController extends \app\base\controller\BaseController
             // 详情接口失败时兜底查数据库 yun_items
             if (empty($item)) {
                 try {
-                    $db = obj('api/ApiData')->thisQuery("SELECT * FROM yun_items WHERE goodsId = '{$goodsId}' AND del = 0 LIMIT 1");
+                    // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+                $safeGoodsId = addslashes($goodsId);
+                $safeGoodsId = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $safeGoodsId);
+                $db = obj('api/ApiData')->thisQuery("SELECT * FROM yun_items WHERE goodsId = '{$safeGoodsId}' AND del = 0 LIMIT 1");
                     if (!empty($db)) $item = $db[0];
                 } catch (\Exception $e) {
                     $item = null;

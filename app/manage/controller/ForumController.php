@@ -15,7 +15,9 @@ class ForumController extends \app\base\controller\BaseController
         $where = array("1");
         $keyword = $this->arg("keyword", '');
         if ($keyword) {
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（纵深防御）
             $safeKey = addslashes($keyword);
+            $safeKey = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $safeKey);
             $where = array("`title` LIKE '%{$safeKey}%' OR `content` LIKE '%{$safeKey}%'");
         }
         $baseUrl = "index.php?r=manage/forum/index";
@@ -241,7 +243,9 @@ class ForumController extends \app\base\controller\BaseController
             $where = array("`model` = {$safeModel}");
         }
         if ($keyword !== '') {
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（纵深防御）
             $safeKey = addslashes($keyword);
+            $safeKey = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $safeKey);
             if ($where === array("1")) {
                 $where = array("`content` LIKE '%{$safeKey}%'");
             } else {

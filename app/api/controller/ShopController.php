@@ -85,7 +85,12 @@ class ShopController extends ApiBaseController
 
         $where = array("`status`=1");
         if ($catId > 0) $where[] = "`cat_id`={$catId}";
-        if ($keyword !== '') $where[] = "`title` LIKE '%" . addslashes($keyword) . "%'";
+        if ($keyword !== '') {
+            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
+            $kw = addslashes($keyword);
+            $kw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kw);
+            $where[] = "`title` LIKE '%{$kw}%'";
+        }
         $order = 'sort ASC, id DESC';
         $list  = obj('api/ApiData')->dataSelect('yun_shop_goods', $where, $order);
         $list  = $list ?: array();

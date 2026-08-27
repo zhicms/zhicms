@@ -73,10 +73,11 @@ class Setting
     {
         $base = 'index.php?r=manage/plugin/setting&alias=miniapp';
         $tabs = array(
-            ''      => '微信支付设置',
-            'mobile'=> '移动端设置',
-            'ai'    => '小程序 & App',
-            'pack'  => '一键打包',
+            ''        => '微信支付设置',
+            'mobile'  => '移动端设置',
+            'ai'      => '小程序 & App',
+            'pack'    => '一键打包',
+            'upgrade' => 'App 升级',
         );
         $html = '<ul class="nav nav-tabs mb-3" style="border-bottom:2px solid #e3e6f0;">';
         foreach ($tabs as $k => $label) {
@@ -343,6 +344,95 @@ class Setting
             return ob_get_clean();
         }
 
+        if ($view === 'upgrade') {
+            // ============ App 在线升级设置（安卓，整包 + 热更新） ============
+            $upg = isset($pay['upgrade']) && is_array($pay['upgrade']) ? $pay['upgrade'] : array();
+            $upg = array_merge(array(
+                'enabled'     => 1,
+                'versionCode' => 100,
+                'versionName' => '1.0.0',
+                'apk_url'     => '',
+                'apk_force'   => 0,
+                'wgt_md5'     => '',
+                'wgt_url'     => '',
+                'changelog'   => '',
+            ), $upg);
+            echo $this->navTabs('upgrade');
+            ?>
+            <form method="post" action="" enctype="multipart/form-data">
+                <input type="hidden" name="_token" value="<?php echo $csrf; ?>">
+                <input type="hidden" name="save_section" value="upgrade">
+                <div class="card">
+                    <div class="card-header">App 在线升级（安卓 · 整包 + 热更新）</div>
+                    <div class="card-body">
+                        <div class="alert alert-info" style="font-size:13px;">
+                            前端启动时调 <code>index.php?r=api/app/check</code> 检查更新。<br>
+                            <b>大版本更新（APK 整包）</b>：原生/权限/大版本改动，需用户确认安装；<b>受「升级通道开关」控制</b>。<br>
+                            <b>热更新（WGT）</b>：页面/逻辑小版本，依包 <b>md5</b> 对比自动静默更新，<b>不受开关控制</b>。
+                        </div>
+
+                        <div class="form-group">
+                            <label>升级通道开关（控制大版本整包升级是否开启；热更新始终生效）</label>
+                            <select name="upg_enabled" class="form-control">
+                                <option value="1" <?php echo !empty($upg['enabled']) ? 'selected' : ''; ?>>开启（允许整包升级）</option>
+                                <option value="0" <?php echo empty($upg['enabled']) ? 'selected' : ''; ?>>关闭（整包升级暂停）</option>
+                            </select>
+                        </div>
+
+                        <h6 class="mt-3" style="color:#4e73df;">① 大版本更新（整包 APK，受通道开关控制）</h6>
+                        <div class="form-group">
+                            <label>大版本号（versionCode，整包版本号，需大于当前已装版本）</label>
+                            <input type="number" name="upg_versionCode" class="form-control" value="<?php echo htmlspecialchars($upg['versionCode']); ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>大版本名（versionName，展示版本名，如 1.0.1）</label>
+                            <input type="text" name="upg_versionName" class="form-control" value="<?php echo htmlspecialchars($upg['versionName']); ?>" placeholder="1.0.1">
+                        </div>
+                        <div class="form-group">
+                            <label>整包 APK（可直接上传，自动返回地址）</label>
+                            <input type="file" name="upg_apk_file" class="form-control" accept=".apk">
+                            <?php if (!empty($upg['apk_url'])): ?>
+                            <small class="text-success">当前文件：<a href="<?php echo htmlspecialchars($upg['apk_url']); ?>" target="_blank"><?php echo htmlspecialchars($upg['apk_url']); ?></a></small>
+                            <?php endif; ?>
+                            <input type="text" name="upg_apk_url" class="form-control mt-2" value="<?php echo htmlspecialchars($upg['apk_url']); ?>" placeholder="或手动填写完整 URL">
+                        </div>
+                        <div class="form-group">
+                            <label>大版本是否强制更新</label>
+                            <select name="upg_apk_force" class="form-control">
+                                <option value="1" <?php echo !empty($upg['apk_force']) ? 'selected' : ''; ?>>强制（不更新无法使用）</option>
+                                <option value="0" <?php echo empty($upg['apk_force']) ? 'selected' : ''; ?>>可选（可稍后）</option>
+                            </select>
+                        </div>
+
+                        <h6 class="mt-4" style="color:#4e73df;">② 热更新（WGT 静默更新，依 md5 自动）</h6>
+                        <div class="form-group">
+                            <label>热更包 WGT（可直接上传，自动计算 md5 并返回地址）</label>
+                            <input type="file" name="upg_wgt_file" class="form-control" accept=".wgt">
+                            <?php if (!empty($upg['wgt_url'])): ?>
+                            <small class="text-success">当前文件：<a href="<?php echo htmlspecialchars($upg['wgt_url']); ?>" target="_blank"><?php echo htmlspecialchars($upg['wgt_url']); ?></a></small>
+                            <?php endif; ?>
+                            <input type="text" name="upg_wgt_md5" class="form-control mt-2" value="<?php echo htmlspecialchars($upg['wgt_md5']); ?>" placeholder="上传 WGT 后自动填充；或手动填写 md5">
+                        </div>
+                        <div class="form-group">
+                            <label>热更 WGT 下载地址（.wgt 文件 URL）</label>
+                            <input type="text" name="upg_wgt_url" class="form-control" value="<?php echo htmlspecialchars($upg['wgt_url']); ?>" placeholder="https://v5.zhicms.cc/upgrade/app.wgt">
+                        </div>
+
+                        <h6 class="mt-4" style="color:#4e73df;">③ 更新日志</h6>
+                        <div class="form-group">
+                            <label>更新内容说明（大版本升级弹窗展示，每行一条）</label>
+                            <textarea name="upg_changelog" class="form-control" rows="4" placeholder="修复 xxx&#10;优化 xxx&#10;新增 xxx"><?php echo htmlspecialchars($upg['changelog']); ?></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group border-top pt-3 mt-4">
+                    <button type="submit" class="btn btn-primary btn-lg px-5"><i class="fas fa-save"></i> 保存升级配置</button>
+                </div>
+            </form>
+            <?php
+            return ob_get_clean();
+        }
+
         // ============ 默认：微信支付 V3 配置 ============
         echo $this->navTabs('');
         ?>
@@ -436,6 +526,44 @@ class Setting
                     ? $post['build_mode'] : 'miniprogram',
             );
             PluginManager::setConfig('miniapp', $pay);
+        } elseif ($section === 'upgrade') {
+            // App 升级配置（整包 + 热更新），存插件 config['upgrade']
+            $old = isset($pay['upgrade']) && is_array($pay['upgrade']) ? $pay['upgrade'] : array();
+
+            // 处理 APK 上传（若上传了新文件，则覆盖 apk_url）
+            $apkUrl = trim($post['upg_apk_url'] ?? '');
+            if (!empty($_FILES['upg_apk_file']) && $_FILES['upg_apk_file']['error'] === UPLOAD_ERR_OK) {
+                $up = $this->saveUpgradeFile($_FILES['upg_apk_file'], 'apk');
+                if ($up) {
+                    $apkUrl = $up;
+                }
+            }
+            // 处理 WGT 上传（若上传了新文件，则覆盖 wgt_url 并自动计算 md5）
+            $wgtUrl = trim($post['upg_wgt_url'] ?? '');
+            $wgtMd5 = strtolower(trim($post['upg_wgt_md5'] ?? ''));
+            if (!empty($_FILES['upg_wgt_file']) && $_FILES['upg_wgt_file']['error'] === UPLOAD_ERR_OK) {
+                $up = $this->saveUpgradeFile($_FILES['upg_wgt_file'], 'wgt');
+                if ($up) {
+                    $wgtUrl = $up;
+                    // 自动计算上传 WGT 的 md5，回写配置（与前端热更 md5 对比逻辑一致）
+                    $real = \BASE_PATH . 'public/upgrade/' . basename($up);
+                    if (is_file($real)) {
+                        $wgtMd5 = md5_file($real);
+                    }
+                }
+            }
+
+            $pay['upgrade'] = array(
+                'enabled'     => !empty($post['upg_enabled']) ? 1 : 0,
+                'versionCode' => intval($post['upg_versionCode'] ?? 100),
+                'versionName' => trim($post['upg_versionName'] ?? ''),
+                'apk_url'     => $apkUrl,
+                'apk_force'   => !empty($post['upg_apk_force']) ? 1 : 0,
+                'wgt_md5'     => $wgtMd5,
+                'wgt_url'     => $wgtUrl,
+                'changelog'   => trim($post['upg_changelog'] ?? ''),
+            );
+            PluginManager::setConfig('miniapp', $pay);
         } else {
             // 兜底：整页保存（兼容旧调用）
             $pay['wx_appid']       = trim($post['wx_appid'] ?? '');
@@ -510,5 +638,50 @@ class Setting
         } catch (\Throwable $e) {
             // ignore
         }
+    }
+
+    /**
+     * 保存 App 升级包文件到 public/upgrade/，返回可访问 URL（相对站点根）
+     * @param array  $file   $_FILES[xxx] 元素
+     * @param string $type   'apk' | 'wgt'（仅作校验扩展名，可扩展）
+     * @return string|false  成功返回 URL（如 /upgrade/xxx.apk），失败返回 false
+     */
+    private function saveUpgradeFile($file, $type)
+    {
+        try {
+            $name = isset($file['name']) ? basename($file['name']) : '';
+            $tmp  = isset($file['tmp_name']) ? $file['tmp_name'] : '';
+            if ($name === '' || !is_uploaded_file($tmp)) {
+                return false;
+            }
+            // 仅允许 apk / wgt 扩展名，避免被上传执行文件
+            $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+            if (!in_array($ext, array('apk', 'wgt'), true)) {
+                return false;
+            }
+            // 用类型 + 原扩展名生成稳定文件名（保留历史文件，避免覆盖正在下载的旧包）
+            $safeName = $type . '.' . $ext;
+            $dir = \BASE_PATH . 'public/upgrade/';
+            if (!is_dir($dir)) {
+                @mkdir($dir, 0755, true);
+            }
+            $dest = $dir . $safeName;
+            if (!@move_uploaded_file($tmp, $dest)) {
+                return false;
+            }
+            // 站点根 URL 拼相对地址
+            $base = rtrim($this->getSiteUrl(), '/');
+            return $base . '/upgrade/' . $safeName;
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    /** 取站点根 URL（供上传文件拼地址） */
+    private function getSiteUrl()
+    {
+        $proto = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+        $host  = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '127.0.0.1';
+        return $proto . '://' . $host . '/';
     }
 }

@@ -124,7 +124,9 @@ class AiAssistant extends Controller
         }
 
         $model = obj('api/ApiData');
+        // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（纵深防御）
         $kw = addslashes($keyword);
+        $kw = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $kw);
         $where = array("`title` LIKE '%{$kw}%'");
         $priceRange = $this->parsePriceRange($price);
         if ($priceRange) {
