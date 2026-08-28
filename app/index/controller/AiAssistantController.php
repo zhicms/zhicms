@@ -119,15 +119,17 @@ class AiAssistantController extends \app\base\controller\BaseController
             return;
         }
 
-        // 意图分析
-        $intent = $this->analyzeIntent($message);
-
         // 加载历史并追加用户消息
         $history = $this->loadHistory();
         $history[] = ['role' => 'user', 'content' => $message];
 
+        // 意图分析（含上下文：能理解"便宜点的""第二个"等指代）
+        $intent = $this->analyzeIntent($message, $history);
+
         if ($intent['is_purchase']) {
-            $reply = $this->handleProductSearch($intent['keyword'], $message);
+            // 求推荐 / 求对比 / 含筛选诉求 → 走"商品卡 + AI 导购点评"，更贴近真人导购
+            $needAdvice = $intent['need_advice'];
+            $reply = $this->handleProductSearch($intent['keyword'], $message, $history, $needAdvice);
             $respType = 'product';
         } else {
             $reply = $this->handleAiChat($message, $history);
@@ -683,10 +685,16 @@ PROMPT;
 
     /**
      * 分析用户意图：是否为购物/比价意图
-     * 
-     * @return array ['is_purchase' => bool, 'keyword' => string]
+     *
+     * 增强点（更贴近真人导购）：
+     *  - 支持多轮上下文指代（"便宜点的""第二个""红色的"），从上一轮提取真实关键词
+     *  - 区分"纯搜商品"与"求推荐/求对比/带筛选诉求"，后者 need_advice=true 走 AI 导购点评
+     *
+     * @param string $message 当前消息
+     * @param array  $history 上下文历史（role/content）
+     * @return array ['is_purchase'=>bool,'keyword'=>string,'need_advice'=>bool]
      */
-    private function analyzeIntent($message)
+    private function analyzeIntent($message, $history = array())
     {
         // ========== 精密购物意图触发词（淘宝/京东/拼多多常用搜索模式） ==========
         $purchaseWords = [
@@ -876,6 +884,31 @@ PROMPT;
         // 提取商品关键词
         $keyword = $this->extractKeyword($message);
 
+        // --- 多轮上下文指代解析 ---
+        // 若当前消息无明显商品词，但含"更便宜/第二个/红色的/那个"等指代/筛选词，
+        // 且上一轮是购物意图，则沿用上一轮的真实关键词，让助手"听懂"延续对话。
+        $refineWords = ['便宜', '贵', '第二个', '第一个', '第1个', '第2个', '红色', '黑色', '白色',
+            '蓝色', '那个', '这款', '这款', '另一', '其它', '其他', '再推荐', '还有', '更多', '换个'];
+        $hasRefine = false;
+        foreach ($refineWords as $w) {
+            if (mb_strpos($mLower, $w) !== false) { $hasRefine = true; break; }
+        }
+        if ((!$isPurchase || empty($keyword)) && $hasRefine && !empty($history)) {
+            // 从最近一条含关键词的历史里找回真实意图
+            for ($i = count($history) - 1; $i >= 0; $i--) {
+                $prev = isset($history[$i]['content']) ? $history[$i]['content'] : '';
+                if ($prev) {
+                    $prevIntent = $this->analyzeIntentStandalone($prev);
+                    if ($prevIntent['is_purchase'] && !empty($prevIntent['keyword'])) {
+                        $keyword = $prevIntent['keyword'];
+                        $isPurchase = true;
+                        // 指代本身也算"求筛选/求更多"，需要导购点评
+                        break;
+                    }
+                }
+            }
+        }
+
         // --- 策略3：如果没匹配到购物词，但关键词明确是商品/品牌名，也判为购物意图 ---
         if (!$isPurchase && !empty($keyword)) {
             foreach ($productTerms as $term) {
@@ -900,10 +933,49 @@ PROMPT;
             }
         }
 
+        // --- 策略5：关键词命中泛品类词表（isGenericCategory），也判为购物意图 ---
+        // 维护说明：$productTerms 与 isGenericCategory() 的 $generic 是两份品类词表，
+        // 这里以 isGenericCategory 兜底，避免"水杯"这类词因漏列而不被识别。
+        if (!$isPurchase && !empty($keyword) && $this->isGenericCategory($keyword)) {
+            $isPurchase = true;
+        }
+
+        // --- 是否需要 AI 导购点评（求推荐/求对比/带偏好筛选/多轮延续） ---
+        // 仅在「确为购物意图」的前提下判定，避免闲聊（如"今天天气怎么样"）被误判购物。
+        $adviceWords = ['推荐', '值得', '哪个好', '怎么选', '区别', '对比', '排行',
+            '预算', '平价', '性价比', '高端', '入门', '适合', '送礼', '礼物', '学生', '上班族',
+            '便宜', '贵', '更多', '还有', '换个', '另一', '红色', '黑色', '白色', '蓝色',
+            '牌子', '牌子好', '哪款好', '怎么挑', '求推荐', '帮忙选', '帮选'];
+        $needAdvice = false;
+        if ($isPurchase) {
+            foreach ($adviceWords as $w) {
+                if (mb_strpos($mLower, $w) !== false) { $needAdvice = true; break; }
+            }
+        }
+
         return [
             'is_purchase' => $isPurchase && !empty($keyword),
             'keyword'     => $keyword,
+            'need_advice' => $needAdvice,
         ];
+    }
+
+    /**
+     * 无上下文的纯意图判定（供多轮指代时递归解析上一轮，避免无限递归）
+     */
+    private function analyzeIntentStandalone($message)
+    {
+        $purchaseWords = ['买', '购买', '下单', '想要', '需要', '求', '找', '搜', '搜一下', '查', '查一下',
+            '哪里买', '哪个好', '怎么买', '链接', '优惠券', '券', '优惠', '折扣', '活动', '促销',
+            '推荐', '值得', '怎么样', '测评', '价格', '多少钱', '排行', '对比', '同款', '平替', '送礼'];
+
+        $isPurchase = false;
+        $mLower = mb_strtolower($message);
+        foreach ($purchaseWords as $word) {
+            if (mb_strpos($mLower, $word) !== false) { $isPurchase = true; break; }
+        }
+        $keyword = $this->extractKeyword($message);
+        return ['is_purchase' => $isPurchase && !empty($keyword), 'keyword' => $keyword];
     }
 
     /**
@@ -931,6 +1003,10 @@ PROMPT;
             // -- 数量/量词 --
             '一台', '一个', '一款', '一种', '一件', '一双', '一件套', '一套',
             '一部', '一根', '一条', '一双', '一盒', '一包', '一瓶', '一箱',
+            // 单独量词：用户常写"买个/买只/来款"，复合量词删完后量词本身会残留
+            // （如"我想买个保温杯"→删"我想买"剩"个保温杯"），需单独清理，否则搜索词不精确
+            '个', '只', '支', '款', '台', '部', '双', '套', '把', '瓶', '盒',
+            '件', '条', '根', '张', '本', '副', '顶', '盏', '块', '片',
             '几款', '几种', '几个', '几件', '一些',
             // -- 语气/助词 --
             '点', '的', '了', '吗', '呢', '啊', '吧', '嘛', '呀', '哦',
@@ -993,11 +1069,21 @@ PROMPT;
 
     /**
      * 处理购物意图：搜索站内文章 + 全网比价
+     *
+     * 增强：
+     *  - 支持多轮上下文（$history），便于 AI 导购点评时结合用户偏好
+     *  - $needAdvice=true 时（求推荐/对比/带预算场景），在商品卡前追加 AI 导购点评，
+     *    像真人导购一样给出"为什么推这些 / 怎么选"，卡片不再冷冰冰。
+     *
+     * @param string $keyword         已提取的商品关键词
+     * @param string $originalMessage 用户原始消息（用于生成导购点评）
+     * @param array  $history         对话历史
+     * @param bool   $needAdvice      是否需要 AI 导购点评
      */
-    private function handleProductSearch($keyword, $originalMessage)
+    private function handleProductSearch($keyword, $originalMessage, $history = array(), $needAdvice = false)
     {
         if (empty($keyword)) {
-            return $this->handleAiChat($originalMessage, $this->loadHistory());
+            return $this->handleAiChat($originalMessage, $history);
         }
 
         // 意图澄清：用户点了引导按钮后发送「产品本身 / 配件周边」，剥离澄清词避免循环引导
@@ -1029,7 +1115,11 @@ PROMPT;
         );
 
         if (!empty($articles)) {
-            return $this->formatArticleResults($articles, $searchKw2);
+            $html = $this->formatArticleResults($articles, $searchKw2);
+            if ($needAdvice) {
+                $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'article') . $html;
+            }
+            return $html;
         }
 
         // 2. 站内无结果，尝试大淘客全网搜索（按平台优先级填充：淘宝>京东>拼多多>唯品会）
@@ -1041,14 +1131,60 @@ PROMPT;
                 error_log('[AI search] platforms=' . json_encode($tjkResult['debug']));
             }
             if ($tjkResult['code'] == 1 && !empty($tjkResult['items'])) {
-                return $this->formatTjkResults($tjkResult['items'], $searchKw2, $explicit);
+                $html = $this->formatTjkResults($tjkResult['items'], $searchKw2, $explicit);
+                if ($needAdvice) {
+                    $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'product', $tjkResult['items']) . $html;
+                }
+                return $html;
             }
         } catch (\Exception $e) {
             // 大淘客不可用时静默 fallback
         }
 
-        // 3. 都没有结果，交给 AI 处理
-        return $this->handleAiChat($originalMessage, $this->loadHistory());
+        // 3. 都没有结果，交给 AI 处理（结合上下文给出智能引导，而非干巴巴兜底）
+        return $this->handleAiChat($originalMessage, $history);
+    }
+
+    /**
+     * 生成 AI 导购点评（让商品卡更像"真人导购"而非冷冰冰列表）
+     *
+     * 结合用户原始诉求 + 搜索到的商品，给出 1-2 句选购建议 / 推荐理由。
+     * AI 不可用时静默返回空（商品卡本身仍正常展示）。
+     *
+     * @param string $userMsg   用户原始消息
+     * @param string $keyword   商品关键词
+     * @param array  $history   上下文
+     * @param string $type      'product' | 'article'
+     * @param array  $items     商品数据（用于生成更贴合的点评）
+     */
+    private function buildAdvice($userMsg, $keyword, $history, $type = 'product', $items = array())
+    {
+        // 组装简化的商品线索（避免把大段 HTML 喂给模型）
+        $clues = array();
+        foreach (array_slice($items, 0, 5) as $it) {
+            $clues[] = ($it['title'] ?? '') . ' ' . ($it['shopName'] ?? '') . ' ¥' . ($it['actualPrice'] ?? '?');
+        }
+        $itemLine = $clues ? ("\n候选商品：" . implode('；', $clues)) : '';
+
+        $system = "你是本站的智能导购助手。用户想买「{$keyword}」。"
+            . "请用**不超过 60 字**的中文，给出贴心、具体的选购建议或推荐理由，"
+            . "像朋友一样说话，不要罗列参数。若用户提到预算/人群/场景，请据此给建议。"
+            . "只输出建议本身，不要加「导购：」等前缀。";
+
+        $prompt = "用户说：「{$userMsg}」"
+            . $itemLine
+            . "\n请给出选购建议。";
+
+        try {
+            $advice = \app\common\AiHub::chat($prompt, $system, false, array('fallback' => true));
+            if (!\app\common\AiHub::isErrorResult($advice) && trim($advice) !== '') {
+                $advice = htmlspecialchars(trim($advice), ENT_QUOTES, 'UTF-8');
+                return '<div class="ai-advice">💡 ' . $advice . '</div>';
+            }
+        } catch (\Throwable $e) {
+            // 点评失败不影响商品卡展示
+        }
+        return '';
     }
 
     /**
@@ -1456,7 +1592,7 @@ PROMPT;
 
     /**
      * 关键词相关性过滤：剔除与商品词明显无关的结果（如搜“水杯”却返回“手机”）。
-     * 采用“字符重叠”判定，避免误杀“保温杯”“玻璃杯”这类合法商品。
+     * 改进：优先精确包含核心词；否则按「二元/全词片段命中率」判定，避免单字符误杀。
      */
     private function filterByKeywordRelevance($items, $keyword)
     {
@@ -1465,7 +1601,7 @@ PROMPT;
             return $items;
         }
         // 去掉泛词，得到用于判断的核心词
-        $stopKw = ['商品', '东西', '产品', '推荐', '一下', '帮我', '想买', '我想'];
+        $stopKw = ['商品', '东西', '产品', '推荐', '一下', '帮我', '想买', '我想', '有没有', '可以', '一个'];
         $core = $kw;
         foreach ($stopKw as $s) {
             $core = str_replace($s, '', $core);
@@ -1474,24 +1610,40 @@ PROMPT;
             $core = $kw;
         }
 
+        // 把核心词切成 2 字片段（"保温杯" -> [保温,温杯]），用于更稳的包含判定
+        $segs = [];
+        $clen = mb_strlen($core);
+        if ($clen >= 2) {
+            for ($i = 0; $i < $clen - 1; $i++) {
+                $segs[] = mb_substr($core, $i, 2);
+            }
+        } else {
+            $segs[] = $core;
+        }
+
         $kept = [];
         foreach ($items as $it) {
             $title = $it['title'] ?? $it['dtitle'] ?? '';
-            if (mb_strpos($title, $kw) !== false || mb_strpos($title, $core) !== false) {
+            $title = strip_tags((string)$title);
+            if ($title === '') {
+                continue;
+            }
+            // 1) 精确包含核心词或原关键词，直接保留
+            if (mb_strpos($title, $core) !== false || mb_strpos($title, $kw) !== false) {
                 $kept[] = $it;
                 continue;
             }
-            // 字符级重叠：标题包含核心词任一字符即视为可能相关
-            $overlap = false;
-            for ($i = 0; $i < mb_strlen($core); $i++) {
-                $ch = mb_substr($core, $i, 1);
-                if ($ch !== '' && mb_strpos($title, $ch) !== false) {
-                    $overlap = true;
-                    break;
+            // 2) 片段命中率：至少命中一半以上的 2 字片段才算相关
+            if (count($segs) > 0) {
+                $hit = 0;
+                foreach ($segs as $s) {
+                    if (mb_strpos($title, $s) !== false) {
+                        $hit++;
+                    }
                 }
-            }
-            if ($overlap) {
-                $kept[] = $it;
+                if ($hit / count($segs) >= 0.5) {
+                    $kept[] = $it;
+                }
             }
         }
         // 若相关性过滤把结果清空（平台返回标题措辞差异大），则保留原始结果不误杀

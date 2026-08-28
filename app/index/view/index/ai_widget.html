@@ -330,6 +330,23 @@
   margin-bottom: 6px;
   padding: 2px 0;
 }
+/* AI 导购点评：像真人导购一样给选购建议，置于商品卡上方 */
+.ai-advice {
+  background: linear-gradient(135deg, #fff7e6 0%, #fff1f0 100%);
+  border: 1px solid #ffd591;
+  border-radius: 10px;
+  padding: 8px 11px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #614a14;
+}
+.ai-advice::first-letter { font-weight: 600; }
+[data-theme="dark"] .ai-advice {
+  background: linear-gradient(135deg, #2a2418 0%, #2a1f1d 100%);
+  border-color: #5c4a2e;
+  color: #e8d9b5;
+}
 .ai-product-list {
   display: flex;
   flex-direction: column;
@@ -1050,8 +1067,9 @@
   // 格式化内容（简单的 markdown 处理）
   function formatContent(text) {
     if (!text) return '';
-    // HTML 内容（商品卡片）直接放行
-    if (/<div|<a /i.test(text)) {
+    // HTML 内容（商品卡片 / 链接）直接放行：商品卡是 <div class="ai-product-...">，
+    // 须匹配带属性的 <div （而不仅仅是裸 <div>），否则会被下面转义分支当成纯文本显示。
+    if (/<(div|a|span|p|b|strong|br)\b/i.test(text) || /<[a-z]+ /i.test(text)) {
       return text;
     }
     // 换行处理
