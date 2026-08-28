@@ -23,6 +23,9 @@ class AiAssistantController extends \app\base\controller\BaseController
     /** 本次对话是否因「AI 模型未配置」而失败（用于前端提示） */
     private $chatUnconfigured = false;
 
+    /** 复用搜索阶段已初始化的 Tjk 实例（含完整配置/推广位 PID），供转链复用 */
+    private $tjk = null;
+
     public function __construct()
     {
         parent::__construct();
@@ -1032,6 +1035,7 @@ PROMPT;
         // 2. 站内无结果，尝试大淘客全网搜索（按平台优先级填充：淘宝>京东>拼多多>唯品会）
         try {
             $tjk = new \ZhiCms\ext\Tjk();
+            $this->tjk = $tjk; // 复用同一实例给后续转链，避免重新初始化丢失推广位 PID 等配置
             $tjkResult = $tjk->searchAllPlatforms($searchKw2, 1, 5);
             if (isset($tjkResult['debug'])) {
                 error_log('[AI search] platforms=' . json_encode($tjkResult['debug']));
@@ -1150,8 +1154,24 @@ PROMPT;
             return (!empty($fallbackUrl) && preg_match('#^https?://#i', $fallbackUrl)) ? $fallbackUrl : '';
         }
         try {
-            // 超时保护：最多等 1.5s，避免拖慢对话
-            $tjk = new \ZhiCms\ext\Tjk();
+            // 优先复用搜索时已初始化的 Tjk 实例（配置完整，含推广位 PID），
+            // 否则重新初始化（Web 环境可能因配置缓存丢失 vip_pid，故回退读 ConfigStore 注入）
+            if (!empty($this->tjk)) {
+                $tjk = $this->tjk;
+            } else {
+                $tjk = new \ZhiCms\ext\Tjk();
+                if ($from === 'vip' && class_exists('\\app\\common\\ConfigStore')) {
+                    $vipPid = \app\common\ConfigStore::load('api', 'hdk_vip_pid');
+                    if (!empty($vipPid)) {
+                        $hdk = $tjk->getHdk();
+                        if ($hdk) {
+                            $ref = new \ReflectionProperty($hdk, 'vipPid');
+                            $ref->setAccessible(true);
+                            $ref->setValue($hdk, $vipPid);
+                        }
+                    }
+                }
+            }
             $ret = $tjk->getPrivilegeLink($goodsId, '', $from, $goodsSign);
             if (isset($ret['code']) && $ret['code'] == 1) {
                 $data = $ret['data'] ?? array();
