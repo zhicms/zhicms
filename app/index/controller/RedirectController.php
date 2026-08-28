@@ -142,15 +142,18 @@ class RedirectController extends \app\base\controller\BaseController
             $result = $tjk->getPrivilegeLink($id, '', $platform, $goodsSign);
             if (isset($result['code']) && $result['code'] == 1) {
                 $data = $result['data'] ?? array();
-                // 大淘客返回的字段与好单库 RatesUrl 返回的字段不同，统一兼容提取短链
-                $url = $data['couponClickUrl']
+                // 优先「商品详情页直链」(itemUrl/taokeLink)：普通用户点击直接看到真实淘宝商品页，
+                // 体验正确（不再是联盟优惠券中间页）；大淘客 itemUrl 已带淘客 pid，站长仍有佣金。
+                // 其次才用优惠券二合一/短链（有券时仍可领券）。
+                $url = $data['itemUrl']
+                    ?? $data['taokeLink']
                     ?? $data['shortUrl']
+                    ?? $data['couponClickUrl']
                     ?? $data['url']
                     ?? $data['couponLink']
                     ?? $data['couponurl']
                     ?? $data['shortLink']
                     ?? $data['clickUrl']
-                    ?? $data['itemUrl']
                     ?? '';
                 if (!empty($url) && preg_match('#^https?://#i', $url)) {
                     return $url;

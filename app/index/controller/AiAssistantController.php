@@ -1236,23 +1236,12 @@ PROMPT;
         if ($from === 'taobao' || $from === 'dtk') $from = 'tb';
         if (!in_array($from, ['tb', 'jd', 'pdd', 'vip'])) $from = 'tb';
 
-        // 所有平台统一走 index/redirect/jump 转链入口（由 RedirectController 调好单库 RatesUrl
-        // 二次转链生成带推广位的佣金链接），避免直接使用搜索接口返回的 couponLink
-        // （多为无佣金的落地页），保证站长能拿到返利。
-        // 透传 goodsSign（淘宝必需）：未入库商品也能拿到带佣金的转链短链，而非降级到无佣详情页。
-        $jumpParams = ['platform' => $from, 'id' => $goodsId];
-        if ($from === 'tb' && !empty($item['goodsSign'])) {
-            $jumpParams['sign'] = $item['goodsSign'];
-        }
-        // 统一走伪静态转链入口（与全站商品卡一致）：由 RedirectController::jump
-        // 在点击时实时调好单库/大淘客转链并 302 跳转，便于统计点击、统一兜底。
-        // 同时把渲染时预转链拿到的真实短链作为兜底参数传入，极端情况下
-        // jump 转链失败时仍能用此真实推广短链（而非无佣落地页）。
-        $realUrl = $this->resolveItemLink($from, $goodsId, $item['goodsSign'] ?? '', $item['itemLink'] ?? '');
-        if (!empty($realUrl)) {
-            $jumpParams['u'] = $realUrl;
-        }
-        $link = url('index/redirect/jump', $jumpParams);
+        // 统一走全站标准转链伪静态入口 buy-<platform>.html?id=<goodsId>
+        // （rule.php 中 'buy-<platform>.html' => 'index/redirect/jump/platform=<platform>'，
+        //  id 通过 query string 传入），由 RedirectController::jump 实时调好单库/大淘客转链，
+        //  避免直接使用搜索接口返回的 couponLink（多为无佣落地页），保证站长拿到返利。
+        // 只需 id 即可，jump() 会按平台处理转链（淘宝入库商品自动取 goodsSign）。
+        $link = ROOT_URL . 'buy-' . rawurlencode($from) . '.html?id=' . rawurlencode($goodsId);
         $pic     = isset($item['mainPic']) ? htmlspecialchars($item['mainPic']) : '';
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;
@@ -1313,9 +1302,12 @@ PROMPT;
             $ret = $tjk->getPrivilegeLink($goodsId, '', $from, $goodsSign);
             if (isset($ret['code']) && $ret['code'] == 1) {
                 $data = $ret['data'] ?? array();
-                $url = $data['couponClickUrl'] ?? $data['shortUrl'] ?? $data['url']
-                     ?? $data['couponLink'] ?? $data['couponurl'] ?? $data['shortLink']
-                     ?? $data['clickUrl'] ?? $data['itemUrl'] ?? '';
+                // 优先「商品详情页直链」(itemUrl/taokeLink)：普通用户点击直接看到真实淘宝商品页，
+                // 体验正确（不再是联盟优惠券中间页）；大淘客返回的 itemUrl 已带淘客 pid，站长仍有佣金。
+                // 其次才用优惠券二合一/短链（有券时仍可领券）。
+                $url = $data['itemUrl'] ?? $data['taokeLink'] ?? $data['shortUrl']
+                     ?? $data['couponClickUrl'] ?? $data['url'] ?? $data['couponLink']
+                     ?? $data['couponurl'] ?? $data['shortLink'] ?? $data['clickUrl'] ?? '';
                 if (!empty($url) && preg_match('#^https?://#i', $url)) {
                     return $url;
                 }
