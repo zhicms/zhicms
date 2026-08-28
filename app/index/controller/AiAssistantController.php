@@ -1108,13 +1108,15 @@ PROMPT;
         if ($from === 'tb' && !empty($item['goodsSign'])) {
             $jumpParams['sign'] = $item['goodsSign'];
         }
-        // 渲染时预转链：直接调 getPrivilegeLink 拿到真实推广短链，
-        // 成功则卡片直达推广页（避免点击时才转链、因 PID 未配置失败而静默回退无佣金落地页）。
-        // 失败则回退到 jump 中转（由 RedirectController 二次转链 + 落地页兜底）。
-        $link = $this->resolveItemLink($from, $goodsId, $item['goodsSign'] ?? '', $item['itemLink'] ?? '');
-        if (empty($link)) {
-            $link = url('index/redirect/jump', $jumpParams);
+        // 统一走伪静态转链入口（与全站商品卡一致）：由 RedirectController::jump
+        // 在点击时实时调好单库/大淘客转链并 302 跳转，便于统计点击、统一兜底。
+        // 同时把渲染时预转链拿到的真实短链作为兜底参数传入，极端情况下
+        // jump 转链失败时仍能用此真实推广短链（而非无佣落地页）。
+        $realUrl = $this->resolveItemLink($from, $goodsId, $item['goodsSign'] ?? '', $item['itemLink'] ?? '');
+        if (!empty($realUrl)) {
+            $jumpParams['u'] = $realUrl;
         }
+        $link = url('index/redirect/jump', $jumpParams);
         $pic     = isset($item['mainPic']) ? htmlspecialchars($item['mainPic']) : '';
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;

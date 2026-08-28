@@ -41,6 +41,7 @@ class RedirectController extends \app\base\controller\BaseController
         $platform = strtolower(trim($this->arg('platform', '')));
         $id       = trim($this->arg('id', ''));
         $sign     = trim($this->arg('sign', ''));
+        $prefetched = trim($this->arg('u', '')); // 可选：上游（如 AI 搜索）预转链拿到的真实推广短链，转链失败时兜底用
 
         // 兜底：极端环境下若 $args 未正确合并 $_GET（如某些 SAPI 下 $_GET 被重置），
         // 直接从原始 QUERY_STRING 再取一次，确保淘宝带 "-" 的 id 百分百可取。
@@ -115,7 +116,12 @@ class RedirectController extends \app\base\controller\BaseController
         }, 1800);
 
         if (empty($redirectUrl)) {
-            $redirectUrl = $this->buildFallbackUrl($platform, $id);
+            // 转链失败兜底：优先用上游预转链真实短链（带佣金），否则降级到平台落地页
+            if (!empty($prefetched) && preg_match('#^https?://#i', $prefetched)) {
+                $redirectUrl = $prefetched;
+            } else {
+                $redirectUrl = $this->buildFallbackUrl($platform, $id);
+            }
         }
 
         header('HTTP/1.1 302 Moved Temporarily');
