@@ -156,9 +156,9 @@ class ShopController extends ApiBaseController
         $num = max(1, intval($this->raw('num', 1)));
         if ($goodsId <= 0) $this->json(array('code' => 0, 'message' => '商品错误'), 400);
 
-        $exist = obj('api/ApiData')->dataSelect('yun_shop_cart', array("`uid`={$uid}", "`goods_id`={$goodsId}"));
+        $exist = obj('api/ApiData')->dataSelect('yun_shop_cart', array('uid' => $uid, 'goods_id' => $goodsId));
         if ($exist) {
-            obj('api/ApiData')->dataUpdate('yun_shop_cart', array('num' => $exist['num'] + $num), "`id`={$exist['id']}");
+            obj('api/ApiData')->dataUpdate('yun_shop_cart', array('num' => $exist['num'] + $num), array('id' => $exist['id']));
         } else {
             obj('api/ApiData')->insertData('yun_shop_cart', array(
                 'uid' => $uid, 'goods_id' => $goodsId, 'num' => $num,
@@ -196,9 +196,9 @@ class ShopController extends ApiBaseController
         $uid = $this->needLogin();
         $cartId = intval($this->raw('cart_id', 0));
         if ($cartId > 0) {
-            obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_cart` WHERE `uid`={$uid} AND `id`={$cartId}");
+            obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_cart` WHERE `uid`=? AND `id`=?", array($uid, $cartId));
         } else {
-            obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_cart` WHERE `uid`={$uid}");
+            obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_cart` WHERE `uid`=?", array($uid));
         }
         $this->json(array('code' => 1, 'message' => 'ok'));
     }

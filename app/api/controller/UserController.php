@@ -111,8 +111,15 @@ class UserController extends ApiBaseController {
         if (empty($u)) {
             $this->json(array('code' => 0, 'message' => '用户不存在，请先注册'), 400);
         }
-        if (md5($password . 'zhicms') !== $u['password']) {
+        if (md5($password . 'zhicms') !== $u['password'] && !password_verify($password, $u['password'])) {
             $this->json(array('code' => 0, 'message' => '密码错误'), 400);
+        }
+        // 透明升级：命中旧 md5 时改写为 bcrypt
+        if (strlen($u['password']) < 60 || strpos($u['password'], '$2') !== 0) {
+            obj('api/ApiData')->executeQuery(
+                "UPDATE `{pre}user` SET `password` = ? WHERE `id` = ?",
+                array(password_hash($password, PASSWORD_BCRYPT), $u['id'])
+            );
         }
         if (!empty($u['lock'])) {
             $this->json(array('code' => 0, 'message' => '账号已被冻结'), 403);
@@ -157,7 +164,7 @@ class UserController extends ApiBaseController {
 
         $data = array(
             'username' => $username,
-            'password' => md5($password . 'zhicms'),
+            'password' => password_hash($password, PASSWORD_BCRYPT),
             'mobile'   => $mobile,
             'vest'     => 1,
             'lock'     => 0,
@@ -240,7 +247,7 @@ class UserController extends ApiBaseController {
             $this->json(array('code' => 0, 'message' => '不能邀请自己'), 400);
         }
         if ($inviterUid > 0) {
-            obj('api/ApiData')->dataUpdate('yun_user', array('invited_by' => $inviterUid), array("`id` = ?", $uid));
+            obj('api/ApiData')->dataUpdate('yun_user', array('invited_by' => $inviterUid), array('id' => $uid));
             $this->reportInviteBound($inviterUid, $uid);
         }
         $this->json(array('code' => 1, 'message' => $inviterUid > 0 ? '绑定成功' : '无有效邀请人', 'invited_by' => $inviterUid));

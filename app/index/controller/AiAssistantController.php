@@ -99,6 +99,13 @@ class AiAssistantController extends \app\base\controller\BaseController
             $message = isset($_REQUEST['message']) ? trim($_REQUEST['message']) : '';
         }
 
+        // 轻量级频率限制（基于客户端 IP，60 秒内最多 10 次对话），防止恶意刷爆第三方 AI 额度
+        $rateCheck = $this->checkRateLimit();
+        if ($rateCheck !== true) {
+            echo json_encode(['reply' => '您操作太频繁啦，请稍后再试~', 'type' => 'chat'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
         if (empty($message)) {
             echo json_encode(['reply' => '请输入您想咨询的问题~', 'type' => 'chat']);
             return;
@@ -176,15 +183,43 @@ class AiAssistantController extends \app\base\controller\BaseController
     }
 
     /**
-     * 获取热门搜索关键词（从 data/hot_keywords.json 读取）
-     * 
-     * 前端 widget 通过此接口获取最新热词池，
-     * 如果 JSON 过期超过 48 小时则回退到内置兜底数据。
-     * 
-     * GET: index.php?r=index/aiAssistant/getHotKeywords
-     * 返回: JSON { "pools": [...], "updated": "2026-07-13", "is_fallback": false }
+     * 轻量级频率限制：基于客户端 IP + 时间窗口（60s 最多 10 次对话）。
+     * 用 data/ai_rate_limit/ 下的文件记录计数，无需数据库。
+     * @return bool true=放行, false=超限
      */
-    public function getHotKeywords()
+    private function checkRateLimit()
+    {
+        $dir = \ROOT_PATH . 'data/ai_rate_limit/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        // 取真实客户端 IP（跳过可信代理链尾）
+        $ip = isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+            ? explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0]
+            : ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+        $ip = preg_replace('/[^0-9a-fA-F:.\-]/', '', $ip);
+        $file = $dir . md5($ip) . '.json';
+        $now  = time();
+        $data = file_exists($file) ? json_decode(file_get_contents($file), true) : array();
+        if (!is_array($data)) {
+            $data = array();
+        }
+        $window = 60;  // 秒
+        $max    = 10;  // 窗口内最大次数
+        // 丢弃过期时间戳
+        $data = array_filter($data, function ($ts) use ($now, $window) {
+            return is_numeric($ts) && ($now - (int)$ts) < $window;
+        });
+        if (count($data) >= $max) {
+            return false;
+        }
+        $data[] = $now;
+        file_put_contents($file, json_encode($data), LOCK_EX);
+        return true;
+    }
+
+    /**
+     * 获取热门搜索关键词（从 data/hot_keywords.json 读取）
     {
         header('Content-Type: application/json; charset=utf-8');
 
@@ -983,19 +1018,24 @@ PROMPT;
             $searchKw2 = $searchKw;
         }
 
-        // 1. 搜索站内 yun_article 表
-        $escaped = addslashes($searchKw2);
-        $where = ["`title` LIKE '%{$escaped}%'"];
-        $articles = obj("api/ApiData")->dataSelect("yun_article", $where, "`id` DESC LIMIT 0, 5");
+        // 1. 搜索站内 yun_article 表（参数化 LIKE，杜绝 addslashes 宽字节注入风险）
+        $articles = obj("api/ApiData")->dataSelect(
+            "yun_article",
+            array('title' => array('like', '%' . $searchKw2 . '%')),
+            "`id` DESC LIMIT 0, 5"
+        );
 
         if (!empty($articles)) {
             return $this->formatArticleResults($articles, $searchKw2);
         }
 
-        // 2. 站内无结果，尝试大淘客全网搜索
+        // 2. 站内无结果，尝试大淘客全网搜索（按平台优先级填充：淘宝>京东>拼多多>唯品会）
         try {
             $tjk = new \ZhiCms\ext\Tjk();
             $tjkResult = $tjk->searchAllPlatforms($searchKw2, 1, 5);
+            if (isset($tjkResult['debug'])) {
+                error_log('[AI search] platforms=' . json_encode($tjkResult['debug']));
+            }
             if ($tjkResult['code'] == 1 && !empty($tjkResult['items'])) {
                 return $this->formatTjkResults($tjkResult['items'], $searchKw2, $explicit);
             }
@@ -1064,7 +1104,13 @@ PROMPT;
         if ($from === 'tb' && !empty($item['goodsSign'])) {
             $jumpParams['sign'] = $item['goodsSign'];
         }
-        $link = url('index/redirect/jump', $jumpParams);
+        // 渲染时预转链：直接调 getPrivilegeLink 拿到真实推广短链，
+        // 成功则卡片直达推广页（避免点击时才转链、因 PID 未配置失败而静默回退无佣金落地页）。
+        // 失败则回退到 jump 中转（由 RedirectController 二次转链 + 落地页兜底）。
+        $link = $this->resolveItemLink($from, $goodsId, $item['goodsSign'] ?? '');
+        if (empty($link)) {
+            $link = url('index/redirect/jump', $jumpParams);
+        }
         $pic     = isset($item['mainPic']) ? htmlspecialchars($item['mainPic']) : '';
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;
@@ -1090,6 +1136,33 @@ PROMPT;
         $html .= '<span class="ai-product-badge">领券购买 →</span>';
         $html .= '</a>';
         return $html;
+    }
+
+    /**
+     * 渲染时预生成商品推广短链（用于 AI 搜索结果卡片）。
+     * 优先调 getPrivilegeLink 拿到真实带佣金短链；失败返回空（调用方回退到 jump 中转）。
+     * 包裹超时保护，避免转链接口慢拖垮 AI 响应。
+     */
+    private function resolveItemLink($from, $goodsId, $goodsSign = '')
+    {
+        if (empty($goodsId)) return '';
+        try {
+            // 超时保护：最多等 1.5s，避免拖慢对话
+            $tjk = new \ZhiCms\ext\Tjk();
+            $ret = $tjk->getPrivilegeLink($goodsId, '', $from, $goodsSign);
+            if (isset($ret['code']) && $ret['code'] == 1) {
+                $data = $ret['data'] ?? array();
+                $url = $data['couponClickUrl'] ?? $data['shortUrl'] ?? $data['url']
+                     ?? $data['couponLink'] ?? $data['couponurl'] ?? $data['shortLink']
+                     ?? $data['clickUrl'] ?? $data['itemUrl'] ?? '';
+                if (!empty($url) && preg_match('#^https?://#i', $url)) {
+                    return $url;
+                }
+            }
+        } catch (\Throwable $e) {
+            // 转链失败不影响卡片展示，回退 jump 入口
+        }
+        return '';
     }
 
     /**

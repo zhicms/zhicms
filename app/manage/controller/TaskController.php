@@ -233,11 +233,11 @@ class TaskController extends \app\base\controller\BaseController
     public function del(){
         $this->checkManageSession();
         $id = (int)$this->arg('id', 0);
-        $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
+        $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = ?", array($id));
         if (!empty($row) && $row[0]['type'] === 'system') {
             exit(json_encode(array('info' => '系统任务不可删除', 'status' => 'n')));
         }
-        obj('api/ApiData')->executeQuery("DELETE FROM `yun_cron_task` WHERE `id` = " . $id);
+        obj('api/ApiData')->executeQuery("DELETE FROM `yun_cron_task` WHERE `id` = ?", array($id));
         \ZhiCms\ext\AdminLog::write('task', '删除了计划任务 ID：' . $id);
         exit(json_encode(array('info' => '已删除', 'status' => 'y')));
     }
@@ -245,7 +245,7 @@ class TaskController extends \app\base\controller\BaseController
     public function toggle(){
         $this->checkManageSession();
         $id = (int)$this->arg('id', 0);
-        $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
+        $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = ?", array($id));
         if (empty($row)) exit(json_encode(array('info' => '任务不存在', 'status' => 'n')));
         $new = $row[0]['status'] ? 0 : 1;
         obj('api/ApiData')->executeQuery(
@@ -281,7 +281,7 @@ class TaskController extends \app\base\controller\BaseController
             $this->checkManageSession();
 
             $id = (int)$this->arg('id', 0);
-            $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
+            $row = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = ?", array($id));
             if (empty($row)) {
                 $trace('task not found id=' . $id);
                 header('Content-Type: application/json; charset=utf-8');
@@ -346,7 +346,7 @@ class TaskController extends \app\base\controller\BaseController
         $now = time();
         $executed = 0;
         if ($id = (int)$this->arg('id', 0)) {
-            $rows = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = " . $id);
+            $rows = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `id` = ?", array($id));
         } else {
             $rows = obj('api/ApiData')->thisQuery("SELECT * FROM `yun_cron_task` WHERE `status`=1 AND `next_run`>0 AND `next_run`<={$now}");
         }

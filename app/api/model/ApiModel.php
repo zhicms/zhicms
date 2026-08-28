@@ -12,6 +12,7 @@ class ApiModel extends \app\base\model\BaseModel {
                 header('Content-Type: application/json; charset=utf-8');
                 exit(json_encode(array("info" => "登录已过期，请重新登录", "status" => "n", "need_login" => true)));
             }
+            $url = $this->safeRedirectUrl($url);
             header("location:{$url}");
             exit;
         }
@@ -19,18 +20,29 @@ class ApiModel extends \app\base\model\BaseModel {
 
     public function isCookies($key, $url) {
         if (!isset($_COOKIE[$key]) || empty($_COOKIE[$key])) {
-            // 验证重定向URL仅允许站内相对路径，防止开放重定向
-            $url = trim($url);
-            if(preg_match('#^(https?:)?//#i', $url)){
-                $parsed = parse_url($url);
-                if(isset($parsed['host']) && isset($_SERVER['HTTP_HOST']) && $parsed['host'] !== $_SERVER['HTTP_HOST']){
-                    error_log('Blocked external redirect in isCookies: ' . $url);
-                    exit('invalid redirect');
-                }
-            }
+            $url = $this->safeRedirectUrl($url);
             header("location:{$url}");
             exit;
         }
+    }
+
+    /**
+     * 安全重定向 URL：过滤 CRLF 注入，并阻止跨站（开放重定向）跳转。
+     */
+    private function safeRedirectUrl($url) {
+        $url = (string)$url;
+        // 过滤响应头注入（CRLF）
+        $url = str_replace(array("\r", "\n"), '', $url);
+        $url = trim($url);
+        // 仅允许站内相对路径或以本站 host 开头的绝对路径，防止开放重定向
+        if (preg_match('#^(https?:)?//#i', $url)) {
+            $parsed = parse_url($url);
+            if (isset($parsed['host']) && isset($_SERVER['HTTP_HOST']) && $parsed['host'] !== $_SERVER['HTTP_HOST']) {
+                error_log('Blocked external redirect: ' . $url);
+                return '/';
+            }
+        }
+        return $url;
     }
 
     public function unsetSession($session) {

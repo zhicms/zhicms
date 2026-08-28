@@ -170,6 +170,13 @@ class BaseController extends \ZhiCms\base\Controller {
 					$this->mAltUrl = rtrim($host, '/') . '/m.html';
 				}
 			}
+
+			// 统一同源校验（轻量 CSRF 防护）：拦截前台 POST 写操作的跨站伪造。
+			// API 模块（app/api）使用 token 认证，不在此兜底范围；GET 读操作不拦截；
+			// 需要自定义 _token 校验的控制器仍可在方法内再调 checkCsrfToken() 强化。
+			if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST' && defined('\APP_NAME') && \APP_NAME === 'index') {
+				$this->checkSameOrigin();
+			}
 		}
 	}
 
@@ -186,10 +193,8 @@ class BaseController extends \ZhiCms\base\Controller {
 		// 关键修复：直接用 ApiData model 查询，避免 obj("index/global") 触发
 		// BaseController::__construct → resolveLoginUser → obj("index/global") → make() →
 		// __construct 的无限递归（obj() 在 make() 返回前不缓存正在构造的实例）。
-		$safeUid = str_replace(['%', '_', '\\'], ['\%', '\_', '\\\\'], $cookie);
-		// 注意：dataSelect() 未传 order 时内部走 find()，返回的是【单个用户关联数组】而非二维数组，
-		// 因此不能再用 $rows[0] 取用户（那会是 null），需直接使用 $rows。
-		$u = obj("api/ApiData")->dataSelect("yun_user", array("`mobile` LIKE '{$safeUid}'"));
+		// 安全：用参数化精确匹配手机号，杜绝 Cookie 注入（原先 LIKE + str_replace 未转义单引号，存在 SQL 注入/认证绕过）
+		$u = obj("api/ApiData")->dataSelect("yun_user", array('mobile' => $cookie));
 		if (empty($u)) return null;
 		// 脱敏手机号作为展示名（无昵称字段，用手机号）
 		$mobile = isset($u['mobile']) ? $u['mobile'] : $cookie;

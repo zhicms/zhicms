@@ -320,16 +320,19 @@ class Tjk {
     
     /**
      * 跨平台聚合搜索：淘宝(大淘客) + 京东/拼多多/唯品会(好单库)
-     * 每个平台取前 $pageSize 条，合并后按销量排序、去重。
      *
-     * @param string     $keyword   商品关键词
-     * @param int        $pageNum   页码
-     * @param int        $pageSize  每个平台条数
-     * @param array|null $platforms 需要搜索的平台数组，null 表示全部
-     *                              （前台全站搜索传 ['taobao','jd'] 以还原旧行为，
-     *                               避免混入 pdd/vip 影响详情页跳转）
+     * 两种模式：
+     *  - 默认（按销量混合）：各平台各取 $pageSize 条，合并后按平台优先级+销量排序去重
+     *  - $fillPriority=true（AI 助手/优先填充）：先搜淘宝，不足 $pageSize 再依次补京东/拼多多/唯品会，
+     *    保证用户优先看到主流电商（淘宝/京东）商品，唯品会只在主流平台无货时才出现，避免"全是唯品会"。
+     *
+     * @param string     $keyword       商品关键词
+     * @param int        $pageNum       页码
+     * @param int        $pageSize      目标条数
+     * @param array|null $platforms     需要搜索的平台数组，null 表示全部
+     * @param bool       $fillPriority  是否按平台优先级顺序填充（默认 true，AI 场景）
      */
-    public function searchAllPlatforms($keyword, $pageNum = 1, $pageSize = 5, $platforms = null) {
+    public function searchAllPlatforms($keyword, $pageNum = 1, $pageSize = 5, $platforms = null, $fillPriority = true) {
         // 比价路线：以淘宝联盟库为主，优先返回淘宝结果；淘宝不足时用京东/拼多多/唯品会补充。
         $allItems = [];
         $byPlat   = ['tb' => [], 'jd' => [], 'pdd' => [], 'vip' => []];
@@ -340,44 +343,58 @@ class Tjk {
         $wantVip = $this->hdk && (is_null($platforms) || in_array('vip', (array) $platforms));
         $wantHdk = $this->hdk && ($wantJd || $wantPdd || $wantVip);
 
-        // 1) 淘宝/天猫：大淘客（优先，优先填满目标数量）
-        if ($wantTb) {
-            $result = $this->dtk->SearchGoods($keyword, $pageNum, $pageSize);
-            if ($result['code'] == 1 && !empty($result['items'])) {
-                foreach ($result['items'] as $item) {
-                    $item['item_from'] = 'tb';
-                    $byPlat['tb'][] = $item;
-                }
-            }
+        // 平台优先级顺序：淘宝(主推) > 京东 > 拼多多 > 唯品会(补充)
+        $platPlan = ['tb', 'jd', 'pdd', 'vip'];
+        // 若指定了平台范围，则按指定顺序过滤
+        if (is_array($platforms)) {
+            $platPlan = array_values(array_intersect($platPlan, $platforms));
         }
 
-        // 2) 京东 / 拼多多 / 唯品会：好单库（作为淘宝比价的补充）
-        if ($wantHdk) {
-            if ($wantJd) {
-                $jd = $this->hdk->SearchJdGoods($keyword, $pageSize, 1);
+        // 优先填充模式（默认开启，AI 助手场景）：按平台顺序搜索，
+        // 每平台只补足"剩余目标数量"，一旦凑满 $pageSize 即停止后续平台，
+        // 从而杜绝唯品会（数据最易返回）霸屏，保证用户先看到淘宝/京东商品。
+        $remain = $pageSize;
+        foreach ($platPlan as $p) {
+            if ($remain <= 0) break;
+            if ($p === 'tb') {
+                if (!$wantTb) continue;
+                $result = $this->dtk->SearchGoods($keyword, $pageNum, $fillPriority ? $remain : $pageSize);
+                if ($result['code'] == 1 && !empty($result['items'])) {
+                    foreach ($result['items'] as $item) {
+                        $item['item_from'] = 'tb';
+                        $byPlat['tb'][] = $item;
+                    }
+                    $remain -= count($result['items']);
+                }
+            } elseif ($p === 'jd') {
+                if (!$wantHdk || !$wantJd) continue;
+                $jd = $this->hdk->SearchJdGoods($keyword, $fillPriority ? $remain : $pageSize, 1);
                 if ($jd['code'] == 1 && !empty($jd['items'])) {
                     foreach ($jd['items'] as $item) {
                         $item['item_from'] = 'jd';
                         $byPlat['jd'][] = $item;
                     }
+                    $remain -= count($jd['items']);
                 }
-            }
-            if ($wantPdd) {
-                $pdd = $this->hdk->SearchPddGoods($keyword, $pageSize, 1);
+            } elseif ($p === 'pdd') {
+                if (!$wantHdk || !$wantPdd) continue;
+                $pdd = $this->hdk->SearchPddGoods($keyword, $fillPriority ? $remain : $pageSize, 1);
                 if ($pdd['code'] == 1 && !empty($pdd['items'])) {
                     foreach ($pdd['items'] as $item) {
                         $item['item_from'] = 'pdd';
                         $byPlat['pdd'][] = $item;
                     }
+                    $remain -= count($pdd['items']);
                 }
-            }
-            if ($wantVip) {
-                $vip = $this->hdk->SearchVipGoods($keyword, $pageSize, 1);
+            } elseif ($p === 'vip') {
+                if (!$wantHdk || !$wantVip) continue;
+                $vip = $this->hdk->SearchVipGoods($keyword, $fillPriority ? $remain : $pageSize, 1);
                 if ($vip['code'] == 1 && !empty($vip['items'])) {
                     foreach ($vip['items'] as $item) {
                         $item['item_from'] = 'vip';
                         $byPlat['vip'][] = $item;
                     }
+                    $remain -= count($vip['items']);
                 }
             }
         }
@@ -408,6 +425,12 @@ class Tjk {
             'message' => 'success',
             'items' => $allItems,
             'total' => count($allItems),
+            'debug' => [
+                'tb'   => count($byPlat['tb'] ?? []),
+                'jd'   => count($byPlat['jd'] ?? []),
+                'pdd'  => count($byPlat['pdd'] ?? []),
+                'vip'  => count($byPlat['vip'] ?? []),
+            ],
         ];
     }
     

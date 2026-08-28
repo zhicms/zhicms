@@ -150,9 +150,14 @@ class RedirectController extends \app\base\controller\BaseController
                     return $url;
                 }
             }
-            // 转链失败：回退到对应平台商品落地页（不再回退搜索页）
+            // 转链失败：记录详细原因（便于排查 pid 未配置等问题），再回退到对应平台商品落地页
+            error_log(sprintf(
+                '[jump转链失败] platform=%s id=%s sign=%s msg=%s',
+                $platform, $id, $goodsSign, $result['message'] ?? 'unknown'
+            ));
             return $this->buildFallbackUrl($platform, $id);
         } catch (\Exception $e) {
+            error_log(sprintf('[jump转链异常] platform=%s id=%s err=%s', $platform, $id, $e->getMessage()));
             return $this->buildFallbackUrl($platform, $id);
         }
     }

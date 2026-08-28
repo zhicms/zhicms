@@ -139,6 +139,10 @@ class FileController extends BaseController
         $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $isImage = in_array($ext, $allowedExts);
+        if (!$isImage) {
+            @unlink($file['tmp_name']);
+            return ['error' => 1, 'message' => '仅支持上传图片文件', 'url' => ''];
+        }
 
         // 真实 MIME 校验：仅允许图片，防止伪装扩展名上传可执行文件（RCE 风险）
         if (!empty($file['tmp_name'])) {
@@ -151,8 +155,8 @@ class FileController extends BaseController
             }
         }
 
-        // 生成文件名
-        $fileName = substr(md5($file['name']), 0, 4) . time();
+        // 生成文件名（完整 md5 + 微秒时间戳，降低碰撞概率）
+        $fileName = md5($file['name'] . microtime(true)) . time();
 
         // 生成目录路径（按日期组织）
         $dateDir = date('Ymd');
@@ -164,28 +168,19 @@ class FileController extends BaseController
             }
         }
 
-        if ($isImage) {
-            // 先保存为临时文件
-            $tempPath = $targetDir . '/' . $fileName . '.' . $ext;
-            if (!@move_uploaded_file($file['tmp_name'], $tempPath)) {
-                @unlink($file['tmp_name']);
-                return ['error' => 1, 'message' => '保存文件失败', 'url' => ''];
-            }
+        // 先保存为临时文件
+        $tempPath = $targetDir . '/' . $fileName . '.' . $ext;
+        if (!@move_uploaded_file($file['tmp_name'], $tempPath)) {
+            @unlink($file['tmp_name']);
+            return ['error' => 1, 'message' => '保存文件失败', 'url' => ''];
+        }
 
-            // 转换为 WebP
-            $webpPath = $targetDir . '/' . $fileName . '.webp';
-            if ($this->convertToWebP($tempPath, $webpPath)) {
-                @unlink($tempPath);
-                $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}.webp");
-            } else {
-                $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext);
-            }
+        // 转换为 WebP
+        $webpPath = $targetDir . '/' . $fileName . '.webp';
+        if ($this->convertToWebP($tempPath, $webpPath)) {
+            @unlink($tempPath);
+            $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}.webp");
         } else {
-            $targetPath = $targetDir . '/' . $fileName . '.' . $ext;
-            if (!@move_uploaded_file($file['tmp_name'], $targetPath)) {
-                @unlink($file['tmp_name']);
-                return ['error' => 1, 'message' => '保存文件失败', 'url' => ''];
-            }
             $url = cdn_url("upload/{$uploadDir}/{$dateDir}/{$fileName}." . $ext);
         }
 

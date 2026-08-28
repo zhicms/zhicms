@@ -62,7 +62,7 @@ class ShopController extends \app\base\controller\BaseController
         }
         $data = array('name' => $name, 'sort' => $sort, 'status' => $status);
         if ($id > 0) {
-            obj('api/ApiData')->dataUpdate('yun_shop_category', $data, "`id`={$id}");
+            obj('api/ApiData')->dataUpdate('yun_shop_category', $data, array('id' => $id));
         } else {
             $data['addtime'] = date('Y-m-d H:i:s');
             obj('api/ApiData')->insertData('yun_shop_category', $data);
@@ -79,11 +79,11 @@ class ShopController extends \app\base\controller\BaseController
         if ($id <= 0) {
             exit(json_encode(array('status' => 'n', 'info' => '参数错误')));
         }
-        $used = obj('api/ApiData')->dataSelect('yun_shop_goods', array("`cat_id`={$id}"));
+        $used = obj('api/ApiData')->dataSelect('yun_shop_goods', array('cat_id' => $id));
         if (!empty($used)) {
             exit(json_encode(array('status' => 'n', 'info' => '该分类下还有商品，无法删除')));
         }
-        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_category` WHERE `id`={$id}");
+        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_category` WHERE `id`=?", array($id));
         exit(json_encode(array('status' => 'y', 'info' => '已删除')));
     }
 
@@ -140,7 +140,7 @@ class ShopController extends \app\base\controller\BaseController
         $id = intval($this->arg('id', 0));
         $goods = array();
         if ($id > 0) {
-            $goods = obj('api/ApiData')->dataSelect('yun_shop_goods', array("`id`={$id}"));
+            $goods = obj('api/ApiData')->dataSelect('yun_shop_goods', array('id' => $id));
             $goods = $goods ?: array();
         }
         $this->goods = $goods;
@@ -219,7 +219,7 @@ class ShopController extends \app\base\controller\BaseController
         if ($id <= 0) {
             exit(json_encode(array('status' => 'n', 'info' => '参数错误')));
         }
-        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_goods` WHERE `id`={$id}");
+        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_goods` WHERE `id`=?", array($id));
         exit(json_encode(array('status' => 'y', 'info' => '已删除')));
     }
 
@@ -272,7 +272,7 @@ class ShopController extends \app\base\controller\BaseController
         $this->pageText = array('自营商城', '订单详情');
 
         $id = intval($this->arg('id', 0));
-        $o = obj('api/ApiData')->dataSelect('yun_shop_order', array("`id`={$id}"));
+        $o = obj('api/ApiData')->dataSelect('yun_shop_order', array('id' => $id));
         if (empty($o)) {
             $this->errorMsg = '订单不存在';
             $this->display();
@@ -280,9 +280,9 @@ class ShopController extends \app\base\controller\BaseController
         }
         $o['status_text'] = $this->statusText($o['status']);
         $o['addr'] = $this->parseAddress($o['address']);
-        $items = obj('api/ApiData')->dataSelect('yun_shop_order_item', array("`order_id`={$id}"));
-        $o['items'] = $items ?: array();
-        $u = obj('api/ApiData')->dataSelect('yun_user', array("`id`={$o['uid']}"));
+        $items = obj('api/ApiData')->dataSelect('yun_shop_order_item', array('order_id' => $id));
+            $o['items'] = $items ?: array();
+        $u = obj('api/ApiData')->dataSelect('yun_user', array('id' => $o['uid']));
         $o['nickname'] = $u ? ($u['nickname'] ?? '用户' . $o['uid']) : '用户' . $o['uid'];
 
         $this->order = $o;
@@ -337,12 +337,15 @@ class ShopController extends \app\base\controller\BaseController
         }
         // 已支付取消：回退库存与余额（如为余额支付）
         if ($o['status'] == 1) {
-            $items = obj('api/ApiData')->dataSelect('yun_shop_order_item', array("`order_id`={$id}"));
+            $items = obj('api/ApiData')->dataSelect('yun_shop_order_item', array("`order_id`=?", array($id)));
             foreach (($items ?: array()) as $it) {
-                obj('api/ApiData')->thisQuery("UPDATE `{pre}shop_goods` SET `stock`=`stock`+{$it['num']}, `sales`=GREATEST(0,`sales`-{$it['num']}) WHERE `id`={$it['goods_id']}");
+                $goodsId = intval($it['goods_id']);
+                $num = intval($it['num']);
+                obj('api/ApiData')->thisQuery("UPDATE `{pre}shop_goods` SET `stock`=`stock`+?, `sales`=GREATEST(0,`sales`-?) WHERE `id`=?", array($num, $num, $goodsId));
             }
             if ($o['pay_type'] == 2 && $o['pay_fee'] > 0) {
-                obj('api/ApiData')->thisQuery("UPDATE `{pre}user` SET `balance`=`balance`+{$o['pay_fee']} WHERE `id`={$o['uid']}");
+                $uid = intval($o['uid']);
+                obj('api/ApiData')->thisQuery("UPDATE `{pre}user` SET `balance`=`balance`+? WHERE `id`=?", array($o['pay_fee'], $uid));
             }
         }
         obj('api/ApiData')->dataUpdate('yun_shop_order', array('status' => 4), "`id`={$id}");
@@ -358,8 +361,8 @@ class ShopController extends \app\base\controller\BaseController
         if ($id <= 0) {
             exit(json_encode(array('status' => 'n', 'info' => '参数错误')));
         }
-        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_order` WHERE `id`={$id}");
-        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_order_item` WHERE `order_id`={$id}");
+        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_order` WHERE `id`=?", array($id));
+        obj('api/ApiData')->thisQuery("DELETE FROM `{pre}shop_order_item` WHERE `order_id`=?", array($id));
         exit(json_encode(array('status' => 'y', 'info' => '已删除')));
     }
 

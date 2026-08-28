@@ -114,8 +114,8 @@ class DataService {
     public function findUser($lock, $uid, $model = 'null') {
         if ($lock != "y") return null;
         if ($model == 'cookie') {
-            $safeUid = str_replace(['%', '_', '\\'], ['\%', '\_', '\\\\'], $uid);
-            $where[] = "  `mobile` LIKE  '{$safeUid}'";
+            // 安全：关联数组精确匹配手机号，think-ORM 自动参数化绑定，杜绝 Cookie 注入
+            $where['mobile'] = $uid;
         } else {
             $uid = (int)$uid;
             $where[] = " `id` ={$uid}";

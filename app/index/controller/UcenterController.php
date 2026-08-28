@@ -80,7 +80,7 @@ class UcenterController extends \app\base\controller\BaseController {
       if ($old === '' || $new === ''){
         exit(json_encode(array("info" => '请填写密码', "status" => "n")));
       }
-      if (md5($old . 'zhicms') !== $uInfo['password']){
+      if (md5($old . 'zhicms') !== $uInfo['password'] && !password_verify($old, $uInfo['password'])){
         exit(json_encode(array("info" => '原密码错误', "status" => "n")));
       }
       if (strlen($new) < 6){
@@ -89,9 +89,11 @@ class UcenterController extends \app\base\controller\BaseController {
       if ($new !== $rep){
         exit(json_encode(array("info" => '两次密码不一致', "status" => "n")));
       }
+      // 优先使用 bcrypt 存储；兼容历史 md5 校验已通过
+      $newHash = password_hash($new, PASSWORD_BCRYPT);
       obj('api/ApiData')->executeQuery(
         "UPDATE `{pre}user` SET `password` = ? WHERE `id` = ?",
-        array(md5($new . 'zhicms'), $uInfo['id'])
+        array($newHash, $uInfo['id'])
       );
       exit(json_encode(array("info" => '密码修改成功', "status" => "y")));
     }
@@ -106,7 +108,7 @@ class UcenterController extends \app\base\controller\BaseController {
   public function myComment(){
     $this->guardLogin();
     $uInfo = $this->me();
-    $where[] = "`yun_comment`.`uid` = {$uInfo['id']}";
+    $where[] = "`yun_comment`.`uid` = " . intval($uInfo['id']);
     $page = obj('api/ApiData')->pageIndex("20", "`yun_comment`, `yun_article`", $where, "`yun_comment`.`id` DESC", "index.php?r=index/ucenter/myComment");
     $this->page = $page;
     $this->uInfo = $uInfo;
@@ -120,7 +122,7 @@ class UcenterController extends \app\base\controller\BaseController {
   public function myForum(){
     $this->guardLogin();
     $uInfo = $this->me();
-    $where[] = "`yun_forum`.`uid` = {$uInfo['id']}";
+    $where[] = "`yun_forum`.`uid` = " . intval($uInfo['id']);
     $page = obj('api/ApiData')->pageIndex("20", "yun_forum", $where, "`yun_forum`.`id` DESC", "index.php?r=index/ucenter/myForum");
     $this->page = $page;
     $this->uInfo = $uInfo;
@@ -134,12 +136,12 @@ class UcenterController extends \app\base\controller\BaseController {
   private function loadLike($uInfo){
     $type = $this->arg("type");
     if ($type == 'article'){
-      $where[] = "`yun_like`.fid=`yun_article`.id and `yun_like`.uid={$uInfo['id']} and `yun_like`.`model` LIKE 'article'";
+      $where[] = "`yun_like`.fid=`yun_article`.id and `yun_like`.uid=" . intval($uInfo['id']) . " and `yun_like`.`model` LIKE 'article'";
       $baseUrl = "index.php?r=index/ucenter/index&type=article";
       $this->likeModel = 'article';
       $this->page = obj('api/ApiData')->pageIndex("20", "`yun_like`, `yun_article`", $where, "`yun_article`.`id` DESC", $baseUrl);
     } else {
-      $where[] = "`yun_like`.fid=`yun_forum`.id and `yun_like`.uid={$uInfo['id']} and `yun_like`.`model` LIKE 'index'";
+      $where[] = "`yun_like`.fid=`yun_forum`.id and `yun_like`.uid=" . intval($uInfo['id']) . " and `yun_like`.`model` LIKE 'index'";
       $baseUrl = "index.php?r=index/ucenter/index";
       $this->likeModel = 'index';
       $this->page = obj('api/ApiData')->pageIndex("20", "`yun_like`, `yun_forum`", $where, "`yun_forum`.`id` DESC", $baseUrl);

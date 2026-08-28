@@ -131,6 +131,13 @@ class LoginController extends \app\base\controller\BaseController
         if ($u['password'] !== md5($password . self::SALT)) {
             exit(json_encode(array('status' => 'n', 'info' => '密码错误')));
         }
+        // 透明升级：旧 md5 密码命中后，自动改写为 bcrypt（与后台一致）
+        if (strlen($u['password']) < 60 || strpos($u['password'], '$2') !== 0) {
+            obj("api/ApiData")->executeQuery(
+                "UPDATE `{pre}user` SET `password` = ? WHERE `id` = ?",
+                array(password_hash($password, PASSWORD_BCRYPT), $u['id'])
+            );
+        }
         // 登录成功：写入 Cookie（手机号作为标识，与 findUser cookie 模式一致）
         setcookie(self::COOKIE_NAME, $u['mobile'], time() + 86400 * 30, '/');
         // 同步 AI 机器人身份（未登录访客的 ai_uid 与登录用户绑定）

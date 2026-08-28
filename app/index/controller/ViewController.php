@@ -37,10 +37,7 @@ class ViewController extends \app\base\controller\BaseController
         $itemFromDb = null;
         
         if($goodsId){
-            // 先转义引号（防 SQL 注入闭合），再转义 LIKE 通配符 % _ \（防全表扫描/ReDoS）
-            $goodsId = addslashes($goodsId);
-            $goodsId = str_replace(array('%', '_', '\\'), array('\%', '\_', '\\\\'), $goodsId);
-            $itemFromDb = obj('api/ApiData')->thisQuery("SELECT * FROM yun_items WHERE goodsId = '{$goodsId}' AND del = 0 LIMIT 1");
+            $itemFromDb = obj('api/ApiData')->thisQuery("SELECT * FROM yun_items WHERE goodsId = ? AND del = 0 LIMIT 1", array($goodsId));
             if(!empty($itemFromDb)){
                 $itemFromDb = $itemFromDb[0];
                 if(!$platform || $platform == 'taobao'){

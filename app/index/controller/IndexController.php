@@ -121,7 +121,7 @@ class IndexController extends \app\base\controller\BaseController
             // 读取分类(yun_nav)后台设置的 keywords/dec，作为前台 meta 兜底（addtype 可配置）
             $cateKeywords = '';
             $cateDec = '';
-            $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = {$navId}"));
+            $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = ?"), array($navId));
             if (!empty($navRow)) {
                 $cateKeywords = isset($navRow['keywords']) ? trim($navRow['keywords']) : '';
                 $cateDec      = isset($navRow['dec']) ? trim($navRow['dec']) : '';
@@ -271,7 +271,7 @@ class IndexController extends \app\base\controller\BaseController
       $cateDec = '';
       $navid = (int)($view['navid'] ?? 0);
       if ($navid > 0) {
-          $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = {$navid}"));
+          $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = ?"), array($navid));
           if (!empty($navRow)) {
               $cateKeywords = isset($navRow['keywords']) ? trim($navRow['keywords']) : '';
               $cateDec      = isset($navRow['dec']) ? trim($navRow['dec']) : '';
@@ -318,7 +318,7 @@ class IndexController extends \app\base\controller\BaseController
         $this->loadCommonSidebar();
 
         $cid = isset($view['cid']) ? intval($view['cid']) : 0;
-        $tWhere = array("`cid` = '{$cid}'");
+        $tWhere = array("`cid` = ?", array($cid));
         $mallTWhere = array("1");
 
         $this->tRet = $this->getRandomArticles($tWhere, 5);
@@ -368,8 +368,8 @@ class IndexController extends \app\base\controller\BaseController
         }
 
         // 上下篇导航
-        $prev = obj("api/ApiData")->thisQuery("SELECT `id`,`title` FROM `{pre}article` WHERE `id` < {$id} ORDER BY `id` DESC LIMIT 1");
-        $next = obj("api/ApiData")->thisQuery("SELECT `id`,`title` FROM `{pre}article` WHERE `id` > {$id} ORDER BY `id` ASC LIMIT 1");
+        $prev = obj("api/ApiData")->thisQuery("SELECT `id`,`title` FROM `{pre}article` WHERE `id` < ? ORDER BY `id` DESC LIMIT 1", array($id));
+        $next = obj("api/ApiData")->thisQuery("SELECT `id`,`title` FROM `{pre}article` WHERE `id` > ? ORDER BY `id` ASC LIMIT 1", array($id));
         $this->neighbor = array(
             'prev' => (!empty($prev[0])) ? $prev[0] : null,
             'next' => (!empty($next[0])) ? $next[0] : null,

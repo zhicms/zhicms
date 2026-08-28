@@ -94,8 +94,7 @@ class CheapsController extends \app\base\controller\BaseController
         $itemFromDb = null;
 
         if ($goodsId) {
-            $goodsId = addslashes($goodsId);
-            $itemFromDb = obj('api/ApiData')->thisQuery("SELECT * FROM yun_items WHERE goodsId = '{$goodsId}' AND del = 0 LIMIT 1");
+            $itemFromDb = obj('api/ApiData')->thisQuery("SELECT * FROM yun_items WHERE goodsId = ? AND del = 0 LIMIT 1", array($goodsId));
             if (!empty($itemFromDb)) {
                 $itemFromDb = $itemFromDb[0];
                 if (!$platform || $platform == 'taobao' || $platform == 'dtk') {

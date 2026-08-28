@@ -33,7 +33,78 @@ class AiService
         include $configFile;
         self::$config = isset($AI) ? $AI : array('ai_chat' => '', 'ai_image' => '', 'ai_system_prompt' => '', 'ai_models' => array());
         self::$config = self::migrateEndpoints(self::$config);
+        // 加载时解密敏感字段（向前兼容：非密文值原样使用）
+        self::$config = self::decryptSensitive(self::$config);
         return self::$config;
+    }
+
+    // ============ 敏感字段加解密（API Key/Secret 不明文落盘）============
+
+    /** 加密前缀标记 */
+    const ENC_PREFIX = 'ENC:';
+
+    /**
+     * 用站点 SECRET_KEY 对字符串做 AES-256-CBC 加密（带随机 IV，base64 输出）
+     */
+    private static function encSecret($plain)
+    {
+        if ($plain === '' || !function_exists('openssl_encrypt')) {
+            return $plain;
+        }
+        $key = hash('sha256', \ZhiCms\base\Config::get('SECRET_KEY', 'zhicms'), true);
+        $iv  = openssl_random_pseudo_bytes(16);
+        $enc = openssl_encrypt($plain, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+        if ($enc === false) {
+            return $plain;
+        }
+        return self::ENC_PREFIX . base64_encode($iv . $enc);
+    }
+
+    /**
+     * 解密（非 ENC: 前缀的明文视为旧数据，直接返回）
+     */
+    private static function decSecret($val)
+    {
+        if (!is_string($val) || strpos($val, self::ENC_PREFIX) !== 0 || !function_exists('openssl_decrypt')) {
+            return $val;
+        }
+        $raw = base64_decode(substr($val, strlen(self::ENC_PREFIX)), true);
+        if ($raw === false || strlen($raw) <= 16) {
+            return $val;
+        }
+        $iv   = substr($raw, 0, 16);
+        $data = substr($raw, 16);
+        $key  = hash('sha256', \ZhiCms\base\Config::get('SECRET_KEY', 'zhicms'), true);
+        $dec  = openssl_decrypt($data, 'AES-256-CBC', $key, OPENSSL_RAW_DATA, $iv);
+        return $dec === false ? $val : $dec;
+    }
+
+    /** 加密配置中敏感字段（保存前调用） */
+    private static function encryptSensitive($config)
+    {
+        if (!empty($config['ai_models']) && is_array($config['ai_models'])) {
+            foreach ($config['ai_models'] as &$m) {
+                if (!is_array($m)) continue;
+                if (!empty($m['api_key']))    $m['api_key']    = self::encSecret($m['api_key']);
+                if (!empty($m['api_secret'])) $m['api_secret'] = self::encSecret($m['api_secret']);
+            }
+            unset($m);
+        }
+        return $config;
+    }
+
+    /** 解密配置中敏感字段（加载后调用） */
+    private static function decryptSensitive($config)
+    {
+        if (!empty($config['ai_models']) && is_array($config['ai_models'])) {
+            foreach ($config['ai_models'] as &$m) {
+                if (!is_array($m)) continue;
+                if (!empty($m['api_key']))    $m['api_key']    = self::decSecret($m['api_key']);
+                if (!empty($m['api_secret'])) $m['api_secret'] = self::decSecret($m['api_secret']);
+            }
+            unset($m);
+        }
+        return $config;
     }
 
     /**
@@ -82,9 +153,9 @@ class AiService
             }
         }
 
-        // 迁移结果落盘一次，避免每次请求重复计算
+        // 迁移结果落盘一次，避免每次请求重复计算（敏感字段需加密后写回）
         if ($changed) {
-            $content = "<?php\n/**\n * AI 开放平台配置\n */\n\n\$AI = " . var_export($config, true) . ";\n";
+            $content = "<?php\n/**\n * AI 开放平台配置\n */\n\n\$AI = " . var_export(self::encryptSensitive($config), true) . ";\n";
             @file_put_contents(\CONFIG_PATH . 'ai.php', $content, LOCK_EX);
         }
         return $config;
@@ -98,6 +169,9 @@ class AiService
         // 保持配置结构完整
         $defaults = array('ai_chat' => '', 'ai_image' => '', 'ai_system_prompt' => '', 'ai_models' => array());
         $config = array_merge($defaults, $config);
+
+        // 敏感字段加密后落盘，避免 API Key/Secret 以明文存储
+        $config = self::encryptSensitive($config);
 
         $content = "<?php\n/**\n * AI 开放平台配置\n */\n\n\$AI = " . var_export($config, true) . ";\n";
         $of = fopen(\CONFIG_PATH . 'ai.php', 'w');

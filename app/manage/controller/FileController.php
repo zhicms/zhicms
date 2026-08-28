@@ -176,15 +176,17 @@ class FileController extends \app\base\controller\BaseController
             return ['error' => 1, 'message' => '文件过大，限制 10MB', 'url' => ''];
         }
 
-        // 允许的图片扩展名
+        // 仅允许图片扩展名；非图片一律拒绝，杜绝任意文件上传(RCE)
         $allowedExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'];
         $ext = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-        
-        // 如果不是图片，直接保存（不转换）
-        $isImage = in_array($ext, $allowedExts);
 
-        // 生成文件名（md5前缀 + 时间戳）
-        $fileName = substr(md5($file['name']), 0, 4) . time();
+        if (!in_array($ext, $allowedExts)) {
+            return ['error' => 1, 'message' => '仅支持图片文件上传', 'url' => ''];
+        }
+        $isImage = true;
+
+        // 生成文件名（md5前缀 + 时间戳，32位冲突概率极低）
+        $fileName = md5($file['name'] . microtime(true)) . time();
 
         // 生成目录路径（按日期组织）
         $dateDir = date('Ymd');
