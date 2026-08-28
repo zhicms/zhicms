@@ -138,7 +138,7 @@ class Hdk {
                 'tbcid' => 0,
                 'couponsurplus' => $item['couponsurplus'] ?? 0,
                 'min_buy' => $item['min_buy'] ?? 0,
-                'item_from' => $item['item_from'] ?? '',
+                'item_from' => 'tb',
             ];
         }
         
@@ -191,7 +191,8 @@ class Hdk {
                 'mainPic' => $item['itempic'] ?? '',
                 'couponPrice' => $item['couponmoney'] ?? 0,
                 'couponReceiveNum' => $item['couponnum'] ?? 0,
-                'couponLink' => '',
+                'couponLink' => $item['couponurl'] ?? '',
+                'itemLink'   => $item['goods_url'] ?? $item['itemurl'] ?? $item['couponurl'] ?? '', // 商品原始链接兜底
                 'couponStartTime' => isset($item['couponstarttime']) ? date('Y-m-d H:i:s', intval($item['couponstarttime'])) : '',
                 'couponEndTime' => isset($item['couponendtime']) ? date('Y-m-d H:i:s', intval($item['couponendtime'])) : '',
                 'commissionRate' => $item['promotion_rate'] ?? 0,
@@ -247,6 +248,7 @@ class Hdk {
                 'couponPrice' => $item['couponmoney'] ?? 0,
                 'couponReceiveNum' => $item['couponnum'] ?? 0,
                 'couponLink' => $item['couponurl'] ?? '',
+                'itemLink'   => $item['itemurl'] ?? $item['couponurl'] ?? '', // 商品原始链接兜底
                 'couponStartTime' => isset($item['couponstarttime']) ? date('Y-m-d H:i:s', intval($item['couponstarttime'])) : '',
                 'couponEndTime' => isset($item['couponendtime']) ? date('Y-m-d H:i:s', intval($item['couponendtime'])) : '',
                 'commissionRate' => $item['commissionshare'] ?? 0,
@@ -302,6 +304,7 @@ class Hdk {
                 'discounts' => $item['itemrate'] ?? 0,             // 折扣: 唯品价/市场价
                 'couponPrice' => $item['couponmoney'] ?? 0,        // 优惠券金额
                 'couponLink' => $item['itemurl'] ?? '',            // 商品落地页（转链用）
+                'itemLink'   => $item['itemurl'] ?? '',            // 商品原始链接（转链失败兜底用）
                 'couponStartTime' => $couponStart ? date('Y-m-d H:i:s', $couponStart) : '0',
                 'couponEndTime' => $couponEnd ? date('Y-m-d H:i:s', $couponEnd) : '0',
                 'couponConditions' => $item['couponminbuy'] ?? '', // 券最小金额购买

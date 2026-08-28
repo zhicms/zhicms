@@ -1107,7 +1107,7 @@ PROMPT;
         // 渲染时预转链：直接调 getPrivilegeLink 拿到真实推广短链，
         // 成功则卡片直达推广页（避免点击时才转链、因 PID 未配置失败而静默回退无佣金落地页）。
         // 失败则回退到 jump 中转（由 RedirectController 二次转链 + 落地页兜底）。
-        $link = $this->resolveItemLink($from, $goodsId, $item['goodsSign'] ?? '');
+        $link = $this->resolveItemLink($from, $goodsId, $item['goodsSign'] ?? '', $item['itemLink'] ?? '');
         if (empty($link)) {
             $link = url('index/redirect/jump', $jumpParams);
         }
@@ -1143,9 +1143,12 @@ PROMPT;
      * 优先调 getPrivilegeLink 拿到真实带佣金短链；失败返回空（调用方回退到 jump 中转）。
      * 包裹超时保护，避免转链接口慢拖垮 AI 响应。
      */
-    private function resolveItemLink($from, $goodsId, $goodsSign = '')
+    private function resolveItemLink($from, $goodsId, $goodsSign = '', $fallbackUrl = '')
     {
-        if (empty($goodsId)) return '';
+        if (empty($goodsId)) {
+            // 无 goodsId 时直接尝试使用商品原始链接（兜底）
+            return (!empty($fallbackUrl) && preg_match('#^https?://#i', $fallbackUrl)) ? $fallbackUrl : '';
+        }
         try {
             // 超时保护：最多等 1.5s，避免拖慢对话
             $tjk = new \ZhiCms\ext\Tjk();
@@ -1160,7 +1163,11 @@ PROMPT;
                 }
             }
         } catch (\Throwable $e) {
-            // 转链失败不影响卡片展示，回退 jump 入口
+            // 转链失败不影响卡片展示，回退商品原始链接 / jump 入口
+        }
+        // 转链失败（如 vip 推广位 PID 未配置）时，回退到商品原始链接，避免死链
+        if (!empty($fallbackUrl) && preg_match('#^https?://#i', $fallbackUrl)) {
+            return $fallbackUrl;
         }
         return '';
     }
@@ -1302,7 +1309,7 @@ PROMPT;
         if ($needGuide) {
             $html .= '<div class="ai-product-footer">👆 点击上方按钮可精准切换「产品本身」或「配件周边」。也可直接告诉我更具体的需求~</div>';
         } else {
-            $html .= '<div class="ai-product-footer">💡 以上按淘宝比价优先排序（已含京东/拼多多/唯品会补充），点击卡片即可领券购买。没找到满意的？告诉我更多需求，我帮您再找~</div>';
+            $html .= '<div class="ai-product-footer">💡 以上为淘宝、京东、拼多多、唯品会多平台比价结果，点击卡片即可领券购买。没找到满意的？告诉我更多需求，我帮您再找~</div>';
         }
         return $html;
     }
