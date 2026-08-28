@@ -130,14 +130,25 @@ class ApiBaseController extends Controller {
      * 加载 AI 配置（不下发 api_key 之外的内容由调用方控制）
      */
     protected function loadAiConfig() {
+        // 文件默认值（含 api_url / provider / model 等静态字段）
         $file = \CONFIG_PATH . 'aichat.php';
+        $fileCfg = array();
         if (file_exists($file)) {
             $cfg = include $file;
             if (is_array($cfg)) {
-                return $cfg;
+                $fileCfg = $cfg;
             }
         }
-        return array();
+        // 数据库优先：后台「开启 AI 对话导购」开关保存在 config 表，
+        // 必须以 DB 覆盖文件默认值，否则后台开关不生效。
+        $dbCfg = \app\common\ConfigStore::load('aichat');
+        if (!is_array($dbCfg)) {
+            $dbCfg = array();
+        }
+        $merged = array_merge($fileCfg, $dbCfg);
+        // 安全：绝不向下发服务商 api_key
+        unset($merged['api_key']);
+        return $merged;
     }
 
     /**
