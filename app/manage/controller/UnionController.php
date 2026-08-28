@@ -680,10 +680,20 @@ class UnionController extends \app\base\controller\BaseController
             return null;
         }
 
-        return new \ZhiCms\ext\Tjk([
-            'DtkappKey' => $dtkAppKey,
-            'DtkappSecret' => $dtkAppSecret,
-            'HdkApiKey' => $hdkApiKey,
+        // 使用完整配置：早期仅传 appkey，导致转链 pid、好单库 unionId、
+        // 拼多多官方 SDK(clientId/secret/pid) 全部丢失，表现为"转链无佣金""拼多多走不了官方通道"。
+        $api = \ZhiCms\ext\Tjk::loadFullApiConfig();
+        return \ZhiCms\ext\Tjk::factory([
+            'DtkappKey'      => $dtkAppKey,
+            'DtkappSecret'   => $dtkAppSecret,
+            'HdkApiKey'      => $hdkApiKey,
+            'HdkUnionId'     => $api['hdk_union_id'] ?? '',
+            'HdkVipPid'      => $api['hdk_vip_pid'] ?? '',
+            'HdkPddPid'      => $api['hdk_pdd_pid'] ?? '',
+            'PddClientId'    => $api['pdd_client_id'] ?? '',
+            'PddClientSecret'=> $api['pdd_client_secret'] ?? '',
+            'PddPid'         => $api['pdd_pid'] ?? ($api['hdk_pdd_pid'] ?? ''),
+            'pid'            => $api['dtk_pid'] ?? ($api['tb_pid'] ?? ''),
         ]);
     }
 
@@ -1133,7 +1143,9 @@ class UnionController extends \app\base\controller\BaseController
                 exit(json_encode(array("info" => "请先在后台配置API参数", "status" => "n")));
             }
 
-            $response = $client->getPrivilegeLink($goodsId, $pid, $platform);
+            // 注意签名：getPrivilegeLink($goodsId, $itemUrl, $platform, $goodsSign, $pid)
+            // pid 是第 5 个参数，早期误把 $pid 填到第 2 个($itemUrl)位，导致 pid 失效且把 pid 当链接传参
+            $response = $client->getPrivilegeLink($goodsId, '', $platform, '', $pid);
 
             if ($response['code'] != 1) {
                 exit(json_encode(array("info" => $response['message'], "status" => "n")));

@@ -74,7 +74,14 @@ class Pdd
         }
         // 拼多多错误返回 {error_response:{error_msg:...}}
         if (isset($data['error_response'])) {
-            return ['code' => 0, 'message' => $data['error_response']['error_msg'] ?? '接口错误', 'data' => $data['error_response']];
+            $er  = $data['error_response'];
+            // error_msg 常是笼统的"业务服务错误"，真实原因在 sub_msg
+            // （如"参数校验失败：pageSize的取值范围是10-100！"），需合并透出便于排查。
+            $msg = $er['error_msg'] ?? '接口错误';
+            if (!empty($er['sub_msg'])) {
+                $msg .= '（' . $er['sub_msg'] . '）';
+            }
+            return ['code' => 0, 'message' => $msg, 'data' => $er];
         }
         return ['code' => 1, 'message' => 'success', 'data' => $data];
     }
@@ -84,10 +91,22 @@ class Pdd
      */
     public function searchGoods($keyword, $pageSize = 20, $page = 1, $sort = '', $hasCoupon = '', $pmin = '', $pmax = '')
     {
+        // 拼多多官方接口强制 pageSize 取值 10-100，超出直接报
+        // "参数校验失败：pageSize的取值范围是10-100！"(error_code 50001)。
+        // 聚合搜索按平台配额分值时常常只要 1~5 条（如 AI 场景 pageSize=5 / 4 平台），
+        // 若不夹取会导致拼多多官方通道必然失败、只能回退好单库。
+        // 这里夹到 [10,100]，多返回的数据由上层截断，不影响结果条数。
+        $pageSize = intval($pageSize);
+        if ($pageSize < 10) {
+            $pageSize = 10;
+        } elseif ($pageSize > 100) {
+            $pageSize = 100;
+        }
+
         $params = [
             'keyword' => $keyword,
             'page' => intval($page),
-            'page_size' => intval($pageSize),
+            'page_size' => $pageSize,
             'pid' => $this->pid,
         ];
         if (!empty($sort)) {

@@ -91,9 +91,58 @@ class Tjk {
         $this->customConfig = $config;
         $this->initWithCustomConfig($config);
     }
+
+    /**
+     * 静态工厂：按完整配置键构建实例，并做进程内单例复用。
+     *
+     * 背景：业务层散落大量 `new \ZhiCms\ext\Tjk()`（不传配置），只能走 initWithLocalConfig，
+     * 一旦后台传入自定义配置（多站点/多账号）就会拿错账号；同时每次 new 都会重新构造 SDK。
+     * 此工厂统一读取全部 api 配置项（含 pid / 拼多多 / 好单库 unionId），避免调用方漏传。
+     *
+     * @param array|null $config 自定义配置；null 表示读取本地 api 配置
+     * @return static
+     */
+    public static function factory($config = null) {
+        static $instances = [];
+        if ($config === null) {
+            $key = '__local__';
+        } else {
+            $key = md5(json_encode($config));
+        }
+        if (!isset($instances[$key])) {
+            $instances[$key] = new static($config);
+        }
+        return $instances[$key];
+    }
+
+    /**
+     * 从本地 api 配置读取**完整**配置数组（含 pid / 拼多多 / 好单库参数）。
+     * 供后台等需要显式传配置的场景使用，避免只传 appkey 导致转链 pid、拼多多 SDK 丢失。
+     */
+    public static function loadFullApiConfig() {
+        if (class_exists('\\app\\common\\ConfigStore')) {
+            $api = \app\common\ConfigStore::load('api');
+        } else {
+            $api = array();
+            if (file_exists(\CONFIG_PATH . 'apiset.php')) {
+                include \CONFIG_PATH . 'apiset.php';
+            }
+        }
+        return is_array($api) ? $api : [];
+    }
     
     public function searchGoods($keyword, $platform = 'taobao', $pageNum = 1, $pageSize = 20, $minId = 1, $sort = '', $hasCoupon = '', $brand = '', $pmin = '', $pmax = '') {
-        $platform = strtolower($platform);
+        $platform = strtolower(trim((string) $platform));
+
+        // 平台别名归一：调用方可能传 tb/taobao/tmall/tm（统一平台编码）或 dtk/hdk（渠道编码），
+        // 若不做归一，传 'tb' 会落到 default 分支报"不支持的平台"，淘宝主搜索直接空结果。
+        $alias = array(
+            'tb' => 'taobao', 'taobao' => 'taobao', 'tmall' => 'taobao', 'tm' => 'taobao',
+            'dtk' => 'taobao', 'hdk' => 'hdk',
+            'jd' => 'jd', 'pdd' => 'pdd', 'pinduoduo' => 'pdd',
+            'vip' => 'vip', 'vipshop' => 'vip', 'wph' => 'vip',
+        );
+        $platform = $alias[$platform] ?? $platform;
 
         // 品牌作为关键词追加（API 搜索按关键词匹配）
         if (!empty($brand)) {
@@ -180,7 +229,13 @@ class Tjk {
     }
     
     public function getGoodsDetail($goodsId, $platform = 'dtk') {
-        $platform = strtolower($platform);
+        $platform = strtolower(trim((string)$platform));
+        // 平台别名归一（与 searchGoods/getPrivilegeLink 保持一致，避免传 tb/tm/wph 时路由错误）
+        $pfAlias = array(
+            'tb' => 'dtk', 'taobao' => 'dtk', 'tmall' => 'dtk', 'tm' => 'dtk', 'dtk' => 'dtk',
+            'pinduoduo' => 'pdd', 'wph' => 'vip', 'vipshop' => 'vip',
+        );
+        $platform = $pfAlias[$platform] ?? $platform;
         $goodsId  = trim((string)$goodsId);
 
         // jd/hdk/pdd/vip 走好单库
@@ -232,7 +287,11 @@ class Tjk {
     public function getTopWords($type = 0) {
         if ($this->dtk) {
             if ($type <= 0) $type = rand(1, 2);   // 随机榜
-            return $this->dtk->GetTop100($type);
+            // 热搜词变化极慢，缓存 30 分钟（搜索页每次进入都会拉取）
+            $key = 'api_topwords_' . intval($type);
+            return $this->apiCache($key, 1800, function () use ($type) {
+                return $this->dtk->GetTop100($type);
+            });
         }
         return ['code' => 0, 'message' => 'API未配置', 'data' => []];
     }
@@ -244,6 +303,11 @@ class Tjk {
         // 因未命中分支而落入兜底大淘客（对京东/拼多多/唯品会会转链失败）。
         if (in_array($platform, ['taobao', 'dtk', 'tmall', 'tm'], true)) {
             $platform = 'tb';
+        }
+        // 其余平台别名归一（小程序等端常传 wph/pinduoduo 等别名）
+        $pfAlias = array('pinduoduo' => 'pdd', 'wph' => 'vip', 'vipshop' => 'vip', 'haodanku' => 'hdk');
+        if (isset($pfAlias[$platform])) {
+            $platform = $pfAlias[$platform];
         }
 
         // 淘宝 -> 大淘客；京东/拼多多/唯品会 -> 好单库（拼多多优先官方SDK，失败回退好单库）
@@ -355,11 +419,23 @@ class Tjk {
         // 新逻辑：每个可用平台都发起搜索并按"配额"各取若干条做比价，
         // 不再因某一平台填满就停止后续平台；空结果平台标记后跳过，避免无效 API 调用拖慢响应。
         $avaiPlats = [];
+        // 平台熔断：某平台连续失败达到阈值后，在冷却期内直接跳过，不再浪费一次 HTTP 请求。
+        // 典型场景：拼多多 duoId 行为异常被封、京东 pid 未配置，每次聚合搜索都会白等一个超时。
+        $planned = [];
         if ($wantTb)  $avaiPlats[] = 'tb';
         if ($wantJd)  $avaiPlats[] = 'jd';
         if ($wantPdd) $avaiPlats[] = 'pdd';
         if ($wantVip) $avaiPlats[] = 'vip';
         $avaiPlats = array_values(array_intersect($avaiPlats, $platPlan));
+
+        // 剔除处于熔断冷却期的平台（失败次数达阈值且未过冷却时间）
+        foreach ($avaiPlats as $idx => $p) {
+            if ($this->platBreakerOpen($p)) {
+                unset($avaiPlats[$idx]);
+            }
+        }
+        $avaiPlats = array_values($avaiPlats);
+
         $platCount = count($avaiPlats);
         // 每平台目标配额（至少 1 条），结果不足时允许某平台超额补足
         $quota = $platCount > 0 ? max(1, intval(ceil($pageSize / $platCount))) : $pageSize;
@@ -381,6 +457,9 @@ class Tjk {
                         $item['item_from'] = 'tb';
                         $byPlat['tb'][] = $item;
                     }
+                    $this->platBreakerRecord('tb', true);
+                } else {
+                    $this->platBreakerRecord('tb', false);
                 }
             } elseif ($p === 'jd') {
                 $jd = $this->hdk->SearchJdGoods($keyword, $want, 1);
@@ -389,6 +468,9 @@ class Tjk {
                         $item['item_from'] = 'jd';
                         $byPlat['jd'][] = $item;
                     }
+                    $this->platBreakerRecord('jd', true);
+                } else {
+                    $this->platBreakerRecord('jd', false, $jd['message'] ?? '');
                 }
             } elseif ($p === 'pdd') {
                 $pdd = $this->hdk->SearchPddGoods($keyword, $want, 1);
@@ -397,6 +479,9 @@ class Tjk {
                         $item['item_from'] = 'pdd';
                         $byPlat['pdd'][] = $item;
                     }
+                    $this->platBreakerRecord('pdd', true);
+                } else {
+                    $this->platBreakerRecord('pdd', false, $pdd['message'] ?? '');
                 }
             } elseif ($p === 'vip') {
                 $vip = $this->hdk->SearchVipGoods($keyword, $want, 1);
@@ -405,6 +490,9 @@ class Tjk {
                         $item['item_from'] = 'vip';
                         $byPlat['vip'][] = $item;
                     }
+                    $this->platBreakerRecord('vip', true);
+                } else {
+                    $this->platBreakerRecord('vip', false, $vip['message'] ?? '');
                 }
             }
         }
@@ -471,6 +559,13 @@ class Tjk {
                 'jd'   => count($byPlat['jd'] ?? []),
                 'pdd'  => count($byPlat['pdd'] ?? []),
                 'vip'  => count($byPlat['vip'] ?? []),
+                // 熔断状态：1=该平台因连续失败被临时跳过（便于排查"某平台无结果"是外部问题还是被熔断）
+                'breaker' => [
+                    'tb'   => $this->platBreakerOpen('tb') ? 1 : 0,
+                    'jd'   => $this->platBreakerOpen('jd') ? 1 : 0,
+                    'pdd'  => $this->platBreakerOpen('pdd') ? 1 : 0,
+                    'vip'  => $this->platBreakerOpen('vip') ? 1 : 0,
+                ],
             ],
         ];
     }
@@ -503,10 +598,6 @@ class Tjk {
     }
 
     /**
-     * 全量商品列表（get-goods-list），返回完整字段包括标题/主图/销量等
-     * 适用于联盟库淘宝页面的无关键词全库浏览，替代 pullGoodsByTime
-     */
-    /**
      * API 结果缓存装饰器（仅用于前端展示型接口，节省外部 API 调用次数）
      *
      * 设计要点：
@@ -521,6 +612,79 @@ class Tjk {
      * @param callable $callback 真正调用 API 的闭包，需返回数组且含 'code' 键
      * @return array
      */
+    /**
+     * 平台熔断：某平台连续失败达到阈值后，冷却期内跳过该平台搜索请求。
+     *
+     * 背景：拼多多 duoId 异常被封、京东 pid 未配置等外部问题会长期存在，
+     * 每次聚合搜索仍逐个发起 HTTP 请求并等待超时，显著拖慢响应（尤其 AI 助手场景）。
+     * 熔断仅作用于 searchAllPlatforms 的旁路平台，主搜淘宝不参与熔断（保证主链路可用）。
+     *
+     * 状态存于缓存，键：tjk_breaker_{platform}，值：['fails'=>连续失败次数, 'until'=>冷却截止时间戳]
+     */
+    private static $BREAKER_FAILS  = 3;      // 连续失败几次后熔断
+    private static $BREAKER_COOLDOWN = 600;  // 熔断冷却秒数（10 分钟）
+
+    private function breakerKey($platform) {
+        return 'tjk_breaker_' . preg_replace('/[^a-z0-9_]/i', '', (string) $platform);
+    }
+
+    /**
+     * 判断某平台是否处于熔断冷却期（淘宝 tb 永不熔断，保证主搜索链路）
+     */
+    private function platBreakerOpen($platform) {
+        if ($platform === 'tb') {
+            return false;
+        }
+        try {
+            $st = CacheService::instance(self::$BREAKER_COOLDOWN)->get($this->breakerKey($platform));
+            if (!is_array($st)) {
+                return false;
+            }
+            return !empty($st['until']) && time() < intval($st['until']);
+        } catch (\Throwable $e) {
+            return false; // 缓存异常不阻断主流程
+        }
+    }
+
+    /**
+     * 记录一次平台搜索结果：成功即清零，失败累加并在达阈值时打开熔断。
+     *
+     * 对"配额耗尽/被限流"这类**确定性**外部故障（当日不会再恢复），
+     * 直接一次即熔断，避免每个用户请求都白打一次 API。
+     *
+     * @param string $platform 平台
+     * @param bool   $ok       是否成功
+     * @param string $msg      失败原因（用于识别配额类故障）
+     */
+    private function platBreakerRecord($platform, $ok, $msg = '') {
+        if ($platform === 'tb') {
+            return;
+        }
+        try {
+            $cache = CacheService::instance(self::$BREAKER_COOLDOWN);
+            $key   = $this->breakerKey($platform);
+            $st    = $cache->get($key);
+            $fails = (is_array($st) ? intval($st['fails'] ?? 0) : 0);
+            if ($ok) {
+                $fails = 0;
+            } else {
+                // 配额/限流类故障：一次即熔断（确定性故障，重试无意义）
+                $hard = (strpos((string) $msg, '上限') !== false)
+                    || (strpos((string) $msg, '限流') !== false)
+                    || (stripos((string) $msg, 'quota') !== false)
+                    || (stripos((string) $msg, 'exceed') !== false);
+                $fails = $hard ? self::$BREAKER_FAILS : $fails + 1;
+            }
+            $new = [
+                'fails' => $fails,
+                'until' => ($fails >= self::$BREAKER_FAILS) ? (time() + self::$BREAKER_COOLDOWN) : 0,
+            ];
+            $cache->set($key, $new, self::$BREAKER_COOLDOWN);
+        } catch (\Throwable $e) {
+            // 熔断状态写入失败不影响业务
+        }
+    }
+
     private function apiCache($key, $ttl, $callback) {
         $cache  = CacheService::instance($ttl);
         $cached = $cache->get($key);
@@ -641,7 +805,11 @@ class Tjk {
         if (!$this->dtk) {
             return ['code' => 0, 'message' => '大淘客API未配置', 'list' => [], 'total' => 0, 'pageId' => ''];
         }
-        return $this->dtk->GetTipOff($pageId, $pageSize, $topic, $platform);
+        // 线报属展示型内容，缓存 5 分钟（首页/线报页高频访问，避免重复打 API）
+        $key = 'api_tipoff_' . md5(json_encode([$pageId, $pageSize, $topic, $platform]));
+        return $this->apiCache($key, 300, function () use ($pageId, $pageSize, $topic, $platform) {
+            return $this->dtk->GetTipOff($pageId, $pageSize, $topic, $platform);
+        });
     }
 
     public function getDtk() {
@@ -699,7 +867,11 @@ class Tjk {
         if (empty($out['couponEndTime'])   || $out['couponEndTime']   == '0') $out['couponEndTime']   = $item['couponendtime']   ?? '0';
         if (empty($out['shopName']))    $out['shopName']    = $item['shopname'] ?? $item['sellernick'] ?? '';
         if (empty($out['couponLink']))  $out['couponLink']  = $item['couponurl'] ?? $item['coupon_share_url'] ?? '';
-        if (empty($out['itemLink']))    $out['itemLink']    = $item['clickurl'] ?? $item['couponurl'] ?? '';
+        // 商品原始链接兜底：转链失败时用它能保证用户至少可打开商品页。
+        // 各平台字段名差异大，需覆盖大淘客(clickurl/couponurl)与好单库(itemurl/goods_url/itemendurl)。
+        if (empty($out['itemLink']))    $out['itemLink']    = $item['clickurl'] ?? $item['itemurl'] ?? $item['goods_url'] ?? $item['itemendurl'] ?? $item['couponurl'] ?? '';
+        // 券链接兜底（好单库部分接口只回 coupon_share_url / couponurl）
+        if (empty($out['couponLink']))  $out['couponLink']  = $item['coupon_share_url'] ?? $item['couponurl'] ?? '';
         if (empty($out['commissionRate'])) $out['commissionRate'] = $item['income_rate'] ?? $item['tkmoney'] ?? 0;
         if (empty($out['estimateAmount'])) $out['estimateAmount'] = $item['income_info'] ?? 0;
         // 店铺类型归一化（好单库 shoptype：1=天猫 2=淘宝）

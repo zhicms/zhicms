@@ -55,7 +55,19 @@ class Hdk {
                 return ['code' => 0, 'msg' => curl_error($ch)];
             }
             curl_close($ch);
-            return json_decode($output, true);
+            $data = json_decode($output, true);
+            // 好单库在配额耗尽/被限流时，会返回误导性的 msg（"网络超时，页面加载失败"），
+            // 真实原因放在 sub_msg（如"今日请求已达到上限"）。这里把 sub_msg 合并进 msg，
+            // 避免运营误判为网络故障而反复重试。
+            if (is_array($data) && empty($data['code']) && !empty($data['sub_msg'])) {
+                $msg = (string) $data['sub_msg'];
+                if (empty($data['msg']) || strpos((string) $data['msg'], '超时') !== false) {
+                    $data['msg'] = $msg;
+                } else {
+                    $data['msg'] = $data['msg'] . '（' . $msg . '）';
+                }
+            }
+            return $data;
         } catch (\Exception $e) {
             return ['code' => 0, 'msg' => $e->getMessage()];
         }
@@ -94,6 +106,8 @@ class Hdk {
                 'desc' => $item['itemdesc'] ?? '',
                 'couponReceiveNum' => 0,
                 'couponLink' => $item['couponurl'] ?? '',
+                // 商品原始链接兜底：转链失败时保证用户仍有可跳转的落地页
+                'itemLink' => $item['itemurl'] ?? $item['couponurl'] ?? '',
                 // 券时间安全转换：API 返回可能是数字时间戳字符串或日期字符串，
                 // 直接传入 date() 会触发 PHP8 "Argument #2 must be of type ?int" 报错。
                 'couponEndTime' => isset($item['couponendtime']) ? self::safeTime($item['couponendtime']) : '',
