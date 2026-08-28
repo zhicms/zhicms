@@ -488,6 +488,41 @@
   color: #bbb;
   margin-top: 6px;
 }
+/* 快捷指令条：让用户一眼看到 # / @ / ? 用法 */
+.ai-shortcuts {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 7px;
+  flex-wrap: wrap;
+}
+.ai-sc-item {
+  font-size: 11px;
+  color: #ff2e54;
+  background: #fff0f3;
+  border: 1px solid #ffd6de;
+  border-radius: 12px;
+  padding: 2px 9px;
+  cursor: pointer;
+  user-select: none;
+  transition: all .15s;
+}
+.ai-sc-item:hover {
+  background: #ff2e54;
+  color: #fff;
+}
+.ai-sc-item b {
+  font-weight: 700;
+  margin-right: 1px;
+}
+[data-theme="dark"] .ai-sc-item {
+  background: #2a1d22;
+  border-color: #5c3038;
+  color: #ff8aa0;
+}
+[data-theme="dark"] .ai-sc-item:hover {
+  background: #ff2e54;
+  color: #fff;
+}
 
 /* 打字指示器 */
 .ai-typing {
@@ -941,9 +976,14 @@
 
   <!-- 输入区 -->
   <div class="ai-chat-footer">
+    <div class="ai-shortcuts">
+      <span class="ai-sc-item" data-prefix="#"><b>#</b>直搜商品</span>
+      <span class="ai-sc-item" data-prefix="@"><b>@</b>全网比价</span>
+      <span class="ai-sc-item" data-prefix="?"><b>?</b>纯问答</span>
+    </div>
     <div class="ai-input-row">
       <div class="ai-input-area">
-        <textarea id="aiInput" placeholder="输入你想买的东西..." rows="1" maxlength="500"></textarea>
+        <textarea id="aiInput" placeholder="输入你想买的，如「保温杯」；加 # 直搜、@ 比价、? 问答" rows="1" maxlength="500"></textarea>
       </div>
       <button class="ai-send-btn" id="aiSendBtn" title="发送">➤</button>
     </div>
@@ -1774,6 +1814,20 @@
         sendMessage();
       }
     });
+
+    // 快捷指令：点击 # / @ / ? 自动在输入框前加前缀，引导用户使用直搜/比价/问答
+    var scItems = document.querySelectorAll('.ai-sc-item');
+    for (var si = 0; si < scItems.length; si++) {
+      scItems[si].addEventListener('click', function() {
+        var p = this.getAttribute('data-prefix');
+        var cur = inputEl.value.trim();
+        // 若已以某前缀开头则替换，避免重复前缀
+        cur = cur.replace(/^[#@?]\s*/, '');
+        inputEl.value = p + cur;
+        inputEl.focus();
+        autoResize();
+      });
+    }
 
     // 自动调整高度
     inputEl.addEventListener('input', autoResize);

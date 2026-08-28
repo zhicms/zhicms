@@ -83,6 +83,35 @@ class AiAssistantController extends \app\base\controller\BaseController
         file_put_contents($this->getHistoryFile(), json_encode($history, JSON_UNESCAPED_UNICODE));
     }
 
+    /**
+     * 把助手回复压缩为「纯文本摘要」用于持久化历史。
+     * 商品卡/文章卡是一大段 HTML，若原样写入历史，下一轮：
+     *  - analyzeIntent 的指代解析会从 HTML 标签文字里误提关键词，扰乱意图；
+     *  - 透传给 AI 的上下文会被 HTML 噪声污染，导致「连问几次就断/反复提问」。
+     * 因此历史里只留一句人类可读的摘要，既保留连贯性又干净。
+     *
+     * @param string $reply    原始回复（可能含 HTML）
+     * @param string $respType product | chat
+     * @return string
+     */
+    private function summarizeReply($reply, $respType)
+    {
+        $text = trim(strip_tags($reply));
+        if ($respType === 'product') {
+            // 尝试从商品卡里抓一个代表词（如「保温杯」）作为摘要主语
+            if (preg_match('/ai-product-title[^>]*>(.*?)<\/div>/u', $reply, $m)) {
+                $kw = mb_substr(strip_tags($m[1]), 0, 12, 'utf-8');
+                return '已为你推荐相关商品：' . $kw . '（可在对话框查看卡片）';
+            }
+            return '已为你推荐相关商品（可在对话框查看卡片）';
+        }
+        // 聊天回复：截断到 120 字，避免历史过长
+        if (mb_strlen($text, 'utf-8') > 120) {
+            $text = mb_substr($text, 0, 120, 'utf-8') . '…';
+        }
+        return $text;
+    }
+
     // ==================== API 端点 ====================
 
     /**
@@ -102,6 +131,19 @@ class AiAssistantController extends \app\base\controller\BaseController
             $message = isset($_REQUEST['message']) ? trim($_REQUEST['message']) : '';
         }
 
+        // ===== 快捷指令解析（让对话更直接、避免「绕圈才出产品」）=====
+        //  #关键词  → 直接搜商品（跳过 AI 闲聊，立即返回商品卡，不废话）
+        //  @关键词  → 全网比价（强制走大淘客全网搜，给出跨平台比价）
+        //  ?关键词  → 纯 AI 问答（即使像购物词也走聊天，适合问「怎么选」等）
+        $forceMode = '';   // '' | 'search' | 'compare' | 'chat'
+        if (preg_match('/^([#@?])\s*(.+)$/u', $message, $m)) {
+            $prefix = $m[1];
+            $message = trim($m[2]);
+            if ($prefix === '#')      $forceMode = 'search';
+            elseif ($prefix === '@')   $forceMode = 'compare';
+            elseif ($prefix === '?')   $forceMode = 'chat';
+        }
+
         // 轻量级频率限制（基于客户端 IP，60 秒内最多 10 次对话），防止恶意刷爆第三方 AI 额度
         $rateCheck = $this->checkRateLimit();
         if ($rateCheck !== true) {
@@ -119,25 +161,43 @@ class AiAssistantController extends \app\base\controller\BaseController
             return;
         }
 
-        // 加载历史并追加用户消息
+        // 加载历史并追加用户消息（历史内容已做 HTML 清洗，见 saveHistory）
         $history = $this->loadHistory();
         $history[] = ['role' => 'user', 'content' => $message];
 
-        // 意图分析（含上下文：能理解"便宜点的""第二个"等指代）
-        $intent = $this->analyzeIntent($message, $history);
-
-        if ($intent['is_purchase']) {
-            // 求推荐 / 求对比 / 含筛选诉求 → 走"商品卡 + AI 导购点评"，更贴近真人导购
-            $needAdvice = $intent['need_advice'];
-            $reply = $this->handleProductSearch($intent['keyword'], $message, $history, $needAdvice);
+        // 快捷指令优先：直接决定走搜索/比价/聊天，跳过意图猜疑，避免「多轮才出产品」
+        if ($forceMode === 'search' || $forceMode === 'compare') {
+            $keyword = $this->extractKeyword($message);
+            if (empty($keyword)) {
+                $keyword = $message; // 取不到关键词就用原文（如"#手机"→"手机"）
+            }
+            $reply = $this->handleProductSearch($keyword, $message, $history, true, $forceMode === 'compare');
             $respType = 'product';
         } else {
-            $reply = $this->handleAiChat($message, $history);
+            // 意图分析（含上下文：能理解"便宜点的""第二个"等指代）
+            $intent = $this->analyzeIntent($message, $history);
+
+            if ($intent['is_purchase']) {
+                // 求推荐 / 求对比 / 含筛选诉求 → 走"商品卡 + AI 导购点评"，更贴近真人导购
+                $needAdvice = $intent['need_advice'];
+                $reply = $this->handleProductSearch($intent['keyword'], $message, $history, $needAdvice);
+                $respType = 'product';
+            } else {
+                // 纯聊天模式（? 指令或确实非购物）
+                $reply = $this->handleAiChat($message, $history);
+                $respType = 'chat';
+            }
+        }
+
+        // 兜底：判定为 product 但实际未产出任何商品卡/导购点评（如搜不到该词的商品，
+        // handleProductSearch 已 fallback 到 AI 聊天），此时降级为 chat，避免前端按商品渲染却无卡片。
+        if ($respType === 'product' && strpos($reply, 'ai-product') === false && strpos($reply, 'ai-advice') === false) {
             $respType = 'chat';
         }
 
-        // 保存历史
-        $history[] = ['role' => 'assistant', 'content' => $reply];
+        // 保存历史（assistant 侧存「纯文本摘要」，避免把整段商品卡 HTML 写入历史，
+        // 否则下一轮意图分析会被 HTML 标签文字干扰、AI 上下文也被污染 → 连问几次就断/反复提问）
+        $history[] = ['role' => 'assistant', 'content' => $this->summarizeReply($reply, $respType)];
         $this->saveHistory($history);
 
         $out = ['reply' => $reply, 'type' => $respType];
@@ -884,6 +944,30 @@ PROMPT;
         // 提取商品关键词
         $keyword = $this->extractKeyword($message);
 
+        // --- 策略2.5：歧义词上下文消歧（苹果=水果/手机 等）---
+        // 必须在语义匹配之前做：若原句出现歧义词且上下文足以判定义项（如"苹果手机"→手机、
+        // "红富士苹果"→水果），直接归一为标准品类词并跳过后续易误判的语义向量匹配。
+        // 仅当歧义词出现在句中且能判定具体义项时才生效；否则交回语义匹配兜底。
+        $disCat = \ZhiCms\ext\Vector\Bm25Index::disambiguateFromMessage($message);
+        if ($disCat !== '') {
+            $isPurchase = true;
+            $keyword = $disCat;
+        }
+
+        // --- 策略3：语义向量/BM25 增强（解决纯字符串匹配漏识别，如"保温杯"不在词表也能认出）---
+        // 无论策略1/2 是否已判购物意图，只要提取到关键词，都尝试用语义 SDK 归一化到标准品类词。
+        // 这样做的好处：
+        //  1. "保温杯"等不在词表的词仍能识别为购物；
+        //  2. "跑步鞋"即便因 purchaseWords 含"跑步"被提前判 true，也能归一为"运动鞋"，
+        //     并通过后续真实性校验的白名单（避免被误杀）。
+        if (!empty($keyword)) {
+            $semKw = $this->semanticMatchCategory($keyword, $message);
+            if ($semKw !== '') {
+                $isPurchase = true;
+                $keyword = $semKw;
+            }
+        }
+
         // --- 多轮上下文指代解析 ---
         // 若当前消息无明显商品词，但含"更便宜/第二个/红色的/那个"等指代/筛选词，
         // 且上一轮是购物意图，则沿用上一轮的真实关键词，让助手"听懂"延续对话。
@@ -894,8 +978,12 @@ PROMPT;
             if (mb_strpos($mLower, $w) !== false) { $hasRefine = true; break; }
         }
         if ((!$isPurchase || empty($keyword)) && $hasRefine && !empty($history)) {
-            // 从最近一条含关键词的历史里找回真实意图
+            // 从最近一条「用户」消息里找回真实购物意图（跳过 assistant 摘要，
+            // 避免把"已为你推荐相关商品"这类历史文本误当成关键词）。
             for ($i = count($history) - 1; $i >= 0; $i--) {
+                if (empty($history[$i]['role']) || $history[$i]['role'] !== 'user') {
+                    continue;
+                }
                 $prev = isset($history[$i]['content']) ? $history[$i]['content'] : '';
                 if ($prev) {
                     $prevIntent = $this->analyzeIntentStandalone($prev);
@@ -953,6 +1041,19 @@ PROMPT;
             }
         }
 
+        // --- 购物意图真实性校验：避免「今天天气怎么样」因含"怎么样"被误判购物 ---
+        // 仅当命中了明显购物词/句式时才置 is_purchase；但若提取到的关键词既不是泛品类、
+        // 也不是具体型号/品牌（如"今天天气"），说明只是闲聊里带了个"怎么样"，
+        // 应回退为普通聊天，避免反复把闲聊当购物意图。
+        if ($isPurchase && !empty($keyword)) {
+            $isGeneric = $this->isGenericCategory($keyword);
+            $isModel   = $this->looksLikeSpecificModel($keyword);
+            $isSemanticCat = in_array($keyword, $this->getCategoryVocab(), true);
+            if (!$isGeneric && !$isModel && !$isSemanticCat) {
+                $isPurchase = false;
+            }
+        }
+
         return [
             'is_purchase' => $isPurchase && !empty($keyword),
             'keyword'     => $keyword,
@@ -970,12 +1071,108 @@ PROMPT;
             '推荐', '值得', '怎么样', '测评', '价格', '多少钱', '排行', '对比', '同款', '平替', '送礼'];
 
         $isPurchase = false;
-        $mLower = mb_strtolower($message);
+        $mLower = mb_strtolower(strip_tags($message));
         foreach ($purchaseWords as $word) {
             if (mb_strpos($mLower, $word) !== false) { $isPurchase = true; break; }
         }
         $keyword = $this->extractKeyword($message);
+        // 与 analyzeIntent 保持一致：纯品类词（水杯/保温杯等）也算购物意图，
+        // 否则多轮指代时历史里的"保温杯"会被误判为非购物，导致无法沿用上一轮关键词。
+        if (!$isPurchase && !empty($keyword) && $this->isGenericCategory($keyword)) {
+            $isPurchase = true;
+        }
         return ['is_purchase' => $isPurchase && !empty($keyword), 'keyword' => $keyword];
+    }
+
+    /**
+     * 语义匹配品类：用本地语义 SDK（ZhiCms\ext\VectorService）判断关键词是否
+     * 语义上属于某电商品类，并返回归一化后的标准品类词。
+     *
+     * 解决纯字符串匹配的两大短板：
+     *  1. 词表覆盖不全（"保温杯"不在 productTerms，但语义上≈"水杯"簇）→ 仍能识别；
+     *  2. 同义词/别名（"跑步鞋"≈"运动鞋"、"游戏本"≈"电脑"）→ 统一归一为标准词，
+     *     便于后续用同一关键词搜索/转链，避免同物不同词导致结果漂移。
+     *
+     * @param string $keyword 已提取的候选关键词
+     * @return string 归一化品类词（命中）或 ''（不相关）
+     */
+    /**
+     * 精选主流电商品类词库（与 productTerms 语义簇对齐），用于语义匹配 + 意图真实性校验白名单。
+     * 注意：不能用 VectorService 内置 SYNONYMS 的全部 223 个同义词作词库，
+     * 那样太宽会导致"讲笑话"→"麦克风"这类非购物词被误判为购物。
+     */
+    private function getCategoryVocab()
+    {
+        static $vocab = array(
+            '水杯', '保温杯', '手机', '电脑', '笔记本', '平板', '耳机', '手表', '鞋子', '运动鞋',
+            '衣服', '连衣裙', '裤子', '外套', '包', '相机', '电视', '空调', '冰箱', '洗衣机',
+            '被子', '枕头', '床单', '文具', '玩具', '充电宝', '键盘', '鼠标', '雨伞', '毛巾',
+            '洗发水', '牙膏', '零食', '咖啡', '奶粉', '面膜', '口红', '防晒', '扫地机器人',
+            '电饭煲', '吹风机', '剃须刀', '行李箱', '抱枕', '窗帘', '灯具', '加湿器',
+            '除湿机', '空气净化器', '净水器', '饮水机', '破壁机', '空气炸锅',
+            '水果', '蔬菜', '牛肉', '猪肉', '鸡肉', '羊肉', '海鲜', '鸡蛋', '牛奶', '酸奶',
+            '咖啡', '茶', '酒', '白酒', '水', '饮料', '奶粉', '纸尿裤', '辅食', '玩具', '绘本',
+            '猫粮', '狗粮', '猫砂', '行车记录仪', '脚垫', '打印纸', '墨盒', '电池',
+            '四件套', '被套', '保鲜膜', '垃圾袋', '调料', '维生素', '口罩', '体温计', '血压计',
+            '鱼', '三文鱼', '坚果', '零食',
+            '杂粮', '大米', '美妆', '饰品', '鲜花', '滋补', '家居', '汽车',
+        );
+        return $vocab;
+    }
+
+    /**
+     * 语义匹配品类：用本地语义 SDK（ZhiCms\ext\VectorService）判断关键词是否
+     * 语义上属于某电商品类，并返回归一化后的标准品类词。
+     *
+     * 解决纯字符串匹配的两大短板：
+     *  1. 词表覆盖不全（"保温杯"不在 productTerms，但语义上≈"水杯"簇）→ 仍能识别；
+     *  2. 同义词/别名（"跑步鞋"≈"运动鞋"、"游戏本"≈"电脑"）→ 统一归一为标准词，
+     *     便于后续用同一关键词搜索/转链，避免同物不同词导致结果漂移。
+     *
+     * @param string $keyword 已提取的候选关键词
+     * @return string 归一化品类词（命中）或 ''（不相关）
+     */
+    private function semanticMatchCategory($keyword, $contextText = '')
+    {
+        // 歧义词（苹果=水果/手机 等）优先用上下文消歧，避免纯语义向量偏到错误义项
+        if ($contextText !== '') {
+            $dis = \ZhiCms\ext\Vector\Bm25Index::disambiguate($keyword, $contextText);
+            if ($dis !== '') {
+                return $dis;
+            }
+        }
+        static $vs = null;
+        if ($vs === null) {
+            try {
+                $vs = new \ZhiCms\ext\VectorService();
+            } catch (\Throwable $e) {
+                return '';
+            }
+        }
+        $vocab = $this->getCategoryVocab();
+        try {
+            // 第一步：在精选品类白名单上匹配（BM25 阈值 >=6.0 / 语义 >=0.45）
+            $res = $vs->matchCategory($keyword, $vocab);
+            if ($res['hit']) {
+                if ($res['method'] === 'bm25' && $res['score'] >= 6.0) {
+                    return $res['keyword'];
+                }
+                if ($res['method'] === 'semantic' && $res['score'] >= 0.45) {
+                    return $res['keyword'];
+                }
+            }
+            // 第二步：回退到全量同义词标准词（覆盖品牌词/具体单品，如"茅台"→"白酒"、
+            // "三只松鼠"→"零食"）。全量词典更宽，故仅接受 BM25 字面/同义强匹配（>=6.0），
+            // 不使用语义相似度，避免把闲聊词误判为品类（闲聊词与品类词字面无重叠，BM25=0 自然不过）。
+            $allCats = array_keys(\ZhiCms\ext\Vector\Bm25Index::SYNONYMS);
+            $res2 = $vs->matchCategory($keyword, $allCats);
+            if ($res2['hit'] && $res2['method'] === 'bm25' && $res2['score'] >= 6.0) {
+                return $res2['keyword'];
+            }
+        } catch (\Throwable $e) {
+            return '';
+        }
+        return '';
     }
 
     /**
@@ -1004,9 +1201,9 @@ PROMPT;
             '一台', '一个', '一款', '一种', '一件', '一双', '一件套', '一套',
             '一部', '一根', '一条', '一双', '一盒', '一包', '一瓶', '一箱',
             // 单独量词：用户常写"买个/买只/来款"，复合量词删完后量词本身会残留
-            // （如"我想买个保温杯"→删"我想买"剩"个保温杯"），需单独清理，否则搜索词不精确
-            '个', '只', '支', '款', '台', '部', '双', '套', '把', '瓶', '盒',
-            '件', '条', '根', '张', '本', '副', '顶', '盏', '块', '片',
+            // （如"我想买个保温杯"→删"我想买"剩"个保温杯"），需单独清理，否则搜索词不精确。
+            // 注意：这里放的是「可独立成词或明显冗余」的量词，且下方改用「数字+量词」正则清理，
+            // 避免把商品名里的字素误删（如「本」会毁掉「游戏本/笔记本」，故不在此列）。
             '几款', '几种', '几个', '几件', '一些',
             // -- 语气/助词 --
             '点', '的', '了', '吗', '呢', '啊', '吧', '嘛', '呀', '哦',
@@ -1038,6 +1235,10 @@ PROMPT;
         foreach ($stopWords as $word) {
             $cleaned = str_replace($word, '', $cleaned);
         }
+
+        // 删除「数字+量词」组合（如"一台""五个""五本"），避免量词残留；
+        // 但不在词内删除单字量词（如"本"在"游戏本/笔记本"中是词素，不能删）。
+        $cleaned = preg_replace('/\d+[个只支款台部双套把瓶盒件条根张本副顶盏块片]/u', '', $cleaned);
 
         // 去除空白、标点、特殊符号
         $cleaned = preg_replace('/[\s\p{P}\p{S}]+/u', '', $cleaned);
@@ -1079,8 +1280,9 @@ PROMPT;
      * @param string $originalMessage 用户原始消息（用于生成导购点评）
      * @param array  $history         对话历史
      * @param bool   $needAdvice      是否需要 AI 导购点评
+     * @param bool   $compareAll      是否强制全网比价（@ 指令）：优先跨平台比价而非站内
      */
-    private function handleProductSearch($keyword, $originalMessage, $history = array(), $needAdvice = false)
+    private function handleProductSearch($keyword, $originalMessage, $history = array(), $needAdvice = false, $compareAll = false)
     {
         if (empty($keyword)) {
             return $this->handleAiChat($originalMessage, $history);
@@ -1107,22 +1309,9 @@ PROMPT;
             $searchKw2 = $searchKw;
         }
 
-        // 1. 搜索站内 yun_article 表（参数化 LIKE，杜绝 addslashes 宽字节注入风险）
-        $articles = obj("api/ApiData")->dataSelect(
-            "yun_article",
-            array('title' => array('like', '%' . $searchKw2 . '%')),
-            "`id` DESC LIMIT 0, 5"
-        );
-
-        if (!empty($articles)) {
-            $html = $this->formatArticleResults($articles, $searchKw2);
-            if ($needAdvice) {
-                $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'article') . $html;
-            }
-            return $html;
-        }
-
-        // 2. 站内无结果，尝试大淘客全网搜索（按平台优先级填充：淘宝>京东>拼多多>唯品会）
+        // 策略：问产品「立即出产品」——全网商品优先，站内文章作为「相关攻略」补充，
+        // 避免「先给文章、多轮才出商品」的割裂感（用户要的是货，不是文章）。
+        // 1. 优先大淘客全网搜索（按平台优先级填充：淘宝>京东>拼多多>唯品会）
         try {
             $tjk = new \ZhiCms\ext\Tjk();
             $this->tjk = $tjk; // 复用同一实例给后续转链，避免重新初始化丢失推广位 PID 等配置
@@ -1135,10 +1324,33 @@ PROMPT;
                 if ($needAdvice) {
                     $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'product', $tjkResult['items']) . $html;
                 }
+                // 站内相关攻略作为补充（若有），放在商品卡之后，不喧宾夺主
+                $articles = obj("api/ApiData")->dataSelect(
+                    "yun_article",
+                    array('title' => array('like', '%' . $searchKw2 . '%')),
+                    "`id` DESC LIMIT 0, 3"
+                );
+                if (!empty($articles)) {
+                    $html .= $this->formatArticleResults($articles, $searchKw2, true);
+                }
                 return $html;
             }
         } catch (\Exception $e) {
             // 大淘客不可用时静默 fallback
+        }
+
+        // 2. 全网无结果，再退站内文章（仍是购物相关，给出攻略/测评）
+        $articles = obj("api/ApiData")->dataSelect(
+            "yun_article",
+            array('title' => array('like', '%' . $searchKw2 . '%')),
+            "`id` DESC LIMIT 0, 5"
+        );
+        if (!empty($articles)) {
+            $html = $this->formatArticleResults($articles, $searchKw2);
+            if ($needAdvice) {
+                $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'article') . $html;
+            }
+            return $html;
         }
 
         // 3. 都没有结果，交给 AI 处理（结合上下文给出智能引导，而非干巴巴兜底）
@@ -1189,10 +1401,14 @@ PROMPT;
 
     /**
      * 格式化站内文章结果为 HTML
+     * @param bool $asSupplement 是否为「相关攻略」补充块（商品卡之后展示，弱化标题）
      */
-    private function formatArticleResults($items, $keyword)
+    private function formatArticleResults($items, $keyword, $asSupplement = false)
     {
-        $html = '<div class="ai-product-header">🔍 为您找到关于 "<b>' . htmlspecialchars($keyword) . '</b>" 的优惠信息：</div>';
+        $header = $asSupplement
+            ? '<div class="ai-product-header ai-guide-header">📚 相关攻略 & 评测</div>'
+            : '<div class="ai-product-header">🔍 为您找到关于 "<b>' . htmlspecialchars($keyword) . '</b>" 的优惠信息：</div>';
+        $html = $header;
         $html .= '<div class="ai-product-list">';
 
         foreach ($items as $i => $item) {
@@ -1347,11 +1563,15 @@ PROMPT;
         $generic = [
             '手机', '耳机', '电脑', '笔记本', '平板', '手表', '鞋子', '鞋', '衣服', '裙子',
             '裤子', '外套', '包', '包包', '相机', '电视', '空调', '冰箱', '洗衣机', '被子',
-            '枕头', '床单', '文具', '玩具', '水杯', '杯', '锅', '表', '键盘', '鼠标', '充电宝',
+            '枕头', '床单', '文具', '玩具', '水杯', '保温杯', '杯子', '杯', '锅', '表', '键盘',
+            '鼠标', '充电宝', '充电器', '数据线', '雨伞', '毛巾', '洗发水', '牙膏', '零食',
         ];
         $k = mb_strtolower(trim($kw));
         foreach ($generic as $g) {
-            if ($k === $g || $k === mb_strtolower($g)) return true;
+            $gl = mb_strtolower($g);
+            // 精确匹配，或「关键词包含该泛品类词」匹配（长度>=2 才允许包含，避免单字误伤如「杯」）
+            if ($k === $gl) return true;
+            if (mb_strlen($g) >= 2 && mb_strpos($k, $gl) !== false) return true;
         }
         return false;
     }
@@ -1366,8 +1586,8 @@ PROMPT;
         if (preg_match('/[\x{4e00}-\x{9fa5}]*\d{1,3}(\s?(pro|plus|max|ultra|mini|air|se))?/i', $kw)) return true;
         // 含明确品牌+系列信号
         if (preg_match('/(iphone|华为|huawei|小米|xiaomi|荣耀|honor|oppo|vivo|samsung|三星|mate|ipad|macbook|switch|ps5|airpods|苹果|apple|联想|lenovo|戴尔|dell|佳能|尼康|索尼|sony)/i', $kw)) return true;
-        // 关键词较长（>=4 字且不是单纯品类），倾向具体需求
-        if (mb_strlen(preg_replace('/\s+/u', '', $kw)) >= 4) return true;
+        // 注意：不再用「长度>=4字就当具体型号」这种过宽规则，否则"今天天气"这类闲聊词
+        // 会被误判为型号，导致真实性校验放行、把闲聊当成购物意图。
         return false;
     }
 
