@@ -330,23 +330,39 @@
   margin-bottom: 6px;
   padding: 2px 0;
 }
-/* AI 导购点评：像真人导购一样给选购建议，置于商品卡上方 */
+/* AI 导购点评：像懂车帝/小红书买手一样给结构化选购建议，置于商品卡上方 */
 .ai-advice {
   background: linear-gradient(135deg, #fff7e6 0%, #fff1f0 100%);
   border: 1px solid #ffd591;
-  border-radius: 10px;
-  padding: 8px 11px;
-  margin: 0 0 8px;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 0 0 10px;
   font-size: 13px;
-  line-height: 1.6;
+  line-height: 1.65;
   color: #614a14;
 }
-.ai-advice::first-letter { font-weight: 600; }
+.ai-advice-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #d4380d;
+  margin-bottom: 4px;
+}
+.ai-advice-line {
+  margin: 2px 0;
+}
+.ai-advice-line b { color: #ad4e00; }
+.ai-advice-conclusion b { color: #cf1322; }
+.ai-advice-warn { color: #ad6800; }
+.ai-advice-warn b { color: #ad6800; }
 [data-theme="dark"] .ai-advice {
   background: linear-gradient(135deg, #2a2418 0%, #2a1f1d 100%);
   border-color: #5c4a2e;
   color: #e8d9b5;
 }
+[data-theme="dark"] .ai-advice-title { color: #ffa940; }
+[data-theme="dark"] .ai-advice-line b,
+[data-theme="dark"] .ai-advice-conclusion b { color: #ffc069; }
+[data-theme="dark"] .ai-advice-warn { color: #ffd666; }
 .ai-product-list {
   display: flex;
   flex-direction: column;
@@ -406,6 +422,42 @@
 }
 .ai-product-price b {
   font-size: 15px;
+}
+.ai-coupon {
+  display: inline-block;
+  background: #fff1f0;
+  color: #ff2e54;
+  border: 1px solid #ffccc7;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 0 4px;
+  margin-left: 4px;
+}
+.ai-sales {
+  color: #999;
+  font-size: 11px;
+  margin-left: 4px;
+}
+.ai-product-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 4px;
+}
+.ai-tag {
+  display: inline-block;
+  background: #f6ffed;
+  color: #389e0d;
+  border: 1px solid #b7eb8f;
+  border-radius: 4px;
+  font-size: 10px;
+  padding: 1px 5px;
+  line-height: 1.5;
+}
+[data-theme="dark"] .ai-tag {
+  background: #162312;
+  color: #95de64;
+  border-color: #274916;
 }
 .ai-product-date {
   font-size: 10px;
@@ -871,6 +923,66 @@
   border-color: transparent;
   box-shadow: 0 2px 10px rgba(255, 46, 84, 0.35);
 }
+/* 模糊需求澄清引导（懂车帝式结构化追问） */
+.ai-clarify {
+  background: linear-gradient(135deg, #f0f7ff 0%, #f6fffa 100%);
+  border: 1px solid #bae0ff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 6px 0 10px;
+}
+.ai-clarify-tip {
+  font-size: 13px;
+  color: #1565c0;
+  margin-bottom: 8px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.ai-clarify-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+.ai-clarify-label {
+  font-size: 12px;
+  color: #555;
+  flex-shrink: 0;
+}
+[data-theme="dark"] .ai-clarify-label { color: #b0bec5; }
+.ai-clarify-btn {
+  border: 1px solid #91d5ff;
+  background: #fff;
+  color: #1565c0;
+  font-size: 12px;
+  padding: 5px 11px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all .2s ease;
+  line-height: 1.4;
+}
+.ai-clarify-btn:hover {
+  background: linear-gradient(135deg, #1890ff, #36cfc9);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(24, 144, 255, 0.3);
+}
+/* dark 模式适配 */
+[data-theme="dark"] .ai-clarify {
+  background: #15202b;
+  border-color: #1f3a52;
+}
+[data-theme="dark"] .ai-clarify-tip { color: #69c0ff; }
+[data-theme="dark"] .ai-clarify-btn {
+  background: #15202b;
+  border-color: #2a4d6e;
+  color: #69c0ff;
+}
+[data-theme="dark"] .ai-clarify-btn:hover {
+  background: linear-gradient(135deg, #1890ff, #36cfc9);
+  color: #fff;
+}
 /* dark 模式适配 */
 [data-theme="dark"] .ai-guide {
   background: #2a1f22;
@@ -888,6 +1000,40 @@
   background: linear-gradient(135deg, #ff2e54, #ff6b81);
   color: #fff;
 }
+
+/* 打字气泡阶段化提示文案 */
+.ai-typing-text {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+[data-theme="dark"] .ai-typing-text { color: #8a93a0; }
+
+/* 消息操作条（hover 显示） */
+.ai-msg-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+  padding-left: 2px;
+  opacity: 0;
+  transition: opacity .15s ease;
+}
+.ai-msg:hover .ai-msg-actions { opacity: 1; }
+.ai-msg-action {
+  font-size: 11px;
+  color: #aaa;
+  cursor: pointer;
+  user-select: none;
+  padding: 1px 4px;
+  border-radius: 4px;
+}
+.ai-msg-action:hover {
+  color: #ff2e54;
+  background: rgba(255,46,84,0.08);
+}
+[data-theme="dark"] .ai-msg-action { color: #6b7685; }
+[data-theme="dark"] .ai-msg-action:hover { color: #ff8ba0; background: rgba(255,139,160,0.12); }
 </style>
 
 <!-- 悬浮按钮 -->
@@ -1041,6 +1187,9 @@
         updateIdentity(res);
         if (res.history && res.history.length > 0) {
           renderHistory(res.history);
+        } else if (!(res && res.is_login)) {
+          // 游客态：后端无历史时，从本机 localStorage 恢复，兑现"仅存本机"
+          loadLocalHistory();
         }
       } catch(e) {}
     };
@@ -1097,11 +1246,102 @@
         });
       })(guideBtns[gi]);
     }
+    // 模糊需求澄清按钮（预算 / 用途）点击 -> 携带约束重新触发精准搜索
+    var clarifyBtns = bubble.querySelectorAll('.ai-clarify-btn');
+    for (var ci = 0; ci < clarifyBtns.length; ci++) {
+      (function(btn) {
+        btn.addEventListener('click', function() {
+          var m = btn.getAttribute('data-msg');
+          if (m) sendMessage(m);
+        });
+      })(clarifyBtns[ci]);
+    }
 
     msgDiv.appendChild(avatar);
     msgDiv.appendChild(bubble);
+    // 消息操作条：assistant 可复制；user 可重发（提升可用性）
+    var actions = document.createElement('div');
+    actions.className = 'ai-msg-actions';
+    if (role === 'assistant') {
+      var copyBtn = document.createElement('span');
+      copyBtn.className = 'ai-msg-action';
+      copyBtn.textContent = '📋 复制';
+      copyBtn.addEventListener('click', function() {
+        copyText(stripHtml(bubble.innerHTML));
+        copyBtn.textContent = '✅ 已复制';
+        setTimeout(function(){ copyBtn.textContent = '📋 复制'; }, 1500);
+      });
+      actions.appendChild(copyBtn);
+    } else {
+      var resendBtn = document.createElement('span');
+      resendBtn.className = 'ai-msg-action';
+      resendBtn.textContent = '↻ 重发';
+      resendBtn.addEventListener('click', function() {
+        sendMessage(content);
+      });
+      actions.appendChild(resendBtn);
+    }
+    msgDiv.appendChild(actions);
+
     chatBody.appendChild(msgDiv);
     scrollBottom();
+    persistMessage(role, content);
+  }
+
+  // ===== 游客态本地持久化（localStorage）：兑现"对话仅存于本机"，刷新不丢 =====
+  var STORAGE_KEY = 'zhicms_ai_guest_history';
+  var localHistory = [];
+  function persistMessage(role, content) {
+    try {
+      // 仅游客态持久化；商品卡 HTML 转为纯文本摘要，避免存巨大结构
+      var el = document.getElementById('aiChatIdentity');
+      if (el && el.classList.contains('login')) return; // 已登录不写本地
+      // 跳过纯商品卡（避免本地膨胀），但保留导购建议/文字
+      var plain = stripHtml(content);
+      if (plain.length < 2 && content.indexOf('ai-product') !== -1) return;
+      localHistory.push({ role: role, content: plain.length > 600 ? plain.substring(0, 600) : plain });
+      if (localHistory.length > 50) localHistory = localHistory.slice(-50);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(localHistory));
+    } catch(e) {}
+  }
+  function loadLocalHistory() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) {
+          for (var i = 0; i < arr.length; i++) {
+            appendMessage(arr[i].role, arr[i].content, false);
+          }
+          return true;
+        }
+      }
+    } catch(e) {}
+    return false;
+  }
+  function clearLocalHistory() {
+    try { localStorage.removeItem(STORAGE_KEY); localHistory = []; } catch(e) {}
+  }
+
+  // 复制文本到剪贴板（兼容非安全上下文）
+  function copyText(text) {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text);
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); document.body.removeChild(ta);
+      }
+    } catch(e) {}
+  }
+
+  // 去除 HTML 标签，提取纯文本（用于复制）
+  function stripHtml(html) {
+    var tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return (tmp.textContent || tmp.innerText || '').trim();
   }
 
   // 格式化内容（简单的 markdown 处理）
@@ -1122,18 +1362,31 @@
       .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank">$1</a>');
   }
 
-  // 显示打字动画
+  // 显示打字动画（带阶段化提示，缓解等待焦虑）
+  var phaseTimer = null;
   function showTyping() {
     var div = document.createElement('div');
     div.className = 'ai-msg assistant';
     div.id = 'aiTyping';
-    div.innerHTML = '<div class="ai-msg-avatar">🤖</div><div class="ai-msg-bubble"><div class="ai-typing"><span></span><span></span><span></span></div></div>';
+    div.innerHTML = '<div class="ai-msg-avatar">🤖</div>'
+      + '<div class="ai-msg-bubble"><div class="ai-typing-text" id="aiTypingText">正在理解你的需求…</div>'
+      + '<div class="ai-typing"><span></span><span></span><span></span></div></div>';
     chatBody.appendChild(div);
     scrollBottom();
+    // 阶段提示：随耗时推进，真实反映"理解→搜索→建议"流程
+    var phases = ['正在理解你的需求…', '正在搜索全网优惠…', '正在比价并生成导购建议…'];
+    var pi = 0;
+    var textEl = document.getElementById('aiTypingText');
+    if (phaseTimer) clearInterval(phaseTimer);
+    phaseTimer = setInterval(function() {
+      pi = Math.min(pi + 1, phases.length - 1);
+      if (textEl) textEl.textContent = phases[pi];
+    }, 2200);
   }
 
   // 移除打字动画
   function removeTyping() {
+    if (phaseTimer) { clearInterval(phaseTimer); phaseTimer = null; }
     var el = document.getElementById('aiTyping');
     if (el) el.remove();
   }
@@ -1197,6 +1450,7 @@
     for (var i = 0; i < msgs.length; i++) {
       msgs[i].remove();
     }
+    clearLocalHistory();
     if (welcome) {
       welcome.style.display = '';
     }

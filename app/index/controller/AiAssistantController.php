@@ -161,6 +161,21 @@ class AiAssistantController extends \app\base\controller\BaseController
             return;
         }
 
+        // 复用统一的导购主流程（移动端 guide 接口也调用同一份逻辑，保证双端一致）
+        $out = $this->chatLogic($message, $forceMode);
+        echo json_encode($out, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * 导购主流程（桌面端与移动端共用一份逻辑，避免双端行为不一致）
+     * 返回数组：['reply'=>HTML片段, 'type'=>product|chat, 'unconfigured'=>bool?]
+     *
+     * @param string $message   用户输入（已剥离快捷指令前缀）
+     * @param string $forceMode '' | 'search' | 'compare' | 'chat'
+     * @return array
+     */
+    public function chatLogic($message, $forceMode = '')
+    {
         // 加载历史并追加用户消息（历史内容已做 HTML 清洗，见 saveHistory）
         $history = $this->loadHistory();
         $history[] = ['role' => 'user', 'content' => $message];
@@ -189,9 +204,13 @@ class AiAssistantController extends \app\base\controller\BaseController
             }
         }
 
-        // 兜底：判定为 product 但实际未产出任何商品卡/导购点评（如搜不到该词的商品，
+        // 兜底：判定为 product 但实际未产出任何商品卡/导购点评/澄清引导（如搜不到该词的商品，
         // handleProductSearch 已 fallback 到 AI 聊天），此时降级为 chat，避免前端按商品渲染却无卡片。
-        if ($respType === 'product' && strpos($reply, 'ai-product') === false && strpos($reply, 'ai-advice') === false) {
+        if ($respType === 'product'
+            && strpos($reply, 'ai-product') === false
+            && strpos($reply, 'ai-advice') === false
+            && strpos($reply, 'ai-clarify') === false
+            && strpos($reply, 'ai-guide') === false) {
             $respType = 'chat';
         }
 
@@ -204,7 +223,7 @@ class AiAssistantController extends \app\base\controller\BaseController
         if (!empty($this->chatUnconfigured)) {
             $out['unconfigured'] = true;
         }
-        echo json_encode($out, JSON_UNESCAPED_UNICODE);
+        return $out;
     }
 
     /**
@@ -1288,6 +1307,15 @@ PROMPT;
             return $this->handleAiChat($originalMessage, $history);
         }
 
+        // 模糊需求澄清（懂车帝式"先问清楚再推荐"）：用户只说"推荐个手机/帮我挑笔记本"这类
+        // 泛品类、无具体型号/预算/场景的诉求时，先给出结构化澄清引导，引导其用筛选器或点快捷标签
+        // 补全需求，而不是直接甩出一屏幕泛结果。避免"推荐了个寂寞"的体验。
+        if ($this->isGenericCategory($keyword)
+            && !$this->looksLikeSpecificModel($keyword)
+            && !preg_match('/(\d{2,5})\s*(元|块|块钱|\$|¥)|预算|价位|送|礼物|女生|男生|学生|宝妈|老人|长辈|夏天|冬季|新手|入门/iu', $originalMessage)) {
+            return $this->renderClarifyGuide($keyword);
+        }
+
         // 意图澄清：用户点了引导按钮后发送「产品本身 / 配件周边」，剥离澄清词避免循环引导
         $explicit = '';
         $rawMsg   = $originalMessage ?: $keyword;
@@ -1374,29 +1402,94 @@ PROMPT;
         // 组装简化的商品线索（避免把大段 HTML 喂给模型）
         $clues = array();
         foreach (array_slice($items, 0, 5) as $it) {
-            $clues[] = ($it['title'] ?? '') . ' ' . ($it['shopName'] ?? '') . ' ¥' . ($it['actualPrice'] ?? '?');
+            $clues[] = ($it['title'] ?? '') . ' ' . ($it['shopName'] ?? '') . ' ¥' . ($it['actualPrice'] ?? '?')
+                . ' 月销' . ($it['monthSales'] ?? '?');
         }
-        $itemLine = $clues ? ("\n候选商品：" . implode('；', $clues)) : '';
+        $itemLine = $clues ? ("\n候选商品（标题 店铺 价格 月销）：" . implode('；', $clues)) : '';
 
-        $system = "你是本站的智能导购助手。用户想买「{$keyword}」。"
-            . "请用**不超过 60 字**的中文，给出贴心、具体的选购建议或推荐理由，"
-            . "像朋友一样说话，不要罗列参数。若用户提到预算/人群/场景，请据此给建议。"
-            . "只输出建议本身，不要加「导购：」等前缀。";
+        // 从用户原话里抽取预算/人群/场景，让导购建议更有针对性（懂车帝式"按需求给建议"）
+        $demand = array();
+        if (preg_match('/(\d{2,5})\s*(元|块|块钱|\$|¥)/u', $userMsg, $m)
+            || preg_match('/(?:预算|价位)\s*(\d{2,5})/u', $userMsg, $m)) {
+            $demand[] = '预算约' . $m[1] . '元';
+        }
+        if (preg_match('/(送|礼物|生日|节日|过年|新年)/u', $userMsg)) {
+            $demand[] = '送礼场景';
+        }
+        if (preg_match('/(女生|女生用|女生送|她|闺蜜)/u', $userMsg)) {
+            $demand[] = '女性用户';
+        }
+        if (preg_match('/(男生|男生用|他|男友|兄弟)/u', $userMsg)) {
+            $demand[] = '男性用户';
+        }
+        if (preg_match('/(学生|上学|宿舍|考研|考研党)/u', $userMsg)) {
+            $demand[] = '学生党';
+        }
+        if (preg_match('/(宝妈|宝宝|婴儿|儿童|小孩|孩子)/u', $userMsg)) {
+            $demand[] = '母婴人群';
+        }
+        if (preg_match('/(老人|长辈|父母|爸妈|中老年)/u', $userMsg)) {
+            $demand[] = '长辈';
+        }
+        if (preg_match('/(夏天|夏季|冬天|冬季|春秋|换季)/u', $userMsg)) {
+            $demand[] = '季节相关';
+        }
+        if (preg_match('/(新手|入门|第一次|刚开始)/u', $userMsg)) {
+            $demand[] = '新手入门';
+        }
+        $demandLine = $demand ? ("\n用户附加需求：" . implode('、', $demand)) : '';
+
+        $system = "你是本站的智能导购顾问，风格像懂车帝/小红书里的专业买手。"
+            . "用户想买「{$keyword}」。请基于候选商品，给出**结构化导购建议**，"
+            . "用如下格式（每段一行，不要加序号前缀，控制在 120 字内）：\n"
+            . "【结论】用一句大白话告诉用户现在值不值得买、先买哪类\n"
+            . "【看什么】挑 2-3 个最该关注的核心指标/参数，说明怎么看（别说废话）\n"
+            . "【避坑】一句最容易被坑的点或选购误区\n"
+            . "若用户提到预算/人群/场景，务必结合给出针对性建议。语言亲切、像朋友，不堆参数。";
 
         $prompt = "用户说：「{$userMsg}」"
             . $itemLine
-            . "\n请给出选购建议。";
+            . $demandLine
+            . "\n请按格式给出导购建议。";
 
         try {
             $advice = \app\common\AiHub::chat($prompt, $system, false, array('fallback' => true));
             if (!\app\common\AiHub::isErrorResult($advice) && trim($advice) !== '') {
-                $advice = htmlspecialchars(trim($advice), ENT_QUOTES, 'UTF-8');
-                return '<div class="ai-advice">💡 ' . $advice . '</div>';
+                return $this->renderAdviceBlock(trim($advice), $keyword);
             }
         } catch (\Throwable $e) {
             // 点评失败不影响商品卡展示
         }
         return '';
+    }
+
+    /**
+     * 把 AI 返回的结构化导购建议渲染成可展示的 HTML 区块（【结论】/【看什么】/【避坑】分段）
+     */
+    private function renderAdviceBlock($text, $keyword)
+    {
+        $text = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        // 将 【xxx】 标记转换为带样式的分段
+        $text = preg_replace_callback('/【(结论|看什么|避坑|推荐|适合谁)】/', function ($m) {
+            $label = array(
+                '结论' => '🎯 结论',
+                '看什么' => '🔍 看什么',
+                '避坑' => '⚠️ 避坑',
+                '推荐' => '⭐ 推荐',
+                '适合谁' => '👤 适合谁',
+            );
+            $cls = array(
+                '结论' => 'conclusion',
+                '看什么' => 'point',
+                '避坑' => 'warn',
+                '推荐' => 'point',
+                '适合谁' => 'point',
+            );
+            $k = $m[1];
+            return '</p><p class="ai-advice-line ai-advice-' . $cls[$k] . '"><b>' . $label[$k] . '：</b>';
+        }, $text);
+        return '<div class="ai-advice"><div class="ai-advice-title">💡 智能导购建议 · ' . htmlspecialchars($keyword) . '</div>'
+            . '<p class="ai-advice-line">' . $text . '</p></div>';
     }
 
     /**
@@ -1468,7 +1561,31 @@ PROMPT;
         ];
         $fromText = isset($fromLabel[$from]) ? '【' . $fromLabel[$from] . '】' : '';
 
-        $html = '<a href="' . $link . '" target="_blank" rel="nofollow" class="ai-product-item">';
+        // 轻量导购卖点标签：基于真实字段生成，不额外调用 AI，保证性能
+        $tags = array();
+        if ($sales >= 10000)     $tags[] = '🔥 爆款热销';
+        elseif ($sales >= 2000)  $tags[] = '📈 高销量';
+        if ($coupon > 0)         $tags[] = '🧧 有券可领';
+        if ($price > 0 && $price < 50)  $tags[] = '💰 平价好物';
+        if ($price >= 3000)      $tags[] = '🏆 品质之选';
+        $shop = $item['shopName'] ?? '';
+        if (mb_strpos($shop, '自营') !== false || mb_strpos($shop, '官方') !== false) {
+            $tags[] = '🛡️ 官方/自营';
+        }
+        $tagHtml = '';
+        if ($tags) {
+            $tagHtml = '<div class="ai-product-tags">' . implode('', array_map(function ($t) {
+                return '<span class="ai-tag">' . htmlspecialchars($t, ENT_QUOTES, 'UTF-8') . '</span>';
+            }, array_slice($tags, 0, 3))) . '</div>';
+        }
+
+        // data-* 属性供移动端导购接口（api/ai/guide）解析出真实商品 ID / 平台，
+        // 以便 App 直接转链唤起电商 App（桌面 web 端会忽略这些属性，无副作用）。
+        $goodsSign = isset($item['goodsSign']) ? htmlspecialchars($item['goodsSign'], ENT_QUOTES, 'UTF-8') : '';
+        $html = '<a href="' . $link . '" target="_blank" rel="nofollow" class="ai-product-item"'
+            . ' data-goods-id="' . htmlspecialchars($goodsId, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-goods-sign="' . $goodsSign . '"'
+            . ' data-from="' . htmlspecialchars($from, ENT_QUOTES, 'UTF-8') . '">';
         if ($pic) {
             $html .= '<img src="' . $pic . '" class="ai-product-pic" alt="' . $title . '">';
         }
@@ -1476,13 +1593,26 @@ PROMPT;
         $html .= '<div class="ai-product-title">' . $fromText . $title . '</div>';
         $html .= '<div class="ai-product-price">';
         if ($price > 0) $html .= '💰 券后 <b>¥' . $price . '</b>';
-        if ($coupon > 0) $html .= ' | 🧧 领' . $coupon . '元券';
-        if ($sales > 0) $html .= ' | 📈 销量 ' . $sales;
+        if ($coupon > 0) $html .= ' <span class="ai-coupon">券' . $coupon . '元</span>';
+        if ($sales > 0) $html .= ' <span class="ai-sales">已售' . $this->formatSales($sales) . '</span>';
         $html .= '</div>';
+        $html .= $tagHtml;
         $html .= '</div>';
         $html .= '<span class="ai-product-badge">领券购买 →</span>';
         $html .= '</a>';
         return $html;
+    }
+
+    /**
+     * 销量格式化（12345 → 1.2万），用于商品卡展示
+     */
+    private function formatSales($sales)
+    {
+        $sales = intval($sales);
+        if ($sales >= 10000) {
+            return round($sales / 10000, 1) . '万';
+        }
+        return (string) $sales;
     }
 
     /**
@@ -1623,6 +1753,69 @@ PROMPT;
             }
         }
         return ['main' => $main, 'accessory' => $accessory];
+    }
+
+    /**
+     * 模糊需求澄清引导（懂车帝式"先问清楚再推荐"）
+     * 用户只说泛品类（如"手机"）且无预算/场景时，给出结构化快捷选项补全需求。
+     * 每个按钮的 data-msg 带约束（如"手机 预算2000"），点击即重新触发精准搜索。
+     */
+    private function renderClarifyGuide($keyword)
+    {
+        $kw = htmlspecialchars($keyword, ENT_QUOTES, 'UTF-8');
+        // 按品类给不同的预算档位 / 用途标签
+        $budgets = ['1000以内', '1000-3000', '3000-5000', '5000以上'];
+        $scenes = $this->getClarifyScenes($keyword);
+
+        $html  = '<div class="ai-clarify">';
+        $html .= '<div class="ai-clarify-tip">🛒 想给您更精准的推荐，先告诉我几点偏好吧~</div>';
+
+        $html .= '<div class="ai-clarify-row"><span class="ai-clarify-label">💰 预算：</span>';
+        foreach ($budgets as $b) {
+            $msg = htmlspecialchars($keyword . ' 预算' . $b, ENT_QUOTES, 'UTF-8');
+            $html .= '<button class="ai-clarify-btn" data-msg="' . $msg . '">' . htmlspecialchars($b) . '</button>';
+        }
+        $html .= '</div>';
+
+        if ($scenes) {
+            $html .= '<div class="ai-clarify-row"><span class="ai-clarify-label">🎯 用途：</span>';
+            foreach ($scenes as $s) {
+                $msg = htmlspecialchars($keyword . ' ' . $s, ENT_QUOTES, 'UTF-8');
+                $html .= '<button class="ai-clarify-btn" data-msg="' . $msg . '">' . htmlspecialchars($s) . '</button>';
+            }
+            $html .= '</div>';
+        }
+
+        $html .= '<div class="ai-clarify-row"><span class="ai-clarify-label">🔤 或直接说：</span>';
+        $html .= '<button class="ai-clarify-btn" data-msg="' . htmlspecialchars('帮我推荐' . $kw, ENT_QUOTES, 'UTF-8') . '">随便推荐几款' . $kw . '</button>';
+        $html .= '</div>';
+
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * 按品类返回相关的"用途/场景"快捷标签，让澄清引导更对口
+     */
+    private function getClarifyScenes($keyword)
+    {
+        $k = mb_strtolower($keyword);
+        if (mb_strpos($k, '手机') !== false || mb_strpos($k, '电脑') !== false || mb_strpos($k, '笔记本') !== false) {
+            return ['打游戏', '拍照', '续航长', '轻薄办公', '学生用'];
+        }
+        if (mb_strpos($k, '耳机') !== false || mb_strpos($k, '音箱') !== false) {
+            return ['降噪', '运动', '通勤', '听歌'];
+        }
+        if (mb_strpos($k, '衣服') !== false || mb_strpos($k, '裙') !== false || mb_strpos($k, '裤') !== false || mb_strpos($k, '鞋') !== false) {
+            return ['日常通勤', '运动', '约会', '显瘦'];
+        }
+        if (mb_strpos($k, '洗衣机') !== false || mb_strpos($k, '空调') !== false || mb_strpos($k, '冰箱') !== false || mb_strpos($k, '电视') !== false) {
+            return ['节能', '小户型', '智能', '性价比'];
+        }
+        if (mb_strpos($k, '护肤品') !== false || mb_strpos($k, '面膜') !== false || mb_strpos($k, '化妆品') !== false) {
+            return ['补水', '抗老', '油皮', '敏感肌'];
+        }
+        return ['自用', '送人', '性价比', '高品质'];
     }
 
     /**
