@@ -2224,7 +2224,7 @@ PROMPT;
         try {
             $tjk = new \ZhiCms\ext\Tjk();
             $this->tjk = $tjk; // 复用同一实例给后续转链，避免重新初始化丢失推广位 PID 等配置
-            $tjkResult = $tjk->searchAllPlatforms($searchKw2, 1, 5, null, true, $filters);
+            $tjkResult = $tjk->searchAllPlatforms($searchKw2, 1, 5, null, true, $filters, 4);
             if (isset($tjkResult['debug'])) {
                 error_log('[AI search] platforms=' . json_encode($tjkResult['debug']));
             }
@@ -2560,7 +2560,7 @@ PROMPT;
     /**
      * 渲染单条商品卡片（大淘客/好单库通用）
      */
-    private function renderTjkItem($item)
+    private function renderTjkItem($item, $noPrefix = false)
     {
         $title   = htmlspecialchars($item['title'] ?? $item['dtitle'] ?? '', ENT_QUOTES, 'UTF-8');
         $goodsId = $item['goodsId'] ?? '';
@@ -2578,11 +2578,12 @@ PROMPT;
         $price   = isset($item['actualPrice']) ? floatval($item['actualPrice']) : 0;
         $coupon  = isset($item['couponPrice']) ? floatval($item['couponPrice']) : 0;
         $sales   = isset($item['monthSales']) ? intval($item['monthSales']) : 0;
+        $originalPrice = isset($item['originalPrice']) ? floatval($item['originalPrice']) : (isset($item['origPrice']) ? floatval($item['origPrice']) : 0);
 
         $fromLabel = [
             'tb' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会',
         ];
-        $fromText = isset($fromLabel[$from]) ? '【' . $fromLabel[$from] . '】' : '';
+        $fromText = (!$noPrefix && isset($fromLabel[$from])) ? '【' . $fromLabel[$from] . '】' : '';
 
         // 轻量导购卖点标签：基于真实字段生成，不额外调用 AI，保证性能
         $tags = array();
@@ -2608,7 +2609,9 @@ PROMPT;
         $html = '<a href="' . $link . '" target="_blank" rel="nofollow" class="ai-product-item"'
             . ' data-goods-id="' . htmlspecialchars($goodsId, ENT_QUOTES, 'UTF-8') . '"'
             . ' data-goods-sign="' . $goodsSign . '"'
-            . ' data-from="' . htmlspecialchars($from, ENT_QUOTES, 'UTF-8') . '">';
+            . ' data-from="' . htmlspecialchars($from, ENT_QUOTES, 'UTF-8') . '"'
+            . ' data-shop="' . htmlspecialchars($shop, ENT_QUOTES, 'UTF-8') . '"'
+            . ($originalPrice > 0 ? ' data-original-price="' . $originalPrice . '"' : '') . '>';
         if ($pic) {
             $html .= '<img src="' . $pic . '" class="ai-product-pic" alt="' . $title . '">';
         }
@@ -2918,8 +2921,22 @@ PROMPT;
         }
 
         $html .= '<div class="ai-product-list">';
-        foreach ($items as $item) {
-            $html .= $this->renderTjkItem($item);
+        // 固定格式：按平台分组，每平台最多 4 个；空平台（无数据/权限问题）直接不显示
+        $platOrder = array('tb' => '淘宝', 'jd' => '京东', 'pdd' => '拼多多', 'vip' => '唯品会');
+        $grouped = array();
+        foreach ($items as $it) {
+            $p = $it['item_from'] ?? 'tb';
+            if (!isset($platOrder[$p])) $p = 'tb';
+            $grouped[$p][] = $it;
+        }
+        foreach ($platOrder as $p => $label) {
+            if (empty($grouped[$p])) continue;
+            $html .= '<div class="ai-platform-group">';
+            $html .= '<div class="ai-platform-title">' . $label . ' · ' . count($grouped[$p]) . ' 件</div>';
+            foreach ($grouped[$p] as $item) {
+                $html .= $this->renderTjkItem($item, true);   // 分组后标题不再重复平台前缀
+            }
+            $html .= '</div>';
         }
         $html .= '</div>';
 

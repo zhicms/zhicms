@@ -121,7 +121,7 @@ class IndexController extends \app\base\controller\BaseController
             // 读取分类(yun_nav)后台设置的 keywords/dec，作为前台 meta 兜底（addtype 可配置）
             $cateKeywords = '';
             $cateDec = '';
-            $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = ?"), array($navId));
+            $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("id" => $navId));
             if (!empty($navRow)) {
                 $cateKeywords = isset($navRow['keywords']) ? trim($navRow['keywords']) : '';
                 $cateDec      = isset($navRow['dec']) ? trim($navRow['dec']) : '';
@@ -271,7 +271,7 @@ class IndexController extends \app\base\controller\BaseController
       $cateDec = '';
       $navid = (int)($view['navid'] ?? 0);
       if ($navid > 0) {
-          $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("`id` = ?"), array($navid));
+          $navRow = obj("api/ApiData")->dataSelect("yun_nav", array("id" => $navid));
           if (!empty($navRow)) {
               $cateKeywords = isset($navRow['keywords']) ? trim($navRow['keywords']) : '';
               $cateDec      = isset($navRow['dec']) ? trim($navRow['dec']) : '';

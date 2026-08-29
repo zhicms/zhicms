@@ -100,11 +100,15 @@ class AiController extends ApiBaseController {
         }
 
         // 移动端无浏览器 session cookie，前端回传自定义 sessionId 以维持多轮对话历史
-        // （桌面端 loadHistory/saveHistory 以内核 session_id() 作为历史文件标识）
+        // （桌面端 loadHistory/saveHistory 以 ai_uid Cookie 作为历史文件标识）
         $sid = isset($input['sessionId']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $input['sessionId']) : '';
         if ($sid !== '') {
             session_id($sid);
             @session_start();
+            // 小程序/App 不会像浏览器那样自动回传 ai_uid Cookie，
+            // 直接以移动端稳定下发的 sessionId 作为历史文件标识，
+            // 否则每轮都生成新的随机 userId、历史对不上 → 多轮上下文丢失（鸡同鸭讲）。
+            $_COOKIE['ai_uid'] = $sid;
         }
 
         // 复用前台导购主流程（同一份逻辑）
@@ -185,6 +189,8 @@ class AiController extends ApiBaseController {
                 $goodsId = $node->getAttribute('data-goods-id');
                 $goodsSign = $node->getAttribute('data-goods-sign');
                 $fromCode = $node->getAttribute('data-from'); // tb / jd / pdd / vip
+                $originalPrice = $node->getAttribute('data-original-price');
+                $shop = $node->getAttribute('data-shop');
                 if (!in_array($fromCode, array('tb', 'jd', 'pdd', 'vip'), true)) {
                     $fromCode = '';
                 }
@@ -209,6 +215,8 @@ class AiController extends ApiBaseController {
                     'link' => $link,
                     'from' => $fromText,
                     'tag' => implode(' ', $tags),
+                    'originalPrice' => $originalPrice !== '' ? $originalPrice : '',
+                    'shop' => $shop,
                 );
             }
         }

@@ -337,7 +337,7 @@ class ShopController extends \app\base\controller\BaseController
         }
         // 已支付取消：回退库存与余额（如为余额支付）
         if ($o['status'] == 1) {
-            $items = obj('api/ApiData')->dataSelect('yun_shop_order_item', array("`order_id`=?", array($id)));
+            $items = obj('api/ApiData')->dataSelect('yun_shop_order_item', array('order_id' => $id), '`id` ASC');
             foreach (($items ?: array()) as $it) {
                 $goodsId = intval($it['goods_id']);
                 $num = intval($it['num']);

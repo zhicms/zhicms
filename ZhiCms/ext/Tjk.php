@@ -396,7 +396,7 @@ class Tjk {
      * @param array|null $platforms     需要搜索的平台数组，null 表示全部
      * @param bool       $fillPriority  是否按平台优先级顺序填充（默认 true，AI 场景）
      */
-    public function searchAllPlatforms($keyword, $pageNum = 1, $pageSize = 5, $platforms = null, $fillPriority = true, $filters = array()) {
+    public function searchAllPlatforms($keyword, $pageNum = 1, $pageSize = 5, $platforms = null, $fillPriority = true, $filters = array(), $perPlatform = 0) {
         // 比价路线：以淘宝联盟库为主，优先返回淘宝结果；淘宝不足时用京东/拼多多/唯品会补充。
         // $filters: ['price_min'=>int,'price_max'=>int] —— 由 AI 导购意图抽取产出，硬过滤预算。
         $pmin = !empty($filters['price_min']) ? (int)$filters['price_min'] : 0;
@@ -442,10 +442,12 @@ class Tjk {
         $platCount = count($avaiPlats);
         // 每平台目标配额（至少 1 条），结果不足时允许某平台超额补足
         $quota = $platCount > 0 ? max(1, intval(ceil($pageSize / $platCount))) : $pageSize;
+        // 固定每平台数量模式（导购固定格式：每平台 $perPlatform 个，空平台跳过）
+        $perPlatCap = $perPlatform > 0 ? (int)$perPlatform : 0;
 
         foreach ($platPlan as $p) {
             if (!in_array($p, $avaiPlats, true)) continue;
-            $want = $fillPriority ? $quota : $pageSize;
+            $want = $perPlatCap > 0 ? $perPlatCap : ($fillPriority ? $quota : $pageSize);
             if ($p === 'tb') {
                 // 主搜：大淘客；若大淘客无结果/未配置，用好单库超级搜索（淘宝）兜底
                 $result = null;
@@ -543,33 +545,49 @@ class Tjk {
             }
         }
 
-        // 均衡截断：保证每个有数据的平台都保留代表商品，避免数据量大的平台（如唯品会）
-        // 淹没其他平台，实现真正的多平台比价；最终总数不超过 $pageSize。
-        $presentPlats = array_values(array_unique(array_column($allItems, 'item_from')));
-        $platCnt = count($presentPlats);
-        if ($platCnt === 0) {
-            $finalItems = array_slice($allItems, 0, $pageSize);
-        } else {
-            $perPlat = intval(ceil($pageSize / $platCnt));   // 每平台代表数量
-            $used = array_fill_keys($presentPlats, 0);
+        // 均衡截断 / 固定每平台数量
+        if ($perPlatCap > 0) {
+            // 固定格式：每平台保留 $perPlatCap 条（如导购每个平台 4 件）。
+            // 空平台（无数据/权限问题）自动跳过；某平台结果不足时，有几条显示几条。
             $finalItems = [];
-            // 第一轮：每平台各取 perPlat 条（保证均衡）
+            $used = ['tb' => 0, 'jd' => 0, 'pdd' => 0, 'vip' => 0];
             foreach ($allItems as $it) {
                 $p = $it['item_from'] ?? 'vip';
-                if ($used[$p] < $perPlat && count($finalItems) < $pageSize) {
+                if (!isset($used[$p])) $used[$p] = 0;
+                if ($used[$p] < $perPlatCap) {
                     $finalItems[] = $it;
                     $used[$p]++;
                 }
             }
-            // 第二轮：若还有余额，按原排序（含平台优先级）补足
-            if (count($finalItems) < $pageSize) {
+        } else {
+            // 均衡截断：保证每个有数据的平台都保留代表商品，避免数据量大的平台（如唯品会）
+            // 淹没其他平台，实现真正的多平台比价；最终总数不超过 $pageSize。
+            $presentPlats = array_values(array_unique(array_column($allItems, 'item_from')));
+            $platCnt = count($presentPlats);
+            if ($platCnt === 0) {
+                $finalItems = array_slice($allItems, 0, $pageSize);
+            } else {
+                $perPlat = intval(ceil($pageSize / $platCnt));   // 每平台代表数量
+                $used = array_fill_keys($presentPlats, 0);
+                $finalItems = [];
+                // 第一轮：每平台各取 perPlat 条（保证均衡）
                 foreach ($allItems as $it) {
-                    if (count($finalItems) >= $pageSize) break;
-                    $hit = false;
-                    foreach ($finalItems as $fi) {
-                        if ((($fi['item_from'] ?? '') === ($it['item_from'] ?? '')) && (($fi['goodsId'] ?? '') === ($it['goodsId'] ?? ''))) { $hit = true; break; }
+                    $p = $it['item_from'] ?? 'vip';
+                    if ($used[$p] < $perPlat && count($finalItems) < $pageSize) {
+                        $finalItems[] = $it;
+                        $used[$p]++;
                     }
-                    if (!$hit) $finalItems[] = $it;
+                }
+                // 第二轮：若还有余额，按原排序（含平台优先级）补足
+                if (count($finalItems) < $pageSize) {
+                    foreach ($allItems as $it) {
+                        if (count($finalItems) >= $pageSize) break;
+                        $hit = false;
+                        foreach ($finalItems as $fi) {
+                            if ((($fi['item_from'] ?? '') === ($it['item_from'] ?? '')) && (($fi['goodsId'] ?? '') === ($it['goodsId'] ?? ''))) { $hit = true; break; }
+                        }
+                        if (!$hit) $finalItems[] = $it;
+                    }
                 }
             }
         }
