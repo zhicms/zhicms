@@ -318,7 +318,7 @@ class IndexController extends \app\base\controller\BaseController
         $this->loadCommonSidebar();
 
         $cid = isset($view['cid']) ? intval($view['cid']) : 0;
-        $tWhere = array("`cid` = ?", array($cid));
+        $tWhere = array('cid' => $cid);
         $mallTWhere = array("1");
 
         $this->tRet = $this->getRandomArticles($tWhere, 5);
