@@ -396,8 +396,11 @@ class Tjk {
      * @param array|null $platforms     需要搜索的平台数组，null 表示全部
      * @param bool       $fillPriority  是否按平台优先级顺序填充（默认 true，AI 场景）
      */
-    public function searchAllPlatforms($keyword, $pageNum = 1, $pageSize = 5, $platforms = null, $fillPriority = true) {
+    public function searchAllPlatforms($keyword, $pageNum = 1, $pageSize = 5, $platforms = null, $fillPriority = true, $filters = array()) {
         // 比价路线：以淘宝联盟库为主，优先返回淘宝结果；淘宝不足时用京东/拼多多/唯品会补充。
+        // $filters: ['price_min'=>int,'price_max'=>int] —— 由 AI 导购意图抽取产出，硬过滤预算。
+        $pmin = !empty($filters['price_min']) ? (int)$filters['price_min'] : 0;
+        $pmax = !empty($filters['price_max']) ? (int)$filters['price_max'] : 0;
         $allItems = [];
         $byPlat   = ['tb' => [], 'jd' => [], 'pdd' => [], 'vip' => []];
 
@@ -447,7 +450,8 @@ class Tjk {
                 // 主搜：大淘客；若大淘客无结果/未配置，用好单库超级搜索（淘宝）兜底
                 $result = null;
                 if ($this->dtk) {
-                    $result = $this->dtk->SearchGoods($keyword, $pageNum, $want);
+                    // 透传预算区间（pmin/pmax），让"预算"在淘宝主搜层真正硬过滤
+                    $result = $this->dtk->SearchGoods($keyword, $pageNum, $want, $pmin, $pmax);
                 }
                 if (!($result['code'] == 1 && !empty($result['items'])) && $this->hdk) {
                     $result = $this->hdk->SearchGoods($keyword, $want, 1);
@@ -517,6 +521,27 @@ class Tjk {
             if ($pa !== $pb) return $pa - $pb;
             return ($b['monthSales'] ?? 0) - ($a['monthSales'] ?? 0);
         });
+
+        // 预算后过滤（兜底）：对 dtk 偶尔返回的边界价、以及京东/拼多多/唯品会等不支持
+        // 价格硬过滤的平台，统一在聚合结果层按价格区间收口。预算为空则跳过。
+        if (($pmin > 0 || $pmax > 0) && !empty($allItems)) {
+            $priceOf = function ($it) {
+                return (float)($it['actualPrice'] ?? $it['zkFinalPrice'] ?? $it['finalPrice'] ?? $it['price'] ?? 0);
+            };
+            $inBudget = array();
+            $outBudget = array();
+            foreach ($allItems as $it) {
+                $p = $priceOf($it);
+                $ok = true;
+                if ($pmin > 0 && $p > 0 && $p < $pmin) $ok = false;
+                if ($pmax > 0 && $p > $pmax) $ok = false;
+                if ($ok) { $inBudget[] = $it; } else { $outBudget[] = $it; }
+            }
+            // 预算内有货才替换；否则保留全部（避免空结果让导购"没东西")
+            if (count($inBudget) >= 1) {
+                $allItems = array_merge($inBudget, $outBudget);
+            }
+        }
 
         // 均衡截断：保证每个有数据的平台都保留代表商品，避免数据量大的平台（如唯品会）
         // 淹没其他平台，实现真正的多平台比价；最终总数不超过 $pageSize。
