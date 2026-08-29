@@ -26,6 +26,11 @@ class GoodsController extends ApiBaseController {
         $tjk = new \ZhiCms\ext\Tjk();
         $res = $tjk->searchGoods($keyword, $platform, $page, $pageSize);
 
+        // 二次相关性过滤：剔除标题 SEO 堆砌关键词但并非用户所求的商品（如搜"高跟鞋"返回"鞋垫"）
+        if (!empty($res['items'])) {
+            $res['items'] = \ZhiCms\ext\Tjk::filterRelevantItems($res['items'], $keyword);
+        }
+
         if (empty($res) || $res['code'] != 1) {
             $this->json(array(
                 'code'    => 0,

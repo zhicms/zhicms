@@ -2228,6 +2228,11 @@ PROMPT;
             if (isset($tjkResult['debug'])) {
                 error_log('[AI search] platforms=' . json_encode($tjkResult['debug']));
             }
+            // 二次相关性过滤：剔除标题 SEO 堆砌关键词但并非用户所求的商品
+            // （如搜"高跟鞋"却返回"真皮鞋垫…高跟鞋"），避免给用户推错品
+            if (!empty($tjkResult['items'])) {
+                $tjkResult['items'] = \ZhiCms\ext\Tjk::filterRelevantItems($tjkResult['items'], $keyword);
+            }
             if ($tjkResult['code'] == 1 && !empty($tjkResult['items'])) {
                 // 用途 / 场景 / 特殊需求：对结果做软过滤（匹配项前置，不匹配也不丢结果，避免空结果）
                 $tjkResult['items'] = $this->rankItemsByFilters($tjkResult['items'], $filters, $keyword);

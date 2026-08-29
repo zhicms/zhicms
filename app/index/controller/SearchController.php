@@ -672,7 +672,12 @@ class SearchController extends \app\base\controller\BaseController
         }
 
         // 注意：品牌词已并入 $kw，调用时 brand 参数传空，避免重复且统一走标题匹配
-        return $client->searchGoods($kw, $platform, $pageNum, $pageSize, 1, $sort, '', '', $pmin, $pmax);
+        $res = $client->searchGoods($kw, $platform, $pageNum, $pageSize, 1, $sort, '', '', $pmin, $pmax);
+        // 二次相关性过滤：剔除标题 SEO 堆砌关键词但并非用户所求的商品（如搜"高跟鞋"返回"鞋垫"）
+        if (!empty($res['items'])) {
+            $res['items'] = \ZhiCms\ext\Tjk::filterRelevantItems($res['items'], $kw);
+        }
+        return $res;
     }
 
     /**

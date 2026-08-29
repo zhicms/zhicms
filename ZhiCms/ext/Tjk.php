@@ -941,4 +941,138 @@ class Tjk {
         $out['item_from'] = $srcMap[strtolower(trim($src))] ?? strtolower(trim($src));
         return $out;
     }
+
+    // ==================== 商品相关性二次过滤 ====================
+    // 产品族 → 主商品词（用于识别"用户搜的是哪类主商品"）
+    private static $FAMILY_MAIN = array(
+        'shoe'   => array('高跟鞋','运动鞋','跑鞋','篮球鞋','板鞋','帆布鞋','休闲鞋','皮鞋','马丁靴','靴子','雪地靴','凉鞋','拖鞋','豆豆鞋','乐福鞋','老爹鞋','平底鞋','单鞋','小白鞋','增高鞋','跳舞鞋','妈妈鞋','婚鞋','松糕鞋','坡跟鞋','牛津鞋','穆勒鞋','女鞋','男鞋','童鞋','雨鞋','洞洞鞋','玛丽珍鞋','芭蕾鞋','切尔西靴','工装鞋','登山鞋','徒步鞋','健步鞋','一脚蹬','渔夫鞋','罗马鞋','尖头鞋','圆头鞋','方头鞋','凉拖','棉鞋','板鞋'),
+        'phone'  => array('手机','智能手机','苹果手机','安卓手机','老人机','功能机','游戏手机','iphone','华为','小米','红米','oppo','vivo','三星','荣耀','一加','realme','魅族','中兴','努比亚','苹果'),
+        'laptop' => array('笔记本','笔记本电脑','电脑','平板','平板电脑','显示器','台式机','游戏本','轻薄本','一体机','二合一','上网本','主机'),
+        'bag'    => array('背包','双肩包','单肩包','手提包','女包','男包','斜挎包','行李箱','拉杆箱','旅行箱','钱包','公文包','妈咪包','书包','胸包','腰包','手包','托特包','水桶包','链条包','包'),
+        'watch'  => array('手表','智能手表','手环','腕表','机械表','石英表','电子表','儿童手表','运动手表'),
+        'camera' => array('相机','微单','单反','摄像机','运动相机','拍立得','数码相机','胶片相机'),
+    );
+    // 产品族 → 配件/周边词（这些都是"非主商品"的周边，搜主商品时应剔除）
+    private static $FAMILY_ACCESSORIES = array(
+        'shoe'   => array('鞋垫','鞋套','鞋油','鞋刷','鞋带','鞋扣','鞋撑','鞋拔','鞋罩','鞋袋','鞋盒','后跟贴','前掌垫','半码垫','全掌垫','增高鞋垫','按摩鞋垫','鞋花','鞋链','鞋钻','鞋楦','鞋夹','鞋贴','鞋内垫','鞋底','鞋掌','鞋钉','鞋带扣','鞋带孔','鞋眼'),
+        'phone'  => array('手机壳','手机套','保护套','保护壳','钢化膜','手机膜','贴膜','充电器','数据线','充电线','充电头','快充头','无线充','耳机','手机支架','防尘塞','手机挂绳','手机包','镜头膜','手机环','指环扣','手机指环','磁吸环','手机壳子','软壳','硬壳','透明壳'),
+        'laptop' => array('键盘','鼠标','电脑包','内胆包','笔记本贴膜','扩展坞','电源适配器','鼠标垫','电脑支架','屏幕膜','键盘膜','笔记本支架','电脑贴纸','防窥膜','理线器','集线器','转接器','数据线','充电器','触控板','腕托','摄像头'),
+        'bag'    => array('包中包','收纳袋','防尘袋','包带','包链','包挂','行李牌','密码锁','箱套','包扣','包夹','包饰','包吊坠','内胆包'),
+        'watch'  => array('表带','表膜','表壳','表扣','表盒','表链','表镜','充电底座','表托','表带圈','表针','表冠','表把','表圈','表盘贴','手表膜','表带扣','表带节'),
+        'camera' => array('相机包','镜头','内存卡','存储卡','sd卡','电池','充电器','三脚架','滤镜','相机带','相机贴膜','屏幕贴','相机清洁','读卡器','闪光灯','相机手柄','快门线','遮光罩'),
+    );
+
+    /**
+     * 商品相关性二次过滤：联盟 API 商品标题常 SEO 堆砌关键词
+     * （如搜"高跟鞋"却返回"真皮鞋垫…高跟鞋"），这些商品虽标题含关键词，
+     * 但并非用户所求的主商品。本函数按"产品族"剔除核心商品是该族配件/周边的条目。
+     *
+     * 判定（保守，宁放过不误杀）：
+     *  1. 由搜索词识别所属产品族（鞋/手机/电脑/箱包/手表/相机…）；
+     *  2. 若标题里根本没有本族配件词 → 直接保留（肯定是主商品）；
+     *  3. 若标题只有本族配件词、没有主商品词 → 整条就是配件 → 剔除；
+     *  4. 若配件词最靠前出现的位置 <= 主商品词最靠前出现的位置 → 核心商品是配件 → 剔除；
+     *  5. 过滤后若为空，回退原始列表，保证有结果。
+     *
+     * @param array  $items   标准化后的商品数组（含 title 字段）
+     * @param string $keyword 用户搜索关键词（用于识别产品族）
+     * @return array 过滤后的商品
+     */
+    public static function filterRelevantItems(array $items, string $keyword): array
+    {
+        if (empty($items) || $keyword === '') {
+            return $items;
+        }
+        $family = self::detectProductFamily($keyword);
+        if ($family === null) {
+            return $items; // 未知产品族，不过滤，避免误杀
+        }
+        $accTerms  = self::$FAMILY_ACCESSORIES[$family];
+        $mainTerms = self::$FAMILY_MAIN[$family];
+
+        $keep = array();
+        foreach ($items as $it) {
+            $title = (string) ($it['title'] ?? ($it['name'] ?? ''));
+            if ($title === '') {
+                $keep[] = $it;
+                continue;
+            }
+            // 不依赖 mbstring：stripos/strtolower 对 UTF-8 中文子串匹配同样有效（仅 ASCII 大小写无关）
+            $low = strtolower($title);
+
+            // 收集所有配件词命中的区间 [start, end)
+            $accSpans = array();
+            foreach ($accTerms as $t) {
+                $p = stripos($low, $t);
+                if ($p !== false) {
+                    $accSpans[] = array($p, $p + strlen($t));
+                }
+            }
+            if (empty($accSpans)) {
+                // 标题里根本没有本族配件词 → 肯定是主商品
+                $keep[] = $it;
+                continue;
+            }
+
+            // 主商品词位置：排除与配件词区间重叠/被包含的命中
+            // （如"真皮鞋垫"里误命中"皮鞋"——皮(真皮)与鞋(鞋垫)相邻形成重叠，必须剔除，
+            //  否则会把"鞋垫"误判成主商品在前而漏过滤）
+            $mainPos = null;
+            foreach ($mainTerms as $t) {
+                $p = stripos($low, $t);
+                if ($p === false) {
+                    continue;
+                }
+                $s = $p;
+                $e = $p + strlen($t);
+                $overlap = false;
+                foreach ($accSpans as $am) {
+                    if ($s < $am[1] && $e > $am[0]) {
+                        $overlap = true;
+                        break;
+                    }
+                }
+                if ($overlap) {
+                    continue;
+                }
+                if ($mainPos === null || $p < $mainPos) {
+                    $mainPos = $p;
+                }
+            }
+
+            $accPos = null;
+            foreach ($accSpans as $am) {
+                if ($accPos === null || $am[0] < $accPos) {
+                    $accPos = $am[0];
+                }
+            }
+
+            if ($mainPos === null) {
+                // 只有配件词、没有独立的主商品词 → 整条就是配件
+                continue;
+            }
+            // 配件词出现在主商品词之前（或同位置）→ 核心商品是配件
+            if ($accPos <= $mainPos) {
+                continue;
+            }
+            $keep[] = $it;
+        }
+
+        // 保守兜底：过滤后若空了，退回原始，保证有结果
+        return $keep !== array() ? $keep : $items;
+    }
+
+    private static function detectProductFamily(string $keyword): ?string
+    {
+        $kw = strtolower($keyword);
+        foreach (self::$FAMILY_MAIN as $fam => $terms) {
+            foreach ($terms as $t) {
+                if (stripos($kw, $t) !== false) {
+                    return $fam;
+                }
+            }
+        }
+        return null;
+    }
+
 }
