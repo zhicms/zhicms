@@ -4,6 +4,7 @@ namespace ZhiCms\ext;
 use ZhiCms\ext\Tjk\Dtk;
 use ZhiCms\ext\Tjk\Hdk;
 use ZhiCms\ext\Tjk\Pdd;
+use ZhiCms\ext\Tjk\Ztk;
 use app\common\CacheService;
 
 class Tjk {
@@ -11,6 +12,7 @@ class Tjk {
     protected $dtk;
     protected $hdk;
     protected $pdd;
+    protected $ztk;
     protected $pid = '';        // 淘宝联盟推广位 pid（转链/生成淘口令时用于佣金归属）
     protected $pddPid = '';     // 拼多多推广位 pid
     protected $customConfig = [];
@@ -35,6 +37,8 @@ class Tjk {
         $pddClientId = $config['PddClientId'] ?? '';
         $pddClientSecret = $config['PddClientSecret'] ?? '';
         $this->pddPid = $config['PddPid'] ?? $hdkPddPid;
+        $ztkAppKey = $config['ZtkAppKey'] ?? '';
+        $ztkUnionId = $config['ZtkUnionId'] ?? '';
         $this->pid = $config['pid'] ?? ($config['dtk_pid'] ?? ($config['tb_pid'] ?? ''));
         
         if (!empty($dtkAppKey) && !empty($dtkAppSecret)) {
@@ -48,8 +52,12 @@ class Tjk {
         if (!empty($pddClientId) && !empty($pddClientSecret)) {
             $this->pdd = new Pdd($pddClientId, $pddClientSecret, $this->pddPid);
         }
-        
-        if (empty($this->dtk) && empty($this->hdk)) {
+
+        if (!empty($ztkAppKey) && !empty($ztkUnionId)) {
+            $this->ztk = new Ztk($ztkAppKey, $ztkUnionId);
+        }
+
+        if (empty($this->dtk) && empty($this->hdk) && empty($this->ztk)) {
             $this->initWithLocalConfig();
         }
     }
@@ -72,6 +80,8 @@ class Tjk {
         $pddClientId = $api['pdd_client_id'] ?? '';
         $pddClientSecret = $api['pdd_client_secret'] ?? '';
         $this->pddPid = $api['pdd_pid'] ?? $hdkPddPid;
+        $ztkAppKey = $api['ztk_appkey'] ?? '';
+        $ztkUnionId = $api['ztk_union_id'] ?? '';
         $this->pid = $api['dtk_pid'] ?? ($api['tb_pid'] ?? '');
         
         if (!empty($dtkAppKey) && !empty($dtkAppSecret)) {
@@ -84,6 +94,10 @@ class Tjk {
         
         if (!empty($pddClientId) && !empty($pddClientSecret)) {
             $this->pdd = new Pdd($pddClientId, $pddClientSecret, $this->pddPid);
+        }
+
+        if (!empty($ztkAppKey) && !empty($ztkUnionId)) {
+            $this->ztk = new Ztk($ztkAppKey, $ztkUnionId);
         }
     }
     
@@ -131,7 +145,7 @@ class Tjk {
         return is_array($api) ? $api : [];
     }
     
-    public function searchGoods($keyword, $platform = 'taobao', $pageNum = 1, $pageSize = 20, $minId = 1, $sort = '', $hasCoupon = '', $brand = '', $pmin = '', $pmax = '') {
+    public function searchGoods($keyword, $platform = 'taobao', $pageNum = 1, $pageSize = 20, $minId = 1, $sort = '', $hasCoupon = '', $cid = '', $brand = '', $pmin = '', $pmax = '') {
         $platform = strtolower(trim((string) $platform));
 
         // 平台别名归一：调用方可能传 tb/taobao/tmall/tm（统一平台编码）或 dtk/hdk（渠道编码），
@@ -189,7 +203,10 @@ class Tjk {
         }
 
         // 好单库多平台：拼多多 / 京东 / 唯品会
-        if (!$this->hdk) {
+        // 注意：京东(jd)优先走折淘客(ztk)，故仅配置折淘客、未配置好单库时也允许京东搜索；
+        // 拼多多/唯品会仍依赖好单库（拼多多另有官方SDK兜底），故按需校验 hdk。
+        $needHdk = !($platform === 'jd' && $this->ztk);
+        if ($needHdk && !$this->hdk) {
             return [
                 'code' => 0,
                 'message' => '好单库API未配置',
@@ -211,7 +228,59 @@ class Tjk {
                 $result = $this->hdk->SearchPddGoods($keyword, $pageSize, $minId, $sort, $hasCoupon);
                 break;
             case 'jd':
-                $result = $this->hdk->SearchJdGoods($keyword, $pageSize, $minId, $sort, $hasCoupon);
+                // 优先折京客（好单库账号异常时的替代京东源），未配置再回退好单库
+                if ($this->ztk) {
+                    // 站内排序值 -> 折京客排序字段/方向
+                    $sortMap = [
+                        '0' => ['inOrderCount30DaysSku', 'desc'],
+                        '2' => ['inOrderCount30DaysSku', 'desc'],
+                        '3' => ['comments', 'desc'],
+                        '4' => ['commissionShare', 'desc'],
+                        '5' => ['price', 'desc'],
+                        '6' => ['price', 'asc'],
+                    ];
+                    $sm = $sortMap[(string)$sort] ?? ['inOrderCount30DaysSku', 'desc'];
+
+                    if (trim($keyword) !== '') {
+                        // 有关键词：走折淘客「京东商品查询」真实搜索（支持排序/有券/价格区间）
+                        $isCoupon = ($hasCoupon === '1') ? 1 : 0;
+                        // 分类对齐：折淘客接口忽略 cid1Id，改为后端按京东 cid1 二次过滤。
+                        // 为保证分类筛选后仍有足够结果，分类筛选时多拉一批再本地过滤。
+                        $batch = (!empty($cid)) ? max(intval($pageSize) * 3, 30) : intval($pageSize);
+                        $result = $this->ztk->SearchJdGoodsQuery($keyword, $pageNum, $batch, $sm[0], $sm[1], $isCoupon, $pmin, $pmax);
+
+                        // 关键词搜索接口异常（如折淘客该接口临时不可用/超限）时，回退到京粉精选频道，
+                        // 保证京东 tab 仍有结果（此时忽略关键词/分类/券筛选，仅作兜底）。
+                        if (($result['code'] ?? 0) != 1) {
+                            $result = $this->ztk->SearchJdGoodsJingfen(1, $pageNum, $pageSize, $sm[0], $sm[1]);
+                        } else {
+                            if (!empty($result['items'])) {
+                                // 分类对齐（本地 cid1 过滤）
+                                $jdCid1List = $this->mapLocalCatToJdCid1($cid);
+                                if (!empty($jdCid1List)) {
+                                    $filtered = array_filter($result['items'], function ($it) use ($jdCid1List) {
+                                        return in_array(intval($it['cid1'] ?? 0), $jdCid1List, true);
+                                    });
+                                    $result['items'] = array_values($filtered);
+                                }
+                                // 无券筛选（折淘客 isCoupon 只支持「有券」，无券需本地过滤）
+                                if ($hasCoupon === '-1') {
+                                    $result['items'] = array_values(array_filter($result['items'], function ($it) {
+                                        return floatval($it['couponPrice'] ?? 0) <= 0;
+                                    }));
+                                }
+                                // 截断到目标页大小
+                                $result['items'] = array_slice($result['items'], 0, intval($pageSize));
+                                $result['total'] = count($result['items']);
+                            }
+                        }
+                    } else {
+                        // 无关键词：京粉精选频道浏览（按 eliteId，关键词无效）
+                        $result = $this->ztk->SearchJdGoodsJingfen(1, $pageNum, $pageSize, $sm[0], $sm[1]);
+                    }
+                } else {
+                    $result = $this->hdk->SearchJdGoods($keyword, $pageSize, $minId, $sort, $hasCoupon);
+                }
                 break;
             case 'vip':
                 $result = $this->hdk->SearchVipGoods($keyword, $pageSize, $minId);
@@ -227,7 +296,42 @@ class Tjk {
         $result['item_from'] = $platform;
         return $result;
     }
-    
+
+    /**
+     * 本地商品分类(1-20) -> 京东一级分类 cid1 列表。
+     *
+     * 折淘客京东商品查询接口对 cid1Id 参数无效（实测传任意 cid1Id 返回结果不变），
+     * 故分类「对齐」采用后端二次过滤：把本地分类映射到京东一级分类 cid1（可多个），
+     * 再按商品返回的 categoryInfo.cid1 过滤。映射为最接近的一级类目，属最佳实践对齐，
+     * 因京东类目树更深，个别跨类目商品可能被过滤（采集时仍可在弹窗手动改分类）。
+     */
+    private function mapLocalCatToJdCid1($localCid) {
+        $map = array(
+            1  => [1315],            // 女装 -> 服饰内衣
+            2  => [6196],            // 母婴 -> 母婴
+            3  => [1316],            // 化妆品 -> 美妆护肤
+            4  => [1620],            // 居家 -> 生活日用
+            5  => [11729, 17329],    // 鞋包配饰 -> 鞋靴 + 箱包皮具
+            6  => [6522],            // 美食 -> 食品饮料
+            7  => [37462, 11753, 6703], // 文体车品 -> 文教文化用品 + 汽车用品 + 运动户外
+            8  => [9987, 652, 737],  // 数码家电 -> 手机通讯 + 数码 + 家用电器
+            9  => [1315],            // 男装 -> 服饰内衣
+            10 => [1315],            // 内衣 -> 服饰内衣
+            11 => [17329],           // 箱包 -> 箱包皮具
+            12 => [502320],          // 配饰 -> 钟表
+            13 => [6703],            // 户外运动 -> 运动户外
+            14 => [34675, 1620],     // 家装家纺 -> 床上用品 + 生活日用
+            15 => [6144],            // 珠宝首饰 -> 珠宝首饰
+            16 => [13765],           // 奢侈品 -> 二手商品(奢侈品)
+            17 => [6994],            // 宠物用品 -> 宠物生活
+            18 => [1713],            // 图书音像 -> 图书
+            19 => [4938],            // 话费充值 -> 本地生活
+            20 => [],                // 其他 -> 不过滤
+        );
+        $localCid = intval($localCid);
+        return isset($map[$localCid]) ? $map[$localCid] : [];
+    }
+
     public function getGoodsDetail($goodsId, $platform = 'dtk') {
         $platform = strtolower(trim((string)$platform));
         // 平台别名归一（与 searchGoods/getPrivilegeLink 保持一致，避免传 tb/tm/wph 时路由错误）
@@ -328,6 +432,11 @@ class Tjk {
         }
 
         if ($platform == 'jd' || $platform == 'hdk' || $platform == 'pdd' || $platform == 'vip') {
+            // 折京客京粉商品：goodsId 为加密串 itemId（非数字），好单库京东转链要求数字 material_id，
+            // 故这类商品必须走折淘客自有京东转链（materialId=itemId）。好单库数字 id 仍走好单库。
+            if ($platform == 'jd' && $this->ztk && !is_numeric($goodsId)) {
+                return $this->ztk->CreateJdLink($goodsId);
+            }
             if (!$this->hdk) {
                 return ['code' => 0, 'message' => '好单库API未配置', 'data' => null];
             }
@@ -405,7 +514,8 @@ class Tjk {
         $byPlat   = ['tb' => [], 'jd' => [], 'pdd' => [], 'vip' => []];
 
         $wantTb  = $this->dtk && (is_null($platforms) || in_array('tb', (array) $platforms) || in_array('taobao', (array) $platforms));
-        $wantJd  = $this->hdk && (is_null($platforms) || in_array('jd', (array) $platforms));
+        // 京东：好单库或折淘客(折京客)任一可用即可参与聚合（searchGoods('jd') 已优先折淘客、回退好单库）
+        $wantJd  = ($this->hdk || $this->ztk) && (is_null($platforms) || in_array('jd', (array) $platforms));
         $wantPdd = $this->hdk && (is_null($platforms) || in_array('pdd', (array) $platforms));
         $wantVip = $this->hdk && (is_null($platforms) || in_array('vip', (array) $platforms));
         $wantHdk = $this->hdk && ($wantJd || $wantPdd || $wantVip);
@@ -468,8 +578,11 @@ class Tjk {
                     $this->platBreakerRecord('tb', false);
                 }
             } elseif ($p === 'jd') {
-                $jd = $this->hdk->SearchJdGoods($keyword, $want, 1);
-                if ($jd['code'] == 1 && !empty($jd['items'])) {
+                // 京东统一走 searchGoods('jd')：优先折淘客(折京客)真实关键词搜索，
+                // 好单库不可用时自动回退好单库京粉精选；保证「好单库京东搜索不能用时由折京客接管」。
+                // （item_from 已在 searchGoods 内 mapItem 置为 'jd'，此处再置一次无副作用）
+                $jd = $this->searchGoods($keyword, 'jd', 1, $want, 1, '', '', '', '', $pmin, $pmax);
+                if (isset($jd['code']) && $jd['code'] == 1 && !empty($jd['items'])) {
                     foreach ($jd['items'] as $item) {
                         $item['item_from'] = 'jd';
                         $byPlat['jd'][] = $item;
@@ -863,6 +976,10 @@ class Tjk {
         return $this->hdk;
     }
 
+    public function getZtk() {
+        return $this->ztk;
+    }
+
     /**
      * 统一商品字段：将大淘客/好单库（及预留的拼多多/唯品会/京东）各接口返回的
      * 商品数组归一化为同一套字段，便于统一入库(yun_items)与前端展示。
@@ -879,6 +996,7 @@ class Tjk {
             'monthSales' => 0, 'twoHoursSales' => 0, 'dailySales' => 0,
             'shopType' => 0, 'shopName' => '', 'shopId' => 0, 'shopLevel' => 0, 'shopLogo' => '',
             'cid' => 0, 'subcid' => '', 'tbcid' => 0, 'brand' => 0, 'brandId' => 0, 'brandName' => '',
+            'cid1' => 0, 'cid1Name' => '',
             'activityType' => 0, 'activityStartTime' => '0', 'activityEndTime' => '0', 'activityName' => '', 'activityId' => 0,
             'createTime' => '', 'detailPics' => '', 'yunfeixian' => 0, 'freeshipRemoteDistrict' => 0,
             'choice' => 0, 'hotPush' => 0, 'goldSellers' => 0, 'haitao' => 0, 'tchaoshi' => 0,

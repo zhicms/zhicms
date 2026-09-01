@@ -494,6 +494,9 @@ class Hdk {
             $longUrl = $data['longUrl'] ?? $result['longUrl'] ?? '';
             $noEvoke = $data['noEvokeUrl'] ?? $result['noEvokeUrl'] ?? '';
             $command = $data['onlyCommand'] ?? $result['onlyCommand'] ?? '';
+            // 用户自有联盟接口 / 好单库可能额外返回 vipWxUrl（唯品会小程序跳转路径），
+            // 用于前端 wx.navigateToMiniProgram 直达唯品会小程序。必须透传，否则 open() 读不到只能降级复制口令。
+            $vipWxUrl = $data['vipWxUrl'] ?? $result['vipWxUrl'] ?? '';
             // 跳转短链优先 url（t.vip.com 短链），其次 ulUrl（联盟 deeplink 短链），再次不唤起短链，最后长链
             $jumpUrl = $url ?: ($ulUrl ?: ($noEvoke ?: $longUrl));
             return [
@@ -508,6 +511,7 @@ class Hdk {
                     'tkl'        => $command,
                     'taokeLink'  => $command,
                     'url'        => $jumpUrl,
+                    'vipWxUrl'   => $vipWxUrl,
                 ],
             ];
         }

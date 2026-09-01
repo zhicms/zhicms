@@ -414,7 +414,7 @@ class SearchController extends \app\base\controller\BaseController
                 $all = array_merge($all, $tbResp['items']);
             }
 
-            if ($client->getHdk()) {
+            if ($client->getHdk() || $client->getZtk()) {
                 $jdResp = $client->searchGoods($keyword, 'jd', 1, $pageSize);
                 if ($jdResp['code'] == 1 && !empty($jdResp['items'])) {
                     $all = array_merge($all, $jdResp['items']);
@@ -672,7 +672,8 @@ class SearchController extends \app\base\controller\BaseController
         }
 
         // 注意：品牌词已并入 $kw，调用时 brand 参数传空，避免重复且统一走标题匹配
-        $res = $client->searchGoods($kw, $platform, $pageNum, $pageSize, 1, $sort, '', '', $pmin, $pmax);
+        // $cat 为本地主流分类(1-20)，京东搜索时作为 cid 透传，启用折淘客分类对齐后过滤（淘宝/拼多多/唯品会忽略）
+        $res = $client->searchGoods($kw, $platform, $pageNum, $pageSize, 1, $sort, '', $cat, '', $pmin, $pmax);
         // 二次相关性过滤：剔除标题 SEO 堆砌关键词但并非用户所求的商品（如搜"高跟鞋"返回"鞋垫"）
         if (!empty($res['items'])) {
             $res['items'] = \ZhiCms\ext\Tjk::filterRelevantItems($res['items'], $kw);
@@ -908,8 +909,11 @@ class SearchController extends \app\base\controller\BaseController
         $dtkAppKey = $api['dtk_appkey'] ?? '';
         $dtkAppSecret = $api['dtk_appsecret'] ?? '';
         $hdkApiKey = $api['hdk_appkey'] ?? '';
+        $ztkAppKey = $api['ztk_appkey'] ?? '';
+        $ztkUnionId = $api['ztk_union_id'] ?? '';
 
-        if (empty($dtkAppKey) && empty($hdkApiKey)) {
+        // 折京客(折淘客)京东源：仅配 Ztk 也能搜索/转链，不能因缺少大淘客/好单库而判为未配置
+        if (empty($dtkAppKey) && empty($hdkApiKey) && empty($ztkAppKey)) {
             return null;
         }
 
@@ -917,6 +921,8 @@ class SearchController extends \app\base\controller\BaseController
             'DtkappKey' => $dtkAppKey,
             'DtkappSecret' => $dtkAppSecret,
             'HdkApiKey' => $hdkApiKey,
+            'ZtkAppKey' => $ztkAppKey,
+            'ZtkUnionId' => $ztkUnionId,
         ]);
     }
 

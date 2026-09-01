@@ -69,7 +69,7 @@ class UnionController extends \app\base\controller\BaseController
 
                     // 京东 / 拼多多（好单库）
                     if ($client->getHdk()) {
-                        $jdResp = $client->searchGoods($keyword, 'jd', 1, $pageSize, 1, $sort, $hasCoupon);
+                        $jdResp = $client->searchGoods($keyword, 'jd', 1, $pageSize, 1, $sort, $hasCoupon, $cid);
                         if ($jdResp['code'] == 1 && !empty($jdResp['items'])) {
                             $all = array_merge($all, $jdResp['items']);
                         }
@@ -100,7 +100,7 @@ class UnionController extends \app\base\controller\BaseController
                     }
                 } else {
                     // 拼多多 / 京东 / 唯品会：走好单库对应搜索接口
-                    $response = $client->searchGoods($keyword, $platform, $page, $pageSize, 1, $sort, $hasCoupon);
+                    $response = $client->searchGoods($keyword, $platform, $page, $pageSize, 1, $sort, $hasCoupon, $cid);
                     if ($response['code'] == 1 && !empty($response['items'])) {
                         $items = $response['items'];
                         $total = $response['total'] ?? 0;
@@ -145,7 +145,7 @@ class UnionController extends \app\base\controller\BaseController
                     }
                 } else {
                     // 京东/拼多多/唯品会：无关键词时按分类/综合拉取第一页商品（与前端行为一致）
-                    $response = $client->searchGoods('', $platform, $page, $pageSize, 1, $sort, $hasCoupon);
+                    $response = $client->searchGoods('', $platform, $page, $pageSize, 1, $sort, $hasCoupon, $cid);
                     if ($response['code'] == 1 && !empty($response['items'])) {
                         $items = $response['items'];
                         $total = $response['total'] ?? count($items);
@@ -693,6 +693,8 @@ class UnionController extends \app\base\controller\BaseController
             'PddClientId'    => $api['pdd_client_id'] ?? '',
             'PddClientSecret'=> $api['pdd_client_secret'] ?? '',
             'PddPid'         => $api['pdd_pid'] ?? ($api['hdk_pdd_pid'] ?? ''),
+            'ZtkAppKey'      => $api['ztk_appkey'] ?? '',
+            'ZtkUnionId'     => $api['ztk_union_id'] ?? '',
             'pid'            => $api['dtk_pid'] ?? ($api['tb_pid'] ?? ''),
         ]);
     }

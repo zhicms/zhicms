@@ -54,7 +54,7 @@ class SetController extends \app\base\controller\BaseController
 			$this->homePlug    = isset($siteConfig['home_plug']) ? trim((string)$siteConfig['home_plug']) : '';
 
 			// 加载互动开关（yun_config 表）合并到 $ret，供"互动设置"标签页使用
-			$interactKeys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval', 'user_reg_captcha', 'user_email_verify', 'user_show_login');
+			$interactKeys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval', 'user_reg_captcha', 'user_email_verify', 'user_show_login', 'user_wx_login');
 			$in = implode(',', array_fill(0, count($interactKeys), '?'));
 			$cfgRows = obj("api/ApiData")->thisQuery(
 				"SELECT `key`, `value` FROM `{pre}config` WHERE `key` IN ({$in})",
@@ -63,7 +63,7 @@ class SetController extends \app\base\controller\BaseController
 			$interactDefaults = array(
 				'comment_on' => '1', 'forum_on' => '1',
 				'comment_anonymous' => '1', 'comment_check' => '0', 'comment_interval' => '60',
-				'user_reg_captcha' => '1', 'user_email_verify' => '0', 'user_show_login' => '1',
+				'user_reg_captcha' => '1', 'user_email_verify' => '0', 'user_show_login' => '1', 'user_wx_login' => '1',
 			);
 			if (!empty($cfgRows)) {
 				foreach ($cfgRows as $r) {
@@ -413,6 +413,9 @@ class SetController extends \app\base\controller\BaseController
               'pdd_client_id' => $_POST['pdd_client_id'] ?? ($this->ret['pdd_client_id'] ?? ''),
               'pdd_client_secret' => $_POST['pdd_client_secret'] ?? ($this->ret['pdd_client_secret'] ?? ''),
               'pdd_pid' => $_POST['pdd_pid'] ?? ($this->ret['pdd_pid'] ?? ''),
+              // 折京客（京东精选 / 京粉）：仅 appkey + 京东 unionId 两项
+              'ztk_appkey' => $_POST['ztk_appkey'] ?? ($this->ret['ztk_appkey'] ?? ''),
+              'ztk_union_id' => $_POST['ztk_union_id'] ?? ($this->ret['ztk_union_id'] ?? ''),
         );
         ConfigStore::save('api', $api);
         ConfigStore::clearCache('api');
@@ -981,7 +984,7 @@ class SetController extends \app\base\controller\BaseController
             $this->pageText = array("基础设置", "互动设置");
 
             $keys = array('comment_on', 'forum_on', 'comment_anonymous', 'comment_check', 'comment_interval',
-                'user_reg_captcha', 'user_email_verify', 'user_show_login');
+                'user_reg_captcha', 'user_email_verify', 'user_show_login', 'user_wx_login');
             $in = implode(',', array_fill(0, count($keys), '?'));
 
             // 使用 thisQuery 参数化查询
@@ -1037,6 +1040,7 @@ class SetController extends \app\base\controller\BaseController
                 'user_reg_captcha' => array('value' => !empty($_POST['user_reg_captcha']) ? '1' : '0', 'desc' => '注册开启图形验证码 1开/0关'),
                 'user_email_verify' => array('value' => !empty($_POST['user_email_verify']) ? '1' : '0', 'desc' => '注册需要邮箱验证 1是/0否（当前仅预留）'),
                 'user_show_login'  => array('value' => !empty($_POST['user_show_login']) ? '1' : '0', 'desc' => '前台显示用户登录/注册入口 1显示/0隐藏'),
+                'user_wx_login'   => array('value' => !empty($_POST['user_wx_login']) ? '1' : '0', 'desc' => 'App 微信快捷登录 1开/0关（关闭后降级手机号登录）'),
             );
 
             foreach ($settings as $k => $item) {

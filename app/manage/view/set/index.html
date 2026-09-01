@@ -686,6 +686,15 @@ https://www.example.com/brand.html"></textarea>
                                         <small class="form-text text-muted">开启后注册需填写图形验证码，防机器人刷注册</small>
                                     </div>
                                 </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="user_wx_login" name="user_wx_login" value="1" <?php echo isset($ret['user_wx_login']) && $ret['user_wx_login'] == '1' ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label" for="user_wx_login">App 微信快捷登录</label>
+                                        </div>
+                                        <small class="form-text text-muted">关闭后 App 端隐藏微信登录，仅可用手机号登录（降级方案）</small>
+                                    </div>
+                                </div>
                             </div>
                             <div class="row">
                                 <div class="col-md-6">

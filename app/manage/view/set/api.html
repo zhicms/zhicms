@@ -24,6 +24,9 @@
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openUnionModal('dtk')">
                         <i class="fas fa-cube text-primary"></i> 大淘客
                     </button>
+                    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openUnionModal('ztk')">
+                        <i class="fas fa-cube text-info"></i> 折京客
+                    </button>
                     <button type="button" class="btn btn-outline-secondary btn-sm" onclick="openUnionModal('pdd')">
                         <i class="fas fa-cube text-warning"></i> 拼多多SDK
                     </button>
@@ -186,6 +189,19 @@
         </div>
       </div>
 
+      <!-- 折京客 Ztk（京东精选 / 京粉） -->
+      <div class="union-fields" data-union="ztk">
+        <div class="mb-3">
+          <label class="form-label">折京客 AppKey</label>
+          <input type="text" id="ztk_appkey" class="form-control" placeholder="折京客 appkey" value="<?php echo isset($ret['ztk_appkey']) ? $ret['ztk_appkey'] : ''; ?>">
+        </div>
+        <div class="mb-3">
+          <label class="form-label">京东 unionId</label>
+          <input type="text" id="ztk_union_id" class="form-control" placeholder="折京客 京东 unionId" value="<?php echo isset($ret['ztk_union_id']) ? $ret['ztk_union_id'] : ''; ?>">
+        </div>
+        <div class="text-muted small">折京客京东精选（京粉）接口：按频道拉取京东优惠券商品（好券商品/精选卖场/9.9包邮等），不支持关键词搜索，用于京东频道浏览。</div>
+      </div>
+
       <!-- 拼多多自写SDK Pdd -->
       <div class="union-fields" data-union="pdd">
         <div class="mb-3">
@@ -255,9 +271,10 @@ var platformUnions = {
     vip: [['hdk','好单库']]
 };
 
-var unionTitles = {
+var     unionTitles = {
     hdk:  '好单库设置（Hdk）',
     dtk:  '大淘客设置（Dtk）',
+    ztk:  '折京客设置（Ztk）',
     pdd:  '拼多多SDK设置（Pdd）',
     site: '官网 / 转链设置'
 };
@@ -416,6 +433,8 @@ function submitUnion() {
     params += '&hdk_tb_name=' + encodeURIComponent(document.getElementById('hdk_tb_name').value.trim());
     params += '&dtk_appkey=' + encodeURIComponent(document.getElementById('dtk_appkey').value.trim());
     params += '&dtk_appsecret=' + encodeURIComponent(document.getElementById('dtk_appsecret').value.trim());
+    params += '&ztk_appkey=' + encodeURIComponent(document.getElementById('ztk_appkey').value.trim());
+    params += '&ztk_union_id=' + encodeURIComponent(document.getElementById('ztk_union_id').value.trim());
     params += '&pdd_client_id=' + encodeURIComponent(document.getElementById('pdd_client_id').value.trim());
     params += '&pdd_client_secret=' + encodeURIComponent(document.getElementById('pdd_client_secret').value.trim());
     params += '&pdd_pid=' + encodeURIComponent(document.getElementById('pdd_pid').value.trim());

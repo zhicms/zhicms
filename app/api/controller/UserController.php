@@ -73,6 +73,33 @@ class UserController extends ApiBaseController {
     }
 
     /**
+     * 幂等扩容 yun_user.password 列为 varchar(100)。
+     * 旧库该列为 varchar(32/35)，仅够存 md5；注册写入 bcrypt(60字符) 会触发
+     * 1406 Data too long for column 'password'，导致接口 500、前端报「操作失败」。
+     * 写入前自动扩列（与 manage 端 yun_manage 的处理一致）。
+     */
+    private function ensureUserPasswordColumnWidth() {
+        try {
+            $real = str_replace('`', '', obj('api/ApiData')->realTable('yun_user'));
+            $row = obj('api/ApiData')->thisQuery(
+                "SELECT `CHARACTER_MAXIMUM_LENGTH` FROM `information_schema`.`COLUMNS` " .
+                "WHERE `TABLE_SCHEMA` = DATABASE() AND `TABLE_NAME` = '{$real}' AND `COLUMN_NAME` = 'password'"
+            );
+            $len = 0;
+            if (!empty($row[0])) {
+                $len = intval($row[0]['CHARACTER_MAXIMUM_LENGTH'] ?? 0);
+            }
+            if ($len > 0 && $len < 60) {
+                obj('api/ApiData')->executeQuery(
+                    "ALTER TABLE `{$real}` MODIFY COLUMN `password` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT '登录密码（md5 或 bcrypt）'"
+                );
+            }
+        } catch (\Throwable $e) {
+            // 扩列失败不阻断注册；若写入仍超长，下方 insert 会返回具体错误
+        }
+    }
+
+    /**
      * 生成专属邀请码：6 位「大小写字母 + 数字」随机串
      * 去除易混淆字符 0/O/1/l/I，循环重试保证唯一（uk_invite_code 兜底）
      */
@@ -99,6 +126,7 @@ class UserController extends ApiBaseController {
      */
     public function login() {
         $this->options();
+        $this->ensureUserPasswordColumnWidth();
 
         $mobile   = trim($this->raw('mobile', ''));
         $password = trim($this->raw('password', ''));
@@ -140,6 +168,7 @@ class UserController extends ApiBaseController {
      */
     public function register() {
         $this->options();
+        $this->ensureUserPasswordColumnWidth();
 
         $mobile   = trim($this->raw('mobile', ''));
         $username = trim($this->raw('username', ''));
@@ -277,5 +306,458 @@ class UserController extends ApiBaseController {
             'message' => 'success',
             'user'    => $this->maskUser($u),
         ));
+    }
+
+    /**
+     * 读取用户功能开关（yun_config 表），缺失时返回默认值
+     */
+    private function userSwitch($key, $default = '1') {
+        try {
+            $row = obj('api/ApiData')->thisQuery(
+                "SELECT `value` FROM `{pre}config` WHERE `key` = ?",
+                array($key)
+            );
+            if (!empty($row[0]['value'])) return $row[0]['value'];
+        } catch (\Throwable $e) {}
+        return $default;
+    }
+
+    /**
+     * 生成唯一用户名：昵称清洗后去重，冲突追加随机后缀
+     */
+    private function genUsername($nickname) {
+        $base = preg_replace('/[^\x{4e00}-\x{9fa5}a-zA-Z0-9_]/u', '', $nickname);
+        if ($base === '') $base = 'wxuser';
+        $base = mb_substr($base, 0, 16);
+        for ($i = 0; $i < 20; $i++) {
+            $cand = $i === 0 ? $base : ($base . mt_rand(1000, 9999));
+            if (!obj('api/ApiData')->dataSelect('yun_user', array('username' => $cand))) {
+                return $cand;
+            }
+        }
+        return $base . substr(md5(uniqid()), 0, 6);
+    }
+
+    /**
+     * 微信快捷登录（App / 小程序通用）
+     * POST index.php?r=api/user/wxlogin  openid / unionid / nickname / avatar / inviter
+     * 逻辑：后台开关关闭→拒绝（前端降级为手机号登录）；已绑定→直接登录；未绑定→强制注册并绑定微信
+     */
+    /**
+     * 微信快捷登录（App / 小程序通用）—— 强制唯一：以手机号为账号锚点
+     * POST index.php?r=api/user/wxlogin
+     *   基础：openid / unionid / nickname / avatar / inviter
+     *   绑定或注册（首次无微信绑定时需要）：mobile / password / username(可选)
+     *
+     * 流程：
+     *   1) 后台开关关闭 → 拒绝（前端降级手机号登录）
+     *   2) 微信已绑定某账号 → 直接登录（is_new=0, bound=1）
+     *   3) 未绑定，但带 mobile+password：
+     *        mobile 已存在 → 校验密码，正确则绑定微信并登录（老用户绑定同一账号）
+     *        mobile 不存在 → 注册新账号（含 mobile/密码/微信绑定），is_new=1
+     *   4) 未绑定且未带 mobile/password → 返回 need_bind=1，由客户端弹窗补全手机号
+     * 保证「网页/小程序/App/都信小程序」同一人为同一账号（手机号唯一锚点，微信 1:1 绑定）。
+     */
+    public function wxlogin() {
+        $this->options();
+
+        if ($this->userSwitch('user_wx_login', '1') !== '1') {
+            $this->json(array('code' => 0, 'message' => '微信登录已关闭，请使用手机号登录'), 403);
+        }
+
+        $openid  = trim($this->raw('openid', ''));
+        $unionid = trim($this->raw('unionid', ''));
+        if ($openid === '' && $unionid === '') {
+            $this->json(array('code' => 0, 'message' => '缺少微信凭证'), 400);
+        }
+        $nickname = trim($this->raw('nickname', ''));
+        $avatar   = trim($this->raw('avatar', ''));
+
+        // 查已绑定用户：unionid 优先，回退 openid
+        $u = null;
+        if ($unionid !== '') {
+            $u = obj('api/ApiData')->dataSelect('yun_user', array(array("`wx_unionid` = ?", $unionid)));
+        }
+        if (empty($u) && $openid !== '') {
+            $u = obj('api/ApiData')->dataSelect('yun_user', array(array("`wx_openid` = ?", $openid)));
+        }
+
+        // 场景 A：微信已绑定 → 直接登录（跨端唯一性已成立）
+        if (!empty($u)) {
+            $up = array();
+            if ($avatar !== '' && $avatar !== ($u['avatar'] ?? '')) $up['avatar'] = $avatar;
+            if ($unionid !== '' && $unionid !== ($u['wx_unionid'] ?? '')) $up['wx_unionid'] = $unionid;
+            if ($openid !== '' && $openid !== ($u['wx_openid'] ?? '')) $up['wx_openid'] = $openid;
+            if (!empty($up)) {
+                obj('api/ApiData')->dataUpdate('yun_user', $up, array('id' => $u['id']));
+                $u = array_merge($u, $up);
+            }
+            $token = $this->makeToken($u['id'], $u['mobile'] ?? '');
+            $this->json(array(
+                'code'    => 1,
+                'message' => '登录成功',
+                'token'   => $token,
+                'user'    => $this->maskUser($u),
+                'is_new'  => 0,
+                'bound'   => 1,
+            ));
+        }
+
+        // 场景 B：未绑定 → 需要手机号+密码（绑定老账号 或 注册新账号），避免造出无手机号的游离账号
+        $mobile   = trim($this->raw('mobile', ''));
+        $password = trim($this->raw('password', ''));
+        if ($mobile === '' || $password === '') {
+            $this->json(array(
+                'code'      => 1,
+                'message'   => '请先绑定手机号',
+                'need_bind' => 1,
+            ));
+        }
+        if (!preg_match('/^1\d{10}$/', $mobile)) {
+            $this->json(array('code' => 0, 'message' => '手机号格式不正确'), 400);
+        }
+        $this->ensureUserPasswordColumnWidth();
+
+        $exist = obj('api/ApiData')->dataSelect('yun_user', array('mobile' => $mobile));
+        if (!empty($exist)) {
+            // 老用户：校验密码后绑定微信（与网页/小程序共用同一账号）
+            if (md5($password . 'zhicms') !== $exist['password'] && !password_verify($password, $exist['password'])) {
+                $this->json(array('code' => 0, 'message' => '账号或密码错误'), 400);
+            }
+            $up = array('wx_openid' => $openid, 'wx_unionid' => $unionid);
+            if ($avatar !== '' && $avatar !== ($exist['avatar'] ?? '')) $up['avatar'] = $avatar;
+            if (empty($exist['username']) && $nickname !== '') $up['username'] = $this->genUsername($nickname);
+            obj('api/ApiData')->dataUpdate('yun_user', $up, array('id' => $exist['id']));
+            $u = array_merge($exist, $up);
+            $token = $this->makeToken($exist['id'], $exist['mobile']);
+            $this->json(array(
+                'code'    => 1,
+                'message' => '微信已绑定，登录成功',
+                'token'   => $token,
+                'user'    => $this->maskUser($u),
+                'is_new'  => 0,
+                'bound'   => 1,
+            ));
+        }
+
+        // 新用户：注册（手机号 + 密码 + 微信绑定），昵称缺省用微信昵称
+        if ($nickname === '') {
+            $nickname = '微信用户' . substr(md5($openid . $unionid . mt_rand(0, 9999)), 0, 6);
+        }
+        $username = trim($this->raw('username', ''));
+        if ($username === '') $username = $nickname;
+        $data = array(
+            'username'    => $this->genUsername($username),
+            'password'    => password_hash($password, PASSWORD_BCRYPT),
+            'mobile'      => $mobile,
+            'avatar'      => $avatar,
+            'vest'        => 1,
+            'lock'        => 0,
+            'date'        => date('Y-m-d H:i:s'),
+            'wx_openid'   => $openid,
+            'wx_unionid'  => $unionid,
+        );
+        $data['invite_code'] = $this->genInviteCode();
+        $data['invited_by']  = $this->resolveInviter(trim($this->raw('inviter', '')));
+
+        $uid   = obj('api/ApiData')->insertData('yun_user', $data);
+        $token = $this->makeToken($uid, $mobile);
+
+        if ($data['invited_by'] > 0) {
+            $this->reportInviteBound($data['invited_by'], $uid);
+        }
+
+        $this->json(array(
+            'code'    => 1,
+            'message' => '注册成功',
+            'token'   => $token,
+            'user'    => $this->maskUser(array_merge(array('id' => $uid), $data)),
+            'is_new'  => 1,
+            'bound'   => 1,
+        ));
+    }
+
+    /**
+     * 已登录账号绑定微信（设置页「绑定微信」）
+     * POST index.php?r=api/user/bindWechat  openid / unionid / avatar
+     * Header: Authorization: Bearer <token>
+     */
+    public function bindWechat() {
+        $this->options();
+        $token   = $this->requestToken();
+        $payload = $this->parseToken($token);
+        if (!$payload) {
+            $this->json(array('code' => 401, 'message' => '未登录或登录已过期'), 401);
+        }
+        $uid = (int) $payload['uid'];
+
+        $openid  = trim($this->raw('openid', ''));
+        $unionid = trim($this->raw('unionid', ''));
+        if ($openid === '' && $unionid === '') {
+            $this->json(array('code' => 0, 'message' => '缺少微信凭证'), 400);
+        }
+        // 该微信已绑定其他账号则拒绝
+        if ($unionid !== '') {
+            $exist = obj('api/ApiData')->dataSelect('yun_user', array(array("`wx_unionid` = ?", $unionid)));
+            if (!empty($exist) && (int) $exist['id'] !== $uid) {
+                $this->json(array('code' => 0, 'message' => '该微信已绑定其他账号'), 400);
+            }
+        }
+        $up = array();
+        if ($unionid !== '') $up['wx_unionid'] = $unionid;
+        if ($openid !== '') $up['wx_openid'] = $openid;
+        $av = trim($this->raw('avatar', ''));
+        if ($av !== '') $up['avatar'] = $av;
+        if (!empty($up)) {
+            obj('api/ApiData')->dataUpdate('yun_user', $up, array('id' => $uid));
+        }
+        $u = obj('api/ApiData')->dataSelect('yun_user', array('id' => $uid));
+        $this->json(array('code' => 1, 'message' => '微信绑定成功', 'user' => $this->maskUser($u)));
+    }
+
+    /* ============ 用户中心：收藏 / 浏览历史 / 我的评论 ============ */
+
+    /** 要求登录：返回 uid；未登录直接输出 401 并终止 */
+    private function authUid() {
+        $p = $this->parseToken($this->requestToken());
+        if (!$p) {
+            $this->json(array('code' => 401, 'message' => '请先登录'), 401);
+        }
+        return (int)$p['uid'];
+    }
+
+    /** 我的收藏列表（可按 type 筛选） */
+    public function favorites() {
+        $this->options();
+        $uid = $this->authUid();
+        $type = trim($this->raw('type', ''));
+        if (!in_array($type, array('goods', 'article', 'forum'))) $type = '';
+        $page = max(1, (int)$this->raw('page', 1));
+        $pageSize = 20;
+        $where = "`uid` = {$uid}";
+        if ($type !== '') $where .= " AND `type` = '" . addslashes($type) . "'";
+        $total = obj('api/ApiData')->thisQuery("SELECT COUNT(*) AS c FROM `{pre}favorite` WHERE {$where}");
+        $total = !empty($total[0]['c']) ? (int)$total[0]['c'] : 0;
+        $offset = ($page - 1) * $pageSize;
+        $list = obj('api/ApiData')->thisQuery("SELECT * FROM `{pre}favorite` WHERE {$where} ORDER BY `addtime` DESC LIMIT {$offset}, {$pageSize}");
+        $list = $list ?: array();
+        foreach ($list as &$it) {
+            $it['price'] = floatval($it['price'] ?? 0);
+            $it['addtime'] = (int)($it['addtime'] ?? 0);
+            $it['extra'] = !empty($it['extra']) ? json_decode($it['extra'], true) : new \stdClass();
+        }
+        unset($it);
+        $this->json(array('code' => 1, 'message' => 'success', 'data' => array(
+            'list' => $list, 'page' => $page, 'page_size' => $pageSize,
+            'total' => $total, 'has_more' => ($offset + count($list)) < $total,
+        )));
+    }
+
+    /** 收藏 / 取消收藏（幂等切换） */
+    public function favoriteToggle() {
+        $this->options();
+        if ($this->isPost() === false) $this->json(array('code' => 0, 'message' => '请求方式错误'), 400);
+        $uid = $this->authUid();
+        $type = trim($this->raw('type', ''));
+        $target = trim($this->raw('target_id', ''));
+        if (!in_array($type, array('goods', 'article', 'forum')) || $target === '') {
+            $this->json(array('code' => 0, 'message' => '参数错误'), 400);
+        }
+        $exists = obj('api/ApiData')->thisQuery(
+            "SELECT `id` FROM `{pre}favorite` WHERE `uid` = ? AND `type` = ? AND `target_id` = ?",
+            array($uid, $type, $target)
+        );
+        if (!empty($exists)) {
+            obj('api/ApiData')->executeQuery(
+                "DELETE FROM `{pre}favorite` WHERE `uid` = ? AND `type` = ? AND `target_id` = ?",
+                array($uid, $type, $target)
+            );
+            $this->json(array('code' => 1, 'message' => '已取消收藏', 'favorited' => false));
+        }
+        $extra = trim($this->raw('extra', ''));
+        if ($extra !== '' && is_string($extra)) {
+            @json_decode($extra);
+            if (json_last_error() !== JSON_ERROR_NONE) $extra = '';
+        }
+        obj('api/ApiData')->insertData('yun_favorite', array(
+            'uid'       => $uid,
+            'type'      => $type,
+            'target_id' => $target,
+            'title'     => trim($this->raw('title', '')),
+            'pic'       => trim($this->raw('pic', '')),
+            'price'     => floatval($this->raw('price', 0)),
+            'url'       => trim($this->raw('url', '')),
+            'extra'     => $extra,
+            'addtime'   => time(),
+        ));
+        $this->json(array('code' => 1, 'message' => '收藏成功', 'favorited' => true));
+    }
+
+    /** 删除收藏（按 id 或 type+target_id） */
+    public function favoriteDel() {
+        $this->options();
+        if ($this->isPost() === false) $this->json(array('code' => 0, 'message' => '请求方式错误'), 400);
+        $uid = $this->authUid();
+        $id = (int)$this->raw('id', 0);
+        if ($id > 0) {
+            obj('api/ApiData')->executeQuery("DELETE FROM `{pre}favorite` WHERE `id` = ? AND `uid` = ?", array($id, $uid));
+        } else {
+            $type = trim($this->raw('type', ''));
+            $target = trim($this->raw('target_id', ''));
+            if (!in_array($type, array('goods', 'article', 'forum')) || $target === '') {
+                $this->json(array('code' => 0, 'message' => '参数错误'), 400);
+            }
+            obj('api/ApiData')->executeQuery(
+                "DELETE FROM `{pre}favorite` WHERE `uid` = ? AND `type` = ? AND `target_id` = ?",
+                array($uid, $type, $target)
+            );
+        }
+        $this->json(array('code' => 1, 'message' => '已删除'));
+    }
+
+    /** 浏览历史列表 */
+    public function history() {
+        $this->options();
+        $uid = $this->authUid();
+        $type = trim($this->raw('type', ''));
+        if (!in_array($type, array('goods', 'article', 'forum'))) $type = '';
+        $page = max(1, (int)$this->raw('page', 1));
+        $pageSize = 20;
+        $where = "`uid` = {$uid}";
+        if ($type !== '') $where .= " AND `type` = '" . addslashes($type) . "'";
+        $total = obj('api/ApiData')->thisQuery("SELECT COUNT(*) AS c FROM `{pre}history` WHERE {$where}");
+        $total = !empty($total[0]['c']) ? (int)$total[0]['c'] : 0;
+        $offset = ($page - 1) * $pageSize;
+        $list = obj('api/ApiData')->thisQuery("SELECT * FROM `{pre}history` WHERE {$where} ORDER BY `addtime` DESC LIMIT {$offset}, {$pageSize}");
+        $list = $list ?: array();
+        foreach ($list as &$it) {
+            $it['price'] = floatval($it['price'] ?? 0);
+            $it['addtime'] = (int)($it['addtime'] ?? 0);
+            $it['extra'] = !empty($it['extra']) ? json_decode($it['extra'], true) : new \stdClass();
+        }
+        unset($it);
+        $this->json(array('code' => 1, 'message' => 'success', 'data' => array(
+            'list' => $list, 'page' => $page, 'page_size' => $pageSize,
+            'total' => $total, 'has_more' => ($offset + count($list)) < $total,
+        )));
+    }
+
+    /** 记录浏览历史（同 uid+type+target 自动更新时间，不重复插入） */
+    public function historyAdd() {
+        $this->options();
+        if ($this->isPost() === false) $this->json(array('code' => 0, 'message' => '请求方式错误'), 400);
+        $uid = $this->authUid();
+        $type = trim($this->raw('type', ''));
+        $target = trim($this->raw('target_id', ''));
+        if (!in_array($type, array('goods', 'article', 'forum')) || $target === '') {
+            $this->json(array('code' => 0, 'message' => '参数错误'), 400);
+        }
+        $extra = trim($this->raw('extra', ''));
+        if ($extra !== '' && is_string($extra)) {
+            @json_decode($extra);
+            if (json_last_error() !== JSON_ERROR_NONE) $extra = '';
+        }
+        $now = time();
+        obj('api/ApiData')->executeQuery(
+            "INSERT INTO `{pre}history` (`uid`,`type`,`target_id`,`title`,`pic`,`price`,`url`,`extra`,`addtime`) "
+            . "VALUES (?,?,?,?,?,?,?,?,?) "
+            . "ON DUPLICATE KEY UPDATE `title`=VALUES(`title`),`pic`=VALUES(`pic`),`price`=VALUES(`price`),`url`=VALUES(`url`),`extra`=VALUES(`extra`),`addtime`=?",
+            array(
+                $uid, $type, $target,
+                trim($this->raw('title', '')), trim($this->raw('pic', '')),
+                floatval($this->raw('price', 0)), trim($this->raw('url', '')),
+                $extra, $now, $now,
+            )
+        );
+        $this->json(array('code' => 1, 'message' => 'ok'));
+    }
+
+    /** 清空浏览历史（可指定 type） */
+    public function historyClear() {
+        $this->options();
+        if ($this->isPost() === false) $this->json(array('code' => 0, 'message' => '请求方式错误'), 400);
+        $uid = $this->authUid();
+        $type = trim($this->raw('type', ''));
+        if (in_array($type, array('goods', 'article', 'forum'))) {
+            obj('api/ApiData')->executeQuery("DELETE FROM `{pre}history` WHERE `uid` = ? AND `type` = ?", array($uid, $type));
+        } else {
+            obj('api/ApiData')->executeQuery("DELETE FROM `{pre}history` WHERE `uid` = ?", array($uid));
+        }
+        $this->json(array('code' => 1, 'message' => '已清空'));
+    }
+
+    /** 删除单条浏览历史 */
+    public function historyDel() {
+        $this->options();
+        if ($this->isPost() === false) $this->json(array('code' => 0, 'message' => '请求方式错误'), 400);
+        $uid = $this->authUid();
+        $id = (int)$this->raw('id', 0);
+        if ($id > 0) {
+            obj('api/ApiData')->executeQuery("DELETE FROM `{pre}history` WHERE `id` = ? AND `uid` = ?", array($id, $uid));
+        } else {
+            $type = trim($this->raw('type', ''));
+            $target = trim($this->raw('target_id', ''));
+            if (in_array($type, array('goods', 'article', 'forum')) && $target !== '') {
+                obj('api/ApiData')->executeQuery(
+                    "DELETE FROM `{pre}history` WHERE `uid` = ? AND `type` = ? AND `target_id` = ?",
+                    array($uid, $type, $target)
+                );
+            }
+        }
+        $this->json(array('code' => 1, 'message' => '已删除'));
+    }
+
+    /** 我的评论 + 我的回复（合并按时间倒序） */
+    public function myComment() {
+        $this->options();
+        $uid = $this->authUid();
+        $page = max(1, (int)$this->raw('page', 1));
+        $pageSize = 20;
+
+        $rows = array();
+        $comments = obj('api/ApiData')->thisQuery(
+            "SELECT c.id, c.mid, c.content, c.date, a.title AS target_title "
+            . "FROM `{pre}comment` c LEFT JOIN `{pre}article` a ON c.mid = a.id "
+            . "WHERE c.uid = ? ORDER BY c.id DESC",
+            array($uid)
+        );
+        foreach ($comments ?: array() as $c) {
+            $rows[] = array(
+                'type'         => 'article',
+                'id'           => (int)$c['id'],
+                'target_id'    => (int)$c['mid'],
+                'content'      => $c['content'],
+                'date'         => $c['date'],
+                'target_title' => $c['target_title'] ?: '',
+                'ts'           => strtotime($c['date'] ?: '0'),
+            );
+        }
+        $replies = obj('api/ApiData')->thisQuery(
+            "SELECT r.id, r.forum_id, r.content, r.date, f.title AS target_title "
+            . "FROM `{pre}forum_reply` r LEFT JOIN `{pre}forum` f ON r.forum_id = f.id "
+            . "WHERE r.uid = ? ORDER BY r.id DESC",
+            array($uid)
+        );
+        foreach ($replies ?: array() as $r) {
+            $rows[] = array(
+                'type'         => 'forum',
+                'id'           => (int)$r['id'],
+                'target_id'    => (int)$r['forum_id'],
+                'content'      => $r['content'],
+                'date'         => $r['date'],
+                'target_title' => $r['target_title'] ?: '',
+                'ts'           => strtotime($r['date'] ?: '0'),
+            );
+        }
+        usort($rows, function ($a, $b) { return $b['ts'] - $a['ts']; });
+        $total = count($rows);
+        $offset = ($page - 1) * $pageSize;
+        $slice = array_slice($rows, $offset, $pageSize);
+        foreach ($slice as &$s) { unset($s['ts']); }
+        unset($s);
+        $this->json(array('code' => 1, 'message' => 'success', 'data' => array(
+            'list' => $slice, 'page' => $page, 'page_size' => $pageSize,
+            'total' => $total, 'has_more' => ($offset + count($slice)) < $total,
+        )));
     }
 }

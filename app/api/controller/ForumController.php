@@ -672,4 +672,37 @@ class ForumController extends ApiBaseController {
         }
         return $id;
     }
+
+    /* ============ 我的爆料（个人帖子列表） ============ */
+
+    /**
+     * 我的爆料（当前登录用户发布的帖子）
+     * GET index.php?r=api/forum/my&page=1
+     * 复用 decorate / fixUrl，仅取本人 uid，不依赖 forum_on 总开关
+     */
+    public function my() {
+        $this->options();
+        $user = $this->loginUser();
+        if (empty($user)) $this->fail('请先登录', 401);
+        $uid = (int)$user['id'];
+
+        $page = max(1, (int)$this->raw('page', 1));
+        $pageSize = 20;
+        $total = $this->q("SELECT COUNT(*) AS c FROM `{pre}forum` WHERE `uid` = ?", array($uid));
+        $total = !empty($total[0]['c']) ? (int)$total[0]['c'] : 0;
+        $offset = ($page - 1) * $pageSize;
+        $list = $this->q("SELECT * FROM `{pre}forum` WHERE `uid` = ? ORDER BY `id` DESC LIMIT {$offset}, {$pageSize}", array($uid));
+        $list = $list ?: array();
+        foreach ($list as &$f) {
+            $this->decorate($f);
+        }
+        unset($f);
+        $this->ok(array(
+            'list'       => $list,
+            'page'       => $page,
+            'page_size'  => $pageSize,
+            'total'      => $total,
+            'has_more'   => ($offset + count($list)) < $total,
+        ));
+    }
 }

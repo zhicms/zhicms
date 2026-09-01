@@ -266,3 +266,39 @@ ALTER TABLE `__PREFIX__user` ADD KEY `idx_invited_by` (`invited_by`);
 -- ------------------------------------------------------------
 INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES ('cfg_version', '{"version":"5.0.2"}', '版本号')
 ON DUPLICATE KEY UPDATE `value` = '{"version":"5.0.2"}';
+
+
+-- ------------------------------------------------------------
+-- 5.0.2 用户中心：收藏表 + 浏览历史表
+-- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `__PREFIX__favorite` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `uid` int NOT NULL DEFAULT '0' COMMENT '用户ID',
+  `type` varchar(20) NOT NULL DEFAULT '' COMMENT '类型 goods商品/article文章/forum帖子',
+  `target_id` varchar(100) NOT NULL DEFAULT '' COMMENT '目标ID（商品goodsId/文章id/帖子id）',
+  `title` varchar(255) NOT NULL DEFAULT '' COMMENT '标题快照',
+  `pic` varchar(512) NOT NULL DEFAULT '' COMMENT '封面图快照',
+  `price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '价格快照（商品）',
+  `url` varchar(500) NOT NULL DEFAULT '' COMMENT '跳转地址',
+  `extra` text COMMENT '扩展JSON（platform/goodsSign等）',
+  `addtime` int NOT NULL DEFAULT '0' COMMENT '收藏时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uid_type_target` (`uid`,`type`,`target_id`),
+  KEY `uid` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户收藏表';
+
+CREATE TABLE IF NOT EXISTS `__PREFIX__history` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `uid` int NOT NULL DEFAULT '0' COMMENT '用户ID',
+  `type` varchar(20) NOT NULL DEFAULT '' COMMENT '类型 goods商品/article文章/forum帖子',
+  `target_id` varchar(100) NOT NULL DEFAULT '' COMMENT '目标ID',
+  `title` varchar(255) NOT NULL DEFAULT '' COMMENT '标题快照',
+  `pic` varchar(512) NOT NULL DEFAULT '' COMMENT '封面图快照',
+  `price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '价格快照',
+  `url` varchar(500) NOT NULL DEFAULT '' COMMENT '跳转地址',
+  `extra` text COMMENT '扩展JSON',
+  `addtime` int NOT NULL DEFAULT '0' COMMENT '浏览时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uid_type_target` (`uid`,`type`,`target_id`),
+  KEY `uid` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户浏览历史表';

@@ -25,6 +25,16 @@ class ConfigController extends ApiBaseController {
             $forumOn = $forumRow[0]['value'];
         }
 
+        // 用户登录相关开关（供 App 动态控制微信快捷登录入口；缺失默认开启）
+        $wxLoginOn = '1';
+        $wxRow = obj('api/ApiData')->thisQuery(
+            "SELECT `value` FROM `{pre}config` WHERE `key` = ?",
+            array('user_wx_login')
+        );
+        if (!empty($wxRow[0]['value'])) {
+            $wxLoginOn = $wxRow[0]['value'];
+        }
+
         $data = array(
             'code'    => 1,
             'message' => 'success',
@@ -50,6 +60,7 @@ class ConfigController extends ApiBaseController {
                 'goods_api_url' => $this->siteUrl() . 'index.php?r=api/goods/search',
                 // 功能模块总开关：供小程序/App 动态控制 Tab 显隐与入口可用性
                 'modules' => \app\common\FeatureGate::modules(),
+                'user'    => array('wx_login' => $wxLoginOn === '1'),
             ),
         );
 

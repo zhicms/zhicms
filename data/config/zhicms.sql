@@ -732,6 +732,7 @@ INSERT INTO `__PREFIX__config` (`key`, `value`, `desc`) VALUES
 ('user_reg_captcha', '1', '注册开启图形验证码 1开/0关'),
 ('user_email_verify', '0', '注册需要邮箱验证 1是/0否（当前仅预留）'),
 ('user_show_login', '1', '前台显示用户登录/注册入口 1显示/0隐藏'),
+('user_wx_login', '1', '微信快捷登录 1开/0关（关闭后 App 降级为手机号登录）'),
 ('forum_on', '1', '社区功能总开关 1开/0关'),
 ('comment_on', '1', '评论功能总开关 1开/0关'),
 ('comment_anonymous', '1', '允许未登录评论 1允许/0禁止'),
@@ -774,5 +775,40 @@ CREATE TABLE `__PREFIX__union_auth` (
   KEY `platform` (`platform`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='联盟授权配置';
 /*!40101 SET character_set_client = @saved_cs_client */;
+
+-- ------------------------------------------------------------
+-- 用户中心：收藏表 + 浏览历史表（全新安装即包含）
+-- ------------------------------------------------------------
+CREATE TABLE `__PREFIX__favorite` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` int(11) NOT NULL DEFAULT '0' COMMENT '用户ID',
+  `type` varchar(20) NOT NULL DEFAULT '' COMMENT '类型 goods商品/article文章/forum帖子',
+  `target_id` varchar(100) NOT NULL DEFAULT '' COMMENT '目标ID（商品goodsId/文章id/帖子id）',
+  `title` varchar(255) NOT NULL DEFAULT '' COMMENT '标题快照',
+  `pic` varchar(512) NOT NULL DEFAULT '' COMMENT '封面图快照',
+  `price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '价格快照（商品）',
+  `url` varchar(500) NOT NULL DEFAULT '' COMMENT '跳转地址',
+  `extra` text COMMENT '扩展JSON（platform/goodsSign等）',
+  `addtime` int(11) NOT NULL DEFAULT '0' COMMENT '收藏时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uid_type_target` (`uid`,`type`,`target_id`),
+  KEY `uid` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户收藏表';
+
+CREATE TABLE `__PREFIX__history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `uid` int(11) NOT NULL DEFAULT '0' COMMENT '用户ID',
+  `type` varchar(20) NOT NULL DEFAULT '' COMMENT '类型 goods商品/article文章/forum帖子',
+  `target_id` varchar(100) NOT NULL DEFAULT '' COMMENT '目标ID',
+  `title` varchar(255) NOT NULL DEFAULT '' COMMENT '标题快照',
+  `pic` varchar(512) NOT NULL DEFAULT '' COMMENT '封面图快照',
+  `price` decimal(10,2) NOT NULL DEFAULT '0.00' COMMENT '价格快照',
+  `url` varchar(500) NOT NULL DEFAULT '' COMMENT '跳转地址',
+  `extra` text COMMENT '扩展JSON',
+  `addtime` int(11) NOT NULL DEFAULT '0' COMMENT '浏览时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uid_type_target` (`uid`,`type`,`target_id`),
+  KEY `uid` (`uid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户浏览历史表';
 
 SET FOREIGN_KEY_CHECKS = 1;

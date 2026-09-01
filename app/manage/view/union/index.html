@@ -46,6 +46,9 @@
     <?php elseif($platform === 'taobao'): ?>
     当前展示：<strong>大淘客全量商品列表（get-goods-list）</strong>
     <span class="text-muted ml-2">（已入库商品显示为"已采集"，每页最多200条）</span>
+    <?php elseif($platform === 'jd'): ?>
+    当前展示：<strong>折淘客(折京客)京东实时选品</strong>
+    <span class="text-muted ml-2">（关键词走京东商品查询，分类按京东一级类目后端对齐筛选，已入库商品显示为"已采集"）</span>
     <?php else: ?>
     当前展示：<strong>API接口实时选品（大淘客/好单库）</strong>
     <span class="text-muted ml-2">（已入库商品显示为"已采集"）</span>
