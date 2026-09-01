@@ -204,8 +204,11 @@ class Tjk {
 
         // 好单库多平台：拼多多 / 京东 / 唯品会
         // 注意：京东(jd)优先走折淘客(ztk)，故仅配置折淘客、未配置好单库时也允许京东搜索；
-        // 拼多多/唯品会仍依赖好单库（拼多多另有官方SDK兜底），故按需校验 hdk。
+        // 拼多多在已配置本地官方SDK(pdd)时也可绕过好单库校验（好单库作为兜底）。
         $needHdk = !($platform === 'jd' && $this->ztk);
+        if ($platform === 'pdd' && $this->pdd) {
+            $needHdk = false;
+        }
         if ($needHdk && !$this->hdk) {
             return [
                 'code' => 0,
@@ -225,7 +228,12 @@ class Tjk {
                         return $pddRes;
                     }
                 }
-                $result = $this->hdk->SearchPddGoods($keyword, $pageSize, $minId, $sort, $hasCoupon);
+                if ($this->hdk) {
+                    $result = $this->hdk->SearchPddGoods($keyword, $pageSize, $minId, $sort, $hasCoupon);
+                } else {
+                    // 本地SDK未返回数据且未配置好单库时，直接返回（避免对 null 调用方法）
+                    $result = $pddRes ?? ['code' => 0, 'message' => '拼多多官方SDK未返回数据且好单库未配置', 'items' => []];
+                }
                 break;
             case 'jd':
                 // 优先折京客（好单库账号异常时的替代京东源），未配置再回退好单库
@@ -516,7 +524,8 @@ class Tjk {
         $wantTb  = $this->dtk && (is_null($platforms) || in_array('tb', (array) $platforms) || in_array('taobao', (array) $platforms));
         // 京东：好单库或折淘客(折京客)任一可用即可参与聚合（searchGoods('jd') 已优先折淘客、回退好单库）
         $wantJd  = ($this->hdk || $this->ztk) && (is_null($platforms) || in_array('jd', (array) $platforms));
-        $wantPdd = $this->hdk && (is_null($platforms) || in_array('pdd', (array) $platforms));
+        // 拼多多：本地官方SDK(pdd)或好单库(hdk)任一可用即可参与聚合（searchGoods('pdd') 已优先本地SDK、回退好单库）
+        $wantPdd = ($this->hdk || $this->pdd) && (is_null($platforms) || in_array('pdd', (array) $platforms));
         $wantVip = $this->hdk && (is_null($platforms) || in_array('vip', (array) $platforms));
         $wantHdk = $this->hdk && ($wantJd || $wantPdd || $wantVip);
 
@@ -592,8 +601,18 @@ class Tjk {
                     $this->platBreakerRecord('jd', false, $jd['message'] ?? '');
                 }
             } elseif ($p === 'pdd') {
-                $pdd = $this->hdk->SearchPddGoods($keyword, $want, 1);
-                if ($pdd['code'] == 1 && !empty($pdd['items'])) {
+                // 拼多多优先走本地官方SDK(pdd)，好单库(hdk)作为兜底（与 searchGoods('pdd') 保持一致）
+                $pdd = null;
+                if ($this->pdd) {
+                    $pdd = $this->pdd->searchGoods($keyword, $want, 1);
+                    // 本地SDK无结果/异常时，若好单库可用则回退
+                    if (!($pdd['code'] == 1 && !empty($pdd['items'])) && $this->hdk) {
+                        $pdd = $this->hdk->SearchPddGoods($keyword, $want, 1);
+                    }
+                } elseif ($this->hdk) {
+                    $pdd = $this->hdk->SearchPddGoods($keyword, $want, 1);
+                }
+                if ($pdd && $pdd['code'] == 1 && !empty($pdd['items'])) {
                     foreach ($pdd['items'] as $item) {
                         $item['item_from'] = 'pdd';
                         $byPlat['pdd'][] = $item;

@@ -135,6 +135,11 @@ class BaseController extends \ZhiCms\base\Controller {
 		}
 		$this->initSessionSecurity();
 
+		// 注入 CSRF token 给模板：供后台表单的 #hash_field / #csrfToken 隐藏域使用，
+		// 与 checkCsrfToken() 比对的 $_SESSION['csrf_token'] 同源。
+		// 否则 $hash 模板变量为空，导致调用 checkCsrfToken() 的 AJAX（如拼多多生成 PID）报「CSRF验证失败」。
+		$this->hash = $this->getCsrfToken();
+
 		// 后台导航：注入已启用插件的后台菜单（供 emlog_nav 动态渲染）
 		if (defined('\APP_NAME') && \APP_NAME == 'manage') {
 			// 后台访问锁：必须携带正确的动态 GET 参数才能进入，否则跳首页。
