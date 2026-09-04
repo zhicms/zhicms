@@ -267,12 +267,16 @@ class FeedController extends ApiBaseController {
             }
         }
 
-        // 5) 商品双列流（分页，前端好价推荐主区使用）
+        // 5) 商品双列流（分页，前端好价推荐主区使用，保留时间流以兼容旧 UI）
         $feedPage = max(1, intval($this->raw('feed_page', $page)));
         $feedRows = obj('api/ApiData')->dataSelect('yun_items', array("`del` = 0"), '`top` DESC, `id` DESC');
         $pageSize = 10;
         $feedList = array_slice($feedRows ?: array(), ($feedPage - 1) * $pageSize, $pageSize);
         $feedItems = array_map(array($this, 'mapItem'), $feedList);
+
+        // 6) KB 智能混合流：普通文章 + 文章商品(带货文) + 电商产品 三类混合，按好货率/ROI 排序（非时间）
+        //    这是「AI 智能电商导购聚合搜索」在 App 端的程序印记体现，竞品无法靠抄代码复制。
+        $built = $this->buildMixed($feedPage, $pageSize);
 
         $this->json(array(
             'code'    => 1,
@@ -284,6 +288,7 @@ class FeedController extends ApiBaseController {
                 'fengyun'     => $fengyun,    // 站内编辑精选榜
                 'articles'    => $articles,   // 资讯（次级入口）
                 'feed'        => $feedItems,
+                'mixed_feed'  => $built['items'],   // 新增：KB 智能混合流（sort_by=smart）
                 'categories'  => $this->catList(),
                 'nav_categories' => $this->navCategories(),  // 文章分类（好价推荐用）
                 'rank_types'  => $this->rankTypes(),          // 榜单类型（小时榜用）
@@ -644,5 +649,328 @@ class FeedController extends ApiBaseController {
             array('type' => 3, 'name' => '热推榜'),
             array('type' => 7, 'name' => '综合热搜榜'),
         );
+    }
+
+    // ==================== KB 智能混合流（文章 + 文章商品 + 电商产品 混合排序） ====================
+    //
+    // 把「普通文章 / 文章商品(带货文, article.goodsId 非空) / 电商产品(yun_items)」三类内容混成一个信息流，
+    // 排序依据是「好货率/ROI」——来自我们自有知识库 data/ai_kb（AI 导购每次请求累积的语义/行为资产）
+    // 与 data/ai_feedback（用户点击/接受/下单反馈），而非按 id DESC 的时间顺序。
+    // 这是「AI 智能电商导购聚合搜索」独有的程序印记：算法可抄，持续累积的“用户到底要什么”抄不走。
+
+    /**
+     * 聚合知识库 + 反馈，构建排序信号（带 10 分钟文件缓存，避免每次请求扫描 jsonl）。
+     * 返回：hotWords[kw]={q,avgRoi,matchRate,brands[],features[]}，fbAccept/fbClick[goodsId]=count
+     */
+    private function getKbAggregate($ttl = 600) {
+        $cacheFile = \ROOT_PATH . 'data/ai_kb/_aggregate.json';
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile) < $ttl)) {
+            $c = json_decode(@file_get_contents($cacheFile), true);
+            if (is_array($c)) return $c;
+        }
+        $kbDir = \ROOT_PATH . 'data/ai_kb/';
+        $fbDir = \ROOT_PATH . 'data/ai_feedback/';
+        $hot = array();
+        if (is_dir($kbDir)) {
+            foreach (glob($kbDir . '*.jsonl') as $f) {
+                if (basename($f) === '_aggregate.json') continue;
+                $h = @fopen($f, 'r'); if (!$h) continue;
+                while (($line = fgets($h)) !== false) {
+                    $line = trim($line); if ($line === '') continue;
+                    $e = json_decode($line, true); if (!is_array($e)) continue;
+                    $kw = trim(mb_strtolower($e['keyword'] ?? ''));
+                    if ($kw === '') continue;
+                    if (!isset($hot[$kw])) $hot[$kw] = array('q' => 0, 'roi' => 0, 'mi' => 0, 'ti' => 0, 'brands' => array(), 'features' => array());
+                    $hot[$kw]['q']++;
+                    $roi = isset($e['roi']['avg']) ? (int)$e['roi']['avg'] : 0;
+                    $hot[$kw]['roi'] += $roi;
+                    $hot[$kw]['mi']  += (int)($e['roi']['matchCount'] ?? 0);
+                    $hot[$kw]['ti']  += (int)($e['roi']['total'] ?? 0);
+                    $fl = $e['filters'] ?? array();
+                    if ($roi >= 80) { // 仅从“高符合度”请求里学习好品牌/好特性
+                        if (!empty($fl['brand']))    { $b = mb_strtolower($fl['brand']);    $hot[$kw]['brands'][$b]    = ($hot[$kw]['brands'][$b] ?? 0) + 1; }
+                        if (!empty($fl['feature']))  { $b = mb_strtolower($fl['feature']);  $hot[$kw]['features'][$b]  = ($hot[$kw]['features'][$b] ?? 0) + 1; }
+                    }
+                }
+                fclose($h);
+            }
+        }
+        $fbAccept = array(); $fbClick = array();
+        if (is_dir($fbDir)) {
+            foreach (glob($fbDir . '*.log') as $f) {
+                $h = @fopen($f, 'r'); if (!$h) continue;
+                while (($line = fgets($h)) !== false) {
+                    $line = trim($line); if ($line === '') continue;
+                    $e = json_decode($line, true); if (!is_array($e)) continue;
+                    $gid = (string)($e['goodsId'] ?? ''); if ($gid === '') continue;
+                    $act = $e['action'] ?? '';
+                    if ($act === 'accept' || $act === 'order') $fbAccept[$gid] = ($fbAccept[$gid] ?? 0) + 1;
+                    elseif ($act === 'click') $fbClick[$gid] = ($fbClick[$gid] ?? 0) + 1;
+                }
+                fclose($h);
+            }
+        }
+        $hotWords = array();
+        foreach ($hot as $kw => $v) {
+            arsort($v['brands']); arsort($v['features']);
+            $hotWords[$kw] = array(
+                'q'         => $v['q'],
+                'avgRoi'    => $v['q'] ? round($v['roi'] / $v['q']) : 0,
+                'matchRate' => $v['ti'] ? round($v['mi'] / $v['ti'], 2) : 0,
+                'brands'    => array_keys(array_slice($v['brands'], 0, 5)),
+                'features'  => array_keys(array_slice($v['features'], 0, 5)),
+            );
+        }
+        // 按“查询量 × 符合度”排序，越被需要且越准的词权重越高
+        uasort($hotWords, function ($a, $b) { return ($b['q'] * $b['avgRoi']) <=> ($a['q'] * $a['avgRoi']); });
+        $agg = array('hotWords' => $hotWords, 'fbAccept' => $fbAccept, 'fbClick' => $fbClick, 'built' => time());
+        @file_put_contents($cacheFile, json_encode($agg, JSON_UNESCAPED_UNICODE));
+        return $agg;
+    }
+
+    /**
+     * 单条智能打分（0~约120）。基础分=价值/互动信号；叠加 KB 热词命中、好品牌、用户反馈。
+     */
+    private function smartScore($row, $type, $kb) {
+        $title = mb_strtolower(strip_tags(($row['title'] ?? '') . ' ' . ($row['dtitle'] ?? '') . ' ' . ($row['keywords'] ?? '')));
+        $s = 0;
+        if ($type === 'product' || $type === 'article_product') {
+            $price = (float)($row['actualPrice'] ?? 0);
+            $orig  = (float)($row['originalPrice'] ?? 0);
+            $coupon= (float)($row['couponPrice'] ?? 0);
+            $sales = (int)($row['monthSales'] ?? 0);
+            if ($orig > 0 && $price > 0) $s += min(25, (1 - $price / $orig) * 100);   // 折扣力度
+            if ($sales > 0) $s += min(20, log10($sales + 1) * 4);                     // 销量热度
+            if ($coupon > 0 && $price > 0) $s += min(8, $coupon / $price * 10);       // 券力度
+            if (($row['choice'] ?? 0) == 1) $s += 10;                                 // 编辑精选
+            if (($row['top'] ?? 0) == 1)   $s += 5;                                   // 置顶
+        }
+        if ($type === 'article' || $type === 'article_product') {
+            $s += min(30, ((int)($row['view'] ?? 0)) / 50);                           // 阅读
+            $s += min(20, ((int)($row['like'] ?? 0)) * 2);                            // 点赞
+            if (($row['featured'] ?? 0) == 1) $s += 8;                                // 推荐
+            $d = $row['date'] ?? '';
+            if (preg_match('/\d{4}-\d{2}-\d{2}/', $d, $m)) {
+                $days = (time() - strtotime($m[0])) / 86400;
+                if ($days <= 7) $s += 5; elseif ($days <= 30) $s += 2;               // 轻微时效性
+            }
+        }
+        // KB 热词命中：标题含高符合度热词 → 加分（至多叠加 3 个，避免堆爆）
+        $i = 0;
+        foreach (($kb['hotWords'] ?? array()) as $kw => $v) {
+            if ($kw === '' || mb_stripos($title, $kw) === false) continue;
+            $s += max(0, min(15, ($v['avgRoi'] - 60) / 3));
+            if (++$i >= 3) break;
+        }
+        // 好品牌加成（从高分请求学习到的品牌）
+        $brand = mb_strtolower($row['brandName'] ?? '');
+        if ($brand !== '') {
+            foreach (($kb['hotWords'] ?? array()) as $v) {
+                if (in_array($brand, $v['brands'] ?? array(), true)) { $s += 8; break; }
+            }
+        }
+        // 用户反馈加成（点击/接受/下单）
+        $gid = (string)($row['goodsId'] ?? '');
+        if ($gid !== '') {
+            if (isset($kb['fbAccept'][$gid])) $s += 15 + min(20, $kb['fbAccept'][$gid] * 3);
+            elseif (isset($kb['fbClick'][$gid])) $s += min(10, $kb['fbClick'][$gid] * 2);
+        }
+        return round($s, 1);
+    }
+
+    /**
+     * 从 AI 接口（大淘客实时榜单，即 AI 导购聚合搜索的同源数据源）拉取一批产品，带文件缓存。
+     * 缓存目的：方便二次展示 —— 混合流每次被 App 拉取时直接命中缓存，不重复请求外部 API；
+     * 超过 TTL 才回源刷新。不是每次都有：API 失败/无结果时返回空数组（不混入）。
+     *
+     * @return array 标准化产品数组（字段与 yun_items 一致：goodsId/title/mainPic/actualPrice/...），
+     *               每个带 _type='product'、from_api=true，可直接进入混合池打分排序
+     */
+    private function getAiProducts($limit = 8, $ttl = 1800) {
+        $cacheFile = \ROOT_PATH . 'data/ai_kb/_ai_products.json';
+        if (is_file($cacheFile) && (time() - filemtime($cacheFile) < $ttl)) {
+            $c = json_decode(@file_get_contents($cacheFile), true);
+            if (is_array($c) && isset($c['items']) && is_array($c['items'])) {
+                return array_slice($c['items'], 0, $limit);
+            }
+        }
+        if (!class_exists('\\ZhiCms\\ext\\Tjk')) {
+            return array();
+        }
+        $items = array();
+        try {
+            $tjk = new \ZhiCms\ext\Tjk();
+            // 多榜单聚合，增加“AI 接口返回”的多样性（实时/全天热销/热推/综合热搜）
+            $seen = array();
+            foreach (array(1, 2, 3, 7) as $type) {
+                $res = $tjk->getRankingList($type, '', 20, '1');
+                if (empty($res) || ($res['code'] ?? 0) != 1 || empty($res['items'])) continue;
+                foreach ($res['items'] as $it) {
+                    $gid = (string)($it['goodsId'] ?? '');
+                    if ($gid === '' || isset($seen[$gid])) continue;
+                    $seen[$gid] = true;
+                    $it['_type']    = 'product';
+                    $it['from_api'] = true;
+                    $it['id']       = 0;   // 非库内商品，以 goodsId 标识
+                    $it['dec']      = '';  // mapMixed 读 dec，AI 项置空
+                    $items[] = $it;
+                    if (count($items) >= 60) break 2;
+                }
+            }
+        } catch (\Throwable $e) {
+            return array();   // 异常：本次无 AI 产品可混入
+        }
+        $dir = dirname($cacheFile);
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        @file_put_contents($cacheFile, json_encode(array('built' => time(), 'items' => $items), JSON_UNESCAPED_UNICODE));
+        return array_slice($items, 0, $limit);
+    }
+
+    /**
+     * 取混合内容池：AI 接口产品 + 电商产品 + 文章（普通/文章商品）。
+     * 各取近期窗口再打分重排，控制内存。AI 产品来自缓存（方便二次展示），非每次都有。
+     */
+    private function fetchMixedPool($window = 250) {
+        $pool = array();
+        $prods = obj('api/ApiData')->dataSelect('yun_items', array("`del` = 0"), '`id` DESC');
+        $dbGoodsIds = array();
+        if (!empty($prods)) {
+            foreach (array_slice($prods, 0, $window) as $p) {
+                $p['_type'] = 'product';
+                $pool[] = $p;
+                if (!empty($p['goodsId'])) $dbGoodsIds[strtolower($p['goodsId'])] = true;
+            }
+        }
+        // 混入 AI 接口返回的产品（带缓存，方便二次展示；非每次都有，失败则跳过）
+        $ai = $this->getAiProducts(8, 1800);
+        if (!empty($ai)) {
+            foreach ($ai as $a) {
+                $gid = strtolower((string)($a['goodsId'] ?? ''));
+                if ($gid !== '' && isset($dbGoodsIds[$gid])) continue;   // 去重：避免与库内商品重复卡片
+                $pool[] = $a;
+            }
+        }
+        $arts = obj('api/ApiData')->dataSelect('yun_article', array("`status` = 1"), '`id` DESC');
+        if (!empty($arts)) {
+            foreach (array_slice($arts, 0, $window) as $a) {
+                $a['_type'] = (!empty($a['goodsId']) && $a['goodsId'] !== '') ? 'article_product' : 'article';
+                $pool[] = $a;
+            }
+        }
+        return $pool;
+    }
+
+    /**
+     * 构建 KB 智能混合流（核心：按好货率/ROI 排序，非时间）。home() 与 mixed() 共用。
+     */
+    private function buildMixed($page, $pageSize, $window = 250) {
+        $kb = $this->getKbAggregate();
+        $pool = $this->fetchMixedPool($window);
+        $scored = array();
+        foreach ($pool as $row) {
+            $scored[] = array('row' => $row, 's' => $this->smartScore($row, $row['_type'], $kb));
+        }
+        usort($scored, function ($a, $b) { return $b['s'] <=> $a['s']; });
+        $total = count($scored);
+        $slice = array_slice($scored, ($page - 1) * $pageSize, $pageSize);
+        $items = array();
+        foreach ($slice as $x) { $items[] = $this->mapMixed($x['row'], $x['s']); }
+        return array('items' => $items, 'total' => $total);
+    }
+
+    /**
+     * 统一映射为混合流字段（type 标记内容类型，供 App 差异化渲染）。
+     */
+    private function mapMixed($row, $score) {
+        $type = $row['_type'];
+        $base = array(
+            'type'     => $type,
+            'id'       => intval($row['id']),
+            'title'    => $row['title'] ?? '',
+            'pic'      => $row['mainPic'] ?? '',
+            'desc'     => $row['dec'] ?? '',
+            'score'    => $score,
+            'from_api' => !empty($row['from_api']),   // AI 接口混入产品标记，App 可显示“AI 推荐”角标
+        );
+        if ($type === 'product' || $type === 'article_product') {
+            $base = array_merge($base, array(
+                'goodsId'       => $row['goodsId'] ?? '',
+                'goodsSign'     => $row['goodsSign'] ?? '',
+                'price'         => floatval($row['actualPrice'] ?? 0),
+                'originalPrice' => floatval($row['originalPrice'] ?? 0),
+                'couponPrice'   => floatval($row['couponPrice'] ?? 0),
+                'monthSales'    => intval($row['monthSales'] ?? 0),
+                'shopName'      => $row['shopName'] ?? '',
+                'brandName'     => $row['brandName'] ?? '',
+                'catName'       => $this->cats[intval($row['cid'] ?? 0)] ?? '',
+                'item_from'     => (($row['item_from'] === 'dtk' || $row['item_from'] === 'taobao') ? 'tb' : ($row['item_from'] ?? 'tb')),
+                'isChoice'      => intval($row['choice'] ?? 0) === 1,
+            ));
+        }
+        if ($type === 'article' || $type === 'article_product') {
+            $base['view'] = intval($row['view'] ?? 0);
+            $base['like'] = intval($row['like'] ?? 0);
+            $base['navid'] = intval($row['navid'] ?? 0);
+            $base['date'] = $row['date'] ?? '';
+            $base['url']  = '';
+            if ($type === 'article') {
+                $base['catName'] = \app\base\controller\BaseController::getNavName(intval($row['navid'] ?? 0));
+            }
+        }
+        return $base;
+    }
+
+    /**
+     * 混合信息流接口（App 主信息流可用此替代单纯时间流）
+     * GET index.php?r=api/feed/mixed&page=1
+     */
+    public function mixed() {
+        $this->options();
+        $page = max(1, intval($this->raw('page', 1)));
+        $pageSize = 10;
+        $built = $this->buildMixed($page, $pageSize);
+        $this->json(array(
+            'code'      => 1,
+            'message'   => 'success',
+            'total'     => $built['total'],
+            'page'      => $page,
+            'page_size' => $pageSize,
+            'items'     => $built['items'],
+            'sort_by'   => 'smart',   // 标记：按 KB/好货率 智能排序，非时间
+        ));
+    }
+
+    /**
+     * 热词好货率看板（AI 智能电商导购聚合搜索 · 程序印记可视化）
+     * GET index.php?r=api/feed/kbStats  （直接浏览器打开即可看）
+     */
+    public function kbStats() {
+        $kb = $this->getKbAggregate(60);
+        header('Content-Type: text/html; charset=utf-8');
+        $rows = '';
+        $i = 0;
+        foreach ($kb['hotWords'] as $kw => $v) {
+            $i++;
+            $rows .= '<tr><td>' . $i . '</td><td>' . htmlspecialchars($kw) . '</td><td>' . $v['q'] . '</td>'
+                . '<td>' . $v['avgRoi'] . '%</td><td>' . round($v['matchRate'] * 100) . '%</td><td>'
+                . htmlspecialchars(implode(' / ', $v['brands'])) . '</td></tr>';
+            if ($i >= 50) break;
+        }
+        if ($rows === '') $rows = '<tr><td colspan="6">暂无数据，先通过 AI 导购产生一些请求即可累积</td></tr>';
+        echo '<!doctype html><html lang="zh"><head><meta charset="utf-8">'
+            . '<title>热词好货率看板</title>'
+            . '<style>body{font-family:system-ui,-apple-system,"PingFang SC",sans-serif;padding:24px;color:#222}'
+            . 'h1{font-size:20px}table{border-collapse:collapse;width:100%;margin-top:12px}'
+            . 'th,td{border:1px solid #e3e3e3;padding:7px 10px;font-size:13px;text-align:left}'
+            . 'th{background:#f6ffed;color:#389e0d}caption{font-size:16px;margin-bottom:8px;text-align:left}'
+            . 'p{color:#666;font-size:13px}</style></head><body>'
+            . '<h1>🔥 热词好货率看板</h1>'
+            . '<p>数据来源：<code>data/ai_kb/</code>（AI 导购每次请求累积的自有语义/行为资产，竞品抄不走的程序印记）。'
+            . '「平均符合度」= 小淘自评 ROI 评分均值，越高代表用户诉求被满足得越好。</p>'
+            . '<table><caption>热词榜（按 查询量 × 符合度 排序）</caption>'
+            . '<tr><th>#</th><th>热词</th><th>查询次数</th><th>平均符合度</th><th>精准命中率</th><th>代表好货品牌</th></tr>'
+            . $rows . '</table>'
+            . '<p style="margin-top:16px">反馈信号：被接受/下单商品 <b>' . count($kb['fbAccept']) . '</b> 个；被点击商品 <b>' . count($kb['fbClick']) . '</b> 个。</p>'
+            . '</body></html>';
     }
 }

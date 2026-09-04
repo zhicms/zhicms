@@ -163,10 +163,10 @@ class Tjk {
             $keyword = trim($keyword . ' ' . $brand);
         }
 
-        // 淘宝/天猫：仅走大淘客（Dtk），按约定淘宝转链/搜索统一用大淘客
+        // 淘宝/天猫：大淘客 + 好单库淘宝(supersearch) 双源并行，合并去重后返回
         if ($platform === 'taobao' || $platform === 'dtk') {
-            if (!$this->dtk) {
-                return ['code' => 0, 'message' => '大淘客API未配置', 'items' => [], 'total' => 0];
+            if (!$this->dtk && !$this->hdk) {
+                return ['code' => 0, 'message' => '大淘客/好单库API均未配置', 'items' => [], 'total' => 0];
             }
             // 排序映射：站内排序值 -> 大淘客 sort 编码
             // 0综合 1价格低到高 2价格高到低 3销量低到高 4销量高到低 5佣金比例低到高 6佣金比例高到低
@@ -185,15 +185,49 @@ class Tjk {
             if ($sort !== '' && $sort !== null) {
                 $dtkSort = isset($dtkSortMap[$sort]) ? $dtkSortMap[$sort] : (is_numeric($sort) ? strval($sort) : '');
             }
-            $dtkRes = $this->dtk->SearchGoods($keyword, $pageNum, $pageSize, $pmin, $pmax, $dtkSort);
-            if ($dtkRes['code'] == 1 && !empty($dtkRes['items'])) {
-                foreach ($dtkRes['items'] as &$it) {
-                    $it['item_from'] = 'tb';
+
+            $tbItems = array();
+            // 主源：大淘客
+            if ($this->dtk) {
+                $dtkRes = $this->dtk->SearchGoods($keyword, $pageNum, $pageSize, $pmin, $pmax, $dtkSort);
+                if ($dtkRes['code'] == 1 && !empty($dtkRes['items'])) {
+                    foreach ($dtkRes['items'] as &$it) {
+                        $it['item_from'] = 'tb';
+                        $it['tb_source'] = 'dtk';
+                    }
+                    unset($it);
+                    $tbItems = $dtkRes['items'];
                 }
-                unset($it);
-                return $dtkRes;
             }
-            return ['code' => 0, 'message' => $dtkRes['message'] ?? '未找到商品，请检查大淘客配置或关键词', 'items' => [], 'total' => 0];
+            // 第二货源：好单库淘宝(supersearch)，补足大淘客未覆盖的商品（非仅兜底）
+            if ($this->hdk) {
+                $hdkRes = $this->hdk->SearchGoods($keyword, $pageSize, 1);
+                if ($hdkRes['code'] == 1 && !empty($hdkRes['items'])) {
+                    foreach ($hdkRes['items'] as $it) {
+                        $it['item_from'] = 'tb';
+                        $it['tb_source'] = 'hdk';
+                        $tbItems[] = $it;
+                    }
+                }
+            }
+            if (!empty($tbItems)) {
+                // 去重：同 goodsId 只保留一条（大淘客 num_iid 与好单库 itemid 命名空间不同，极少冲突）
+                $seen = array();
+                $dedup = array();
+                foreach ($tbItems as $it) {
+                    $id = $it['goodsId'] ?? '';
+                    if ($id !== '' && isset($seen[$id])) continue;
+                    if ($id !== '') $seen[$id] = 1;
+                    $dedup[] = $it;
+                }
+                return array(
+                    'code'   => 1,
+                    'message'=> 'success',
+                    'items'  => array_slice($dedup, 0, $pageSize),
+                    'total'  => count($dedup),
+                );
+            }
+            return ['code' => 0, 'message' => '未找到商品，请检查大淘客/好单库配置或关键词', 'items' => [], 'total' => 0];
         }
 
         // 好单库淘宝（hdk 单独别名，仍走大淘客保持一致）
@@ -521,7 +555,7 @@ class Tjk {
         $allItems = [];
         $byPlat   = ['tb' => [], 'jd' => [], 'pdd' => [], 'vip' => []];
 
-        $wantTb  = $this->dtk && (is_null($platforms) || in_array('tb', (array) $platforms) || in_array('taobao', (array) $platforms));
+        $wantTb  = ($this->dtk || $this->hdk) && (is_null($platforms) || in_array('tb', (array) $platforms) || in_array('taobao', (array) $platforms));
         // 京东：好单库或折淘客(折京客)任一可用即可参与聚合（searchGoods('jd') 已优先折淘客、回退好单库）
         $wantJd  = ($this->hdk || $this->ztk) && (is_null($platforms) || in_array('jd', (array) $platforms));
         // 拼多多：本地官方SDK(pdd)或好单库(hdk)任一可用即可参与聚合（searchGoods('pdd') 已优先本地SDK、回退好单库）
@@ -568,23 +602,43 @@ class Tjk {
             if (!in_array($p, $avaiPlats, true)) continue;
             $want = $perPlatCap > 0 ? $perPlatCap : ($fillPriority ? $quota : $pageSize);
             if ($p === 'tb') {
-                // 主搜：大淘客；若大淘客无结果/未配置，用好单库超级搜索（淘宝）兜底
-                $result = null;
+                // 淘宝双源并行：大淘客 + 好单库淘宝(supersearch) 合并去重，比价主推
+                $tbItems = array();
+                $tbOk = false;
+                $tbMsg = '';
                 if ($this->dtk) {
                     // 透传预算区间（pmin/pmax），让"预算"在淘宝主搜层真正硬过滤
-                    $result = $this->dtk->SearchGoods($keyword, $pageNum, $want, $pmin, $pmax);
-                }
-                if (!($result['code'] == 1 && !empty($result['items'])) && $this->hdk) {
-                    $result = $this->hdk->SearchGoods($keyword, $want, 1);
-                }
-                if ($result['code'] == 1 && !empty($result['items'])) {
-                    foreach ($result['items'] as $item) {
-                        $item['item_from'] = 'tb';
-                        $byPlat['tb'][] = $item;
+                    $dtkRes = $this->dtk->SearchGoods($keyword, $pageNum, $want, $pmin, $pmax);
+                    if ($dtkRes['code'] == 1 && !empty($dtkRes['items'])) {
+                        foreach ($dtkRes['items'] as $it) {
+                            $it['item_from'] = 'tb';
+                            $it['tb_source'] = 'dtk';
+                            $tbItems[] = $it;
+                        }
+                        $tbOk = true;
+                    } else {
+                        $tbMsg = $dtkRes['message'] ?? '';
                     }
+                }
+                // 好单库淘宝（supersearch）作为第二货源，与大淘客互补而非仅兜底
+                if ($this->hdk) {
+                    $hdkRes = $this->hdk->SearchGoods($keyword, $want, 1);
+                    if ($hdkRes['code'] == 1 && !empty($hdkRes['items'])) {
+                        foreach ($hdkRes['items'] as $it) {
+                            $it['item_from'] = 'tb';
+                            $it['tb_source'] = 'hdk';
+                            $tbItems[] = $it;
+                        }
+                        $tbOk = true;
+                    } else {
+                        $tbMsg = $tbMsg ?: ($hdkRes['message'] ?? '');
+                    }
+                }
+                if (!empty($tbItems)) {
+                    $byPlat['tb'] = $tbItems;
                     $this->platBreakerRecord('tb', true);
                 } else {
-                    $this->platBreakerRecord('tb', false);
+                    $this->platBreakerRecord('tb', false, $tbMsg);
                 }
             } elseif ($p === 'jd') {
                 // 京东统一走 searchGoods('jd')：优先折淘客(折京客)真实关键词搜索，

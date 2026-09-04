@@ -500,6 +500,62 @@
   line-height: 1.5;
 }
 
+/* 逐条推荐理由 */
+.ai-product-reason {
+  font-size: 11px;
+  color: #d4380d;
+  background: #fff7e6;
+  border: 1px solid #ffd591;
+  border-radius: 4px;
+  padding: 3px 6px;
+  margin-top: 4px;
+  line-height: 1.4;
+}
+[data-theme="dark"] .ai-product-reason {
+  background: #2b2113;
+  color: #ffbb96;
+  border-color: #594321;
+}
+/* 双品对比 */
+.ai-compare { margin-top: 8px; }
+.ai-compare-head {
+  font-size: 13px;
+  font-weight: 600;
+  color: #262626;
+  margin-bottom: 6px;
+}
+.ai-compare-head span { color: #ff2e54; margin: 0 4px; }
+[data-theme="dark"] .ai-compare-head { color: #e8eaed; }
+.ai-compare-cols { display: flex; gap: 8px; }
+.ai-compare-col { flex: 1; min-width: 0; }
+.ai-compare-empty {
+  font-size: 12px; color: #999; padding: 16px 8px; text-align: center;
+  border: 1px dashed #ddd; border-radius: 8px;
+}
+.ai-note {
+  font-size: 12px; color: #d4380d; background: #fff7e6;
+  border: 1px solid #ffd591; border-radius: 6px; padding: 6px 8px; margin-bottom: 6px;
+}
+
+/* 结果符合度自评横幅（ROI） */
+.ai-roi {
+  font-size: 12px;
+  color: #135200;
+  background: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  padding: 6px 10px;
+  margin: 2px 0 8px;
+  line-height: 1.5;
+}
+.ai-roi b { color: #389e0d; }
+[data-theme="dark"] .ai-roi {
+  background: #162312;
+  color: #b7eb8f;
+  border-color: #274916;
+}
+[data-theme="dark"] .ai-roi b { color: #95de64; }
+
 /* ---------- 输入区域 ---------- */
 .ai-chat-footer {
   border-top: 1px solid #eee;

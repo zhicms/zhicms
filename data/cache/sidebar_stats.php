@@ -3,9 +3,9 @@
   array (
     'today' => 0,
     'yesterday' => 0,
-    'week' => 2,
+    'week' => 0,
     'month' => 0,
-    'total' => 2,
+    'total' => 218,
   ),
-  '_expire' => 1785632983,
+  '_expire' => 1788441206,
 );

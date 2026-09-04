@@ -220,7 +220,7 @@
                     <i class="fas fa-fw fa-tools"></i>
                     <span>系统维护</span>
                 </a>
-                <div id="collapseMaint" class="collapse {if strtolower(CONTROLLER_NAME)=='env' || strtolower(CONTROLLER_NAME)=='cache' || strtolower(CONTROLLER_NAME)=='database' || strtolower(CONTROLLER_NAME)=='log' || strtolower(CONTROLLER_NAME)=='filecheck' || strtolower(CONTROLLER_NAME)=='spider' || strtolower(CONTROLLER_NAME)=='word'}show{/if}" aria-labelledby="headingMaint" data-parent="#accordionSidebar">
+                <div id="collapseMaint" class="collapse {if strtolower(CONTROLLER_NAME)=='env' || strtolower(CONTROLLER_NAME)=='cache' || strtolower(CONTROLLER_NAME)=='database' || strtolower(CONTROLLER_NAME)=='log' || strtolower(CONTROLLER_NAME)=='filecheck' || strtolower(CONTROLLER_NAME)=='spider' || strtolower(CONTROLLER_NAME)=='word' || strtolower(CONTROLLER_NAME)=='lexicon'}show{/if}" aria-labelledby="headingMaint" data-parent="#accordionSidebar">
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='env'}active{/if}" href="index.php?r=manage/env/index">环境检测</a>
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='cache'}active{/if}" href="index.php?r=manage/cache/index">缓存管理</a>
@@ -229,6 +229,7 @@
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='filecheck'}active{/if}" href="index.php?r=manage/filecheck/index">文件校对</a>
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='spider'}active{/if}" href="index.php?r=manage/spider/index">蜘蛛限制</a>
                         <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='word'}active{/if}" href="index.php?r=manage/word/index">违规词检测</a>
+                        <a class="collapse-item {if strtolower(CONTROLLER_NAME)=='lexicon'}active{/if}" href="index.php?r=manage/lexicon/index">语义库自学习</a>
                     </div>
                 </div>
             </li>

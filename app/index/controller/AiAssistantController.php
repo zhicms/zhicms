@@ -26,6 +26,9 @@ class AiAssistantController extends \app\base\controller\BaseController
     /** 复用搜索阶段已初始化的 Tjk 实例（含完整配置/推广位 PID），供转链复用 */
     private $tjk = null;
 
+    /** 当前请求的筛选条件（供商品卡「逐条推荐理由」使用，避免在多处改方法签名） */
+    private $curFilters = array();
+
     public function __construct()
     {
         parent::__construct();
@@ -190,6 +193,12 @@ class AiAssistantController extends \app\base\controller\BaseController
             $reply = $this->handleProductSearch($keyword, $message, $history, true, $forceMode === 'compare', $filters);
             $respType = 'product';
         } else {
+            // 对比意图优先：识别"iphone 和 小米 哪个好 / A vs B"等，走双品对比引擎
+            $cmp = $this->detectCompare($message);
+            if ($cmp !== false) {
+                $reply = $this->handleCompare($cmp['a'], $cmp['b'], $history);
+                $respType = 'product';
+            } else {
             // 意图分析（含上下文：能理解"便宜点的""第二个"等指代）
             $intent = $this->analyzeIntent($message, $history);
 
@@ -204,6 +213,7 @@ class AiAssistantController extends \app\base\controller\BaseController
                 $reply = $this->handleAiChat($message, $history);
                 $respType = 'chat';
             }
+            }
         }
 
         // 兜底：判定为 product 但实际未产出任何商品卡/导购点评/澄清引导（如搜不到该词的商品，
@@ -212,6 +222,7 @@ class AiAssistantController extends \app\base\controller\BaseController
             && strpos($reply, 'ai-product') === false
             && strpos($reply, 'ai-advice') === false
             && strpos($reply, 'ai-clarify') === false
+            && strpos($reply, 'ai-compare') === false
             && strpos($reply, 'ai-guide') === false) {
             $respType = 'chat';
         }
@@ -1750,16 +1761,42 @@ PROMPT;
             'audience'  => '',
             'brand'     => '',
             'feature'   => '',
+            'color'     => '',
+            'spec'      => '',
         );
 
-        // ---------- 1. 显式预算金额 ----------
+        // ---------- 1. 显式预算金额（兼容 单值/区间/以下/以上/口语量词）----------
         $explicitBudget = 0;
-        if (preg_match('/(?:预算|价位|价格|价钱|花|准备|打算)\s*[:：]?\s*(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)?/u', $msg, $m)
-            || preg_match('/(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)\s*(?:以内|以下|左右|预算|的|的预算)?/u', $msg, $m)) {
-            $explicitBudget = (int)$m[1];
-        } elseif (preg_match('/(?:一千|两千|三千|五千|一万|几百|上千)\s*(?:块|元|块钱)?/u', $msg, $m)) {
-            $map = array('一千' => 1000, '两千' => 2000, '三千' => 3000, '五千' => 5000, '一万' => 10000, '几百' => 300, '上千' => 1000);
-            $explicitBudget = $map[$m[1]] ?? 0;
+        $price_min = 0;
+        $price_max = 0;
+        // (a) 区间：X到Y / X-Y / X~Y
+        if (preg_match('/(\d{2,6})\s*[-~到至]\s*(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)?/u', $msg, $m)) {
+            $price_min = (int)$m[1];
+            $price_max = (int)$m[2];
+        }
+        // (b) 以下/以内/不超过/不到
+        elseif (preg_match('/(?:不(?:超|高|多)过|不超过|至多|低于|不到|小于|以内|以下|封顶)\s*(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)?/u', $msg, $m)
+                || preg_match('/(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)\s*(?:以内|以下|封顶)/u', $msg, $m)) {
+            $price_max = (int)$m[1];
+        }
+        // (c) 以上/起/至少
+        elseif (preg_match('/(?:至少|最少|不低于|高于|大于|以上|往上|起)\s*(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)?/u', $msg, $m)
+                || preg_match('/(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)\s*(?:以上|起)/u', $msg, $m)) {
+            $price_min = (int)$m[1];
+        }
+        // (d) 口语量词：两三百 / 三四千 / 一千 / 五千 ...
+        elseif (preg_match('/([两二三三四五六七八九])\s*([百千])\s*(?:元|块|块钱|左右|多|出头)?/u', $msg, $m)) {
+            $n = array('两'=>2,'二'=>2,'三'=>3,'四'=>4,'五'=>5,'六'=>6,'七'=>7,'八'=>8,'九'=>9)[$m[1]] ?? 2;
+            $u = $m[2] === '千' ? 1000 : 100;
+            $price_min = $n * $u;
+            $price_max = ($n + 1) * $u;
+        }
+        // (e) 单值（原逻辑兜底）
+        else {
+            if (preg_match('/(?:预算|价位|价格|价钱|花|准备|打算)\s*[:：]?\s*(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)?/u', $msg, $m)
+                || preg_match('/(\d{2,6})\s*(?:元|块|块钱|¥|￥|\$)\s*(?:以内|以下|左右|预算|的|的预算)?/u', $msg, $m)) {
+                $explicitBudget = (int)$m[1];
+            }
         }
 
         // ---------- 2. 用途/场景（语义归一） ----------
@@ -1851,6 +1888,41 @@ PROMPT;
             $f['feature'] = $this->semanticMatchFromVocab($keyword ?: $msg, $featureVocab, $msg);
         }
 
+        // ---------- 5.5 排除/否定意图（不要/除了/以外/别买/非）----------
+        // 让"不要苹果""除了华为都行"这类诉求真正生效：从搜索词剥离并剔除命中结果
+        $f['exclude_brand'] = '';
+        $f['exclude_feature'] = '';
+        if (preg_match_all('/(?:不要|别买|别要|除了|除开|排除|以外|别选|不想要|不考虑|非)\s*([^，。,；;？?！!]+)/u', $msg, $negMs, PREG_SET_ORDER)) {
+            foreach ($negMs as $nm) {
+                $negTxt = trim($nm[1], ' 的');
+                $hit = false;
+                foreach ($brandHints as $b) {
+                    if (mb_stripos($negTxt, $b) !== false) { $f['exclude_brand'] = $b; $hit = true; break; }
+                }
+                if ($hit) continue;
+                foreach ($featureVocab as $fv) {
+                    if (mb_stripos($negTxt, $fv) !== false) { $f['exclude_feature'] = $fv; break; }
+                }
+            }
+        }
+
+        // ---------- 5.6 颜色 / 规格属性抽取（让"红色""256g""55寸"也能参与排序匹配）----------
+        $colorWords = array('红', '黑', '白', '蓝', '粉', '金', '银', '灰', '绿', '紫', '黄', '橙', '棕', '青', '香槟', '驼', '卡其', '莫兰迪');
+        foreach ($colorWords as $c) {
+            if (mb_strpos($msg, $c . '色') !== false) { $f['color'] = $c; break; }
+        }
+        if ($f['color'] === '') {
+            foreach ($colorWords as $c) {
+                if (preg_match('/(^|[^\x{4e00}-\x{9fa5}])' . $c . '(?=[^\x{4e00}-\x{9fa5}]|$)/u', $msg)) { $f['color'] = $c; break; }
+            }
+        }
+        // 规格：容量/尺寸/功率等（如 256g、1t、500ml、55寸、42码、20000mah）
+        if (preg_match('/(\d{1,4}\s*(?:g|gb|t|tb|ml|l|升|mah|ah|wh|w|寸|英寸|cm|毫米|mm|码|xl|xxl))/iu', $msg, $sm)) {
+            $f['spec'] = strtolower(str_replace(' ', '', $sm[1]));
+        } elseif (preg_match('/(大容量|大号|加长|加宽|加厚|超大|超薄|加绒)/u', $msg, $sm)) {
+            $f['spec'] = $sm[1];
+        }
+
         // ---------- 6. 预算档位推导（随意图动态改变） ----------
         // 无显式金额时，按场景/人群/价格档位词推导，让预算"随意图变化且有效"
         $tier = 0; // 0未定 1低档 2中档 3高档 4旗舰
@@ -1865,8 +1937,18 @@ PROMPT;
         if ($f['audience'] === '长辈' && $tier === 0) $tier = 2;       // 长辈默认中档实用
         if ($f['scene'] === '母婴照顾' && $tier === 0) $tier = 2;
 
-        if ($explicitBudget > 0) {
-            // 显式金额：作为上限，并给出 0.6~1.0 的下限区间
+        // 预算：优先区间/以下/以上解析，其次单值，最后档位推导
+        if ($price_max > 0 || $price_min > 0) {
+            $f['price_max'] = $price_max;
+            $f['price_min'] = $price_min;
+            if ($price_max > 0 && $price_min == 0) {
+                $f['price_min'] = (int)round($price_max * 0.6);
+            }
+            if ($price_min > 0 && $price_max == 0) {
+                $f['price_max'] = (int)round($price_min * 1.8);
+            }
+        } elseif ($explicitBudget > 0) {
+            // 单值作为上限，给出 0.6~1.0 的下限区间
             $f['price_max'] = $explicitBudget;
             $f['price_min'] = (int)round($explicitBudget * 0.6);
         } elseif ($tier > 0) {
@@ -1899,6 +1981,15 @@ PROMPT;
         $f['region'] = $this->detectRegion($msg);
         // 类目（供季节画像/排序选择）：优先从关键词判定；AI 增强可在后续补齐(见 enrichFiltersWithAi)
         $f['category'] = $this->detectSeasonCategory($keyword ?: $msg);
+
+        // ---------- 8. 用户长期偏好回填（仅作软排序微调，绝不污染导购建议）----------
+        // 仅回填"颜色"：风险极低（只影响排序里"颜色对味"的轻微加分，不进入 buildAdvice 文案）。
+        // 注意：人群(audience)/场景(scene)等语义强的维度【不】自动回填——
+        // 避免"上次送女友"被误套到本次"买游戏本"，导致点评写出"适合女性"这种错误结论。
+        $prefs = $this->loadPrefs();
+        if (!empty($prefs['color']) && $f['color'] === '') {
+            $f['color'] = $prefs['color'];
+        }
 
         return $f;
     }
@@ -2217,6 +2308,10 @@ PROMPT;
         if (!empty($filters['brand']) && mb_stripos($searchKw2, $filters['brand']) === false) {
             $searchKw2 = trim($searchKw2 . ' ' . $filters['brand']);
         }
+        // 排除品牌：从搜索词剥离，避免搜到自己刚说"不要"的品牌
+        if (!empty($filters['exclude_brand']) && mb_stripos($searchKw2, $filters['exclude_brand']) !== false) {
+            $searchKw2 = trim(preg_replace('/' . preg_quote($filters['exclude_brand'], '/') . '/u', '', $searchKw2));
+        }
 
         // 策略：问产品「立即出产品」——全网商品优先，站内文章作为「相关攻略」补充，
         // 避免「先给文章、多轮才出商品」的割裂感（用户要的是货，不是文章）。
@@ -2233,10 +2328,41 @@ PROMPT;
             if (!empty($tjkResult['items'])) {
                 $tjkResult['items'] = \ZhiCms\ext\Tjk::filterRelevantItems($tjkResult['items'], $keyword);
             }
+            // 结果过少时自动放宽预算重试（避免"严格预算 + 小众品类"导致空结果死胡同）
+            $relaxedNote = '';
+            if (count($tjkResult['items'] ?? array()) < 3
+                && (!empty($filters['price_min']) || !empty($filters['price_max']))) {
+                $relaxed = $filters;
+                $relaxed['price_min'] = 0;
+                $relaxed['price_max'] = !empty($filters['price_max']) ? (int)round($filters['price_max'] * 1.6) : 0;
+                try {
+                    $r2 = $tjk->searchAllPlatforms($searchKw2, 1, 5, null, true, $relaxed, 4);
+                    if ($r2['code'] == 1 && !empty($r2['items'])) {
+                        $r2['items'] = \ZhiCms\ext\Tjk::filterRelevantItems($r2['items'], $keyword);
+                        if (count($r2['items']) > count($tjkResult['items'])) {
+                            $tjkResult = $r2;
+                            $relaxedNote = '<div class="ai-guide ai-note">💡 严格预算下商品较少，已为您放宽预算范围，以下为相近推荐：</div>';
+                        }
+                    }
+                } catch (\Throwable $e) { /* 放宽失败不影响原结果 */ }
+            }
             if ($tjkResult['code'] == 1 && !empty($tjkResult['items'])) {
                 // 用途 / 场景 / 特殊需求：对结果做软过滤（匹配项前置，不匹配也不丢结果，避免空结果）
-                $tjkResult['items'] = $this->rankItemsByFilters($tjkResult['items'], $filters, $keyword);
-                $html = $this->formatTjkResults($tjkResult['items'], $searchKw2, $explicit);
+                $this->curFilters = $filters;
+                $this->savePrefs($filters);
+                // —— 结果符合度自评（ROI）：逐件标注符合分 + 整批 ROI，并落知识库 ——
+                $items = $tjkResult['items'];
+                $roi = $this->attachRoi($items, $filters);
+                $tjkResult['items'] = $this->rankItemsByFilters($items, $filters, $keyword);
+                $roiBanner = $this->hasRealFilters($filters) ? $this->renderRoiBanner($roi, $searchKw2) : '';
+                $this->logKnowledge(array(
+                    'keyword' => $searchKw2,
+                    'filters' => $filters,
+                    'found'   => count($tjkResult['items']),
+                    'roi'     => $roi,
+                    'items'   => $this->kbItemsMeta($tjkResult['items']),
+                ));
+                $html = $roiBanner . $relaxedNote . $this->formatTjkResults($tjkResult['items'], $searchKw2, $explicit);
                 if ($needAdvice) {
                     $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'product', $tjkResult['items'], $filters) . $html;
                 }
@@ -2286,6 +2412,19 @@ PROMPT;
         if (empty($filters)) {
             return $items;
         }
+        // 排除项：剔除用户明确"不要"的品牌/特征（硬移除，避免推错）
+        $exBrand = isset($filters['exclude_brand']) ? trim($filters['exclude_brand']) : '';
+        $exFeat  = isset($filters['exclude_feature']) ? trim($filters['exclude_feature']) : '';
+        if ($exBrand !== '' || $exFeat !== '') {
+            $items = array_values(array_filter($items, function ($it) use ($exBrand, $exFeat) {
+                $t = mb_strtolower(strip_tags(($it['title'] ?? '') . ' ' . ($it['brandName'] ?? '') . ' ' . ($it['shopName'] ?? '')));
+                if ($exBrand !== '' && mb_stripos($t, $exBrand) !== false) return false;
+                if ($exFeat !== '' && mb_stripos($t, $exFeat) !== false) return false;
+                return true;
+            }));
+            if (empty($items)) return $items;
+        }
+
         // 维度 → 标题关键词（命中即加分）。覆盖常见"用途/场景/人群/特征"表达。
         $sceneKw = array(
             '送礼'     => ['礼盒', '礼品', '送礼', '礼物', '礼包', '伴手礼'],
@@ -2374,6 +2513,31 @@ PROMPT;
                 foreach ($audienceKw[$filters['audience']] as $kw) {
                     if (mb_stripos($title, $kw) !== false) { $s += 1; break; }
                 }
+            }
+            // 价值排序：在预算内、优惠力度大、销量高者优先（让"最值得买"排前面）
+            $price  = (float)($it['actualPrice'] ?? $it['zkFinalPrice'] ?? $it['finalPrice'] ?? $it['price'] ?? 0);
+            $coupon = (float)($it['couponAmount'] ?? $it['couponPrice'] ?? 0);
+            $sales  = (int)($it['monthSales'] ?? $it['sales'] ?? 0);
+            if ($price > 0) {
+                $pmin = (int)($filters['price_min'] ?? 0);
+                $pmax = (int)($filters['price_max'] ?? 0);
+                if ($pmax > 0 && $price <= $pmax && $price >= $pmin) {
+                    $s += 1; // 命中预算区间内，给基础分
+                }
+                if ($coupon > 0) {
+                    $s += min(3, (int)round($coupon / max($price, 1) * 10)); // 折扣力度（券额/总价）
+                }
+            }
+            if ($sales > 0) {
+                $s += min(3, (int)log10($sales + 1)); // 销量热度（对数，避免头部垄断）
+            }
+            // 颜色 / 规格属性匹配：命中用户指定的颜色或规格则加分
+            $ct = mb_strtolower(strip_tags($it['title'] ?? ''));
+            if (!empty($filters['color']) && mb_stripos($ct, $filters['color']) !== false) {
+                $s += 2;
+            }
+            if (!empty($filters['spec']) && mb_stripos($ct, $filters['spec']) !== false) {
+                $s += 2;
             }
             $score[$i] += $s;
         }
@@ -2596,11 +2760,49 @@ PROMPT;
         if (mb_strpos($shop, '自营') !== false || mb_strpos($shop, '官方') !== false) {
             $tags[] = '🛡️ 官方/自营';
         }
+        // 符合度自评徽标：单品命中用户核心诉求（预算/颜色/规格/品牌）且分高时标记"精准命中"
+        if (($item['_matchScore'] ?? 0) >= 80) {
+            array_unshift($tags, '✅ 精准命中');
+        }
         $tagHtml = '';
         if ($tags) {
             $tagHtml = '<div class="ai-product-tags">' . implode('', array_map(function ($t) {
                 return '<span class="ai-tag">' . htmlspecialchars($t, ENT_QUOTES, 'UTF-8') . '</span>';
             }, array_slice($tags, 0, 3))) . '</div>';
+        }
+
+        // 逐条推荐理由：基于用户的筛选诉求 + 该商品的真实字段，给出一句"为什么推荐它"
+        $reasonHtml = '';
+        $f = $this->curFilters ?? array();
+        if (!empty($f) || $coupon > 0 || $sales > 0) {
+            $bits = array();
+            $pmax = (int)($f['price_max'] ?? 0);
+            $pmin = (int)($f['price_min'] ?? 0);
+            if ($pmax > 0 && $price > 0 && $price <= $pmax && $price >= $pmin) {
+                $bits[] = '在预算内';
+            }
+            if ($coupon >= 20)      $bits[] = '券后省' . $coupon . '元';
+            elseif ($coupon >= 5)   $bits[] = '可用券';
+            if ($sales >= 10000)    $bits[] = '万级销量';
+            elseif ($sales >= 2000) $bits[] = '高销量';
+            if (!empty($f['feature'])) {
+                $fm = array(
+                    '轻薄' => ['轻薄', '超薄', '轻巧', '纤薄'], '防水' => ['防水', '防泼溅'],
+                    '便携' => ['便携', '轻便', '小巧', '迷你'], '大容量' => ['大容量', '大杯', '大号'],
+                    '静音' => ['静音', '无声'], '快充' => ['快充', '闪充'], '护眼' => ['护眼', '防蓝光'],
+                    '高颜值' => ['高颜值', '颜值', '美观'], '续航长' => ['续航', '长续航'],
+                );
+                $kw = $fm[$f['feature']] ?? array($f['feature']);
+                foreach ($kw as $k) { if (mb_stripos($title, $k) !== false) { $bits[] = '符合' . $f['feature']; break; } }
+            }
+            if (!empty($f['color']) && mb_stripos($title, $f['color']) !== false) {
+                $bits[] = $f['color'] . '色款';
+            }
+            if (!empty($bits)) {
+                $reasonHtml = '<div class="ai-product-reason">💡 ' . implode(' · ', array_map(function ($b) {
+                    return htmlspecialchars($b, ENT_QUOTES, 'UTF-8');
+                }, array_slice($bits, 0, 3))) . '</div>';
+            }
         }
 
         // data-* 属性供移动端导购接口（api/ai/guide）解析出真实商品 ID / 平台，
@@ -2622,7 +2824,7 @@ PROMPT;
         if ($coupon > 0) $html .= ' <span class="ai-coupon">券' . $coupon . '元</span>';
         if ($sales > 0) $html .= ' <span class="ai-sales">已售' . $this->formatSales($sales) . '</span>';
         $html .= '</div>';
-        $html .= $tagHtml;
+        $html .= $tagHtml . $reasonHtml;
         $html .= '</div>';
         $html .= '<span class="ai-product-badge">领券购买 →</span>';
         $html .= '</a>';
@@ -3017,7 +3219,20 @@ PROMPT;
             return;
         }
 
-        $html = $this->formatPickResults($items, $keyword, $category, $price, $brand, $scene, $feature);
+        $this->curFilters = array(
+            'brand'     => $brand,
+            'price_min' => $range ? $range[0] : 0,
+            'price_max' => $range ? ($range[1] ?? 0) : 0,
+            'feature'   => is_array($feature) ? implode('', $feature) : $feature,
+            'scene'     => $scene,
+        );
+        $roi = $this->attachRoi($items, $this->curFilters);
+        $roiBanner = $this->hasRealFilters($this->curFilters) ? $this->renderRoiBanner($roi, $keyword) : '';
+        $this->logKnowledge(array(
+            'keyword' => $keyword, 'filters' => $this->curFilters, 'found' => count($items),
+            'roi' => $roi, 'items' => $this->kbItemsMeta($items), 'src' => 'pick',
+        ));
+        $html = $roiBanner . $this->formatPickResults($items, $keyword, $category, $price, $brand, $scene, $feature);
         echo json_encode(['html' => $html, 'type' => 'product'], JSON_UNESCAPED_UNICODE);
     }
 
@@ -3174,5 +3389,371 @@ PROMPT;
         }
 
         return $response;
+    }
+
+    // ==================== 双品对比引擎 ====================
+
+    /**
+     * 识别"对比意图"：A 和 B 哪个好 / A vs B / 对比 A 与 B
+     * 仅在出现明确对比连接词（vs/对比/比一比/比较）或"和/与/跟/还是"+结论词（哪个好/怎么选/区别）时命中，
+     * 避免把"手机和耳机"(并列购买) 误判为对比。
+     * @return array|false ['a'=>..,'b'=>..] 或 false
+     */
+    private function detectCompare($message)
+    {
+        $m = trim($message);
+        // 显式对比连接词
+        if (preg_match('/^(.+?)\s*(?:vs|VS|对比一下|对比|比一比|比较一下|比较)\s*(.+)$/u', $m, $mm)) {
+            $a = trim($mm[1]);
+            $b = trim($mm[2]);
+            if (mb_strlen($a) >= 2 && mb_strlen($b) >= 2) {
+                return $this->normalizeComparePair($a, $b);
+            }
+        }
+        // "A和B哪个好/怎么选/区别/更适合谁" 等带结论词的对比
+        if (preg_match('/^(.+?)(?:和|与|跟|还是)\s*(.+?)(?:哪个好|怎么选|区别|哪个更|更好|哪个划算|性价比高|对比|比较|值得买|适合谁|应该怎么选)\s*$/u', $m, $mm)) {
+            $a = trim($mm[1]);
+            $b = trim($mm[2]);
+            if (mb_strlen($a) >= 2 && mb_strlen($b) >= 2) {
+                return $this->normalizeComparePair($a, $b);
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 清洗对比词对：去掉尾部残留的疑问/对比词，保证拿到干净的 A、B 商品词
+     */
+    private function normalizeComparePair($a, $b)
+    {
+        $strip = '/(哪个好|怎么选|区别|哪个更|更好|哪个划算|性价比高|对比|比较|值得买|适合谁|应该怎么选|呢|啊|吧|呀|？|\?|。|\.)\s*$/u';
+        $a = trim(preg_replace($strip, '', $a));
+        $b = trim(preg_replace($strip, '', $b));
+        if ($a === '' || $b === '') {
+            return false;
+        }
+        return array('a' => $a, 'b' => $b);
+    }
+
+    /**
+     * 双品对比主流程：各取头部商品 → 并排卡片 → AI 优劣点评
+     */
+    private function handleCompare($a, $b, $history)
+    {
+        try {
+            $tjk = new \ZhiCms\ext\Tjk();
+            $this->tjk = $tjk;
+            $ra = $tjk->searchAllPlatforms($a, 1, 3, null, true, array(), 2);
+            $rb = $tjk->searchAllPlatforms($b, 1, 3, null, true, array(), 2);
+        } catch (\Throwable $e) {
+            return $this->handleAiChat('对比 ' . $a . ' 和 ' . $b, $history);
+        }
+        $ia = ($ra['code'] == 1 && !empty($ra['items'])) ? array_slice($ra['items'], 0, 1) : array();
+        $ib = ($rb['code'] == 1 && !empty($rb['items'])) ? array_slice($rb['items'], 0, 1) : array();
+        if (empty($ia) && empty($ib)) {
+            return $this->handleAiChat('对比 ' . $a . ' 和 ' . $b, $history);
+        }
+
+        $html = '<div class="ai-compare">';
+        $html .= '<div class="ai-compare-head">⚖️ 「' . htmlspecialchars($a) . '」 <span>VS</span> 「' . htmlspecialchars($b) . '」 横向对比</div>';
+        $html .= '<div class="ai-compare-cols">';
+        $html .= '<div class="ai-compare-col">' . (!empty($ia) ? $this->renderTjkItem($ia[0]) : '<div class="ai-compare-empty">未找到「' . htmlspecialchars($a) . '」相关商品</div>') . '</div>';
+        $html .= '<div class="ai-compare-col">' . (!empty($ib) ? $this->renderTjkItem($ib[0]) : '<div class="ai-compare-empty">未找到「' . htmlspecialchars($b) . '」相关商品</div>') . '</div>';
+        $html .= '</div>';
+        $advice = $this->buildCompareAdvice($a, $ia, $b, $ib);
+        if ($advice !== '') {
+            $html .= $advice;
+        }
+        $html .= '<div class="ai-product-footer">💡 还想更细对比？告诉我你最在意的点（如"续航""价格""品牌""售后"），我帮你深挖~</div>';
+        $html .= '</div>';
+        return $html;
+    }
+
+    /**
+     * 生成双品对比的 AI 优劣点评（一句话结论 + 各自适合谁）
+     */
+    private function buildCompareAdvice($a, $ia, $b, $ib)
+    {
+        $fmt = function ($it) {
+            return ($it['title'] ?? '') . ' 券后¥' . ($it['actualPrice'] ?? '?')
+                . ' 月销' . ($it['monthSales'] ?? '?') . ' 券' . ($it['couponPrice'] ?? 0) . '元';
+        };
+        $lines = array();
+        if ($ia) $lines[] = 'A(' . $a . '): ' . $fmt($ia[0]);
+        if ($ib) $lines[] = 'B(' . $b . '): ' . $fmt($ib[0]);
+        $clues = implode('；', $lines);
+
+        $system = '你是购物对比助手。用户想对比「' . $a . '」与「' . $b . '」。'
+            . '请基于候选商品给出：一句话结论（谁更值得买）+ 各自适合哪类人。控制在 90 字内，亲切口语化。';
+        $prompt = '候选商品：' . $clues . "\n请直接给出对比建议。";
+        try {
+            $r = \app\common\AiHub::chat($prompt, $system, false, array('fallback' => true));
+            if (!\app\common\AiHub::isErrorResult($r) && trim($r) !== '') {
+                return $this->renderAdviceBlock(trim($r), $a . ' vs ' . $b);
+            }
+        } catch (\Throwable $e) {
+            // 点评失败不影响对比卡片
+        }
+        return '';
+    }
+
+    // ==================== 用户偏好画像（登录/匿名持久化） ====================
+
+    /**
+     * 偏好存储文件：按用户身份（Cookie 持久化的 ai_uid）隔离，文件型、无需数据库。
+     */
+    private function prefsFile()
+    {
+        $dir = \ROOT_PATH . 'data/ai_prefs/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        return $dir . md5($this->userId) . '.json';
+    }
+
+    /**
+     * 读取用户长期偏好（人群、颜色、排除品牌等软提示）
+     */
+    private function loadPrefs()
+    {
+        $file = $this->prefsFile();
+        if (!file_exists($file)) {
+            return array();
+        }
+        $d = json_decode(file_get_contents($file), true);
+        return is_array($d) ? $d : array();
+    }
+
+    /**
+     * 持久化稳定偏好：仅存 audience / color / exclude_brand（场景等易误套，不持久化）。
+     * 每次成功出商品卡时调用，让"我常买学生党/喜欢黑色/不要某品牌"跨会话生效。
+     */
+    private function savePrefs(array $f)
+    {
+        if (empty($f)) {
+            return;
+        }
+        $p = $this->loadPrefs();
+        foreach (array('audience', 'color', 'exclude_brand') as $k) {
+            if (!empty($f[$k])) {
+                $p[$k] = $f[$k];
+            }
+        }
+        @file_put_contents($this->prefsFile(), json_encode($p, JSON_UNESCAPED_UNICODE), LOCK_EX);
+    }
+
+    // ==================== 反馈闭环（前端埋点回传） ====================
+
+    /**
+     * 接收前端对推荐结果的反馈（点击/接受/下单），落日志供后续排序与词库优化。
+     * 前端可在商品卡点击/购买时调用：api/ai/feedback (POST json {action,keyword,goodsId,from})
+     */
+    public function feedback()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) {
+            $input = $_REQUEST;
+        }
+        $action   = trim($input['action']   ?? '');
+        $keyword  = trim($input['keyword']  ?? '');
+        $goodsId  = trim($input['goodsId']  ?? '');
+        $from     = trim($input['from']     ?? '');
+        if ($action === '') {
+            echo json_encode(['status' => 'n', 'info' => 'missing action']);
+            return;
+        }
+        $dir = \ROOT_PATH . 'data/ai_feedback/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $line = json_encode(array(
+            't'        => date('Y-m-d H:i:s'),
+            'uid'      => $this->userId,
+            'action'   => $action,
+            'keyword'  => $keyword,
+            'goodsId'  => $goodsId,
+            'from'     => $from,
+        ), JSON_UNESCAPED_UNICODE);
+        @file_put_contents($dir . date('Y-m-d') . '.log', $line . "\n", FILE_APPEND | LOCK_EX);
+        echo json_encode(['status' => 'y']);
+    }
+
+    // ==================== 结果符合度自评（ROI / 我们的自有标准） ====================
+    //
+    // 这是「AI 智能电商导购聚合搜索」独有的质量度量：每次出结果，都按【用户真正说出的需求】
+    // 给每件商品打 0-100 的"符合度分"，再汇总成整批 ROI。它不是平台通用的销量/价格排序，
+    // 而是"小淘替你筛得准不准"的可解释评分——别人抄走代码也抄不走我们持续累积的语义/行为数据。
+
+    /**
+     * 判断本次是否真的带"明确诉求"（预算/颜色/规格/品牌/人群/场景/特性/排除）。
+     * 无明确诉求时不展示 ROI（避免对纯热度排序给出无意义的"符合度"）。
+     */
+    private function hasRealFilters($filters)
+    {
+        foreach (array('price_min', 'price_max', 'color', 'spec', 'brand', 'audience', 'scene', 'feature', 'exclude_brand', 'exclude_feature') as $k) {
+            if (!empty($filters[$k])) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * 单品符合度评分（0-100）：基于用户真实筛选诉求 + 该商品真实字段。
+     * 权重即我们自有标准：预算命中(+20) > 颜色对味(+10) ≥ 规格/品牌/特性(+10) > 排除命中(-40) > 价值(+5)。
+     * 返回 ['score'=>int,'reasons'=>[],'match'=>bool(>=70)]
+     */
+    private function scoreMatch($item, $filters)
+    {
+        $title = mb_strtolower(strip_tags(($item['title'] ?? '') . ' ' . ($item['dtitle'] ?? '')));
+        $brand = mb_strtolower(strip_tags(($item['brandName'] ?? '') . ' ' . ($item['shopName'] ?? '')));
+        $price  = (float)($item['actualPrice'] ?? $item['zkFinalPrice'] ?? $item['finalPrice'] ?? $item['price'] ?? 0);
+        $coupon = (float)($item['couponPrice'] ?? $item['couponAmount'] ?? 0);
+        $sales  = (int)($item['monthSales'] ?? $item['sales'] ?? 0);
+
+        $score = 60; // 基线：已通过相关性过滤，默认"相关"
+        $reasons = array();
+
+        // 1) 预算：命中区间大幅加分；略超/超预算扣分
+        $pmin = (int)($filters['price_min'] ?? 0);
+        $pmax = (int)($filters['price_max'] ?? 0);
+        if ($pmax > 0 || $pmin > 0) {
+            if ($price > 0 && $price <= ($pmax ?: PHP_INT_MAX) && $price >= $pmin) {
+                $score += 20; $reasons[] = '预算命中';
+            } elseif ($price > 0 && $pmax > 0 && $price <= $pmax * 1.1) {
+                $score += 8;  $reasons[] = '略超预算';
+            } elseif ($price > 0 && $pmax > 0 && $price > $pmax * 1.1) {
+                $score -= 12; $reasons[] = '超预算';
+            } elseif ($price > 0 && $pmin > 0 && $price < $pmin) {
+                $score -= 6;  $reasons[] = '低于预期价位';
+            }
+        }
+        // 2) 颜色对味
+        if (!empty($filters['color'])) {
+            if (mb_stripos($title, $filters['color']) !== false) { $score += 10; $reasons[] = $filters['color'] . '色对味'; }
+            else { $score -= 5; }
+        }
+        // 3) 规格（容量/尺寸/型号等）匹配
+        if (!empty($filters['spec']) && mb_stripos($title, $filters['spec']) !== false) {
+            $score += 10; $reasons[] = '规格匹配';
+        }
+        // 4) 指定品牌
+        if (!empty($filters['brand']) && $brand !== '' && mb_stripos($brand, mb_strtolower($filters['brand'])) !== false) {
+            $score += 10; $reasons[] = '指定品牌';
+        }
+        // 5) 排除项命中（硬扣，理论上已被 rankItemsByFilters 剔除，这里兜底）
+        if (!empty($filters['exclude_brand']) &&
+            (mb_stripos($title, $filters['exclude_brand']) !== false || mb_stripos($brand, $filters['exclude_brand']) !== false)) {
+            $score -= 40; $reasons[] = '命中排除品牌';
+        }
+        if (!empty($filters['exclude_feature']) && mb_stripos($title, $filters['exclude_feature']) !== false) {
+            $score -= 20;
+        }
+        // 6) 特性（轻薄/防水/便携/快充/护眼…）
+        if (!empty($filters['feature'])) {
+            $fm = array(
+                '轻薄' => ['轻薄', '超薄', '轻巧', '纤薄'], '防水' => ['防水', '防泼溅'],
+                '便携' => ['便携', '轻便', '小巧', '迷你'], '大容量' => ['大容量', '大杯', '大号'],
+                '静音' => ['静音', '无声'], '快充' => ['快充', '闪充'], '护眼' => ['护眼', '防蓝光'],
+                '高颜值' => ['高颜值', '颜值', '美观'], '续航长' => ['续航', '长续航'], '智能' => ['智能', 'ai', '语音'],
+            );
+            $kw = $fm[$filters['feature']] ?? array($filters['feature']);
+            foreach ($kw as $k) {
+                if (mb_stripos($title, $k) !== false) { $score += 10; $reasons[] = '符合' . $filters['feature']; break; }
+            }
+        }
+        // 7) 价值加权（券后省得多 / 销量高 → 更值得买）
+        if ($coupon >= 20) $score += 5;
+        if ($sales  >= 10000) $score += 5;
+
+        $score = max(0, min(100, $score));
+        return array('score' => $score, 'reasons' => $reasons, 'match' => $score >= 70);
+    }
+
+    /**
+     * 整批 ROI 汇总：取前 8 件的平均分 + 精准命中率 + 评级。
+     */
+    private function scoreQueryRoi($items, $filters)
+    {
+        if (empty($items)) {
+            return array('avg' => 0, 'rate' => 0, 'matchCount' => 0, 'total' => 0, 'label' => '无结果');
+        }
+        $n = 0; $sum = 0; $matchCount = 0;
+        foreach (array_slice($items, 0, 8) as $it) {
+            $s = $it['_matchScore'] ?? 60;
+            $sum += $s; $n++;
+            if ($s >= 70) $matchCount++;
+        }
+        $avg  = $n ? round($sum / $n) : 0;
+        $rate = $n ? $matchCount / $n : 0;
+        $label = $avg >= 85 ? '优秀' : ($avg >= 70 ? '良好' : ($avg >= 55 ? '一般' : '偏差'));
+        return array('avg' => $avg, 'rate' => $rate, 'matchCount' => $matchCount, 'total' => count($items), 'label' => $label);
+    }
+
+    /**
+     * 给商品列表逐件标注 _matchScore / _matchReasons，并返回整批 ROI。
+     */
+    private function attachRoi(array &$items, $filters)
+    {
+        foreach ($items as &$it) {
+            $ms = $this->scoreMatch($it, $filters);
+            $it['_matchScore']    = $ms['score'];
+            $it['_matchReasons']  = $ms['reasons'];
+        }
+        unset($it);
+        return $this->scoreQueryRoi($items, $filters);
+    }
+
+    /**
+     * 渲染"小淘自评符合度"横幅（仅在有明确诉求时展示）。
+     */
+    private function renderRoiBanner($roi, $keyword)
+    {
+        if (empty($roi) || $roi['total'] == 0) {
+            return '';
+        }
+        $avg = intval($roi['avg']);
+        $icon = $avg >= 85 ? '🏆' : ($avg >= 70 ? '✅' : '⚠️');
+        $lt   = array('优秀' => '超准', '良好' => '很准', '一般' => '基本对味', '偏差' => '偏了');
+        $verdict = $lt[$roi['label']] ?? '';
+        return '<div class="ai-roi">' . $icon . ' 小淘自评：本批「<b>' . htmlspecialchars($keyword) . '</b>」结果'
+            . '<b>符合度 ' . $avg . '%</b>（' . $roi['total'] . ' 件中 ' . $roi['matchCount'] . ' 件精准命中你的预算/颜色/需求）· '
+            . $verdict . '，已按"最值 + 最对味"排序</div>';
+    }
+
+    // ==================== 知识库 / 程序印记（别人抄不走的累积数据） ====================
+
+    /**
+     * 把每次高质量导购请求落盘到 data/ai_kb/（按天分片 jsonl）。
+     * 记录：关键词、解析出的真实诉求、命中平台、结果 ROI、头部商品画像。
+     * 这是「值得淘」独有的语义/行为资产：算法可抄，但日积月累的"用户到底要什么"抄不走。
+     */
+    private function logKnowledge(array $entry)
+    {
+        $dir = \ROOT_PATH . 'data/ai_kb/';
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        $entry['t'] = date('Y-m-d H:i:s');
+        $entry['uid'] = $this->userId;
+        @file_put_contents($dir . date('Y-m-d') . '.jsonl', json_encode($entry, JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX);
+    }
+
+    /**
+     * 抽取头部商品画像（标题/价格/平台/符合度），用于知识库，避免入库大段 HTML。
+     */
+    private function kbItemsMeta($items)
+    {
+        $meta = array();
+        foreach (array_slice($items, 0, 6) as $it) {
+            $meta[] = array(
+                't' => mb_substr(strip_tags($it['title'] ?? ''), 0, 40, 'utf-8'),
+                'p' => (float)($it['actualPrice'] ?? 0),
+                'f' => $it['item_from'] ?? '',
+                's' => (int)($it['_matchScore'] ?? 0),
+            );
+        }
+        return $meta;
     }
 }

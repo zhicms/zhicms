@@ -13,6 +13,7 @@ class TaskController extends \app\base\controller\BaseController
         'moments_collect' => array('title' => '朋友圈采集（好单库）', 'exec_type' => 'php', 'command' => 'job:moments_collect', 'schedule' => 'daily random 1-8'),
         'moments_collect_dtk' => array('title' => '朋友圈采集（大淘客）', 'exec_type' => 'php', 'command' => 'job:moments_collect_dtk', 'schedule' => 'daily random 1-8'),
         'news_collect'    => array('title' => '资讯采集',   'exec_type' => 'php', 'command' => 'job:news_collect',    'schedule' => 'daily random 1-8'),
+        'lexicon_learn'   => array('title' => '语义库自学习（知识库入库）', 'exec_type' => 'php', 'command' => 'job:lexicon_learn', 'schedule' => 'every 30 minute'),
     );
 
     private function runToken(){
@@ -467,6 +468,14 @@ class TaskController extends \app\base\controller\BaseController
                     $c = new \app\manage\controller\FindController();
                     // 按后台已保存的 Key 与分类映射采集（无需传参）
                     return $c->newsCollectCron();
+                case 'lexicon_learn':
+                    // 语义库自学习：把累积的搜索信号推导并合并进知识库（零 DB 依赖）
+                    $r = \ZhiCms\ext\Vector\Bm25Index::learn();
+                    return array(
+                        'ok'     => (($r['status'] ?? 'n') === 'y'),
+                        'output' => '新增同义=' . (int)($r['synonyms'] ?? 0) . ' 长尾=' . (int)($r['longtail'] ?? 0)
+                                  . ' 来源信号=' . (int)($r['sourceSignals'] ?? 0),
+                    );
                 default:
                     return array('ok' => false, 'output' => '未知系统任务：' . $name);
             }

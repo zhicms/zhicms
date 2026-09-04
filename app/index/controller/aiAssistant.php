@@ -3,6 +3,8 @@ namespace app\index\controller;
 
 use ZhiCms\base\Controller;
 use app\common\AiService;
+use ZhiCms\ext\VectorService;
+use ZhiCms\ext\Vector\Bm25Index;
 
 /**
  * 前台 AI 购物助手「小淘」控制器（游客可用，无需后台登录）
@@ -21,6 +23,9 @@ use app\common\AiService;
  */
 class AiAssistant extends Controller
 {
+    /** 语义库自动学习服务（懒加载） */
+    private $vs = null;
+
     /** 购物助手系统提示词 */
     const SHOP_ASSISTANT_PROMPT = '你是一个热情、专业的电商导购助手，名字叫「小淘」。'
         . '请用简洁友好的语气帮助用户挑选商品、对比优劣、给出购买建议，'
@@ -47,6 +52,11 @@ class AiAssistant extends Controller
         }
 
         $message = trim($_POST['message']);
+
+        // 静默记录搜索信号，用于自动壮大语义库（失败不影响主流程）
+        try {
+            Bm25Index::recordSignal($message);
+        } catch (\Throwable $e) {}
 
         if (!AiService::isChatAvailable()) {
             echo json_encode(array(
@@ -138,6 +148,11 @@ class AiAssistant extends Controller
             "`id` DESC",
             10
         );
+        // 静默记录搜索信号，用于自动壮大语义库（失败不影响主流程）
+        try {
+            Bm25Index::recordSignal($keyword, $list[0]['title'] ?? '', $list[0]['category'] ?? '');
+        } catch (\Throwable $e) {}
+
         if (empty($list)) {
             echo json_encode(array('html' => '抱歉，没找到「' . htmlspecialchars($keyword, ENT_QUOTES) . '」相关的商品，换个关键词试试~'));
             return;
@@ -183,6 +198,89 @@ class AiAssistant extends Controller
     {
         header('Content-Type: application/json; charset=utf-8');
         echo json_encode(array('groups' => new \stdClass()), JSON_UNESCAPED_UNICODE);
+    }
+
+    // ==================== 语义库自动学习接口 ====================
+
+    /**
+     * 记录搜索信号（公开，游客可用）：前端可在用户发起搜索时静默上报
+     * POST: query / title / category / weight
+     */
+    public function lexiconRecord()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $raw = file_get_contents('php://input');
+        $body = json_decode($raw, true);
+        if (!is_array($body)) {
+            $body = $_POST;
+        }
+        $query = isset($body['query']) ? trim($body['query']) : '';
+        if ($query === '') {
+            echo json_encode(array('status' => 'n', 'info' => 'empty query'));
+            return;
+        }
+        $ok = $this->vs()->recordSignal(
+            $query,
+            isset($body['title']) ? $body['title'] : '',
+            isset($body['category']) ? $body['category'] : '',
+            isset($body['weight']) ? (int)$body['weight'] : 1
+        );
+        echo json_encode(array('status' => $ok ? 'y' : 'n', 'recorded' => (bool)$ok), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * 触发学习：把累积的搜索信号推导为"已学习词库"（EcomLexicon.learned.php）
+     * 需 token（首次调用自动生成并写入 ext/Vector/data/lexicon.key，请妥善保存）
+     * GET/POST: token / minHits / minCo / maxTerms / clearSignals
+     */
+    public function lexiconLearn()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        $keyPath = Bm25Index::learnKeyPath();
+        $justCreated = !is_file($keyPath);
+        $expected = Bm25Index::learnToken();
+        if ($justCreated) {
+            echo json_encode(array(
+                'status' => 'setup',
+                'token'  => $expected,
+                'info'   => '首次使用：请保存此 token，并带 ?token=... 再次调用以执行学习',
+            ), JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        $token = (string)($_REQUEST['token'] ?? '');
+        if (!hash_equals($expected, $token)) {
+            echo json_encode(array('status' => 'n', 'info' => 'token 校验失败'));
+            return;
+        }
+        $opts = array();
+        foreach (array('minHits', 'minCo', 'maxTerms') as $k) {
+            if (isset($_REQUEST[$k]) && is_numeric($_REQUEST[$k])) {
+                $opts[$k] = (int)$_REQUEST[$k];
+            }
+        }
+        if (!empty($_REQUEST['clearSignals'])) {
+            $opts['clearSignals'] = true;
+        }
+        $stats = $this->vs()->learnLexicon($opts);
+        echo json_encode(array_merge(array('status' => 'y'), $stats), JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * 学习词库统计（公开只读，便于监控增长）
+     */
+    public function lexiconStats()
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode($this->vs()->lexiconStats(), JSON_UNESCAPED_UNICODE);
+    }
+
+    /** 懒加载 VectorService（含语义库学习能力） */
+    private function vs()
+    {
+        if ($this->vs === null) {
+            $this->vs = new VectorService();
+        }
+        return $this->vs;
     }
 
     // ==================== 私有辅助 ====================

@@ -17,6 +17,7 @@ class CacheController extends \app\base\controller\BaseController
         'data'  => array('name' => '数据缓存', 'path' => 'data/cache', 'loose' => true),
         'api'   => array('name' => 'API接口缓存', 'path' => 'data/cache', 'prefix' => 'api_'),
         'static'=> array('name' => '全站静态缓存', 'path' => 'runtime/static_cache'),
+        'bm25'  => array('name' => '语义索引缓存', 'path' => 'data/bm25cache'),
     );
 
     public function index(){
@@ -205,6 +206,10 @@ class CacheController extends \app\base\controller\BaseController
         self::delDirContents(\ROOT_PATH . 'runtime/static_cache');
     }
 
+    private static function clearBm25(){
+        self::delDirContents(\ROOT_PATH . 'data/bm25cache');
+    }
+
     /**
      * 一键全站清理（静态，不 exit，便于 logout 等场景复用）
      */
@@ -213,5 +218,6 @@ class CacheController extends \app\base\controller\BaseController
         self::clearDb();
         self::clearData();
         self::clearStatic();
+        self::clearBm25();
     }
 }

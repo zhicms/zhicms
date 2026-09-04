@@ -8,6 +8,9 @@ namespace ZhiCms\ext;
  */
 class SpiderGuard {
 
+    /** 工具型/可疑 UA 特征（命中即拦截，避免漏放采集器/扫描器/非常规爬虫，如 Gitee 爬虫） */
+    private static $TOOL_UA = '/(?:gitee)|(?:\b(go-http-client|python-requests|python-urllib|python-httpx|libwww-perl|lwp::|www-mechanize|httpclient|apache-httpclient|webclient|okhttp|scrapy|zgrab|masscan|nmap|curl\/|wget|httrack|teleport|webcopier|winhttp|node-fetch|axios|undici|guzzle|java\/|headlesschrome|phantomjs|semrush|ahrefs|mj12|dotbot|petalbot|yandex|blexbot|megaindex|dataprovider|gitcrawler|archive\.org_bot|heritrix|scan|probe|exploit)\b)/i';
+
     public static function shouldBlock(){
         if (!class_exists('\\app\\common\\ConfigStore')) return false;
         $cfg = \app\common\ConfigStore::load('spider');
@@ -40,6 +43,14 @@ class SpiderGuard {
                     return true;
                 }
             }
+        }
+
+        // 工具型/可疑 UA 自动拦截（无论黑白名单模式都生效）：
+        // 这类 UA 几乎不可能是正常浏览器或正规搜索引擎蜘蛛（百度/谷歌/必应等均含 bot/spider 字样，不会命中），
+        // 但常被采集器、扫描器、AI 训练爬虫、以及“码云/Gitee”等非常规爬虫使用，故统一拦截。
+        if (preg_match(self::$TOOL_UA, $ua)) {
+            self::logVisit('blocked_toolua', $ua);
+            return true;
         }
 
         // 频率限制

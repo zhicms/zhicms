@@ -15,6 +15,552 @@ namespace ZhiCms\ext\Vector;
  */
 class Bm25Index
 {
+    /** 跨平台电商语义词库（独立缓存文件，见 ext/Vector/data/EcomLexicon.php） */
+    private static $ecomLexicon = null;
+    private static $ecomHotFlat = null;
+    /** 已学习词库的品类词缓存（isCategoryTerm 用） */
+    private static $catTermsCache = null;
+    /** sourceHash 进程内缓存（避免每次请求重复序列化大词库） */
+    private static $sourceHashCache = null;
+    /** 双向同义索引：word => [等价词...]（避免 expandSynonyms 全表扫描） */
+    private static $synIndex = null;
+
+    /**
+     * 加载跨平台电商语义词库（懒加载 + 进程内缓存）
+     * 返回数组键：platform_signals / hotwords / longtail / attributes / synonyms
+     */
+    public static function loadEcomLexicon()
+    {
+        if (self::$ecomLexicon === null) {
+            $file = __DIR__ . '/data/EcomLexicon.php';
+            self::$ecomLexicon = is_file($file) ? require $file : array();
+            // 合并"自动学习"词库（由用户搜索行为推导，learn() 生成），使扩展链路零改动生效
+            $learned = self::loadLearnedFile();
+            if (!empty($learned) && is_array($learned)) {
+                $assoc = array('synonyms', 'slang', 'attributes', 'hotwords', 'platform_signals');
+                foreach ($assoc as $sec) {
+                    if (!isset($learned[$sec]) || !is_array($learned[$sec])) {
+                        continue;
+                    }
+                    if (!isset(self::$ecomLexicon[$sec]) || !is_array(self::$ecomLexicon[$sec])) {
+                        self::$ecomLexicon[$sec] = array();
+                    }
+                    foreach ($learned[$sec] as $k => $v) {
+                        $base = isset(self::$ecomLexicon[$sec][$k]) ? (array)self::$ecomLexicon[$sec][$k] : array();
+                        self::$ecomLexicon[$sec][$k] = array_values(array_unique(array_merge($base, (array)$v)));
+                    }
+                }
+                if (!empty($learned['longtail']) && is_array($learned['longtail'])) {
+                    $base = isset(self::$ecomLexicon['longtail']) && is_array(self::$ecomLexicon['longtail'])
+                        ? self::$ecomLexicon['longtail'] : array();
+                    self::$ecomLexicon['longtail'] = array_values(array_unique(array_merge($base, $learned['longtail'])));
+                }
+            }
+            self::$ecomHotFlat = array();
+            foreach ((self::$ecomLexicon['hotwords'] ?? array()) as $cat => $words) {
+                foreach ((array) $words as $w) {
+                    self::$ecomHotFlat[$w] = true;
+                }
+            }
+        }
+        return self::$ecomLexicon;
+    }
+
+    /** 平台信号词（供意图路由）：平台编码 => [信号词] */
+    public static function platformSignals()
+    {
+        return self::loadEcomLexicon()['platform_signals'] ?? array();
+    }
+
+    /**
+     * 构建并缓存「双向同义索引」：把 SYNONYMS（正反向）+ EcomLexicon.synonyms + EcomLexicon.slang
+     * 合并为一维映射 word => [等价词...]，供 expandSynonyms 做 O(1) 查询，避免每次全表扫描。
+     */
+    public static function synonymIndex()
+    {
+        if (self::$synIndex !== null) {
+            return self::$synIndex;
+        }
+        $idx = array();
+        $absorb = function ($word, array $grp) use (&$idx) {
+            if (!isset($idx[$word])) {
+                $idx[$word] = array();
+            }
+            foreach ($grp as $r) {
+                if ($r !== $word) {
+                    $idx[$word][$r] = true;
+                }
+            }
+        };
+        // SYNONYMS 正反向（同组词两两等价）
+        foreach (self::SYNONYMS as $k => $list) {
+            $grp = array_merge(array($k), $list);
+            foreach ($grp as $a) {
+                $absorb($a, $grp);
+            }
+        }
+        // 跨平台电商语义词库（独立缓存文件）
+        $ecom = self::loadEcomLexicon();
+        foreach (array('synonyms', 'slang') as $sec) {
+            if (empty($ecom[$sec])) {
+                continue;
+            }
+            foreach ($ecom[$sec] as $k => $list) {
+                $grp = array_merge(array($k), (array)$list);
+                foreach ($grp as $a) {
+                    $absorb($a, $grp);
+                }
+            }
+        }
+        $out = array();
+        foreach ($idx as $w => $map) {
+            $out[$w] = array_keys($map);
+        }
+        self::$synIndex = $out;
+        return $out;
+    }
+
+
+    // ===================== 语义库自动学习（由用户搜索行为推导） =====================
+    // 流程：搜索时 recordSignal() 追加原始信号 -> data/lexicon_signals.jsonl；
+    //       运维/定时调用 learn() 把信号推导为 data/EcomLexicon.learned.php；
+    //       loadEcomLexicon() 自动合并该"已学习词库"，使扩展链路（expandQuery /
+    //       expandSynonyms / extractSearchWords）无需改动即生效，且 sourceHash 自动
+    //       将其纳入索引缓存失效判定。
+
+    /** 学习令牌存储路径（首次 learnToken() 时生成） */
+    public static function learnKeyPath()
+    {
+        return __DIR__ . '/data/lexicon.key';
+    }
+
+    /** 读取/生成学习令牌（保护 learn 接口，避免被任意调用） */
+    public static function learnToken()
+    {
+        $f = self::learnKeyPath();
+        if (is_file($f)) {
+            $t = trim(@file_get_contents($f));
+            if ($t !== '') {
+                return $t;
+            }
+        }
+        $t = bin2hex(random_bytes(16));
+        @file_put_contents($f, $t);
+        return $t;
+    }
+
+    /** 记录一条搜索信号（追加写，单文件 >5MB 自动滚动归档） */
+    public static function recordSignal($query, $title = '', $category = '', $weight = 1)
+    {
+        $query = trim((string)$query);
+        if ($query === '') {
+            return false;
+        }
+        $dir = __DIR__ . '/data';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $self = new self();
+        $row = array(
+            'ts' => time(),
+            'q'  => $self->mbSub($query, 0, 200),
+            't'  => $self->mbSub((string)$title, 0, 200),
+            'c'  => $self->mbSub((string)$category, 0, 60),
+            'w'  => (int)$weight,
+        );
+        $f = $dir . '/lexicon_signals.jsonl';
+        if (is_file($f) && filesize($f) > 5 * 1024 * 1024) {
+            @rename($f, $f . '.' . time() . '.bak');
+        }
+        return @file_put_contents($f, json_encode($row, JSON_UNESCAPED_UNICODE) . "\n", FILE_APPEND | LOCK_EX) !== false;
+    }
+
+    /**
+     * 纯分析（不落盘）：把累积信号推导为"知识库草案"，供后台预览"分析后再入库"。
+     * 与 learn() 共用 deriveLexicon()，保证"预览即所见、入库即所览"。
+     */
+    public static function analyze(array $opts = array())
+    {
+        $r = self::deriveLexicon($opts);
+        if (!empty($r['empty'])) {
+            return array('status' => 'n', 'info' => '暂无搜索信号', 'added' => 0, 'synonyms' => 0, 'longtail' => 0);
+        }
+        $learned = $r['learned'];
+        $topSyn = array();
+        foreach (($learned['synonyms'] ?? array()) as $k => $v) {
+            foreach ((array)$v as $x) {
+                $topSyn[] = array('query' => $k, 'term' => $x);
+            }
+        }
+        return array(
+            'status'          => 'y',
+            'added'           => $r['addedSyn'] + $r['addedLt'],
+            'synonyms'        => $r['addedSyn'],
+            'longtail'        => $r['addedLt'],
+            'distinctQueries' => $r['distinctQueries'],
+            'sourceSignals'   => $r['total'],
+            'topLongtail'     => array_slice($learned['longtail'] ?? array(), 0, 60),
+            'topSynonyms'     => array_slice($topSyn, 0, 60),
+        );
+    }
+
+    /** 把累积的搜索信号推导为"已学习词库"（分析核心，不落盘） */
+    private static function deriveLexicon(array $opts = array())
+    {
+        $dir = __DIR__ . '/data';
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+        $sigFile = $dir . '/lexicon_signals.jsonl';
+        if (!is_file($sigFile)) {
+            return array('learned' => array(), 'addedSyn' => 0, 'addedLt' => 0, 'distinctQueries' => 0, 'total' => 0, 'empty' => true);
+        }
+        $minHits  = isset($opts['minHits'])  ? max(1, (int)$opts['minHits'])  : 3;
+        $minCo    = isset($opts['minCo'])    ? max(1, (int)$opts['minCo'])    : 2;
+        $maxTerms = isset($opts['maxTerms']) ? max(1, (int)$opts['maxTerms']) : 600;
+
+        $queries = array();
+        $qTitles = array();
+        $total = 0;
+        if (($fh = @fopen($sigFile, 'r')) !== false) {
+            while (($line = fgets($fh)) !== false) {
+                $row = json_decode($line, true);
+                if (!is_array($row) || empty($row['q'])) {
+                    continue;
+                }
+                $q = self::normQuery($row['q']);
+                if ($q === '') {
+                    continue;
+                }
+                $total++;
+                if (!isset($queries[$q])) {
+                    $queries[$q] = 0;
+                    $qTitles[$q] = array();
+                }
+                $queries[$q] += max(1, (int)($row['w'] ?? 1));
+                if (!empty($row['t'])) {
+                    $qTitles[$q][] = $row['t'];
+                }
+            }
+            fclose($fh);
+        }
+
+        $learned = array(
+            'synonyms'         => array(),
+            'slang'            => array(),
+            'longtail'         => array(),
+            'attributes'       => array(),
+            'hotwords'         => array(),
+            'platform_signals' => array(),
+        );
+        $addedSyn = 0;
+        $addedLt = 0;
+
+        // 1) 长尾短语：高频查询 -> 直接作为 zh: 召回词
+        arsort($queries);
+        $cnt = 0;
+        foreach ($queries as $q => $hits) {
+            if ($cnt >= $maxTerms) {
+                break;
+            }
+            if ($hits < $minHits) {
+                continue;
+            }
+            $learned['longtail'][] = $q;
+            $addedLt++;
+            $cnt++;
+        }
+
+        // 2) 同义推导：高频查询 -> 命中商品标题中的"已知品类词"
+        foreach ($queries as $q => $hits) {
+            if ($hits < $minHits) {
+                continue;
+            }
+            $titles = $qTitles[$q] ?? array();
+            if (empty($titles)) {
+                continue;
+            }
+            $freq = array();
+            foreach ($titles as $title) {
+                foreach (self::titleTokens($title) as $tk) {
+                    $freq[$tk] = ($freq[$tk] ?? 0) + 1;
+                }
+            }
+            arsort($freq);
+            $chosen = null;
+            $chosenBrand = null;
+            foreach ($freq as $tk => $f) {
+                if ($f < $minCo) {
+                    break;
+                }
+                if (isset(self::STOPWORDS[$tk]) || (new self())->mbLen($tk) < 2) {
+                    continue;
+                }
+                if ($tk === $q) {
+                    continue;
+                }
+                if (in_array($tk, (array)(self::SYNONYMS[$q] ?? array()), true)) {
+                    continue;
+                }
+                if (!self::isCategoryTerm($tk)) {
+                    continue;
+                }
+                // 品牌词仅作兜底：优先把查询归一为标准品类词（"苹果手机"->"手机" 而非 "苹果"）
+                if (isset(self::BRANDS[$tk])) {
+                    if ($chosenBrand === null) {
+                        $chosenBrand = $tk;
+                    }
+                    continue;
+                }
+                if (isset(self::SYNONYMS[$tk]) || $chosen === null) { // 命中标准品类键直接采用
+                    $chosen = $tk;
+                    if (isset(self::SYNONYMS[$tk])) {
+                        break;
+                    }
+                }
+            }
+            if ($chosen === null) {
+                $chosen = $chosenBrand;
+            }
+            if ($chosen !== null && !isset($learned['synonyms'][$q])) {
+                $learned['synonyms'][$q][] = $chosen;
+                $addedSyn++;
+            }
+        }
+
+        $learned['_meta'] = array(
+            'generatedAt'     => date('Y-m-d H:i:s'),
+            'sourceSignals'   => $total,
+            'distinctQueries' => count($queries),
+            'counts'          => array('synonyms' => $addedSyn, 'longtail' => $addedLt),
+        );
+
+        return array(
+            'learned'         => $learned,
+            'addedSyn'        => $addedSyn,
+            'addedLt'         => $addedLt,
+            'distinctQueries' => count($queries),
+            'total'           => $total,
+        );
+    }
+
+    /** 合并两份词库（learn 时把新推导并入已有"知识库"，保证持续累积增长而非每次覆盖） */
+    private static function mergeLexicon(array $base, array $new)
+    {
+        $out = $base;
+        $vecSections = array('synonyms', 'slang', 'attributes', 'hotwords', 'platform_signals');
+        foreach ($vecSections as $sec) {
+            if (empty($new[$sec]) || !is_array($new[$sec])) {
+                continue;
+            }
+            if (!isset($out[$sec]) || !is_array($out[$sec])) {
+                $out[$sec] = array();
+            }
+            foreach ($new[$sec] as $k => $v) {
+                $old = isset($out[$sec][$k]) ? (array)$out[$sec][$k] : array();
+                $out[$sec][$k] = array_values(array_unique(array_merge($old, (array)$v)));
+            }
+        }
+        if (!empty($new['longtail']) && is_array($new['longtail'])) {
+            $baseLt = isset($out['longtail']) && is_array($out['longtail']) ? $out['longtail'] : array();
+            $out['longtail'] = array_values(array_unique(array_merge($baseLt, $new['longtail'])));
+        }
+        if (isset($new['_meta'])) {
+            $out['_meta'] = $new['_meta'];
+        }
+        return $out;
+    }
+
+    /** 把累积的搜索信号推导为"已学习词库"并落盘（入库；与已有知识库合并累积） */
+    public static function learn(array $opts = array())
+    {
+        $r = self::deriveLexicon($opts);
+        if (!empty($r['empty'])) {
+            return array('status' => 'n', 'info' => '暂无搜索信号', 'added' => 0, 'synonyms' => 0, 'longtail' => 0);
+        }
+        $newLearned = $r['learned'];
+
+        // 与已有知识库合并，保证持续累积（而非每次从头覆盖）
+        $existing = self::loadLearnedFile();
+        $merged = self::mergeLexicon($existing, $newLearned);
+
+        $dir = __DIR__ . '/data';
+        $php = "<?php\n"
+            . "// 自动学习生成的语义词库（由用户搜索行为推导，勿手工编辑，由 Bm25Index::learn() 重写）\n"
+            . "return " . var_export($merged, true) . ";\n";
+        $written = @file_put_contents($dir . '/EcomLexicon.learned.php', $php);
+
+        // JSON 侧车：便于其他系统/脚本二次消费（数据分析、导出、跨平台复用）
+        $jsonWritten = @file_put_contents(
+            $dir . '/EcomLexicon.learned.json',
+            json_encode($merged, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
+        );
+
+        // 重置进程内缓存，使本次请求后续读取生效
+        self::$ecomLexicon = null;
+        self::$ecomHotFlat = null;
+        self::$catTermsCache = null;
+
+        // 词库已变更 → 旧的 BM25 索引缓存失效，立即清空（下次访问自动重建最新索引）
+        if (class_exists('\\ZhiCms\\ext\\VectorService', true)) {
+            \ZhiCms\ext\VectorService::clearBm25Cache();
+        }
+
+        // 可选：学习后清空原始信号，避免重复累积（默认保留）
+        $sigFile = $dir . '/lexicon_signals.jsonl';
+        if (!empty($opts['clearSignals']) && is_file($sigFile)) {
+            @unlink($sigFile);
+        }
+
+        return array(
+            'status'          => 'y',
+            'added'           => $r['addedSyn'] + $r['addedLt'],
+            'synonyms'        => $r['addedSyn'],
+            'longtail'        => $r['addedLt'],
+            'distinctQueries' => $r['distinctQueries'],
+            'sourceSignals'   => $r['total'],
+            'written'         => (bool)$written,
+            'json'            => (bool)$jsonWritten,
+        );
+    }
+
+    /** 读取已学习词库原始数组（供后台展示/导出，不存在返回空数组） */
+    public static function getLearnedLexicon()
+    {
+        return self::loadLearnedFile();
+    }
+
+    /** 已学习词库 JSON 侧车文件路径（二次使用/外部消费） */
+    public static function learnedJsonPath()
+    {
+        return __DIR__ . '/data/EcomLexicon.learned.json';
+    }
+
+    /** 原始搜索信号文件路径 */
+    public static function signalPath()
+    {
+        return __DIR__ . '/data/lexicon_signals.jsonl';
+    }
+
+    /** 学习词库统计（只读监控） */
+    public static function lexiconStats()
+    {
+        $dir = __DIR__ . '/data';
+        $sigFile = $dir . '/lexicon_signals.jsonl';
+        $signals = 0;
+        if (is_file($sigFile) && ($fh = @fopen($sigFile, 'r')) !== false) {
+            while (fgets($fh) !== false) {
+                $signals++;
+            }
+            fclose($fh);
+        }
+        $learned = self::loadLearnedFile();
+        $synCount = 0;
+        foreach (($learned['synonyms'] ?? array()) as $v) {
+            $synCount += count((array)$v);
+        }
+        return array(
+            'signals'         => $signals,
+            'learnedExists'   => is_file($dir . '/EcomLexicon.learned.php'),
+            'learnedSynonyms' => $synCount,
+            'learnedLongtail' => count($learned['longtail'] ?? array()),
+            'meta'            => $learned['_meta'] ?? null,
+        );
+    }
+
+    /** 读取已学习词库原始文件（不存在返回空数组） */
+    private static function loadLearnedFile()
+    {
+        $f = __DIR__ . '/data/EcomLexicon.learned.php';
+        return is_file($f) ? (array)require $f : array();
+    }
+
+    /** 查询归一化：去标点、合空格、转小写 */
+    private static function normQuery($q)
+    {
+        $q = trim((string)$q);
+        $q = preg_replace('/[^\x{4e00}-\x{9fa5}a-z0-9]+/ui', ' ', $q);
+        $q = preg_replace('/\s+/', ' ', $q);
+        return trim((new self())->lower($q));
+    }
+
+    /** 从商品标题提取候选词（复用 tokenize，过滤停用词与单字） */
+    private static function titleTokens($title)
+    {
+        $out = array();
+        $self = new self();
+        foreach ($self->tokenize((string)$title) as $tk) {
+            if (strpos($tk, 'zh:') === 0) {
+                $w = substr($tk, 3);
+            } elseif (strpos($tk, 'en:') === 0) {
+                $w = substr($tk, 3);
+            } else {
+                $w = $tk;
+            }
+            if (isset(self::STOPWORDS[$w])) {
+                continue;
+            }
+            if ((new self())->mbLen($w) < 2) {
+                continue;
+            }
+            $out[$w] = true;
+        }
+        return array_keys($out);
+    }
+
+    /** 判断候选词是否为"已知品类词"（SYNONYMS / 热词 / 属性键），保证推导的同义有意义 */
+    private static function isCategoryTerm($tk)
+    {
+        if (self::$catTermsCache === null) {
+            $e = self::loadEcomLexicon();
+            $set = array();
+            foreach (self::SYNONYMS as $k => $v) {
+                $set[$k] = true;
+                foreach ((array)$v as $x) {
+                    $set[$x] = true;
+                }
+            }
+            foreach (self::$ecomHotFlat as $w => $t) {
+                $set[$w] = true;
+            }
+            foreach (($e['attributes'] ?? array()) as $k => $v) {
+                $set[$k] = true;
+            }
+            self::$catTermsCache = $set;
+        }
+        return isset(self::$catTermsCache[$tk]);
+    }
+
+    /** 源数据指纹：任一词典/词库变更即失效，用于索引缓存校验（进程内缓存，避免每次请求重复序列化大词库） */
+    public static function sourceHash()
+    {
+        if (self::$sourceHashCache === null) {
+            self::$sourceHashCache = md5(serialize(self::SYNONYMS) . serialize(self::HOTWORDS) . serialize(self::BRANDS)
+                . serialize(self::USAGE) . serialize(self::ATTRIBUTES) . serialize(self::EXTENDED)
+                . serialize(self::AMBIGUOUS) . serialize(self::loadEcomLexicon()));
+        }
+        return self::$sourceHashCache;
+    }
+
+    /** 将当前索引写入缓存文件（配合 sourceHash 做失效校验） */
+    public function saveCache($path)
+    {
+        file_put_contents($path, $this->serialize());
+        @file_put_contents($path . '.hash', self::sourceHash());
+    }
+
+    /** 从缓存文件恢复索引；指纹不匹配或文件缺失返回 null */
+    public static function loadCache($path)
+    {
+        if (!is_file($path) || !is_file($path . '.hash')) {
+            return null;
+        }
+        if (file_get_contents($path . '.hash') !== self::sourceHash()) {
+            return null;
+        }
+        return self::unserialize(file_get_contents($path));
+    }
+
     /** 中文停用词（切分后直接丢弃，不参与索引） */
     const STOPWORDS = [
         '的','了','和','与','及','或','是','在','我','你','他','她','它','们','这','那','有','个','款','新',
@@ -395,6 +941,110 @@ class Bm25Index
         '创可贴'   => ['创口贴','医药'],
         '体温计'   => ['测温','医药'],
         '血压计'   => ['测血压','医药'],
+        // —— 服饰鞋包 补充 ——
+        '袜子'     => ['船袜','中筒袜','长筒袜','丝袜','棉袜','运动袜'],
+        '内裤'     => ['平角裤','三角裤','莫代尔','男士内裤','女士内裤'],
+        '睡衣'     => ['家居服','睡裙','睡裤','春秋款'],
+        '保暖内衣' => ['秋衣秋裤','发热','德绒','加绒'],
+        '帽子'     => ['棒球帽','渔夫帽','毛线帽','鸭舌帽','遮阳帽'],
+        '围巾'     => ['丝巾','披肩','围脖','保暖'],
+        '腰带'     => ['皮带','腰封','复古'],
+        '拖鞋'     => ['人字拖','凉拖','居家','浴室'],
+        '靴子'     => ['雪地靴','马丁靴','切尔西','过膝靴'],
+        '洞洞鞋'   => ['crocs','凉鞋','休闲'],
+        // —— 智能穿戴 补充 ——
+        '智能眼镜' => ['ar眼镜','智能','ar','翻译'],
+        '智能戒指' => ['健康','睡眠','心率'],
+        '智能秤'   => ['体脂秤','体重','健康'],
+        '电动滑板车' => ['代步','折叠','出行'],
+        '平衡车'   => ['体感','代步','出行'],
+        // —— 大家电 补充 ——
+        '洗碗机'   => ['嵌入式','独立式','13套','家用'],
+        '油烟机'   => ['抽油烟','侧吸','顶吸','家用'],
+        '燃气灶'   => ['煤气灶','嵌入式','家用'],
+        '集成灶'   => ['蒸烤','一体','家用'],
+        '热水器'   => ['电热水器','燃气','即热','储水'],
+        '消毒柜'   => ['碗柜','杀菌','嵌入式'],
+        // —— 厨房小电 补充 ——
+        '电压力锅' => ['高压锅','智能','预约','家用'],
+        '电火锅'   => ['多功能锅','家用','火锅'],
+        '早餐机'   => ['三明治机','多士炉','多功能','家用'],
+        '绞肉机'   => ['碎肉','多功能','家用'],
+        '电蒸锅'   => ['蒸蛋器','多层','家用'],
+        // —— 个护 补充 ——
+        '护手霜'   => ['滋润','保湿','冬季','手部'],
+        '护发素'   => ['发膜','焗油','顺滑','洗护'],
+        '浴球'     => ['沐浴','起泡','洗澡'],
+        '搓澡巾'   => ['沐浴','搓背','洗澡'],
+        '洗脸巾'   => ['棉柔巾','一次性','洁面','纸巾'],
+        // —— 母婴 补充 ——
+        '隔尿垫'   => ['护理','婴儿','防水','床垫'],
+        '奶瓶刷'   => ['奶嘴刷','清洁','婴儿'],
+        '恒温壶'   => ['调奶器','婴儿','热水','家用'],
+        '宝宝霜'   => ['婴儿','面霜','保湿','滋润'],
+        '学饮杯'   => ['吸管杯','婴儿','喝水','防漏'],
+        // —— 宠物 补充 ——
+        '自动喂食器' => ['定时','智能','猫狗','喂食'],
+        '宠物饮水机' => ['流动水','智能','猫狗'],
+        '猫爬架'   => ['猫树','猫玩具','猫窝','宠物'],
+        '宠物除臭' => ['猫砂除臭','除味','杀菌','宠物'],
+        '宠物衣服' => ['狗狗衣服','保暖','宠物'],
+        // —— 运动健身 补充 ——
+        '运动袜'   => ['毛巾底','减震','跑步','篮球'],
+        '速干衣'   => ['健身','排汗','透气','运动'],
+        '护膝'     => ['运动','保暖','加压','护具'],
+        '护腰'     => ['运动','护具','加压','保暖'],
+        '运动护具' => ['护腕','护肘','加压','运动'],
+        // —— 户外露营 补充 ——
+        '户外电源' => ['大容量','储能','露营','应急'],
+        '露营车'   => ['折叠','拖车','营地','便携'],
+        '折叠椅'   => ['克米特','月亮椅','便携','露营'],
+        '蛋卷桌'   => ['露营','便携','折叠','营地'],
+        '露营灯'   => ['营地','充电','太阳能','复古'],
+        '睡袋'     => ['信封','木乃伊','保暖','户外'],
+        // —— 家居卫浴 补充 ——
+        '花洒'     => ['淋浴','增压','节水','沐浴'],
+        '马桶'     => ['坐便器','智能','家用','节水'],
+        '浴室柜'   => ['洗手盆','镜柜','家用'],
+        '地漏'     => ['防臭','防堵','家用'],
+        '置物架'   => ['浴室','厨房','免打孔','收纳'],
+        '浴帘'     => ['防水','浴室','遮挡'],
+        // —— 灯饰照明 补充 ——
+        '氛围灯'   => ['氛围','rgb','智能','卧室'],
+        '夜灯'     => ['小夜灯','感应','卧室','起夜'],
+        '灯带'     => ['led','氛围','装饰','智能'],
+        // —— 文具潮玩 补充 ——
+        '手办'     => ['雕像','收藏','动漫','潮玩'],
+        '桌游'     => ['卡牌','聚会','游戏','桌游'],
+        '解压玩具' => ['捏捏','慢回弹','减压','玩具'],
+        // —— 汽车用品 补充 ——
+        '车蜡'     => ['镀晶','打蜡','汽车','养护'],
+        '洗车液'   => ['泡沫','汽车','清洗'],
+        '车载吸尘器' => ['无线','车用','大吸力','清洁'],
+        '车载净化器' => ['除味','杀菌','车用','pm2.5'],
+        '临时停车牌' => ['挪车','电话','车载','隐私'],
+        // —— 办公设备 补充 ——
+        '会议平板' => ['一体机','触摸','办公','会议'],
+        '标签机'   => ['打印','办公','家用','标签'],
+        // —— 食品饮料 补充 ——
+        '火鸡面'   => ['韩式','泡面','辣','速食'],
+        '自热米饭' => ['速食','方便','自热','户外'],
+        '藕粉'     => ['冲泡','早餐','代餐','养生'],
+        '黑芝麻丸' => ['养生','零食','黑芝麻','滋补'],
+        '即食鸡胸' => ['低脂','健身','代餐','蛋白'],
+        // —— 滋补保健 补充 ——
+        '阿胶糕'   => ['滋补','气血','零食','养生'],
+        '人参'     => ['滋补','高丽参','养生','泡茶'],
+        '黄芪'     => ['养生','泡茶','滋补','补气'],
+        '黑芝麻'   => ['养生','乌发','零食','滋补'],
+        // —— 图书文娱 补充 ——
+        'kindle'   => ['电子书','阅读器','墨水屏','图书'],
+        '黑胶唱片' => ['唱片','复古','vinyl','音乐'],
+        '尤克里里' => ['ukulele','吉他','乐器','小四弦'],
+        // —— 智能家居安防 补充 ——
+        '智能门锁' => ['指纹锁','密码锁','电子锁','家用'],
+        '可视门铃' => ['监控','智能','家用','doorbell'],
+        '智能猫眼' => ['可视','门镜','家用','安防'],
     ];
 
     /**
@@ -925,6 +1575,187 @@ class Bm25Index
         '稳健'     => ['口罩','医用','防护'],
         '云南白药' => ['牙膏','医药','止血'],
         '可孚'     => ['血压计','体温计','医疗'],
+        // —— 美妆护肤 补充 ——
+        '美宝莲'   => ['maybelline','彩妆','平价','口红'],
+        '卡姿兰'   => ['彩妆','平价','口红'],
+        '彩棠'     => ['彩妆','国货','高端','毛戈平'],
+        '花知晓'   => ['彩妆','国货','少女'],
+        '恋火'     => ['彩妆','国货','底妆'],
+        '柏瑞美'   => ['定妆','喷雾','彩妆'],
+        '尔木萄'   => ['美妆蛋','粉扑','平价'],
+        '受受狼'   => ['刷具','化妆刷','平价'],
+        '红地球'   => ['粉底','国货','养肤'],
+        '玉泽'     => ['护肤','国货','修护'],
+        '绽妍'     => ['护肤','医美','修护'],
+        '瑷尔博士' => ['护肤','国货','益生菌'],
+        '修丽可'   => ['skinceuticals','护肤','高端','抗氧化'],
+        '理肤泉'   => ['laroche','护肤','敏感','药妆'],
+        '雅漾'     => ['avene','护肤','敏感','喷雾'],
+        '芙丽芳丝' => ['freeplus','洁面','敏感','护肤'],
+        '肌研'     => ['hadalabo','护肤','保湿','平价'],
+        // —— 个护清洁 补充 ——
+        '舒客'     => ['牙膏','牙刷','口腔'],
+        '参半'     => ['牙膏','口腔','益生菌'],
+        '且初'     => ['dochii','护发','洗发','发膜'],
+        '摇滚动物园' => ['身体乳','个护','国货'],
+        '潘婷'     => ['pantene','洗发水','护发'],
+        '海飞丝'   => ['headshoulders','去屑','洗发'],
+        '清扬'     => ['clear','去屑','洗发'],
+        '沙宣'     => ['vs','洗发','造型'],
+        '多芬'     => ['dove','沐浴','洗发','滋润'],
+        '力士'     => ['lux','沐浴','洗发'],
+        '舒肤佳'   => ['safeguard','洗手','沐浴'],
+        '滴露'     => ['dettol','消毒','除菌'],
+        '威露士'   => ['walch','消毒','除菌'],
+        '蓝月亮'   => ['洗衣液','清洁'],
+        '立白'     => ['洗衣','洗洁精','清洁'],
+        '雕牌'     => ['洗衣','洗洁精','平价'],
+        '奥妙'     => ['omo','洗衣','清洁'],
+        '汰渍'     => ['tide','洗衣','清洁'],
+        '超能'     => ['洗衣','清洁','纳爱斯'],
+        '阿道夫'   => ['洗发','香氛','洗护'],
+        '滋源'     => ['无硅油','洗发','洗护'],
+        '施巴'     => ['sebamed','婴儿','洗护'],
+        '强生'     => ['johnson','婴儿','沐浴'],
+        // —— 食品 / 零食 / 饮料 补充 ——
+        '王小卤'   => ['虎皮凤爪','卤味','零食'],
+        '有友'     => ['泡椒凤爪','卤味','零食'],
+        '甘源'     => ['豌豆','零食','平价'],
+        '零食很忙' => ['量贩','零食','平价'],
+        '赵一鸣'   => ['量贩','零食','平价'],
+        '东鹏特饮' => ['功能饮料','提神','饮料'],
+        '脉动'     => ['功能饮料','维生素','饮料'],
+        '红牛'     => ['功能饮料','提神','饮料'],
+        '喜茶'     => ['茶饮','奶茶','新茶饮'],
+        '奈雪的茶' => ['茶饮','奶茶','新茶饮'],
+        '茶百道'   => ['茶饮','奶茶','新茶饮'],
+        '蜜雪冰城' => ['冰淇淋','奶茶','平价'],
+        '古茗'     => ['茶饮','奶茶','新茶饮'],
+        '沪上阿姨' => ['茶饮','奶茶','新茶饮'],
+        '三得利'   => ['suntory','乌龙茶','饮料'],
+        '宝矿力'   => ['电解质','饮料','运动'],
+        '隅田川'   => ['咖啡','挂耳','袋泡'],
+        'Manner'   => ['咖啡','精品','新茶饮'],
+        '库迪'     => ['咖啡','新茶饮','平价'],
+        '幸运咖'   => ['咖啡','平价'],
+        '鹰集'     => ['咖啡','精品'],
+        '茶里'     => ['chali','袋泡茶','茶'],
+        '竹叶青'   => ['绿茶','高端','茶'],
+        '艺福堂'   => ['绿茶','茶','平价'],
+        '吴裕泰'   => ['茉莉','花茶','老字号'],
+        // —— 酒水 补充 ——
+        '古井贡酒' => ['白酒','年份','浓香'],
+        '舍得'     => ['白酒','馥郁','浓香'],
+        '西凤酒'   => ['白酒','凤香','陕西'],
+        '酒鬼酒'   => ['白酒','馥郁','湖南'],
+        '今世缘'   => ['白酒','国缘','江苏'],
+        '尊尼获加' => ['johnnie','威士忌','洋酒'],
+        '芝华士'   => ['chivas','威士忌','洋酒'],
+        '杰克丹尼' => ['jack','威士忌','洋酒'],
+        // —— 母婴 补充 ——
+        'babycare' => ['婴儿','母婴','用品','设计'],
+        '可优比'   => ['婴儿','母婴','平价'],
+        '嫚熙'     => ['romer','孕妇','母婴','防辐射'],
+        '英氏'     => ['engnice','婴儿','米粉','辅食'],
+        '秋田满满' => ['婴儿','辅食','母婴'],
+        '小皮'     => ['littlefreddie','辅食','婴儿','有机'],
+        '碧欧奇'   => ['辅食','婴儿','有机'],
+        '窝小芽'   => ['辅食','婴儿','母婴'],
+        // —— 宠物 补充 ——
+        '比瑞吉'   => ['猫粮','狗粮','宠物'],
+        '伯纳天纯' => ['猫粮','狗粮','无谷','宠物'],
+        '蓝氏'     => ['猫粮','狗粮','宠物'],
+        '诚实一口' => ['猫粮','狗粮','宠物'],
+        '高爷家'   => ['猫粮','宠物','国货'],
+        '帕特'     => ['猫粮','生骨肉','宠物'],
+        '卫仕'     => ['wise','营养品','宠物'],
+        '红狗'     => ['reddog','营养品','宠物'],
+        '阿飞和巴弟' => ['猫粮','宠物','新锐'],
+        // —— 数码外设 / 存储 / 配件 补充 ——
+        '雷柏'     => ['rapoo','鼠标','键盘','无线'],
+        '双飞燕'   => ['鼠标','键盘','平价'],
+        '达尔优'   => ['鼠标','键盘','游戏'],
+        '阿米洛'   => ['varmilo','键盘','机械'],
+        '杜伽'     => ['durgod','键盘','机械'],
+        'HKC'      => ['显示器','电竞','平价'],
+        '泰坦军团' => ['显示器','电竞','平价'],
+        '光威'     => ['gloway','内存','固态','平价'],
+        '阿斯加特' => ['asgard','内存','固态'],
+        '品胜'     => ['pisen','充电','电池','配件'],
+        '罗马仕'   => ['romoss','充电宝','移动电源'],
+        '羽博'     => ['充电宝','移动电源','电池'],
+        '飞傲'     => ['fiio','播放器','耳机','hifi'],
+        '山灵'     => ['shanling','播放器','耳机','hifi'],
+        '水月雨'   => ['moondrop','耳机','hifi'],
+        '兴戈'     => ['singer','耳机','hifi'],
+        // —— 家电 补充 ——
+        '小天鹅'   => ['洗衣机','滚筒','家电'],
+        '华凌'     => ['空调','家电','平价','美的'],
+        '云米'     => ['viomi','家电','智能','小米'],
+        'COLMO'    => ['高端','家电','美的'],
+        '莱克'     => ['lexy','吸尘器','净化'],
+        '必胜'     => ['bissell','洗地机','清洁'],
+        '友望'     => ['洗地机','清洁','除螨'],
+        // —— 服饰 补充 ——
+        '之禾'     => ['icom','女装','高端','设计师'],
+        '素然'     => ['zuczug','女装','设计师'],
+        '速写'     => ['croquis','男装','设计师','江南布衣'],
+        // —— 箱包 补充 ——
+        '新秀丽'   => ['samsonite','行李箱','双肩包','高端'],
+        '外交官'   => ['diplomat','行李箱','箱包'],
+        '地平线8号' => ['level8','行李箱','箱包','小米'],
+        '不莱玫'   => ['bromen','行李箱','箱包','设计'],
+        '爱华仕'   => ['oiwak','行李箱','箱包','平价'],
+        // —— 珠宝 / 腕表 补充 ——
+        '周大福'   => ['珠宝','黄金','钻戒','首饰'],
+        '周大生'   => ['珠宝','黄金','钻戒'],
+        '老凤祥'   => ['珠宝','黄金','老字号'],
+        '六福'     => ['珠宝','黄金','钻戒'],
+        '潮宏基'   => ['珠宝','黄金','设计'],
+        '中国黄金' => ['黄金','珠宝','投资'],
+        '周六福'   => ['珠宝','黄金','钻戒'],
+        '卡地亚'   => ['cartier','珠宝','手表','高端'],
+        '浪琴'     => ['longines','手表','瑞士'],
+        '天梭'     => ['tissot','手表','瑞士','平价'],
+        '卡西欧'   => ['casio','手表','电子','g-shock'],
+        '西铁城'   => ['citizen','手表','光动能'],
+        '飞亚达'   => ['手表','国产','航天'],
+        '罗西尼'   => ['手表','国产','平价'],
+        '天王'     => ['手表','国产','平价'],
+        'DW'       => ['danielwellington','手表','时装'],
+        '施华洛世奇' => ['swarovski','水晶','首饰','高端'],
+        // —— 家居家纺 / 灯饰 补充 ——
+        '欧普'     => ['opple','灯具','照明','吸顶灯'],
+        '雷士'     => ['nvc','灯具','照明','吸顶灯'],
+        '佛山照明' => ['灯具','照明','平价'],
+        '三雄极光' => ['灯具','照明','平价'],
+        'Yeelight' => ['易来','智能灯','小米','氛围灯'],
+        // —— 文具 补充 ——
+        '斑马'     => ['zebra','笔','中性笔','文具'],
+        '三菱'     => ['uni','笔','文具','铅笔'],
+        '百乐'     => ['pilot','笔','文具','钢笔'],
+        '国誉'     => ['kokuyo','本子','文具','笔记本'],
+        // —— 运动健身 / 户外 补充 ——
+        '舒华'     => ['健身器材','跑步机','家用'],
+        '亿健'     => ['跑步机','健身','家用'],
+        '麦瑞克'   => ['merach','椭圆机','划船机','健身'],
+        '牧高笛'   => ['mobigarden','帐篷','露营','户外'],
+        '挪客'     => ['naturehike','帐篷','露营','户外'],
+        '黑鹿'     => ['blackdeer','露营','户外','装备'],
+        // —— 汽车 / 新能源 / 车品 补充 ——
+        '极氪'     => ['zeekr','新能源','车品'],
+        '问界'     => ['aito','新能源','华为','车品'],
+        '哪吒'     => ['哪吒汽车','新能源','车品'],
+        '零跑'     => ['新能源','车品','平价'],
+        '阿维塔'   => ['avatr','新能源','车品','华为'],
+        '深蓝'     => ['深蓝汽车','新能源','车品'],
+        '智己'     => ['im','新能源','车品'],
+        '极狐'     => ['新能源','车品','北汽'],
+        '埃安'     => ['广汽埃安','新能源','车品'],
+        '岚图'     => ['岚图汽车','新能源','车品','东风'],
+        '小米汽车' => ['su7','新能源','车品','小米'],
+        '铁将军'   => ['防盗','车品','倒车'],
+        '纽曼'     => ['newman','车载','车品','平板'],
     ];
 
     /**
@@ -5257,6 +6088,58 @@ class Bm25Index
                 }
             }
         }
+        // 跨平台电商语义词库扩展（独立缓存文件 data/EcomLexicon.php）
+        // 采用"子串命中"而非精确 token 命中：热词/长尾词多为 3-4 字，
+        // 经 n-gram 切分后不会作为整体 token 出现，按子串匹配才能触发扩展。
+        $ecom = self::loadEcomLexicon();
+        if (!empty($ecom)) {
+            $text = $this->lower(trim($query));
+            $hit = array();
+            foreach (($ecom['synonyms'] ?? array()) as $k => $v) {
+                if (strpos($text, $k) !== false) $hit['syn:' . $k] = $v;
+            }
+            foreach (($ecom['slang'] ?? array()) as $k => $v) {
+                if (strpos($text, $k) !== false) $hit['syn:' . $k] = $v;
+            }
+            foreach (array_keys(self::$ecomHotFlat) as $w) {
+                if (strpos($text, $w) !== false) $hit['hw:' . $w] = true;
+            }
+            foreach (($ecom['attributes'] ?? array()) as $k => $v) {
+                if (strpos($text, $k) !== false) $hit['attr:' . $k] = $v;
+            }
+            foreach (($ecom['longtail'] ?? array()) as $w) {
+                if (strpos($text, $w) !== false) $hit['lt:' . $w] = true;
+            }
+            foreach ($hit as $key => $payload) {
+                if (strpos($key, 'syn:') === 0) {
+                    foreach ($payload as $syn) {
+                        foreach ($this->tokenize($syn) as $st) {
+                            if (!isset(self::STOPWORDS[$st])) $out[$st] = true;
+                        }
+                    }
+                } elseif (strpos($key, 'hw:') === 0) {
+                    $w = substr($key, 3);
+                    $out['zh:' . $w] = true;
+                    foreach ($this->tokenize($w) as $ht) {
+                        if (!isset(self::STOPWORDS[$ht])) $out[$ht] = true;
+                    }
+                } elseif (strpos($key, 'attr:') === 0) {
+                    foreach ($payload as $attr) {
+                        $out['zh:' . $attr] = true;
+                        foreach ($this->tokenize($attr) as $at) {
+                            if (!isset(self::STOPWORDS[$at])) $out[$at] = true;
+                        }
+                    }
+                } elseif (strpos($key, 'lt:') === 0) {
+                    $w = substr($key, 3);
+                    $out['zh:' . $w] = true;
+                    foreach ($this->tokenize($w) as $lt) {
+                        if (!isset(self::STOPWORDS[$lt])) $out[$lt] = true;
+                    }
+                }
+            }
+        }
+
         return array_keys($out);
     }
 

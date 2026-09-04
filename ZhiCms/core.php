@@ -464,11 +464,26 @@ function cdn_url($path) {
     return $baseUrl . '/' . $path;
 }
 
-// 蜘蛛访问限制：仅前台生效（后台/安装不拦截，避免管理员被误伤）
+// 动态生成 robots.txt：修正 Sitemap 指向当前站点域名（避免占位 example.com 导致收录差）
 $__r = isset($_GET['r']) ? $_GET['r'] : '';
 $__uri = isset($_SERVER['REQUEST_URI']) ? parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) : '';
+if ($__uri === '/robots.txt') {
+    header('Content-Type: text/plain; charset=utf-8');
+    $__scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443) ? 'https' : 'http';
+    $__host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+    $__sitemap = $__host ? $__scheme . '://' . $__host . '/sitemap.php' : '';
+    echo "User-agent: *\nAllow: /\n\n";
+    echo "# 后台、接口与敏感目录禁止抓取\n";
+    echo "Disallow: /manage/\nDisallow: /api/\nDisallow: /plugins/\nDisallow: /data/\nDisallow: /runtime/\n";
+    echo "Disallow: /upload/\nDisallow: /install.php\nDisallow: /*?*content=\nDisallow: /*?*page=\n\n";
+    if ($__sitemap) echo "Sitemap: " . $__sitemap . "\n";
+    exit;
+}
+
+// 蜘蛛访问限制：仅前台生效（后台/安装/sitemap/robots 不拦截，避免管理员与搜索引擎被误伤）
 if (strpos($__r, 'manage') !== 0 && strpos($__r, 'install') !== 0
-    && strpos($__uri, '/manage') !== 0 && strpos($__uri, '/install') !== 0) {
+    && strpos($__uri, '/manage') !== 0 && strpos($__uri, '/install') !== 0
+    && $__uri !== '/sitemap.php' && $__uri !== '/robots.txt') {
     if (function_exists('zhi_spider_guard')) {
         zhi_spider_guard();
     }

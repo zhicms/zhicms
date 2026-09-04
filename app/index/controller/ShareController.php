@@ -10,11 +10,12 @@ namespace app\index\controller;
  * 行为：
  *   1. 读取 inviter 写入 Cookie（30 天），供后续注册/登录归因
  *   2. 按 type 跳转到真实的网页版详情页：
- *        shop   -> /index.php?r=index/cheaps/detail&id=<id>&type=shop   (已存在)
- *        tb     -> /index.php?r=index/cheaps/detail&id=<id>&type=tb     (已存在)
- *        jd/pdd/vip 同 cheaps/detail
+ *        article-> /index.php?r=index/index/view&id=<id>               (网页版文章详情)
+ *        tb     -> /index.php?r=index/invite/goods&id=<id>&type=tb
+ *        jd/pdd/vip -> 同 invite/goods（按对应平台）
+ *        shop   -> /index.php?r=index/shop/index                        (自营暂无详情页，兜底列表)
  *        app    -> /index.php?r=index/invite/index&inviter=<inviter>
- *      其余（article/post 等网页版暂未实现详情页）-> 兜底首页，避免 404
+ *      其余（post 等暂未实现）-> 兜底首页，避免 404
  */
 class ShareController extends \app\base\controller\BaseController
 {
@@ -57,6 +58,9 @@ class ShareController extends \app\base\controller\BaseController
     {
         $base = '/index.php';
         switch ($type) {
+            case 'article':
+                // 文章分享：网页版文章详情页（yun_article.id 与 App 端一致），避免打开错页
+                return $base . '?r=index/index/view&id=' . rawurlencode($id);
             case 'tb':
             case 'jd':
             case 'pdd':
