@@ -116,6 +116,11 @@ class AiController extends ApiBaseController {
         // 返回结构化错误而非 500 HTML，避免小程序端 JSON 解析失败、整段导购不可用。
         try {
             $ctrl = new \app\index\controller\AiAssistantController();
+            // App 端若携带登录 Token，则绑定到账号维度（u_<uid>），与 Web 端登录一致、跨设备同一身份
+            $appUid = $this->resolveAppUid();
+            if ($appUid > 0) {
+                $ctrl->setLoginUid($appUid);
+            }
             $res = $ctrl->chatLogic($message, $forceMode);
         } catch (\Throwable $e) {
             error_log('[ai-guide] chatLogic failed: ' . $e->getMessage());
@@ -277,5 +282,54 @@ class AiController extends ApiBaseController {
         $text = $node->textContent;
         $text = preg_replace('/\s+/u', ' ', $text);
         return trim($text);
+    }
+
+    /**
+     * 从 Authorization: Bearer <token>（或 ?token=）解析当前登录 uid；未登录/失效返回 0。
+     * Token 格式与 UserController 一致：base64(payload) . md5(base64(payload) . secretkey)
+     */
+    private function resolveAppUid()
+    {
+        $token = $this->requestToken();
+        if (!$token || strpos($token, '.') === false) {
+            return 0;
+        }
+        list($b, $sign) = explode('.', $token, 2);
+        $cfg = \app\common\ConfigStore::load('api');
+        $secret = (isset($cfg['secretkey']) && $cfg['secretkey'] !== '') ? $cfg['secretkey'] : 'zhangyuan';
+        if (md5($b . $secret) !== $sign) {
+            return 0;
+        }
+        $payload = json_decode(base64_decode($b), true);
+        if (!$payload || empty($payload['uid'])) {
+            return 0;
+        }
+        if (!empty($payload['exp']) && $payload['exp'] < time()) {
+            return 0;
+        }
+        return (int)$payload['uid'];
+    }
+
+    /**
+     * 匿名会话绑定到登录账号：把匿名 sessionId 的对话历史/上下文/偏好迁移到 u_<uid>。
+     * 适用：小程序/App 登录成功后调用（Web 端由 LoginController 自动绑定）。
+     * 请求：POST { anonymousId:"<匿名会话sid>", token:"Bearer <登录token>" }
+     * 返回：{ code:1 }
+     */
+    public function bind()
+    {
+        $this->options();
+        $input = $this->body();
+        if (empty($input)) {
+            $input = $this->raw();
+        }
+        $visitorId = isset($input['anonymousId']) ? preg_replace('/[^a-zA-Z0-9_-]/', '', $input['anonymousId']) : '';
+        $uid = $this->resolveAppUid();
+        if ($uid <= 0) {
+            $this->json(array('code' => 401, 'msg' => '请先登录'), 401);
+            return;
+        }
+        \app\index\controller\AiAssistantController::migrateVisitorToUser($visitorId, $uid);
+        $this->json(array('code' => 1, 'msg' => 'ok'));
     }
 }

@@ -272,26 +272,14 @@ class LoginController extends \app\base\controller\BaseController
      * 使登录后 AI 对话历史延续到该用户。
      */
     private function bindAiUid($uid){
-        if (empty($_COOKIE['ai_uid'])) return;
-        $historyDir = \ROOT_PATH . 'data/ai_chat_history/';
-        if (!is_dir($historyDir)) return;
-        $visitorFile = $historyDir . md5($_COOKIE['ai_uid']) . '.json';
-        if (!is_file($visitorFile)) return;
-        $userFile = $historyDir . md5('u_' . $uid) . '.json';
-        // 合并：用户已有历史则追加访客历史
-        $visitorData = json_decode(file_get_contents($visitorFile), true);
-        if (!is_array($visitorData)) $visitorData = array();
-        if (is_file($userFile)) {
-            $userData = json_decode(file_get_contents($userFile), true);
-            if (!is_array($userData)) $userData = array();
-        } else {
-            $userData = array();
-        }
-        $merged = array_merge($userData, $visitorData);
-        if (count($merged) > 20) $merged = array_slice($merged, -20);
-        @file_put_contents($userFile, json_encode($merged, JSON_UNESCAPED_UNICODE));
-        @unlink($visitorFile);
-        // 把 ai_uid cookie 改写为用户维度标识
+        $uid = (int)$uid;
+        if ($uid <= 0) return;
+        // 访客身份 = 当前 ai_uid Cookie（Web 端由前端同步为 localStorage sessionId，App 端由 sid 写入）
+        $visitorId = isset($_COOKIE['ai_uid']) ? preg_replace('/[^a-zA-Z0-9_\-]/', '', $_COOKIE['ai_uid']) : '';
+        // 统一交给 AiAssistantController 的迁移逻辑，保证历史/上下文/偏好三处文件命名完全一致
+        \app\index\controller\AiAssistantController::migrateVisitorToUser($visitorId, $uid);
+
+        // 把 ai_uid Cookie 改写为登录身份，确保后续请求沿用同一账号维度
         setcookie('ai_uid', 'u_' . $uid, time() + 86400 * 365, '/', '', false, true);
     }
 

@@ -1222,6 +1222,23 @@
   // API_BASE 需以 '/' 结尾，后续拼接 chat / getHistory 等 action；
   // 真实控制器类名 AiAssistantController，框架按“段名+Controller”解析且不区分大小写，故路由段用 index/aiAssistant 即可
   var API_BASE = '{url($route="index/aiAssistant/index", $params=array())}'.replace(/\/index$/, '/');
+
+  // 稳定的本机会话标识：存 localStorage，作为匿名用户身份兜底，避免每次打开都像"不同用户"
+  function getSessionId() {
+    try {
+      var sid = localStorage.getItem('zhicms_ai_session');
+      if (!sid) {
+        sid = 's_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+        localStorage.setItem('zhicms_ai_session', sid);
+      }
+      // 同步到可读 Cookie（ai_uid）：登录时 LoginController::bindAiUid 据此把"匿名对话"迁移到登录账号，
+      // 与后端 applyIdentity 的 Cookie 优先级保持一致，确保"登录前后是同一身份/历史连续"。
+      try {
+        document.cookie = 'ai_uid=' + encodeURIComponent(sid) + '; path=/; max-age=31536000; SameSite=Lax';
+      } catch (e) {}
+      return sid;
+    } catch (e) { return ''; }
+  }
   var isOpen = false;
   var isLoading = false;
   var chatBody, inputEl, sendBtn, panel, btn, welcome, dot;
@@ -1260,7 +1277,7 @@
   // 加载历史消息 + 同步登录态身份
   function loadHistory() {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', API_BASE + 'getHistory', true);
+    xhr.open('GET', API_BASE + 'getHistory?sessionId=' + encodeURIComponent(getSessionId()), true);
     xhr.onload = function() {
       try {
         var res = JSON.parse(xhr.responseText);
@@ -1516,7 +1533,7 @@
       sendBtn.disabled = false;
       appendMessage('assistant', '网络连接失败，请检查网络后再试~', true);
     };
-    xhr.send(JSON.stringify({ message: msg }));
+    xhr.send(JSON.stringify({ message: msg, sessionId: getSessionId() }));
   }
 
   // 清除历史
@@ -1524,7 +1541,8 @@
     if (!confirm('确定要清除所有对话记录吗？')) return;
     var xhr = new XMLHttpRequest();
     xhr.open('POST', API_BASE + 'clearHistory', true);
-    xhr.send();
+    xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    xhr.send(JSON.stringify({ sessionId: getSessionId() }));
     // 清空界面
     var msgs = chatBody.querySelectorAll('.ai-msg');
     for (var i = 0; i < msgs.length; i++) {

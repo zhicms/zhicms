@@ -17,6 +17,9 @@ class AiAssistantController extends \app\base\controller\BaseController
     /** Cookie 中的用户标识 */
     private $userId = '';
 
+    /** 由 App 端 token 解析后注入的登录 uid（优先于 Web Cookie 解析） */
+    private $injectedLoginUid = 0;
+
     /** 会话历史存储目录 */
     private $historyDir = '';
 
@@ -36,20 +39,131 @@ class AiAssistantController extends \app\base\controller\BaseController
         if (!is_dir($this->historyDir)) {
             mkdir($this->historyDir, 0755, true);
         }
-        $this->initUser();
+        $this->applyIdentity();
     }
 
     /**
-     * 初始化用户身份（Cookie 持久化）
+     * 初始化用户身份（稳定识别，决定历史/上下文文件归属）
+     *
+     * 优先级：
+     *  1) 登录用户 → 绑定到账号 uid（u_<uid>），跨设备一致、最稳定；
+     *     直接满足"绑定登录用户即同一人"的要求。
+     *  2) 已持久化的 ai_uid Cookie（同设备稳定，匿名访客首选）。
+     *  3) 前端回传的稳定 sessionId（localStorage），匿名同设备兜底身份。
+     *  4) 兜底：生成随机匿名身份并种 Cookie（1 年）。
      */
-    private function initUser()
+    private function applyIdentity($sessionId = '')
     {
-        if (isset($_COOKIE['ai_uid']) && !empty($_COOKIE['ai_uid'])) {
-            $this->userId = preg_replace('/[^a-zA-Z0-9_\-]/', '', $_COOKIE['ai_uid']);
-        } else {
-            $this->userId = 'u_' . bin2hex(random_bytes(12));
-            setcookie('ai_uid', $this->userId, time() + 86400 * 365, '/', '', false, true);
+        // 1) 登录用户优先：识别登录态 Cookie，绑定到账号维度
+        $uid = $this->resolveLoginUid();
+        if ($uid > 0) {
+            $this->userId = 'u_' . $uid;
+            return;
         }
+        // 2) 匿名：已持久化的 ai_uid Cookie（同设备稳定）
+        if (!empty($_COOKIE['ai_uid'])) {
+            $this->userId = preg_replace('/[^a-zA-Z0-9_\-]/', '', $_COOKIE['ai_uid']);
+            return;
+        }
+        // 3) 前端稳定 sessionId（localStorage），匿名同设备兜底身份
+        if (is_string($sessionId) && $sessionId !== '') {
+            $this->userId = preg_replace('/[^a-zA-Z0-9_\-]/', '', $sessionId);
+            return;
+        }
+        // 4) 兜底：生成随机匿名身份并种 Cookie（非 httponly，便于前端/登录流程读取迁移）
+        $this->userId = 'u_' . bin2hex(random_bytes(12));
+        setcookie('ai_uid', $this->userId, time() + 86400 * 365, '/', '', false, false);
+    }
+
+    /**
+     * 解析当前登录用户 uid（桌面端以 ZhiCmsUser Cookie 识别；与 getHistory 逻辑一致）
+     * App 端会在构造后调用 setLoginUid() 注入 token 解析出的 uid。
+     * @return int
+     */
+    private function resolveLoginUid()
+    {
+        if ($this->injectedLoginUid > 0) {
+            return $this->injectedLoginUid;
+        }
+        if (empty($_COOKIE['ZhiCmsUser'])) {
+            return 0;
+        }
+        try {
+            $u = obj("index/global", "controller")->findUser("y", $_COOKIE['ZhiCmsUser'], "cookie");
+            if (!empty($u) && !empty($u['id'])) {
+                return (int)$u['id'];
+            }
+        } catch (\Throwable $e) {
+            // 识别失败不影响主流程
+        }
+        return 0;
+    }
+
+    /**
+     * 由外部（App 端 token 解析结果）注入登录 uid，并立即重算身份。
+     * 用于让 App 端登录用户与 Web 端一样绑定到账号维度（u_<uid>），跨设备一致。
+     * @param int $uid
+     */
+    public function setLoginUid($uid)
+    {
+        $this->injectedLoginUid = (int)$uid;
+        $this->applyIdentity();
+    }
+
+    /**
+     * 统一身份迁移：把「匿名访客」的对话历史 / 导购上下文 / 偏好，合并到「登录用户」维度。
+     * 三处文件命名规则必须与本控制器 getHistoryFile/getContextFile/prefsFile 完全一致（带 salt），
+     * 否则迁移对不上、登录后历史丢失（此前 salt 错配即此根因）。
+     *
+     * @param string $visitorId 匿名身份标识（ai_uid Cookie 或 App 端 sessionId）
+     * @param int    $uid      登录用户 uid
+     * @return bool
+     */
+    public static function migrateVisitorToUser($visitorId, $uid)
+    {
+        $uid = (int)$uid;
+        $visitorId = is_string($visitorId) ? preg_replace('/[^a-zA-Z0-9_\-]/', '', $visitorId) : '';
+        if ($uid <= 0 || $visitorId === '' || $visitorId === ('u_' . $uid)) {
+            return false;
+        }
+
+        $salt       = 'zhicms_ai_chat_salt_' . \ZhiCms\base\Config::get('SECRET_KEY', 'zhicms');
+        $historyDir = \ROOT_PATH . 'data/ai_chat_history/';
+        $prefsDir   = \ROOT_PATH . 'data/ai_prefs/';
+        $uId        = 'u_' . $uid;
+
+        // 1) 会话历史（带 salt）
+        $vHist = $historyDir . md5($visitorId . '|' . $salt) . '.json';
+        $uHist = $historyDir . md5($uId . '|' . $salt) . '.json';
+        if (is_file($vHist)) {
+            $vData = json_decode(file_get_contents($vHist), true);
+            if (!is_array($vData)) {
+                $vData = array();
+            }
+            $uData = is_file($uHist) ? (json_decode(file_get_contents($uHist), true) ?: array()) : array();
+            $merged = array_merge($uData, $vData);
+            if (count($merged) > 20) {
+                $merged = array_slice($merged, -20);
+            }
+            @file_put_contents($uHist, json_encode($merged, JSON_UNESCAPED_UNICODE));
+            @unlink($vHist);
+        }
+
+        // 2) 导购上下文（带 salt，同目录）
+        $vCtx = $historyDir . 'ctx_' . md5($visitorId . '|' . $salt) . '.json';
+        $uCtx = $historyDir . 'ctx_' . md5($uId . '|' . $salt) . '.json';
+        if (is_file($vCtx) && !is_file($uCtx)) {
+            @rename($vCtx, $uCtx);
+        }
+
+        // 3) 用户偏好（无 salt）
+        $vPref = $prefsDir . md5($visitorId) . '.json';
+        $uPref = $prefsDir . md5($uId) . '.json';
+        if (is_file($vPref) && !is_file($uPref)) {
+            @rename($vPref, $uPref);
+        }
+
+        return true;
     }
 
     /**
@@ -83,7 +197,84 @@ class AiAssistantController extends \app\base\controller\BaseController
         if (count($history) > 20) {
             $history = array_slice($history, -20);
         }
-        file_put_contents($this->getHistoryFile(), json_encode($history, JSON_UNESCAPED_UNICODE));
+        if (!is_dir($this->historyDir)) {
+            @mkdir($this->historyDir, 0755, true);
+        }
+        @file_put_contents($this->getHistoryFile(), json_encode($history, JSON_UNESCAPED_UNICODE));
+    }
+
+    // ==================== 多轮导购上下文（短时效，按用户隔离） ====================
+    // 仅记录最近一次购物意图的「关键词 + 筛选条件」，用于延续轮（"便宜点的/换红色/不要小米"）
+    // 沿用上一轮约束，避免每轮都从零搜泛结果、用户被迫反复重述需求。
+    // 与 loadPrefs/savePrefs（跨会话稳定偏好）互补：上下文是"本会话内短期记忆"。
+
+    private function getContextFile()
+    {
+        $salt = 'zhicms_ai_ctx_' . \ZhiCms\base\Config::get('SECRET_KEY', 'zhicms');
+        return $this->historyDir . 'ctx_' . md5($this->userId . '|' . $salt) . '.json';
+    }
+
+    private function loadContext()
+    {
+        $file = $this->getContextFile();
+        if (is_file($file)) {
+            $data = json_decode(file_get_contents($file), true);
+            if (is_array($data)) {
+                if (!isset($data['filters']) || !is_array($data['filters'])) {
+                    $data['filters'] = array();
+                }
+                return $data;
+            }
+        }
+        return array('keyword' => '', 'filters' => array());
+    }
+
+    private function saveContext($keyword, $filters)
+    {
+        if (!is_array($filters)) {
+            $filters = array();
+        }
+        $keep = array('price_min', 'price_max', 'scene', 'audience', 'brand',
+                      'feature', 'color', 'spec', 'exclude_brand', 'exclude_feature');
+        $clean = array();
+        foreach ($keep as $k) {
+            if (isset($filters[$k]) && $filters[$k] !== '' && $filters[$k] !== 0) {
+                $clean[$k] = $filters[$k];
+            }
+        }
+        if (!is_dir($this->historyDir)) {
+            @mkdir($this->historyDir, 0755, true);
+        }
+        @file_put_contents($this->getContextFile(), json_encode(
+            array('keyword' => $keyword ?: '', 'filters' => $clean, 'ts' => time()),
+            JSON_UNESCAPED_UNICODE
+        ));
+    }
+
+    /**
+     * 合并上一轮上下文筛选条件与本轮新抽取的条件：
+     *  - 标量维度（预算/颜色/场景/人群/品牌/特征/规格/排除项）：本轮显式提及则覆盖上一轮；
+     *  - 预算边界：本轮给出更严格设定则采用，否则沿用上一轮（保证"便宜点的"仍在原预算内）。
+     * 这样延续轮是在"上一轮约束"内继续细化，而非重新搜一批泛结果。
+     */
+    private function mergeFilters($prev, $cur)
+    {
+        $prev = is_array($prev) ? $prev : array();
+        $cur  = is_array($cur)  ? $cur  : array();
+        $out  = $prev;
+        foreach (array('scene', 'audience', 'brand', 'feature', 'color', 'spec',
+                       'exclude_brand', 'exclude_feature') as $k) {
+            if (isset($cur[$k]) && $cur[$k] !== '' && $cur[$k] !== 0) {
+                $out[$k] = $cur[$k];
+            }
+        }
+        if (!empty($cur['price_min'])) {
+            $out['price_min'] = $cur['price_min'];
+        }
+        if (!empty($cur['price_max'])) {
+            $out['price_max'] = $cur['price_max'];
+        }
+        return $out;
     }
 
     /**
@@ -134,6 +325,14 @@ class AiAssistantController extends \app\base\controller\BaseController
             $message = isset($_REQUEST['message']) ? trim($_REQUEST['message']) : '';
         }
 
+        // 前端稳定身份（localStorage sessionId）覆盖随机 Cookie，保证同设备多轮一致；
+        // 登录态会在 applyIdentity 内优先识别，跨设备也始终为同一账号身份。
+        $sessionId = isset($input['sessionId']) ? $input['sessionId'] : '';
+        if (!is_string($sessionId) || $sessionId === '') {
+            $sessionId = isset($_REQUEST['sessionId']) ? $_REQUEST['sessionId'] : '';
+        }
+        $this->applyIdentity($sessionId);
+
         // ===== 快捷指令解析（让对话更直接、避免「绕圈才出产品」）=====
         //  #关键词  → 直接搜商品（跳过 AI 闲聊，立即返回商品卡，不废话）
         //  @关键词  → 全网比价（强制走大淘客全网搜，给出跨平台比价）
@@ -183,6 +382,10 @@ class AiAssistantController extends \app\base\controller\BaseController
         $history = $this->loadHistory();
         $history[] = ['role' => 'user', 'content' => $message];
 
+        // 记录本轮「导购上下文」输出（关键词 + 筛选条件），供后续 saveContext 落盘
+        $ctxK = '';
+        $ctxF = array();
+
         // 快捷指令优先：直接决定走搜索/比价/聊天，跳过意图猜疑，避免「多轮才出产品」
         if ($forceMode === 'search' || $forceMode === 'compare') {
             $keyword = $this->extractKeyword($message);
@@ -190,14 +393,22 @@ class AiAssistantController extends \app\base\controller\BaseController
                 $keyword = $message; // 取不到关键词就用原文（如"#手机"→"手机"）
             }
             $filters = $this->extractPurchaseFilters($message, $keyword);
+            // 延续轮：若与上一轮上下文同一商品，合并上一轮筛选条件
+            $prevCtx = $this->loadContext();
+            if (!empty($prevCtx['filters']) && !empty($prevCtx['keyword']) && $prevCtx['keyword'] === $keyword) {
+                $filters = $this->mergeFilters($prevCtx['filters'], $filters);
+            }
             $reply = $this->handleProductSearch($keyword, $message, $history, true, $forceMode === 'compare', $filters);
             $respType = 'product';
+            $ctxK = $keyword;
+            $ctxF = $filters;
         } else {
             // 对比意图优先：识别"iphone 和 小米 哪个好 / A vs B"等，走双品对比引擎
             $cmp = $this->detectCompare($message);
             if ($cmp !== false) {
                 $reply = $this->handleCompare($cmp['a'], $cmp['b'], $history);
                 $respType = 'product';
+                $ctxK = trim($cmp['a'] . ' ' . $cmp['b']);
             } else {
             // 意图分析（含上下文：能理解"便宜点的""第二个"等指代）
             $intent = $this->analyzeIntent($message, $history);
@@ -208,12 +419,20 @@ class AiAssistantController extends \app\base\controller\BaseController
                 $filters = $intent['filters'] ?? array();
                 $reply = $this->handleProductSearch($intent['keyword'], $message, $history, $needAdvice, false, $filters);
                 $respType = 'product';
+                $ctxK = $intent['keyword'];
+                $ctxF = $intent['filters'] ?? array();
             } else {
                 // 纯聊天模式（? 指令或确实非购物）
                 $reply = $this->handleAiChat($message, $history);
                 $respType = 'chat';
             }
             }
+        }
+
+        // 记录/更新导购上下文：仅「确为购物意图且有商品词」时落盘，供下一轮延续复用；
+        // 非购物（闲聊）不清除，避免会话中夹一句闲聊就把购物上下文冲掉。
+        if ($respType === 'product' && $ctxK !== '') {
+            $this->saveContext($ctxK, $ctxF);
         }
 
         // 兜底：判定为 product 但实际未产出任何商品卡/导购点评/澄清引导（如搜不到该词的商品，
@@ -245,6 +464,11 @@ class AiAssistantController extends \app\base\controller\BaseController
     public function getHistory()
     {
         header('Content-Type: application/json; charset=utf-8');
+
+        // 前端稳定身份（GET ?sessionId=）覆盖随机 Cookie，保证同设备历史一致
+        $sessionId = isset($_GET['sessionId']) ? $_GET['sessionId'] : '';
+        $this->applyIdentity($sessionId);
+
         // 返回登录态信息，供前端展示"当前对话身份"
         $isLogin = false;
         $userName = '游客';
@@ -271,6 +495,20 @@ class AiAssistantController extends \app\base\controller\BaseController
      */
     public function clearHistory()
     {
+        // 前端可能携带稳定身份（sessionId）以定位匿名用户的历史文件
+        $sessionId = '';
+        $raw = file_get_contents('php://input');
+        if ($raw) {
+            $p = json_decode($raw, true);
+            if (is_array($p) && !empty($p['sessionId'])) {
+                $sessionId = $p['sessionId'];
+            }
+        }
+        if ($sessionId === '' && !empty($_REQUEST['sessionId'])) {
+            $sessionId = $_REQUEST['sessionId'];
+        }
+        $this->applyIdentity($sessionId);
+
         $file = $this->getHistoryFile();
         if (file_exists($file)) {
             unlink($file);
@@ -942,6 +1180,12 @@ PROMPT;
         $isPurchase = false;
         $mLower = mb_strtolower($message);
 
+        // 载入上一轮导购上下文（关键词 + 筛选条件），用于多轮延续时沿用之前的预算/颜色/排除项
+        $ctx = $this->loadContext();
+        $ctxKeyword = isset($ctx['keyword']) ? $ctx['keyword'] : '';
+        $ctxFilters = isset($ctx['filters']) && is_array($ctx['filters']) ? $ctx['filters'] : array();
+        $continuation = false;
+
         // --- 策略1：检查是否匹配购物意图触发词 ---
         foreach ($purchaseWords as $word) {
             if (mb_strpos($mLower, $word) !== false) {
@@ -1024,28 +1268,36 @@ PROMPT;
 
         // --- 多轮上下文指代解析 ---
         // 若当前消息无明显商品词，但含"更便宜/第二个/红色的/那个"等指代/筛选词，
-        // 且上一轮是购物意图，则沿用上一轮的真实关键词，让助手"听懂"延续对话。
+        // 或当前关键词与上一轮上下文一致（同一商品延续），则沿用上一轮上下文（关键词+筛选条件），
+        // 让助手"听懂"延续对话、不丢之前的预算/颜色/排除项。
         $refineWords = ['便宜', '贵', '第二个', '第一个', '第1个', '第2个', '红色', '黑色', '白色',
-            '蓝色', '那个', '这款', '这款', '另一', '其它', '其他', '再推荐', '还有', '更多', '换个'];
+            '蓝色', '那个', '这款', '另一', '其它', '其他', '再推荐', '还有', '更多', '换个'];
         $hasRefine = false;
         foreach ($refineWords as $w) {
             if (mb_strpos($mLower, $w) !== false) { $hasRefine = true; break; }
         }
-        if ((!$isPurchase || empty($keyword)) && $hasRefine && !empty($history)) {
-            // 从最近一条「用户」消息里找回真实购物意图（跳过 assistant 摘要，
+        if ((!$isPurchase || empty($keyword)) && $hasRefine) {
+            $continuation = true;
+            // 优先从结构化上下文取精确关键词（最可靠）
+            if ($ctxKeyword !== '' && empty($keyword)) {
+                $keyword = $ctxKeyword;
+                $isPurchase = true;
+            }
+            // 兜底：从历史「用户」消息里找回真实购物意图（跳过 assistant 摘要，
             // 避免把"已为你推荐相关商品"这类历史文本误当成关键词）。
-            for ($i = count($history) - 1; $i >= 0; $i--) {
-                if (empty($history[$i]['role']) || $history[$i]['role'] !== 'user') {
-                    continue;
-                }
-                $prev = isset($history[$i]['content']) ? $history[$i]['content'] : '';
-                if ($prev) {
-                    $prevIntent = $this->analyzeIntentStandalone($prev);
-                    if ($prevIntent['is_purchase'] && !empty($prevIntent['keyword'])) {
-                        $keyword = $prevIntent['keyword'];
-                        $isPurchase = true;
-                        // 指代本身也算"求筛选/求更多"，需要导购点评
-                        break;
+            if (empty($keyword) && !empty($history)) {
+                for ($i = count($history) - 1; $i >= 0; $i--) {
+                    if (empty($history[$i]['role']) || $history[$i]['role'] !== 'user') {
+                        continue;
+                    }
+                    $prev = isset($history[$i]['content']) ? $history[$i]['content'] : '';
+                    if ($prev) {
+                        $prevIntent = $this->analyzeIntentStandalone($prev);
+                        if ($prevIntent['is_purchase'] && !empty($prevIntent['keyword'])) {
+                            $keyword = $prevIntent['keyword'];
+                            $isPurchase = true;
+                            break;
+                        }
                     }
                 }
             }
@@ -1082,6 +1334,12 @@ PROMPT;
             $isPurchase = true;
         }
 
+        // 当前关键词与上一轮上下文一致（同一商品延续，如"便宜点的保温杯"），
+        // 即便未命中 refine 词也视为延续轮，合并上一轮筛选条件。
+        if (!$continuation && $ctxKeyword !== '' && $keyword !== '' && $keyword === $ctxKeyword) {
+            $continuation = true;
+        }
+
         // --- 是否需要 AI 导购点评（求推荐/求对比/带偏好筛选/多轮延续） ---
         // 仅在「确为购物意图」的前提下判定，避免闲聊（如"今天天气怎么样"）被误判购物。
         $adviceWords = ['推荐', '值得', '哪个好', '怎么选', '区别', '对比', '排行',
@@ -1109,6 +1367,12 @@ PROMPT;
         $filters = $isPurchase && !empty($keyword)
             ? $this->extractPurchaseFilters($message, $keyword)
             : array();
+
+        // 多轮延续：把上一轮的筛选条件（预算/颜色/排除品牌…）合并进来，
+        // 让"便宜点的/换红色/不要小米"在上一轮约束内继续细化，而不是重新搜泛结果。
+        if ($continuation && !empty($ctxFilters)) {
+            $filters = $this->mergeFilters($ctxFilters, $filters);
+        }
 
         return [
             'is_purchase' => $isPurchase && !empty($keyword),
