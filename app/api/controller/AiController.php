@@ -111,9 +111,17 @@ class AiController extends ApiBaseController {
             $_COOKIE['ai_uid'] = $sid;
         }
 
-        // 复用前台导购主流程（同一份逻辑）
-        $ctrl = new \app\index\controller\AiAssistantController();
-        $res = $ctrl->chatLogic($message, $forceMode);
+        // 复用前台导购主流程（同一份逻辑）。
+        // 整体包 try/catch：任一环节（意图分析/全网搜索/语义过滤/AI 点评）异常时，
+        // 返回结构化错误而非 500 HTML，避免小程序端 JSON 解析失败、整段导购不可用。
+        try {
+            $ctrl = new \app\index\controller\AiAssistantController();
+            $res = $ctrl->chatLogic($message, $forceMode);
+        } catch (\Throwable $e) {
+            error_log('[ai-guide] chatLogic failed: ' . $e->getMessage());
+            $this->json(array('code' => 0, 'msg' => '导购服务暂时开小差了，请稍后再试~'));
+            return;
+        }
 
         $type = isset($res['type']) ? $res['type'] : 'chat';
         $replyHtml = isset($res['reply']) ? $res['reply'] : '';
@@ -149,16 +157,8 @@ class AiController extends ApiBaseController {
         @$dom->loadHTML('<?xml encoding="utf-8" ?>' . $html, LIBXML_NOERROR | LIBXML_NOWARNING);
         $xpath = new \DOMXPath($dom);
 
-        // 1) 导购点评 / 文本回复：取 .ai-advice 内文本；无则取整个片段纯文本
-        $adviceNodes = $xpath->query('//div[contains(@class,"ai-advice")]');
-        if ($adviceNodes && $adviceNodes->length > 0) {
-            $result['text'] = $this->domInnerText($adviceNodes->item(0));
-        } else {
-            // 澄清引导 / 纯文本：取去标签文本
-            $result['text'] = $this->domInnerText($dom->documentElement);
-        }
-
-        // 2) 商品卡：.ai-product-item 是 <a> 标签
+        // 1) 商品卡与澄清按钮优先解析（避免后面向 DOM 移除商品节点影响其解析）
+        // 商品卡：.ai-product-item 是 <a> 标签
         $itemNodes = $xpath->query('//a[contains(@class,"ai-product-item")]');
         if ($itemNodes) {
             foreach ($itemNodes as $node) {
@@ -221,7 +221,7 @@ class AiController extends ApiBaseController {
             }
         }
 
-        // 3) 模糊需求澄清按钮：.ai-clarify-btn
+        // 2) 模糊需求澄清按钮：.ai-clarify-btn
         $clarifyNodes = $xpath->query('//*[contains(@class,"ai-clarify-btn")]');
         if ($clarifyNodes) {
             foreach ($clarifyNodes as $btn) {
@@ -233,7 +233,40 @@ class AiController extends ApiBaseController {
             }
         }
 
+        // 3) 导购点评 / 文本回复：取 .ai-advice 内文本；无则取整个片段纯文本
+        //    （先移除商品卡节点，避免把商品标题重复塞进正文气泡）
+        $adviceNodes = $xpath->query('//div[contains(@class,"ai-advice")]');
+        if ($adviceNodes && $adviceNodes->length > 0) {
+            $result['text'] = $this->domInnerText($adviceNodes->item(0));
+        } else {
+            $prodNodes = $xpath->query('//a[contains(@class,"ai-product-item")]');
+            if ($prodNodes) {
+                foreach ($prodNodes as $pn) {
+                    if ($pn->parentNode) {
+                        $pn->parentNode->removeChild($pn);
+                    }
+                }
+            }
+            $result['text'] = $this->domInnerText($dom->documentElement);
+        }
+
+        // 兜底：解析后既无正文也无商品（DOM 解析异常等），用标签剥离保留原始文本，避免前端空白回复
+        if ($result['text'] === '' && empty($result['products']) && $html !== '') {
+            $result['text'] = $this->stripHtmlToText($html);
+        }
+
         return $result;
+    }
+
+    /**
+     * 将原始 HTML 剥离标签、解码实体、压缩空白，得到纯文本（DOM 解析失败时的兜底）
+     */
+    private function stripHtmlToText($html)
+    {
+        $text = preg_replace('/<[^>]+>/u', ' ', $html);
+        $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = preg_replace('/\s+/u', ' ', $text);
+        return trim($text);
     }
 
     /**

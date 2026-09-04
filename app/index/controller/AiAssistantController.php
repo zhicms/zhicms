@@ -2141,8 +2141,29 @@ PROMPT;
      * 2. 品类+属性（如"降噪耳机"、"轻薄笔记本"）
      * 3. 纯品类词（如"耳机"、"手机"）
      */
+    /**
+     * 剥离「平台/来源同款」等噪声前缀与营销词，避免污染联盟搜索。
+     * 例：抖音同款男秋装套装 → 男秋装套装；网红爆款卫衣 → 卫衣
+     * 这些字眼不是商品属性，大淘客等会按字面标签匹配，返回大量无关爆款（洗护/零食等）。
+     */
+    private function stripSourceNoise($text)
+    {
+        if ($text === '') {
+            return $text;
+        }
+        // 去除「平台/来源 同款」：抖音同款/小红书同款/快手同款/ins同款/淘宝同款/拼多多同款/京东同款/唯品会同款/明星同款/网红同款/博主同款/达人同款/种草同款
+        $text = preg_replace('/^(抖音|小红书|快手|视频号|ins|淘宝|天猫|拼多多|京东|唯品会|明星|网红|博主|达人|潮人|种草)?同款/iu', '', $text);
+        $text = preg_replace('/(抖音|小红书|快手|视频号|ins|淘宝|天猫|拼多多|京东|唯品会|明星|网红|博主|达人|潮人|种草)?同款/iu', '', $text);
+        // 去除营销噪声词（非商品属性）
+        $text = preg_replace('/(爆款|潮款|热卖款|网红款|抖音热门|必买|闭眼入|合集|清单|推荐清单|2024新款|2025新款|2026新款|新款推荐)/iu', '', $text);
+        return trim($text);
+    }
+
     private function extractKeyword($message)
     {
+        // 先剥离「平台/来源同款」等噪声前缀，避免污染后续停用词清理与搜索
+        $message = $this->stripSourceNoise($message);
+
         // ========== 常见意图/停用词（淘宝京东拼多多搜索中常被忽略的词） ==========
         $stopWords = [
             // -- 查询意图词 --
@@ -2248,6 +2269,8 @@ PROMPT;
      */
     private function handleProductSearch($keyword, $originalMessage, $history = array(), $needAdvice = false, $compareAll = false, $filters = array())
     {
+        // 统一剥离「平台/来源同款」等噪声前缀（无论来自快捷指令还是意图分析路径）
+        $keyword = $this->stripSourceNoise($keyword);
         if (empty($keyword)) {
             return $this->handleAiChat($originalMessage, $history);
         }
@@ -2350,30 +2373,63 @@ PROMPT;
                 // 用途 / 场景 / 特殊需求：对结果做软过滤（匹配项前置，不匹配也不丢结果，避免空结果）
                 $this->curFilters = $filters;
                 $this->savePrefs($filters);
-                // —— 结果符合度自评（ROI）：逐件标注符合分 + 整批 ROI，并落知识库 ——
+
+                // 语义库自学习：把本次查询作为原始信号静默写入，使语义库随真实用户用法不断壮大
+                // （"跟贴进用户使用方式"：越用越贴合本站用户实际搜索习惯）
+                $this->recordGuideSignal($searchKw2, $keyword);
+
+                // ===== 语义相关性过滤（让导购结果真正"对味"，而非只靠产品族/黑名单）=====
+                // 用本地语义 SDK（VectorService = BM25 n-gram + 语义向量）对每个商品标题与用户查询
+                // 做相关性打分，剔除"字面与语义都不相关"的商品（如搜"男秋装套装"却返回洁厕灵/牙刷）。
+                // 通用覆盖服装/食品/美妆等所有类目，且随语义库自学习越用越准。
+                // 原则：宁放过不误杀——仅剔除明显无关项；过滤后为空则回退原始。
+                // 整体包 try/catch：语义库异常绝不影响已搜到的商品。
+                try {
+                    $tjkResult['items'] = $this->filterBySemanticRelevance($tjkResult['items'], $searchKw2, $keyword);
+                } catch (\Throwable $e) {
+                    // 相关性过滤失败：保留原始结果，不影响主流程
+                }
+
+                // —— 结果符合度自评（ROI）/ 排序 / 知识库落盘 ——
+                // 这些增强步骤任一失败都不应拖垮整个导购（商品卡仍是核心交付物）。
                 $items = $tjkResult['items'];
-                $roi = $this->attachRoi($items, $filters);
-                $tjkResult['items'] = $this->rankItemsByFilters($items, $filters, $keyword);
-                $roiBanner = $this->hasRealFilters($filters) ? $this->renderRoiBanner($roi, $searchKw2) : '';
-                $this->logKnowledge(array(
-                    'keyword' => $searchKw2,
-                    'filters' => $filters,
-                    'found'   => count($tjkResult['items']),
-                    'roi'     => $roi,
-                    'items'   => $this->kbItemsMeta($tjkResult['items']),
-                ));
-                $html = $roiBanner . $relaxedNote . $this->formatTjkResults($tjkResult['items'], $searchKw2, $explicit);
+                $roiBanner = '';
+                try {
+                    $roi = $this->attachRoi($items, $filters);
+                    $items = $this->rankItemsByFilters($items, $filters, $keyword);
+                    $roiBanner = $this->hasRealFilters($filters) ? $this->renderRoiBanner($roi, $searchKw2) : '';
+                    $this->logKnowledge(array(
+                        'keyword' => $searchKw2,
+                        'filters' => $filters,
+                        'found'   => count($items),
+                        'roi'     => $roi,
+                        'items'   => $this->kbItemsMeta($items),
+                    ));
+                } catch (\Throwable $e) {
+                    // ROI/排序/知识库异常：忽略，仅影响附加信息
+                }
+                $tjkResult['items'] = $items;
+
+                $html = $roiBanner . $relaxedNote . $this->formatTjkResults($items, $searchKw2, $explicit);
                 if ($needAdvice) {
-                    $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'product', $tjkResult['items'], $filters) . $html;
+                    try {
+                        $html = $this->buildAdvice($originalMessage, $searchKw2, $history, 'product', $items, $filters) . $html;
+                    } catch (\Throwable $e) {
+                        // 点评生成失败不影响商品卡
+                    }
                 }
                 // 站内相关攻略作为补充（若有），放在商品卡之后，不喧宾夺主
-                $articles = obj("api/ApiData")->dataSelect(
-                    "yun_article",
-                    array('title' => array('like', '%' . $searchKw2 . '%')),
-                    "`id` DESC LIMIT 0, 3"
-                );
-                if (!empty($articles)) {
-                    $html .= $this->formatArticleResults($articles, $searchKw2, true);
+                try {
+                    $articles = obj("api/ApiData")->dataSelect(
+                        "yun_article",
+                        array('title' => array('like', '%' . $searchKw2 . '%')),
+                        "`id` DESC LIMIT 0, 3"
+                    );
+                    if (!empty($articles)) {
+                        $html .= $this->formatArticleResults($articles, $searchKw2, true);
+                    }
+                } catch (\Throwable $e) {
+                    // 攻略补充失败不影响商品卡
                 }
                 return $html;
             }
@@ -2397,6 +2453,130 @@ PROMPT;
 
         // 3. 都没有结果，交给 AI 处理（结合上下文给出智能引导，而非干巴巴兜底）
         return $this->handleAiChat($originalMessage, $history);
+    }
+
+    /**
+     * 语义相关性过滤（通用、贴合用户真实用法）
+     * 用本地语义 SDK（VectorService = 语义向量 + Bm25Index 同源分词）对每个商品标题与用户查询
+     * 做相关性判定，剔除"字面与语义都不相关"的商品（如搜"男秋装套装"却返回洁厕灵/牙刷）。
+     *
+     * 判定（保留条件，满足任一即留）：
+     *  1) 共享 ≥2 字 n-gram（bigram 重叠）—— 忽略单字噪声（如"装"误命中"支装"）；
+     *  2) 语义向量余弦 ≥ 0.25（抓分布相似度，部分同义也能命中）；
+     *  3) 查询词字面包含于标题。
+     *
+     * 关键保护：对"泛品类词"（手机/水杯/男装/运动鞋…）信任大淘客已按类目返回的结果、
+     * 不做相关性剔除——否则会误杀同义词（男装↔男士、运动鞋↔跑步鞋、保温杯↔水杯）。
+     *
+     * 原则（宁放过不误杀）：仅剔除明显无关项；过滤后为空则回退原始列表，保证有结果。
+     *
+     * @param array  $items  商品数组（含 title/name 字段）
+     * @param string $query  归一化后的搜索词（如 男秋装套装）
+     * @param string $origKeyword 原始抽取关键词（query 为空时兜底）
+     * @return array 过滤后的商品
+     */
+    private function filterBySemanticRelevance(array $items, $query, $origKeyword)
+    {
+        if (empty($items)) {
+            return $items;
+        }
+        $anchor = trim($query) !== '' ? trim($query) : trim($origKeyword);
+        if ($anchor === '') {
+            return $items;
+        }
+
+        // 泛品类词（手机/水杯/男装/运动鞋…）或大淘客已按类目返回，硬滤易误杀同义词，
+        // 故此类信任搜索结果、不做相关性剔除。
+        if ($this->isGenericCategory($anchor)
+            || mb_strlen(preg_replace('/[^\x{4e00}-\x{9fa5}]/u', '', $anchor), 'UTF-8') <= 2
+            || in_array($anchor, $this->genericSkipCats(), true)) {
+            return $items;
+        }
+
+        // 标题映射（i0 => 标题），无标题者用空串占位
+        $titles = array();
+        foreach ($items as $i => $it) {
+            $titles['i' . $i] = (string) ($it['title'] ?? $it['name'] ?? '');
+        }
+
+        // 1) 查询的 ≥2 字 n-gram 集合（Bm25Index 同源分词）
+        try {
+            $tok = new \ZhiCms\ext\Vector\Bm25Index();
+            $anchorNg = $this->ngramsFrom($tok, $anchor, 2);
+        } catch (\Throwable $e) {
+            $tok = null;
+            $anchorNg = array();
+        }
+
+        // 2) 语义向量相似度（主信号，抓分布相似度与同义）
+        try {
+            $vs = new \ZhiCms\ext\VectorService();
+            $sem = $vs->semanticMatch($anchor, array_values($titles), 0.25);
+            $semAll = $sem['all']; // [标题=>余弦分]
+        } catch (\Throwable $e) {
+            $semAll = array();
+        }
+
+        $keep = array();
+        foreach ($items as $i => $it) {
+            $k = 'i' . $i;
+            $title = $titles[$k];
+            if ($title === '') {
+                $keep[] = $it; // 无标题保底保留
+                continue;
+            }
+            $hasBigram = ($tok !== null) ? (bool) array_intersect($anchorNg, $this->ngramsFrom($tok, $title, 2)) : false;
+            $semOk = ($semAll[$title] ?? 0) >= 0.25;
+            $literal = mb_stripos($title, $anchor) !== false;
+            if ($hasBigram || $semOk || $literal) {
+                $keep[] = $it;
+            }
+        }
+        return !empty($keep) ? $keep : $items; // 兜底：全被滤掉则回退原始
+    }
+
+    /** 常见 3 字服装/鞋类泛品类词：信任搜索、不硬滤，避免同义词误杀 */
+    private function genericSkipCats()
+    {
+        return array('运动鞋', '跑鞋', '板鞋', '连衣裙', '牛仔裤', '羽绒服', '童装', '卫衣', '毛衣',
+            '衬衫', '短裤', '长裤', '卫裤', '风衣', '大衣', '棉服', '雪地靴', '马丁靴');
+    }
+
+    /** 取文本中长度≥minLen 的 n-gram 列表（Bm25Index 同源分词，去 zh:/en: 前缀） */
+    private function ngramsFrom(\ZhiCms\ext\Vector\Bm25Index $tok, $text, $minLen = 2)
+    {
+        try {
+            $toks = $tok->tokenize((string) $text);
+        } catch (\Throwable $e) {
+            return array();
+        }
+        $set = array();
+        foreach ($toks as $t) {
+            $core = preg_replace('/^(zh:|en:)/', '', $t);
+            if (mb_strlen($core, 'UTF-8') >= $minLen) {
+                $set[] = $core; // 存为列表，便于 array_intersect 按字串值比对
+            }
+        }
+        return $set;
+    }
+
+    /**
+     * 语义库自学习：把用户本次导购查询作为原始信号静默写入。
+     * 信号经后台「计划任务 / 语义库学习」推导后并入检索扩展链路，
+     * 使导购越用越贴合本站用户的真实搜索习惯（"跟贴进用户使用方式"）。
+     */
+    private function recordGuideSignal($searchKw, $origKeyword)
+    {
+        $q = trim($searchKw) ?: trim($origKeyword);
+        if ($q === '') {
+            return;
+        }
+        try {
+            $vs = new \ZhiCms\ext\VectorService();
+            $vs->recordSignal($q, '', 'guide');
+        } catch (\Throwable $e) {
+            // 静默：学习信号写入失败不影响主流程
+        }
     }
 
     /**
